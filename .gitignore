@@ -1,0 +1,26 @@
+# Visual Studio / Rider
+.vs/
+.vsconfig
+*.sln
+*.slnx
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.opendb
+
+# Unreal generated/derived
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+
+# Plugins' generated
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+
+# OS
+.DS_Store
+Thumbs.db

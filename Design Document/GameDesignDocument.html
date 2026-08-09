@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProjectBopis — Implementation Design Document</title>
+<style>
+  :root{
+    --bg:#0b0d12;
+    --bg-panel:#12151d;
+    --bg-panel-2:#161a24;
+    --border:#242a38;
+    --text:#dfe4ee;
+    --text-dim:#8891a3;
+    --accent:#3ee6c4;
+    --accent-2:#ff5da2;
+    --accent-3:#ffb454;
+    --code-bg:#0e1117;
+    --mono: "Consolas","SFMono-Regular",Menlo,Monaco,"Courier New",monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f5f8;
+      --bg-panel:#ffffff;
+      --bg-panel-2:#eef0f5;
+      --border:#dde1ea;
+      --text:#1b1f27;
+      --text-dim:#5b6270;
+      --code-bg:#eef0f5;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.68;
+    display:flex;
+    min-height:100vh;
+  }
+  a{color:var(--accent);}
+
+  nav.toc{
+    width:280px;
+    flex:0 0 280px;
+    background:var(--bg-panel);
+    border-right:1px solid var(--border);
+    padding:28px 20px;
+    position:sticky;
+    top:0;
+    align-self:flex-start;
+    height:100vh;
+    overflow-y:auto;
+  }
+  nav.toc .brand{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+  nav.toc h1{
+    font-size:16px;
+    margin:0 0 6px 0;
+    line-height:1.3;
+  }
+  nav.toc .subtitle{
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:24px;
+  }
+  nav.toc ol{
+    list-style:none;
+    margin:0;
+    padding:0;
+    counter-reset:sec;
+  }
+  nav.toc li{
+    counter-increment:sec;
+    margin-bottom:2px;
+  }
+  nav.toc a{
+    display:block;
+    padding:6px 8px;
+    border-radius:6px;
+    text-decoration:none;
+    color:var(--text-dim);
+    font-size:13.5px;
+    transition:background .12s, color .12s;
+  }
+  nav.toc a:hover{
+    background:var(--bg-panel-2);
+    color:var(--text);
+  }
+  nav.toc a::before{
+    content:counter(sec) ". ";
+    color:var(--accent);
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  main{
+    flex:1;
+    max-width:860px;
+    padding:48px 56px 120px 56px;
+  }
+  header.doc-head{
+    margin-bottom:36px;
+    padding-bottom:26px;
+    border-bottom:1px solid var(--border);
+  }
+  header.doc-head .kicker{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent-2);
+    margin-bottom:10px;
+  }
+  header.doc-head h1{
+    font-size:30px;
+    margin:0 0 12px 0;
+    letter-spacing:-0.01em;
+  }
+  header.doc-head .meta{
+    color:var(--text-dim);
+    font-size:14px;
+  }
+  .callout{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent-2);
+    border-radius:8px;
+    padding:16px 18px;
+    margin:18px 0 0 0;
+    font-size:14px;
+    color:var(--text-dim);
+  }
+  .callout strong{color:var(--text);}
+  .callout code{white-space:nowrap;}
+
+  section{
+    margin:0 0 44px 0;
+    scroll-margin-top:24px;
+  }
+  section h2{
+    font-size:21px;
+    margin:0 0 16px 0;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--border);
+  }
+  p{margin:0 0 14px 0; font-size:15.5px;}
+  ul,ol{margin:0 0 14px 0; padding-left:22px;}
+  li{margin-bottom:7px; font-size:15.5px;}
+  li::marker{color:var(--text-dim);}
+  strong{color:var(--text);}
+
+  /* Plain-English body text stays code-free by convention; code styling
+     is reserved for Implementation Notes blocks below. */
+  code{
+    font-family:var(--mono);
+    background:var(--code-bg);
+    border:1px solid var(--border);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:0.86em;
+    color:var(--accent-3);
+  }
+
+  .impl{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px 20px 6px 20px;
+    margin-top:18px;
+  }
+  .impl-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:12px;
+  }
+  .impl-label::before{
+    content:"</>";
+    color:var(--accent);
+  }
+  .impl p, .impl li{font-size:14px;}
+  .impl ul{margin-bottom:14px;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:8px 0 16px 0;
+    font-size:13px;
+  }
+  th,td{
+    text-align:left;
+    padding:8px 10px;
+    border-bottom:1px solid var(--border);
+    vertical-align:top;
+  }
+  th{
+    color:var(--text-dim);
+    font-weight:600;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  td code{white-space:nowrap;}
+
+  .backlog{
+    list-style:none;
+    padding:0;
+    margin:0;
+    counter-reset:bl;
+  }
+  .backlog li{
+    counter-increment:bl;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    font-size:14.5px;
+  }
+  .backlog li::before{
+    content:counter(bl);
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--bg);
+    background:var(--accent);
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 20px;
+    margin-top:1px;
+  }
+
+  footer{
+    margin-top:56px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    color:var(--text-dim);
+    font-size:12.5px;
+  }
+
+  @media (max-width: 900px){
+    body{flex-direction:column;}
+    nav.toc{
+      width:100%;
+      height:auto;
+      position:relative;
+      border-right:none;
+      border-bottom:1px solid var(--border);
+    }
+    main{padding:32px 20px 80px 20px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="brand">Project Bopis</div>
+  <h1>Implementation Design Document</h1>
+  <div class="subtitle">Claude's engineering read · local only</div>
+  <ol>
+    <li><a href="#kind">What kind of game this is</a></li>
+    <li><a href="#why-bloom">Combat: why "bloom"</a></li>
+    <li><a href="#weapons">Weapons as tuning knobs</a></li>
+    <li><a href="#enemies">Enemies should read at a glance</a></li>
+    <li><a href="#levels">What the levels ask of the code</a></li>
+    <li><a href="#narrative">Narrative stays small</a></li>
+    <li><a href="#state">Where the codebase is right now</a></li>
+    <li><a href="#backlog">Engineering Backlog</a></li>
+    <li><a href="#changelog">Changelog</a></li>
+  </ol>
+</nav>
+
+<main>
+  <header class="doc-head">
+    <div class="kicker">Design Document · Local Artifact</div>
+    <h1>ProjectBopis — Implementation Design Document</h1>
+    <div class="meta">Sci-fi cyberpunk FPS · The Philippines, 2098 · Unreal Engine 5.8</div>
+    <div class="callout">
+      Written by Claude, from the implementation side of this project. The narrative canon in
+      <code>Lore_And_Design_Notes.md</code> (same folder) is authored by the user and their
+      design partner (ChatGPT) — that file is the source of truth for story, world, and lore.
+      Each section below leads with a plain-English explanation of the idea and why it matters.
+      Where there's an actual technical spec, it's broken into a separate
+      <strong>Implementation Notes</strong> block — that's where the jargon lives.
+    </div>
+  </header>
+
+  <section id="kind">
+    <h2>What kind of game this is, mechanically</h2>
+    <p>
+      ProjectBopis is a straight-line shooter campaign set in a cyberpunk Philippines, but the
+      setting isn't my department — that's the design side. My job starts where the trigger gets
+      pulled. The combat touchstone is old-school Bungie Halo (the original trilogy, plus ODST
+      and Reach), which is a clear target: gunfights are won by where you stand and how you use
+      the trigger, not by staring down a scope or memorizing a pattern. That rules a few things
+      out right away — no bonus for aiming down sights, no recoil pattern to practice, no
+      bullet-sponge enemies — and gives the combat a proven shape to build toward instead of an
+      open-ended one.
+    </p>
+  </section>
+
+  <section id="why-bloom">
+    <h2>Combat: why "bloom" instead of the usual alternatives</h2>
+    <p>
+      Most shooters keep guns accurate one of three ways: you get more accurate by aiming down
+      sights, the gun kicks upward in a pattern you have to fight, or the gun gets less accurate
+      the longer you hold the trigger and recovers once you ease off — that last one is what
+      Halo: Reach called "bloom," and it shows up as your crosshair visibly widening and
+      shrinking. The design rules out the first two, and that's the right call here, not just
+      because Reach did it:
+    </p>
+    <ul>
+      <li><strong>Aiming for accuracy</strong> rewards standing still and posting up, which fights against a game that wants you moving, strafing, and using cover creatively.</li>
+      <li><strong>A recoil pattern</strong> turns "skill" into memorizing how one specific gun kicks, practiced outside the fight. That's fine in some games, but it doesn't suit fast, improvised firefights meant to be won by reading the room, not a known pattern.</li>
+      <li><strong>Bloom</strong> ties accuracy to pacing, and that's something you can read in the moment just by looking at your crosshair — do I have time for another shot, or should I ease off? That's a skill that carries over to every gun, which matters if picking up any weapon is supposed to feel immediately usable.</li>
+    </ul>
+    <p>
+      So the rule is simple: <strong>aiming down sights only changes what you see, not how
+      accurate the gun is.</strong> Accuracy comes from bloom, full stop. That has to hold true
+      everywhere the weapon code touches accuracy, or the whole system quietly breaks back into
+      "aiming is just better."
+    </p>
+
+    <div class="impl">
+      <div class="impl-label">Implementation notes</div>
+      <ul>
+        <li>Weapon accuracy is driven entirely by a bloom value, not by aim state.</li>
+        <li>Aiming (right-click/LT) must not touch spread, cone angle, bloom growth/decay, or damage — purely a camera/UI state. It may add a center dot to the reticle, and trigger a zoomed FOV <em>if the weapon has zoom</em>, but nothing that resolves the shot.</li>
+      </ul>
+      <p>Per-weapon data needed to drive bloom:</p>
+      <table>
+        <thead><tr><th>Parameter</th><th>What it controls</th></tr></thead>
+        <tbody>
+          <tr><td><code>BaseSpreadAngle</code></td><td>Accuracy cone at zero bloom (best case).</td></tr>
+          <tr><td><code>MaxSpreadAngle</code></td><td>Accuracy cone at full bloom (worst case).</td></tr>
+          <tr><td><code>BloomPerShot</code></td><td>Bloom added per shot fired (0–1 scale).</td></tr>
+          <tr><td><code>BloomDecayRate</code></td><td>Bloom recovered per second while not firing.</td></tr>
+          <tr><td><code>BloomDecayDelay</code></td><td>Grace period after the last shot before decay starts.</td></tr>
+          <tr><td><code>IntendedCadence</code></td><td>For semi-auto/precision weapons — firing faster than this adds an extra bloom penalty on top of the normal per-shot amount.</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li>Live bloom (0–1) must drive both the actual random spread used to resolve a shot <em>and</em> the reticle's visual expansion, from the same source number — if those are ever computed separately, the reticle can lie about the gun's real accuracy.</li>
+        <li>Zoom is a separate per-weapon flag from generic aim, so giving a weapon a scope can't accidentally also grant it better accuracy.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="weapons">
+    <h2>Weapons should be tuning knobs, not one-off systems</h2>
+    <p>
+      If we want a favorite gun to stay useful for most of the game, weapons can't each be their
+      own special, hand-built system — they should mostly be the same gun underneath, just tuned
+      differently: how fast it fires, how its accuracy behaves, how much damage it does, how far
+      it reaches, whether it zooms. Ammo should work the same way across guns too, rather than
+      each weapon having its own separate reload rules, so running low nudges you toward
+      switching weapons instead of forcing it.
+    </p>
+    <p>
+      One thing I can't decide myself: how many guns you can carry at once. Two is the classic
+      Halo answer, but design hasn't locked that in yet, so I'm building things so that number
+      can change later without a rebuild.
+    </p>
+
+    <div class="impl">
+      <div class="impl-label">Implementation notes</div>
+      <ul>
+        <li>Shared weapon base class, differentiated by data (fire mode, the bloom table above, damage, range falloff, zoom flag) rather than per-weapon custom firing code.</li>
+        <li>Shared ammo-pool/pickup model rather than bespoke per-weapon reload logic.</li>
+        <li>Weapon-holder component built with a <strong>configurable</strong> carry capacity (not hardcoded to 2), since the carry limit is still undecided.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="enemies">
+    <h2>Enemies should read at a glance, not just look different</h2>
+    <p>
+      The enemies are meant to be machines, not people, in a bunch of different shapes and sizes
+      — and the player should be able to tell what they're dealing with instantly, the same way
+      you can immediately clock an Elite versus a Grunt in Halo. That kind of instant read
+      doesn't come from one generic enemy reskinned to look different — a floating drone and a
+      four-legged war machine shouldn't move or behave the same way underneath. So rather than
+      one catch-all enemy type with special cases bolted on over time, enemies should be built
+      from interchangeable pieces — how they move, how they attack, what role they play in a
+      fight — that get mixed and matched per enemy type.
+    </p>
+
+    <div class="impl">
+      <div class="impl-label">Implementation notes</div>
+      <ul>
+        <li>The template already has <code>ShooterNPC</code> / <code>ShooterAIController</code> / <code>ShooterNPCSpawner</code> built on StateTree (<code>Source/ProjectBopis/Variant_Shooter/AI/</code>) — a reasonable foundation, but currently a single class rather than a composable one.</li>
+        <li>Needs an archetype layer on top: movement type, attack behavior, and battlefield role (grunt / elite / support) as data-driven, combinable pieces, instead of one class accumulating <code>if (Type == Hover)</code>-style branches over time.</li>
+        <li>Per-archetype StateTree assets are a more natural fit than one shared tree with branching conditions for every chassis.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="levels">
+    <h2>What the level philosophy asks of the code</h2>
+    <p>
+      This part is mostly a level-design job, not a code job — a room's shape is what makes a
+      shotgun and a sniper rifle both work in the same space without needing separate paths for
+      each. But it does put one constraint on the code: the system that decides where enemies
+      spawn and when new waves trigger can't assume anything about a room's layout — no
+      hardcoded idea of "the sniper lane" or "the flank route" — because the whole point is that
+      the <em>same</em> room supports different playstyles. Practically, that means spawn points
+      and encounter pacing should be data that whoever builds a level places by hand, using a
+      shared tool, rather than assumptions baked into the game code itself.
+    </p>
+  </section>
+
+  <section id="narrative">
+    <h2>Narrative surface area stays small, on purpose</h2>
+    <p>
+      There are no dialogue choices and no voiced opinions from the main character, which
+      actually makes my job easier — no branching conversation system to build, nothing to track
+      about what the player "said," no save data for choices that were never made. The story
+      gets told one direction only, through other characters, cutscenes, and things you notice
+      in the world. Unless that changes, I'm not building any kind of conversation system.
+    </p>
+  </section>
+
+  <section id="state">
+    <h2>Where the codebase actually is right now</h2>
+    <p>
+      Right now the project is still Epic's out-of-the-box FPS template, with both a Shooter and
+      a Horror variant included. None of the systems above exist yet. The current weapon code is
+      still running on the template's stock aim-and-fire behavior, which I haven't checked yet —
+      templates like this commonly make aiming down sights more accurate by default, which would
+      directly break the "no aim bonus" rule if it's happening here. The Horror variant doesn't
+      have an obvious place in a cyberpunk sci-fi shooter as currently planned; I'm leaving it
+      alone rather than deleting it, in case it turns out to be useful later, but right now it's
+      just sitting there unused.
+    </p>
+  </section>
+
+  <section id="backlog">
+    <h2>Engineering Backlog</h2>
+    <ol class="backlog">
+      <li>Check <code>ShooterWeapon</code> / <code>ShooterWeaponHolder</code> for template aim-accuracy behavior and remove it.</li>
+      <li>Build the bloom model above as a reusable weapon component, single source of truth for both shot resolution and reticle UI.</li>
+      <li>Reticle UI that reacts to live bloom + aim/zoom state.</li>
+      <li>Zoom as an independent per-weapon flag, not tied to the generic aim input.</li>
+      <li>Archetype layer on top of <code>ShooterNPC</code>/<code>ShooterAIController</code> for enemy chassis variety.</li>
+      <li>Revisit the Horror variant's fate once tone is confirmed.</li>
+    </ol>
+  </section>
+
+  <section id="changelog">
+    <h2>Changelog</h2>
+    <ul>
+      <li>2026-08-09 — Initial skeleton created.</li>
+      <li>2026-08-09 — Rewritten against locked canon from <code>Lore_And_Design_Notes.md</code>; added combat/bloom implementation spec and engineering backlog.</li>
+      <li>2026-08-09 — Converted to local HTML artifact, rendered from the Markdown source.</li>
+      <li>2026-08-09 — Reworded in full as an original implementation-design document, not a restructured summary of the lore notes.</li>
+      <li>2026-08-09 — Rewritten again to separate plain-English explanations from technical jargon, which is now confined to "Implementation notes" blocks.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Local-only file — not published or synced anywhere outside this machine. Source of truth for content: <code>GameDesignDocument.md</code> (same folder). Regenerate this HTML when that file changes.
+  </footer>
+</main>
+
+</body>
+</html>
