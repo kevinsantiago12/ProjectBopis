@@ -12,6 +12,90 @@
 
 ---
 
+## 2026-08-09 (5)
+**Summary:** Phase 1 (weapon foundation) built out almost entirely, working
+through `Documentation/ProjectPlan.md` checklist item by item with the user
+typing all C++ themselves (learning C++, coming from C#).
+
+**Done — all compiling clean:**
+- `AWeaponBase` (`Source/ProjectBopis/Weapons/WeaponBase.h/.cpp`): actor
+  with a `WeaponMesh` component and data-driven tuning properties
+  (`EWeaponFireMode FireMode`, `BaseDamage`, `MaxRange`, `bHasZoom`), plus
+  `Fire(TraceStart, TraceDirection)` — a hitscan `LineTraceSingleByChannel`
+  out to `MaxRange` that dispatches `UGameplayStatics::ApplyPointDamage` on
+  a hit.
+- `UWeaponHolderComponent` (`Source/ProjectBopis/Weapons/WeaponHolderComponent.h/.cpp`):
+  `AddWeapon`/`EquipWeapon` with a configurable `MaxCarriedWeapons` (default
+  2), equips by attaching the weapon to a hand socket
+  (`WeaponAttachSocketName`, currently an unverified guess of `"hand_r"`)
+  on the character's `FirstPersonMesh` and tagging its mesh
+  `FirstPersonPrimitiveType::FirstPerson` so it renders through the same
+  path as the arms. `FireEquippedWeapon()` sources a trace from the
+  character's first-person camera. `StartingWeaponClass`
+  (`TSubclassOf<AWeaponBase>`) spawns/adds a starting weapon in
+  `BeginPlay`, as a temporary test-only stand-in for a real pickup system.
+- Wired onto `AProjectBopisCharacter`: `WeaponHolder` member + getter,
+  `FireAction` input property, `DoFire()` handler bound via Enhanced Input
+  (`ETriggerEvent::Started`, i.e. one shot per click for now — revisit once
+  `FireMode` actually matters, in the bloom phase).
+- **Deliberately not built yet:** any `Health`/`TakeDamage` handling.
+  `ApplyPointDamage` correctly dispatches, but nothing consumes it — there's
+  nothing to shoot yet. That's Phase 4's job (enemy archetype foundation).
+
+**Not yet done:** the actual PIE playtest. C++ side is ready; remaining
+work is pure editor/content (Input Action asset, mapping context entry,
+`BP_TestWeapon` Blueprint, assigning `StartingWeaponClass`, verifying the
+hand socket name, playtesting) — outlined step-by-step in
+`Documentation/ProjectPlan.md`'s Phase 1 last item. User is continuing this
+next session.
+
+**Collaboration note for future sessions:** user writes all C++ by hand
+(learning C++, C# background) — present code in chat, don't write
+`Source/**` files directly. A live task checklist (TaskCreate/TaskUpdate)
+mirrors `ProjectPlan.md`'s phases; re-show it in chat after every completed
+item without being asked. See memory for full detail.
+
+---
+
+## 2026-08-09 (4)
+**Summary:** Decided to remove both template variants and start gameplay
+systems from scratch; git set up as a safety net; created a phased project
+plan.
+
+**Done:**
+- Initialized git (with a `.gitignore` for `Binaries/`, `Intermediate/`,
+  `DerivedDataCache/`, `Saved/`, `.vs/`, generated `.sln`/`.slnx`) and
+  committed a baseline snapshot of the original template state before
+  making any destructive changes.
+- Removed `Source/ProjectBopis/Variant_Horror/` and
+  `Source/ProjectBopis/Variant_Shooter/` entirely.
+- Confirmed the project's default map/game mode already point at the base
+  `FirstPerson` variant (`Config/DefaultEngine.ini`), so removing the two
+  variants doesn't break project startup.
+- **Blocked:** `Content/Variant_Horror/` and `Content/Variant_Shooter/`
+  could not be deleted from outside the editor — `UnrealEditor.exe` was
+  running and had the `.uasset`/`.umap` files locked ("Device or resource
+  busy"). Needs to be deleted from inside the editor's Content Browser (or
+  the editor closed so it can be removed externally).
+- Updated `Design Document/GameDesignDocument.md` (and matching `.html`) to
+  reflect that the systems it specs (weapons, enemy AI) will be built fresh
+  rather than extended from the now-deleted template classes; its
+  Engineering Backlog section now points to the new plan instead of
+  duplicating it.
+- Created `Documentation/ProjectPlan.md` — an ordered, phased build
+  sequence (Phase 0 ground-clearing through Phase 5 first playable arena),
+  meant to be worked through incrementally, one item at a time.
+- Updated `CLAUDE.md` to point future sessions at the Project Plan as the
+  actual task list.
+
+**Open Questions / Next Steps:**
+1. Delete `Content/Variant_Horror/` and `Content/Variant_Shooter/` (from
+   inside the editor, once it's available) — Project Plan Phase 0.
+2. Verify the project compiles/opens cleanly after that deletion.
+3. Start Project Plan Phase 1 (weapon foundation).
+
+---
+
 ## 2026-08-09 (3)
 **Summary:** User added an Unreal MCP plugin to the project.
 

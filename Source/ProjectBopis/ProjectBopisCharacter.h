@@ -11,6 +11,7 @@ class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputAction;
+class UWeaponHolderComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -31,6 +32,10 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
+	/** Handles carrying/switching weapons */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UWeaponHolderComponent* WeaponHolder;
+
 protected:
 
 	/** Jump Input Action */
@@ -48,6 +53,10 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
+
+	/** Fire Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* FireAction;
 	
 public:
 	AProjectBopisCharacter();
@@ -76,6 +85,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
+	/**Handle fire inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoFire();
+
 protected:
 
 	/** Set up input action bindings */
@@ -89,6 +102,9 @@ public:
 
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	/**  Returns the weapon holder component **/
+	UWeaponHolderComponent* GetWeaponHolder() const { return WeaponHolder; }
 
 };
 

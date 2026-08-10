@@ -112,16 +112,16 @@ how they attack, what role they play in a fight — that get mixed and
 matched per enemy type.
 
 ### Implementation notes
-- The template already has `ShooterNPC` / `ShooterAIController` /
-  `ShooterNPCSpawner` built on StateTree
-  (`Source/ProjectBopis/Variant_Shooter/AI/`) — a reasonable foundation,
-  but currently a single class rather than a composable one.
-- Needs an archetype layer on top: movement type, attack behavior, and
+- The template's `ShooterNPC`/`ShooterAIController` classes were removed
+  along with the rest of `Variant_Shooter` — this gets built fresh rather
+  than extended from that code.
+- New base synthetic enemy actor, with movement type, attack behavior, and
   battlefield role (grunt / elite / support) as data-driven, combinable
   pieces, instead of one class accumulating `if (Type == Hover)`-style
   branches over time.
-- Per-archetype StateTree assets are a more natural fit than one shared
-  tree with branching conditions for every chassis.
+- Per-archetype StateTree assets (the StateTree plugin is already enabled
+  in the project) are a more natural fit than one shared tree with
+  branching conditions for every chassis.
 
 ## What the level philosophy asks of the code
 
@@ -148,24 +148,40 @@ system.
 
 ## Where the codebase actually is right now
 
-Right now the project is still Epic's out-of-the-box FPS template, with
-both a Shooter and a Horror variant included. None of the systems above
-exist yet. The current weapon code is still running on the template's
-stock aim-and-fire behavior, which I haven't checked yet — templates like
-this commonly make aiming down sights more accurate by default, which
-would directly break the "no aim bonus" rule if it's happening here. The
-Horror variant doesn't have an obvious place in a cyberpunk sci-fi shooter
-as currently planned; I'm leaving it alone rather than deleting it, in
-case it turns out to be useful later, but right now it's just sitting
-there unused.
+Both the Shooter and Horror template variants are being removed — decided
+2026-08-09, we're building the gameplay systems from scratch rather than
+adapting the template's versions. That means the weapon/AI classes this
+document originally planned to audit and extend (`ShooterWeapon`,
+`ShooterNPC`, etc.) no longer exist; the systems below get built fresh
+against this doc's spec instead of grown out of template code. What
+remains is the base `FirstPerson` scaffolding (character/game
+mode/controller), which is still the project's default and still works.
+See `Documentation/ProjectPlan.md` for the ordered, phase-by-phase build
+sequence — this section just tracks current state, the plan tracks the
+path.
+
+As of 2026-08-09, Phase 1 (weapon foundation) is mostly built: `AWeaponBase`
+(data-driven fire mode/damage/range/zoom, a hitscan `Fire()` that dispatches
+real damage via `UGameplayStatics::ApplyPointDamage`) and
+`UWeaponHolderComponent` (carry/equip, hand-socket attachment onto
+`FirstPersonMesh`, camera-sourced firing) both exist and compile, wired
+onto the base character. No accuracy model yet — that's Phase 2. Two
+things worth flagging for whoever picks this up next:
+- Damage correctly dispatches on hit, but nothing has a `Health`
+  property or overrides `TakeDamage` yet, so it's currently inert —
+  intentional, since Phase 4 (enemies) is what's meant to consume it.
+- The weapon-holder's `StartingWeaponClass` (spawns a weapon at
+  `BeginPlay`) is a deliberate placeholder for testing, not the intended
+  final weapon-acquisition design — no pickup system exists yet.
 
 ## Engineering backlog
-1. Check `ShooterWeapon` / `ShooterWeaponHolder` for template aim-accuracy behavior and remove it.
-2. Build the bloom model above as a reusable weapon component, single source of truth for both shot resolution and reticle UI.
-3. Reticle UI that reacts to live bloom + aim/zoom state.
-4. Zoom as an independent per-weapon flag, not tied to the generic aim input.
-5. Archetype layer on top of `ShooterNPC`/`ShooterAIController` for enemy chassis variety.
-6. Revisit the Horror variant's fate once tone is confirmed.
+Superseded by `Documentation/ProjectPlan.md`, which breaks this same work
+into ordered phases meant to be tackled incrementally. Keeping a short
+pointer here rather than a duplicate list:
+1. Weapon foundation + bloom accuracy model (Project Plan Phases 1-2).
+2. Reticle/aim/zoom UI (Phase 3).
+3. Enemy archetype foundation (Phase 4).
+4. First playable arena to validate the combat loop (Phase 5).
 
 ## Changelog
 - 2026-08-09 — Initial skeleton created.
@@ -173,3 +189,5 @@ there unused.
 - 2026-08-09 — Converted to local HTML artifact, rendered from the Markdown source.
 - 2026-08-09 — Reworded in full as an original implementation-design document, not a restructured summary of the lore notes.
 - 2026-08-09 — Rewritten again to separate plain-English explanations from technical jargon, which is now confined to "Implementation notes" blocks.
+- 2026-08-09 — Both template variants removed (starting gameplay systems from scratch); engineering backlog superseded by `Documentation/ProjectPlan.md`.
+- 2026-08-09 — Phase 1 weapon foundation (`WeaponBase`, `WeaponHolderComponent`, hitscan fire, input wiring) mostly implemented; noted as inert until Phase 4 adds a damage-consuming enemy.
