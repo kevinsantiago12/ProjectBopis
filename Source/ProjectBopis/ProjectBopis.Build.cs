@@ -24,13 +24,7 @@ public class ProjectBopis : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
-			"ProjectBopis",
-			"ProjectBopis/Variant_Horror",
-			"ProjectBopis/Variant_Horror/UI",
-			"ProjectBopis/Variant_Shooter",
-			"ProjectBopis/Variant_Shooter/AI",
-			"ProjectBopis/Variant_Shooter/UI",
-			"ProjectBopis/Variant_Shooter/Weapons"
+			"ProjectBopis"
 		});
 
 		// Uncomment if you are using Slate UI

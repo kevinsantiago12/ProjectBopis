@@ -48,6 +48,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	FName WeaponAttachSocketName = TEXT("hand_r");
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	TSubclassOf<AWeaponBase> StartingWeaponClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	float CrosshairViewportPositionY = 0.5f;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

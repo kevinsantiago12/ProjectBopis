@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Weapons/WeaponHolderComponent.h"
 #include "ProjectBopisCharacter.h"
+#include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,6 +10,9 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ProjectBopis.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/ReticleWidget.h"
+#include "Weapons/WeaponBase.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
@@ -46,6 +49,21 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	GetCharacterMovement()->AirControl = 0.5f;
 }
 
+void AProjectBopisCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	DefaultFOV = FirstPersonCameraComponent->FieldOfView;
+
+	if (IsLocallyControlled() && ReticleWidgetClass)
+	{
+		if (UReticleWidget* ReticleWidget = CreateWidget<UReticleWidget>(GetWorld(), ReticleWidgetClass))
+		{
+			ReticleWidget->AddToViewport();
+		}
+	}
+}
+
 void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {	
 	// Set up action bindings
@@ -65,6 +83,10 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		// Looking/Aiming
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
+
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AProjectBopisCharacter::DoAimStart);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AProjectBopisCharacter::DoAimEnd);
+
 	}
 	else
 	{
@@ -131,4 +153,26 @@ void AProjectBopisCharacter::DoFire()
 	{
 		WeaponHolder->FireEquippedWeapon();
 	}
+}
+
+void AProjectBopisCharacter::DoAimStart()
+{
+	bIsAiming = true;
+
+	if (WeaponHolder)
+	{
+		if (AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
+		{
+			if (EquippedWeapon->HasZoom())
+			{
+				FirstPersonCameraComponent->SetFieldOfView(EquippedWeapon->GetZoomedFOV());
+			}
+		}
+	}
+}
+
+void AProjectBopisCharacter::DoAimEnd()
+{
+	bIsAiming = false;
+	FirstPersonCameraComponent->SetFieldOfView(DefaultFOV);
 }

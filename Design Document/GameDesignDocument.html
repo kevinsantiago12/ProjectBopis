@@ -454,18 +454,74 @@
       this section just tracks current state, the plan tracks the path.
     </p>
     <p>
-      As of 2026-08-09, Phase 1 (weapon foundation) is mostly built: <code>AWeaponBase</code>
-      (data-driven fire mode/damage/range/zoom, a hitscan <code>Fire()</code> that dispatches
-      real damage via <code>UGameplayStatics::ApplyPointDamage</code>) and
-      <code>UWeaponHolderComponent</code> (carry/equip, hand-socket attachment onto
-      <code>FirstPersonMesh</code>, camera-sourced firing) both exist and compile, wired onto
-      the base character. No accuracy model yet — that's Phase 2. Two things worth flagging for
-      whoever picks this up next:
+      As of 2026-08-11, Phase 1 (weapon foundation) is <strong>fully complete and tested working
+      in PIE</strong>: <code>AWeaponBase</code> (data-driven fire mode/damage/range/zoom, a
+      hitscan <code>Fire()</code> that dispatches real damage via
+      <code>UGameplayStatics::ApplyPointDamage</code>) and <code>UWeaponHolderComponent</code>
+      (carry/equip, hand-socket attachment onto <code>FirstPersonMesh</code>, screen-accurate
+      firing) both exist, compile, and work end to end. No accuracy model yet — that's Phase 2,
+      in progress. Things worth flagging for whoever picks this up next:
     </p>
     <ul>
       <li>Damage correctly dispatches on hit, but nothing has a <code>Health</code> property or overrides <code>TakeDamage</code> yet, so it's currently inert — intentional, since Phase 4 (enemies) is what's meant to consume it.</li>
       <li>The weapon-holder's <code>StartingWeaponClass</code> (spawns a weapon at <code>BeginPlay</code>) is a deliberate placeholder for testing, not the intended final weapon-acquisition design — no pickup system exists yet.</li>
+      <li>A marketplace weapon pack, <code>Content/SciFiWeapDark/</code> (7 animated weapons — Pistol/AssaultRifle/Shotgun/SniperRifle/RocketLauncher/GrenadeLauncher/Knife — with sounds, FX, pickup Blueprints), was added and is now the source for weapon meshes (currently <code>Darkness_Pistol</code>, unanimated for now). Kept in its own top-level folder, untouched — moving/renaming assets inside a pack this size risks breaking its internal cross-references, so it's treated as read-only vendor content. This is also why <code>WeaponBase::WeaponMesh</code> is a <code>USkeletalMeshComponent</code> now, not <code>UStaticMeshComponent</code>.</li>
+      <li>The weapon's trace source is <strong>not</strong> simple camera-forward. Per a deliberate Halo-accuracy request, <code>WeaponHolderComponent</code> deprojects a specific screen-space point (<code>CrosshairViewportPositionY = 0.667</code>, i.e. horizontal center, 2/3 down the viewport — matching Halo's actual reticle position) via <code>APlayerController::DeprojectScreenPositionToWorld</code>, rather than tracing from the raw camera transform. This is the intended permanent behavior, not a placeholder.</li>
     </ul>
+    <p>
+      As of 2026-08-12, Phase 2 (bloom/accuracy) is also <strong>fully complete</strong>:
+      <code>WeaponBase</code> now has real bloom state (<code>CurrentBloom</code>/<code>TimeSinceLastShot</code>),
+      spread driven by <code>FMath::Lerp</code>/<code>FMath::VRandCone</code>, decay, and a cadence
+      penalty for firing faster than a weapon's intended pace — matching the combat spec in full,
+      not just planned. Phase 3 (reticle/aim/zoom UI) is underway: <code>UReticleWidget</code>
+      exists as the C++ foundation, and a second marketplace pack, <code>Content/CleanFlatIcons/</code>
+      (generic icon set, ~17,800 files), was added for crosshair art — same "leave vendor content
+      in its own folder, untouched" rule as <code>SciFiWeapDark</code>. The reticle is confirmed
+      showing on screen in PIE, and aim input/state (<code>AProjectBopisCharacter::IsAiming()</code>)
+      is wired up.
+    </p>
+    <p>
+      As of 2026-08-17, Phase 3 is <strong>fully complete</strong>: zoom FOV gating
+      (<code>WeaponBase::HasZoom()</code>/<code>GetZoomedFOV()</code>, camera <code>FieldOfView</code> —
+      not <code>FirstPersonFieldOfView</code>, a separate property that only governs the
+      arms/weapon rendering pass) and the sanity check both closed out, including a real fix —
+      zoom and the Halo-accurate off-center trace source (<code>CrosshairViewportPositionY = 0.667</code>)
+      permanently disagreed on where "center" was once FOV actually changed, since FOV always
+      narrows around the camera's true optical center. Simplified back to <code>0.5f</code>
+      (true center) for both hip-fire and zoom rather than building dynamic per-state
+      repositioning — a deliberate scope call. Phase 4 fire feedback (per-weapon
+      <code>FireSound</code>/<code>MuzzleFlash</code>/<code>MuzzleSocketName</code>, plus a
+      <code>bUseAnimationDrivenFeedback</code> flag for once real fire animations exist) is
+      also complete; the hit-impact decal step is in progress using a newly imported pack,
+      <code>Content/UWC_Bullet_Holes/</code> (real per-surface decal materials).
+    </p>
+    <div class="callout">
+      <strong>Note:</strong> the Markdown source (<code>GameDesignDocument.md</code>) picked up a
+      substantial new "Weapon tech" section and a projectile-weapon reversal from a separate
+      session working on this project concurrently (dated 2026-08-17) — that content isn't yet
+      mirrored into this HTML page. Ask for a full resync if you want this page caught up.
+    </div>
+    <p>
+      <strong>Scope decision (2026-08-12):</strong> enemies (old Phase 4) are deliberately deferred
+      behind a new phase focused on getting three weapons fully realized first — sound, muzzle
+      flash, hit decals, a real projectile weapon (the mid-range battle rifle; pistol and
+      close-range rifle stay hitscan), and proper POV arms animation. See
+      <code>Documentation/ProjectPlan.md</code> Phase 4 for the full breakdown. Animation scope
+      was briefly considered for <em>both</em> <code>FirstPersonMesh</code> (POV) and
+      <code>Mesh</code> (the body — how any other actor would see the player), reasoning that
+      keeping both functional now would avoid retrofitting for spectate/co-op later — but that
+      was walked back to just the arms; animating the body is deferred until spectate/co-op is
+      actually being built, not done preemptively.
+    </p>
+    <div class="callout">
+      <strong>Engineering gotcha worth knowing before touching native classes again:</strong>
+      Unreal's Live Coding cannot safely handle a class member's <em>type</em> changing (confirmed
+      2026-08-12, via the engine's own log warning after <code>WeaponMesh</code> went from
+      <code>UStaticMeshComponent</code> to <code>USkeletalMeshComponent</code>) — it silently
+      corrupts any Blueprint built on that class rather than failing loudly. Any change to an
+      existing member's type needs a full editor restart + Rebuild Solution, never a Live Coding
+      patch. Full detail in <code>Documentation/ProjectPlan.md</code>'s "Gotchas" section.
+    </div>
   </section>
 
   <section id="backlog">
@@ -493,6 +549,9 @@
       <li>2026-08-09 — Rewritten again to separate plain-English explanations from technical jargon, which is now confined to "Implementation notes" blocks.</li>
       <li>2026-08-09 — Both template variants removed (starting gameplay systems from scratch); engineering backlog superseded by <code>Documentation/ProjectPlan.md</code>.</li>
       <li>2026-08-09 — Phase 1 weapon foundation (<code>WeaponBase</code>, <code>WeaponHolderComponent</code>, hitscan fire, input wiring) mostly implemented; noted as inert until Phase 4 adds a damage-consuming enemy.</li>
+      <li>2026-08-11 — Phase 1 fully complete and tested in PIE. Integrated the <code>SciFiWeapDark</code> marketplace weapon pack (weapon mesh is now skeletal, not static). Trace source reworked to deproject a Halo-accurate screen-space point rather than using raw camera-forward. Phase 2 (bloom) started.</li>
+      <li>2026-08-12 — Phase 2 (bloom/accuracy) fully complete and matches the combat spec. Diagnosed and documented a Live Coding data-type-change gotcha. Phase 3 (reticle UI) started; added the <code>CleanFlatIcons</code> marketplace pack for crosshair art.</li>
+      <li>2026-08-12 — Reticle confirmed visible in PIE; aim input/state tracking added and compiled.</li>
     </ul>
   </section>
 

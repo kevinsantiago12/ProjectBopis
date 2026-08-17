@@ -98,6 +98,44 @@ building things so that number can change later without a rebuild.
 - Weapon-holder component built with a **configurable** carry capacity
   (not hardcoded to 2), since the carry limit is still undecided.
 
+## Weapon tech: why one gun is a real projectile, not hitscan
+
+Three weapons, one of them a real travel-time projectile instead of an
+instant hitscan trace — the design reason is dodgeability. A projectile is
+only interesting if the player can actually see it coming and juke it, and
+that only matters at **close range**, where an enemy would otherwise have
+zero reaction window against an instant-hit weapon. So it's the
+close-range weapon that gets the slow, visible round; the mid-range battle
+rifle stays hitscan, because at its intended engagement distance a
+perceptible travel time would just read as an aiming penalty, not a
+dodge-skill test.
+
+The in-world justification is electromagnetic, not plasma — coilguns
+accelerate a solid slug through a sequence of magnetic coil stages, so
+muzzle velocity scales with how many stages/how much barrel length the
+weapon has. A compact close-range weapon simply doesn't have room for
+enough stages to reach hitscan-equivalent speeds; the mid-range battle
+rifle's longer barrel does. That's a physical reason for the split, not an
+arbitrary gameplay carve-out, and it stays consistent if more coilgun-type
+weapons get added later (short gun → slow, long gun → fast).
+
+To avoid "slow" reading as "weak," the close-range weapon's round is a
+saboted, pre-scored slug that fragments on impact — it trades penetration
+for a burst of shrapnel, so a hit that's slower to land also dumps more
+damage than a clean kinetic punch-through would. That gives it a real
+niche instead of just being an inferior hitscan gun: strongest against
+close/grouped/exposed targets, weaker against hard cover or armor plating,
+which is where the hitscan pistol and battle rifle stay relevant instead.
+
+### Implementation notes
+- `AProjectileBase` (real movement + collision + on-hit damage) belongs to
+  the **close-range weapon**, not the battle rifle. Pistol and battle
+  rifle stay hitscan.
+- On-hit behavior for the close-range projectile should express the
+  fragmentation as gameplay, not just visual flavor — e.g. a small-radius
+  damage burst / multi-trace spread centered on the impact point, rather
+  than a single point-damage hit like the hitscan weapons use.
+
 ## Enemies should read at a glance, not just look different
 
 The enemies are meant to be machines, not people, in a bunch of different
@@ -160,19 +198,87 @@ See `Documentation/ProjectPlan.md` for the ordered, phase-by-phase build
 sequence — this section just tracks current state, the plan tracks the
 path.
 
-As of 2026-08-09, Phase 1 (weapon foundation) is mostly built: `AWeaponBase`
-(data-driven fire mode/damage/range/zoom, a hitscan `Fire()` that dispatches
-real damage via `UGameplayStatics::ApplyPointDamage`) and
-`UWeaponHolderComponent` (carry/equip, hand-socket attachment onto
-`FirstPersonMesh`, camera-sourced firing) both exist and compile, wired
-onto the base character. No accuracy model yet — that's Phase 2. Two
-things worth flagging for whoever picks this up next:
+As of 2026-08-11, Phase 1 (weapon foundation) is **fully complete and
+tested working in PIE**: `AWeaponBase` (data-driven fire mode/damage/range/
+zoom, a hitscan `Fire()` that dispatches real damage via
+`UGameplayStatics::ApplyPointDamage`) and `UWeaponHolderComponent`
+(carry/equip, hand-socket attachment onto `FirstPersonMesh`, screen-accurate
+firing) both exist, compile, and work end to end. No accuracy model yet —
+that's Phase 2, in progress. Things worth flagging for whoever picks this
+up next:
 - Damage correctly dispatches on hit, but nothing has a `Health`
   property or overrides `TakeDamage` yet, so it's currently inert —
   intentional, since Phase 4 (enemies) is what's meant to consume it.
 - The weapon-holder's `StartingWeaponClass` (spawns a weapon at
   `BeginPlay`) is a deliberate placeholder for testing, not the intended
   final weapon-acquisition design — no pickup system exists yet.
+- A marketplace weapon pack, `Content/SciFiWeapDark/` (7 animated
+  weapons — Pistol/AssaultRifle/Shotgun/SniperRifle/RocketLauncher/
+  GrenadeLauncher/Knife — with sounds, FX, pickup Blueprints), was added
+  and is now the source for weapon meshes (currently `Darkness_Pistol`,
+  unanimated for now). It's kept in its own top-level folder, untouched —
+  moving/renaming assets inside a pack this size risks breaking its
+  internal cross-references, so treat it as read-only vendor content and
+  reference it from our own Blueprints/data rather than reorganizing it.
+  This is also why `WeaponBase::WeaponMesh` is a `USkeletalMeshComponent`
+  now, not `UStaticMeshComponent` — needed to use the pack's animated
+  meshes.
+- The weapon's trace source is **not** simple camera-forward. Per a
+  deliberate Halo-accuracy request, `WeaponHolderComponent` deprojects a
+  specific screen-space point (`CrosshairViewportPositionY = 0.667`,
+  i.e. horizontal center, 2/3 down the viewport — matching Halo's actual
+  reticle position) via `APlayerController::DeprojectScreenPositionToWorld`,
+  rather than tracing from the raw camera transform. This is the
+  intended permanent behavior, not a placeholder.
+
+As of 2026-08-12, Phase 2 (bloom/accuracy) is also **fully complete**:
+`WeaponBase` now has real bloom state (`CurrentBloom`/`TimeSinceLastShot`),
+spread driven by `FMath::Lerp`/`FMath::VRandCone`, decay, and a cadence
+penalty for firing faster than a weapon's intended pace — matching the
+combat spec in full, not just planned. Phase 3 (reticle/aim/zoom UI) is
+underway: `UReticleWidget` exists as the C++ foundation, and a second
+marketplace pack, `Content/CleanFlatIcons/` (generic icon set, ~17,800
+files), was added for crosshair art — same "leave vendor content in its
+own folder, untouched" rule as `SciFiWeapDark`. The reticle is confirmed
+showing on screen in PIE, and aim input/state (`AProjectBopisCharacter::IsAiming()`)
+is wired up.
+
+As of 2026-08-17, Phase 3 is **fully complete**: zoom FOV gating
+(`WeaponBase::HasZoom()`/`GetZoomedFOV()`, camera `FieldOfView` — not
+`FirstPersonFieldOfView`, a separate property that only governs the
+arms/weapon rendering pass) and the sanity check both closed out, including
+a real fix — zoom and the Halo-accurate off-center trace source
+(`CrosshairViewportPositionY = 0.667`) permanently disagreed on where
+"center" was once FOV actually changed, since FOV always narrows around
+the camera's true optical center. Simplified back to `0.5f` (true center)
+for both hip-fire and zoom rather than building dynamic per-state
+repositioning — a deliberate scope call. Phase 4 fire feedback (per-weapon
+`FireSound`/`MuzzleFlash`/`MuzzleSocketName`, plus a `bUseAnimationDrivenFeedback`
+flag for once real fire animations exist) is also complete; the
+hit-impact decal step is in progress using a newly imported pack,
+`Content/UWC_Bullet_Holes/` (real per-surface decal materials).
+
+**Scope decision (2026-08-12):** enemies (old Phase 4) are deliberately
+deferred behind a new phase focused on getting three weapons fully
+realized first — sound, muzzle flash, hit decals, a real projectile
+weapon (the close-range rifle; pistol and battle rifle stay hitscan —
+reversed from the original 2026-08-12 call, see the "Weapon tech" section
+above for why), and proper POV arms animation. See `Documentation/ProjectPlan.md`
+Phase 4 for the full breakdown. Animation scope was briefly considered for
+*both* `FirstPersonMesh` (POV) and `Mesh` (the body — how any other actor
+would see the player), reasoning that keeping both functional now would
+avoid retrofitting for spectate/co-op later — but that was walked back to
+just the arms; animating the body is deferred until spectate/co-op is
+actually being built, not done preemptively.
+
+**Engineering gotcha worth knowing before touching native classes again:**
+Unreal's Live Coding cannot safely handle a class member's *type* changing
+(confirmed 2026-08-12, via the engine's own log warning after `WeaponMesh`
+went from `UStaticMeshComponent` to `USkeletalMeshComponent`) — it silently
+corrupts any Blueprint built on that class rather than failing loudly. Any
+change to an existing member's type needs a full editor restart + Rebuild
+Solution, never a Live Coding patch. Full detail in `Documentation/ProjectPlan.md`'s
+"Gotchas" section.
 
 ## Engineering backlog
 Superseded by `Documentation/ProjectPlan.md`, which breaks this same work
@@ -191,3 +297,7 @@ pointer here rather than a duplicate list:
 - 2026-08-09 — Rewritten again to separate plain-English explanations from technical jargon, which is now confined to "Implementation notes" blocks.
 - 2026-08-09 — Both template variants removed (starting gameplay systems from scratch); engineering backlog superseded by `Documentation/ProjectPlan.md`.
 - 2026-08-09 — Phase 1 weapon foundation (`WeaponBase`, `WeaponHolderComponent`, hitscan fire, input wiring) mostly implemented; noted as inert until Phase 4 adds a damage-consuming enemy.
+- 2026-08-11 — Phase 1 fully complete and tested in PIE. Integrated the `SciFiWeapDark` marketplace weapon pack (weapon mesh is now skeletal, not static). Trace source reworked to deproject a Halo-accurate screen-space point rather than using raw camera-forward. Phase 2 (bloom) started.
+- 2026-08-12 — Phase 2 (bloom/accuracy) fully complete and matches the combat spec. Diagnosed and documented a Live Coding data-type-change gotcha. Phase 3 (reticle UI) started; added the `CleanFlatIcons` marketplace pack for crosshair art.
+- 2026-08-12 — Reticle confirmed visible in PIE; aim input/state tracking added and compiled.
+- 2026-08-17 — Projectile-weapon assignment reversed: the close-range rifle is now the real-projectile weapon (electromagnetic coilgun, fragmenting round, dodgeable at close range by design); battle rifle and pistol stay hitscan. Added "Weapon tech" section explaining the coil-stage-length rule and fragmentation rationale.

@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values for this component's properties
 UWeaponHolderComponent::UWeaponHolderComponent()
@@ -23,6 +24,14 @@ UWeaponHolderComponent::UWeaponHolderComponent()
 void UWeaponHolderComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (StartingWeaponClass)
+	{
+		if (AWeaponBase* StartingWeapon = GetWorld()->SpawnActor<AWeaponBase>(StartingWeaponClass))
+		{
+			AddWeapon(StartingWeapon);
+		}
+	}
 
 	// ...
 	
@@ -76,7 +85,7 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 			EquippedWeapon->AttachToComponent(ArmsMesh,
 				FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
 
-			if (UStaticMeshComponent* MeshComp = EquippedWeapon->GetWeaponMesh())
+			if (USkeletalMeshComponent* MeshComp = EquippedWeapon->GetWeaponMesh())
 			{
 				MeshComp->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
 			}
@@ -93,12 +102,29 @@ void UWeaponHolderComponent::FireEquippedWeapon()
 		return;
 	}
 
-	if (AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner()))
+	AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner());
+	if (!OwningCharacter)
 	{
-		if (UCameraComponent* Camera = OwningCharacter->GetFirstPersonCameraComponent())
-		{
-			EquippedWeapon->Fire(Camera->GetComponentLocation(), Camera->GetForwardVector());
-		}
+		return;
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	int32 ViewportSizeX = 0;
+	int32 ViewportSizeY = 0;
+	PlayerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	const FVector2D CrosshairScreenPosition(ViewportSizeX * 0.5f, ViewportSizeY * CrosshairViewportPositionY);
+
+	FVector TraceStart;
+	FVector TraceDirection;
+	if (PlayerController->DeprojectScreenPositionToWorld(CrosshairScreenPosition.X, CrosshairScreenPosition.Y, TraceStart, TraceDirection))
+	{
+		EquippedWeapon->Fire(TraceStart, TraceDirection);
 	}
 }
 

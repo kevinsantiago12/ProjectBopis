@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "ProjectBopisCharacter.generated.h"
 
+class UReticleWidget;
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
@@ -36,6 +37,10 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UWeaponHolderComponent* WeaponHolder;
 
+	/** Widget class to spawn for the reticle HUD */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UReticleWidget> ReticleWidgetClass;
+
 protected:
 
 	/** Jump Input Action */
@@ -57,6 +62,10 @@ protected:
 	/** Fire Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FireAction;
+
+	/** Aim Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* AimAction;
 	
 public:
 	AProjectBopisCharacter();
@@ -89,11 +98,24 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoFire();
 
+	/** Handles aim-start inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoAimStart();
+
+	/** Handles aim-end inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoAimEnd();
+
+
 protected:
+
+	virtual void BeginPlay() override;
 
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	
+	bool bIsAiming = false;
+	float DefaultFOV = 0.0f;
 
 public:
 
@@ -105,6 +127,8 @@ public:
 
 	/**  Returns the weapon holder component **/
 	UWeaponHolderComponent* GetWeaponHolder() const { return WeaponHolder; }
+
+	bool IsAiming() const { return bIsAiming;  }
 
 };
 
