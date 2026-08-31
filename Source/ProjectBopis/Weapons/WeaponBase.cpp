@@ -7,6 +7,7 @@
 #include "Weapons/ProjectileBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
+#include "Particles/ParticleSystemComponent.h"
 
 
 static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
@@ -28,12 +29,27 @@ bool AWeaponBase::CanFire() const
 	return TimeSinceLastShot >= TimeBetweenShots;
 }
 
-bool AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
+EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
 {
 	if (!CanFire())
 	{
-		return false;
+		return EFireResult::RateLimited;
 	}
+
+	if (CurrentAmmoInMagazine <= 0)
+	{
+		if (DryFireSound)
+		{
+			UGameplayStatics::SpawnSoundAttached(DryFireSound, WeaponMesh, MuzzleSocketName);
+		}
+
+		// Reset the cadence clock so the click obeys TimeBetweenShots. Without this
+		// CanFire() stays true every frame and a held trigger machine-guns the click.
+		TimeSinceLastShot = 0.0f;
+		return EFireResult::Empty;
+	}
+
+	--CurrentAmmoInMagazine;
 
 	if (!bUseAnimationDrivenFeedback)
 	{
@@ -44,7 +60,14 @@ bool AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
 
 		if (MuzzleFlash)
 		{
-			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName);
+			// Tagged first-person to match WeaponMesh. Without this the flash renders
+			// through the normal world projection while the gun renders through the
+			// first-person one, so it appears detached from the barrel on screen.
+			if (UParticleSystemComponent* SpawnedFlash =
+				UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName))
+			{
+				SpawnedFlash->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
+			}
 		}
 	}
 	else if (FireAnimation)
@@ -75,7 +98,7 @@ bool AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
 	CurrentBloom = FMath::Min(1.0f, CurrentBloom + BloomToAdd);
 	TimeSinceLastShot = 0.0f;
 
-	return true;
+	return EFireResult::Fired;
 }
 
 void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection)
@@ -147,7 +170,11 @@ void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& Sprea
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Not in the constructor — MagazineSize is a per-Blueprint default and isn't
+	// applied yet at construction time.
+	CurrentAmmoInMagazine = MagazineSize;
+	CurrentReserveAmmo = StartingReserveAmmo;
 }
 
 // Called every frame
@@ -158,6 +185,8 @@ void AWeaponBase::Tick(float DeltaTime)
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, FString::Printf(TEXT("Bloom: %.2f"), CurrentBloom));
+		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, FString::Printf(TEXT("Ammo: %d / %d"),
+			CurrentAmmoInMagazine, CurrentReserveAmmo));
 	}
 
 	TimeSinceLastShot += DeltaTime;

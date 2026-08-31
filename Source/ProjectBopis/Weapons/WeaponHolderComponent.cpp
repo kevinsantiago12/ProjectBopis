@@ -122,23 +122,23 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 	}
 }
 
-bool UWeaponHolderComponent::FireEquippedWeapon()
+EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 {
 	if (!EquippedWeapon)
 	{
-		return false;
+		return EFireResult::NoWeapon;
 	}
 
 	AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner());
 	if (!OwningCharacter)
 	{
-		return false;
+		return EFireResult::NoWeapon;
 	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PlayerController)
 	{
-		return false;
+		return EFireResult::NoWeapon;
 	}
 
 	int32 ViewportSizeX = 0;
@@ -154,7 +154,7 @@ bool UWeaponHolderComponent::FireEquippedWeapon()
 		return EquippedWeapon->Fire(TraceStart, TraceDirection);
 	}
 
-	return false;
+	return EFireResult::NoWeapon;
 }
 
 

@@ -19,6 +19,26 @@ enum class EWeaponFireMode : uint8
 	Auto
 };
 
+/** How a weapon is held/animated. The weapon states only which it is — each animator
+    (player, and later each enemy archetype) owns its own clips for that type. */
+UENUM(BlueprintType)
+enum class EWeaponAnimType : uint8
+{
+	Pistol,
+	Rifle
+};
+
+/** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited
+    click must be silent, an empty one must not be. */
+UENUM(BlueprintType)
+enum class EFireResult : uint8
+{
+	Fired,
+	RateLimited,
+	Empty,
+	NoWeapon
+};
+
 UCLASS()
 class PROJECTBOPIS_API AWeaponBase : public AActor
 {
@@ -32,6 +52,11 @@ public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };
 
 	EWeaponFireMode GetFireMode() const { return FireMode; }
+
+	/** Which animation set the holder should use for this weapon. */
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	EWeaponAnimType GetAnimType() const { return AnimType; }
+
 	bool HasZoom() const { return bHasZoom; }
 	float GetZoomedFOV() const { return ZoomedFOV; }
 	bool UsesAnimationDrivenFeedback() const { return bUseAnimationDrivenFeedback; }
@@ -42,9 +67,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool CanFire() const;
 
-	/** Fires the weapon. Returns false if the shot was blocked by the fire-rate cap. */
+	/** Fires the weapon. See EFireResult for why a shot may not have happened. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	bool Fire(const FVector& TraceStart, const FVector& TraceDirection);
+	EFireResult Fire(const FVector& TraceStart, const FVector& TraceDirection);
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetAmmoInMagazine() const { return CurrentAmmoInMagazine; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetReserveAmmo() const { return CurrentReserveAmmo; }
 	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
 	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
 
@@ -59,6 +90,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponFireMode FireMode = EWeaponFireMode::Semi;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
 
 	/** Minimum seconds between shots — a hard mechanical cap; tapping faster than this does nothing.
 	    Should be shorter than IntendedTimeBetweenShots, which is the softer accuracy-based limit.
@@ -139,6 +173,26 @@ protected:
 	    Should be longer than TimeBetweenShots, which is the hard mechanical cap. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
 	float IntendedTimeBetweenShots = 0.167f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	int32 MagazineSize = 12;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	int32 StartingReserveAmmo = 60;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	int32 MaxReserveAmmo = 120;
+
+	/** Reserve never depletes — for AI and debugging. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	bool bInfiniteReserve = false;
+
+	/** Played when the trigger is pulled on an empty magazine. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	TObjectPtr<USoundBase> DryFireSound;
+
+	int32 CurrentAmmoInMagazine = 0;
+	int32 CurrentReserveAmmo = 0;
 
 	float CurrentBloom = 0.0f;
 	float TimeSinceLastShot = 0.0f;

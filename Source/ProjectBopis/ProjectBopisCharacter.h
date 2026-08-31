@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Weapons/WeaponBase.h"
 #include "ProjectBopisCharacter.generated.h"
 
 class UReticleWidget;
@@ -42,9 +43,16 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UReticleWidget> ReticleWidgetClass;
 
-	/** Montage played on FirstPersonMesh when firing, for weapons with animation-driven feedback */
+	/** Fire montages played on FirstPersonMesh, keyed by the equipped weapon's anim type.
+	    The character owns these rather than the weapon, since a montage is authored
+	    against one specific skeleton — this character's. */
 	UPROPERTY(EditAnywhere, Category = "Animation")
-	TObjectPtr<UAnimMontage> FireMontage;
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> FireMontages;
+
+	/** Bones hidden on the first person mesh — the camera sits inside its head, so that
+	    much is removed while arms, torso and legs stay visible when looking down. */
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	TArray<FName> HiddenFirstPersonBones;
 
 protected:
 
@@ -114,6 +122,9 @@ protected:
 	/** Handles aim-end inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoAimEnd();
+
+	/** Shows/hides the first person arms and the equipped weapon together, for scoped zoom. */
+	void SetFirstPersonVisibility(bool bVisible);
 
 
 protected:
