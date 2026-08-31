@@ -68,6 +68,28 @@ system quietly breaks back into "aiming is just better."
   | `BloomDecayDelay` | Grace period after the last shot before decay starts. |
   | `IntendedCadence` | For semi-auto/precision weapons — firing faster than this adds an extra bloom penalty on top of the normal per-shot amount. |
 
+- **Configured values (2026-08-30).** The table above is the *glossary*; the
+  numbers below are the first actual tuning pass, landed on `BP_Pistol`.
+  They are **Claude-proposed starting values, not design canon** — chosen to
+  be Halo: Reach-accurate in shape (a first shot from full rest is always
+  precise, so `BaseSpreadAngle` is `0°`, not just on the pistol but on every
+  planned weapon) and expected to move once there's something to shoot at.
+
+  | Field | Pistol (landed) | Close-range rifle (planned) | Battle rifle (planned) |
+  |---|---|---|---|
+  | `BaseDamage` | 25 | 15 (+ fragment burst) | 35 |
+  | `MaxRange` | 5000 | 2500 | 8000 |
+  | `BaseSpreadAngle` | 0° | 0° | 0° |
+  | `MaxSpreadAngle` | 3.0° | 6.0° | 4.0° |
+  | `BloomPerShot` | 0.12 | 0.08 | 0.18 |
+  | `BloomDecayRate` | 0.8 | 0.5 | 0.6 |
+  | `BloomDecayDelay` | 0.25 | 0.2 | 0.35 |
+  | `IntendedCadence` | 5 | 10 | 3.5 |
+  | `FireMode` | Semi | Auto | Semi |
+  | `bHasZoom` | false | false | true (`ZoomedFOV` ≈30) |
+  | `bIsProjectileWeapon` | false | true | false |
+  | `bUseAnimationDrivenFeedback` | true | false (until rifle anims exist) | false (until its anims exist) |
+
 - The live bloom value (0–1) must drive both the actual random spread used
   to resolve a shot *and* the reticle's visual expansion, from the same
   source number — if those two are ever computed separately, the reticle
@@ -258,6 +280,55 @@ flag for once real fire animations exist) is also complete; the
 hit-impact decal step is in progress using a newly imported pack,
 `Content/UWC_Bullet_Holes/` (real per-surface decal materials).
 
+As of 2026-08-18, hit decals, `AProjectileBase` (movement/collision/
+direct damage/fragmentation burst), and forking `WeaponBase` into
+`FireHitscan`/`FireProjectile` are all **complete and compiled** — the
+projectile weapon system works end to end, though no weapon is actually
+configured to use it yet. Along the way, `GetInstigatorController()`
+(called since Phase 1, always silently null) finally resolves correctly,
+since `WeaponHolderComponent::EquipWeapon` now sets `Instigator`/`Owner`
+on the equipped weapon. POV arms animation is underway using clips
+migrated from Epic's **Lyra Starter Game** sample (not the originally
+planned generic animset) — a basic Idle/Move state machine
+(`ABP_FirstPersonArms`) is confirmed working in PIE for the pistol; Fire/
+Reload montages and the rifle's equivalent setup are still open.
+
+**Architecture principle established 2026-08-18: animation feedback data belongs
+to the animator, not the weapon.** The first pass put `FireMontage` directly on
+`WeaponBase`, triggered by reaching into the owning character. That broke down
+under a simple test: an `UAnimMontage` is authored against one specific
+skeleton, so a single montage property on the weapon could only ever be
+correct for one skeleton — the moment the same weapon is fired by a
+different skeleton (a future AI enemy, most likely), it's wrong. Fixed by
+moving `FireMontage` onto `AProjectBopisCharacter` itself; `WeaponBase` now
+only exposes a pure bool (`UsesAnimationDrivenFeedback()`). The rule going
+forward: a weapon may say *whether* it wants animation-driven feedback, but
+never *what* to play — each animator (the player character now, each enemy
+archetype later) owns its own skeleton-appropriate montage/feedback lookup.
+
+As of 2026-08-30, the first-person rig itself changed shape, and a subtle
+rendering bug behind it got fixed. The camera and arms now attach the
+opposite way round from the FPS template: the camera hangs off the capsule,
+and `FirstPersonMesh` hangs off the *camera*, so the arms rigidly follow
+where you're looking instead of needing skeletal aim-offset blending to fake
+it. Separately, `WeaponBase` gained `GripLocationOffset`/`GripRotationOffset`
+— per-weapon corrections applied on equip, so a weapon whose mesh pivot
+doesn't line up with the hand socket can be nudged into place from data
+rather than by editing the mesh. Both defaults are zero; nothing is tuned
+yet.
+
+The bug worth remembering: the equipped pistol rendered in the wrong place,
+but only sometimes — correct on a fresh editor start, wrong after a
+Stop→Play in the same session, and different again between first-person and
+external views. The transform data was right the whole time. The cause was
+`FirstPersonPrimitiveType` being set by direct field assignment instead of
+through `SetFirstPersonPrimitiveType()`, which left the render proxy holding
+a stale transform. **General rule this establishes: any `UPROPERTY` that
+affects how something renders should be set through its paired setter, not
+assigned directly** — the setter is what invalidates render state. This
+matters most at runtime; construction-time assignment is harmless, since
+there's no proxy yet.
+
 **Scope decision (2026-08-12):** enemies (old Phase 4) are deliberately
 deferred behind a new phase focused on getting three weapons fully
 realized first — sound, muzzle flash, hit decals, a real projectile
@@ -284,10 +355,11 @@ Solution, never a Live Coding patch. Full detail in `Documentation/ProjectPlan.m
 Superseded by `Documentation/ProjectPlan.md`, which breaks this same work
 into ordered phases meant to be tackled incrementally. Keeping a short
 pointer here rather than a duplicate list:
-1. Weapon foundation + bloom accuracy model (Project Plan Phases 1-2).
-2. Reticle/aim/zoom UI (Phase 3).
-3. Enemy archetype foundation (Phase 4).
-4. First playable arena to validate the combat loop (Phase 5).
+1. Weapon foundation + bloom accuracy model (Project Plan Phases 1-2). ✅
+2. Reticle/aim/zoom UI (Phase 3). ✅
+3. Weapon content & feel — three fully-realized weapons (Phase 4, in progress).
+4. Enemy archetype foundation (Phase 5).
+5. First playable arena to validate the combat loop (Phase 6).
 
 ## Changelog
 - 2026-08-09 — Initial skeleton created.
@@ -301,3 +373,7 @@ pointer here rather than a duplicate list:
 - 2026-08-12 — Phase 2 (bloom/accuracy) fully complete and matches the combat spec. Diagnosed and documented a Live Coding data-type-change gotcha. Phase 3 (reticle UI) started; added the `CleanFlatIcons` marketplace pack for crosshair art.
 - 2026-08-12 — Reticle confirmed visible in PIE; aim input/state tracking added and compiled.
 - 2026-08-17 — Projectile-weapon assignment reversed: the close-range rifle is now the real-projectile weapon (electromagnetic coilgun, fragmenting round, dodgeable at close range by design); battle rifle and pistol stay hitscan. Added "Weapon tech" section explaining the coil-stage-length rule and fragmentation rationale.
+- 2026-08-18 — Projectile system complete end to end; animation-feedback ownership principle established (montage data belongs to the animator, not the weapon).
+- 2026-08-30 — First-person rig restructured (camera → capsule, arms → camera) and per-weapon grip offsets added. Documented the render-proxy/setter rule learned from the pistol-position bug.
+- 2026-08-30 — Doc sync: corrected the engineering backlog's stale phase numbers (enemies are Phase 5, the arena Phase 6, since the 2026-08-12 renumbering), and resynced the HTML twin, which was still missing the "Weapon tech" section and still claimed the battle rifle was the projectile weapon.
+- 2026-08-30 — First weapon tuning pass recorded: `BP_Pistol` configured and its stat values written into the Combat implementation notes, flagged as Claude-proposed starting values rather than design canon. Planned rifle columns included alongside for comparison.

@@ -12,6 +12,545 @@
 
 ---
 
+## 2026-08-30 (7)
+**Summary:** Big session. Fixed the weapon-position bug for real (twice —
+two genuinely different root causes), built a fire-rate system from
+scratch, implemented full-auto, and configured the close-range rifle
+end to end. First session using the `unreal-mcp` editor bridge, which
+changed what's possible — Blueprint creation/configuration now happens
+directly instead of via step-by-step editor instructions.
+
+**New capability: the `unreal-mcp` editor bridge.** Earlier in this
+session I told the user I *couldn't* configure `BP_Pistol` because
+`.uasset` files are binary and no editor automation was connected. That
+became wrong mid-session when the `unreal-mcp` server connected. It
+exposes toolsets for Blueprints (create/compile/get CDO/set parent),
+Objects (read/write properties incl. Blueprint class defaults), Assets
+(find/move/save/referencers), SkeletalMesh (sockets/bones), Logs, and
+more. **Known limits found by testing:** it can NOT reach a Cascade
+particle system's `Emitters` array (so no access to per-emitter Required
+modules / "Use Local Space"), and can NOT read an AnimSequence's
+`Notifies` array. Editor-side work on those still has to be manual.
+
+**Weapon position bug — root cause #2 (the real one this time).**
+Entry (1) today logged the `SetFirstPersonPrimitiveType()` setter fix.
+The symptom came back anyway. Diagnosis this time: a **mistimed attach** —
+`EquipWeapon` runs from `BeginPlay`, before the arms mesh pose/socket
+transform is valid, so the weapon snaps to a socket that isn't where it
+ends up. Confirmed by a deliberate test the user proposed: re-run the
+attach 5s after start and see if the position corrects. It did.
+- Refactored the attach block out of `EquipWeapon` into a new
+  `UWeaponHolderComponent::AttachWeaponToHand()` so the normal path and
+  the test path run identical logic.
+- **A TEMP debug timer in `BeginPlay` still calls it at 5s and is
+  currently what makes the position correct.** This is a band-aid, not a
+  fix — the weapon sits wrong for the first 5 seconds of every session.
+  Proper fix (attach after mesh init rather than on a fixed delay) is
+  still TODO.
+
+**Live Coding bit us again, exactly as documented.** After the
+`AttachWeaponToHand` refactor the position fixed but *firing broke*.
+Log showed `LogClass: UClass WeaponHolderComponent Reload.` /
+`Re-instancing WeaponHolderComponent after reload.` / the familiar
+`LogLiveCoding: Warning: Live coding succeeded, data type changes...`.
+The C++ diff didn't explain a firing failure; the re-instancing did. Full
+Rebuild Solution fixed it. Reinforces the existing Gotcha — structural
+changes need a rebuild, and the Output Log names the problem directly.
+
+**New: weapon fire animation (`FireAnimation` on `WeaponBase`).** An
+`UAnimSequence` played on the weapon's *own* mesh via
+`WeaponMesh->PlayAnimation()` when `bUseAnimationDrivenFeedback` is true.
+Checked against the 2026-08-18 architecture rule and it does **not**
+violate it: that rule is about skeleton-specific data for *whoever holds*
+the weapon; an animation authored against the *weapon's own* skeleton is
+the weapon's own data. Requires mesh and animation to come from the same
+family — `BP_Pistol` only works because its mesh was switched to
+`Darkness_Pistol`, matching `Fire_Pistol_W`'s skeleton.
+
+**New: fire-rate cap (the "I can rapid tap" fix).** Two properties now,
+deliberately distinct:
+- `TimeBetweenShots` — hard mechanical cap, seconds. Enforced by a new
+  `CanFire()` checked at the top of `Fire()`.
+- `IntendedTimeBetweenShots` — renamed from `IntendedCadence`, now also
+  in seconds (user's call, for consistency). The softer accuracy limit;
+  firing sooner adds the bloom penalty.
+- **They must differ.** If the hard cap equals the intended interval the
+  bloom cadence penalty becomes unreachable dead code. The gap between
+  them is the Reach-style window: fire faster than comfortable, pay in
+  accuracy, but never beyond the mechanical limit.
+- Gate lives in `Fire()`, not in the character, so every caller
+  (including future AI) inherits it.
+
+**Follow-up bug: the gate stopped shots but not the animation.**
+`DoFire()` played `FireMontage` unconditionally, so rapid-tapping still
+*looked* like rapid fire. Fixed by making "did it actually fire?" flow
+back up: `AWeaponBase::Fire()` and
+`UWeaponHolderComponent::FireEquippedWeapon()` both now return `bool`,
+and the montage is gated on that. `CanFire()` stays the single source of
+truth — the character just asks whether the shot happened.
+
+**New: full-auto.** `FireAction` now also binds `ETriggerEvent::Triggered`
+→ new `DoFireHeld()`, which early-returns unless
+`GetFireMode() == Auto` (new getter, `FireMode` was protected). It just
+calls `DoFire()` every frame and lets the fire-rate cap do the pacing —
+which is why the rate limiter had to land first. The press frame fires
+both `Started` and `Triggered`; the second is harmlessly rejected by
+`CanFire()`.
+
+**Close-range rifle configured end to end (via the bridge).**
+- Created `BP_RifleProjectile` (`ProjectileBase` subclass). Kept the C++
+  defaults — 3000 u/s (~30 m/s, genuinely watchable/dodgeable at its 25m
+  range), no gravity, 5s lifespan, 150-unit fragment burst at 10 damage.
+- Renamed `BP_TestWeapon` → **`BP_CloseRangeRifle`** (nothing referenced
+  it, so the rename was clean). Mesh `Darkness_AssaultRifle`,
+  `FireAnimation` `Fire_Rifle_W` (skeleton-matched), `FireSound`
+  `RifleA_Fire01`, `ProjectileClass` → `BP_RifleProjectile`, full stat
+  row applied, `FireMode Auto`.
+- Final values — pistol: `TimeBetweenShots 0.125` /
+  `IntendedTimeBetweenShots 0.2`, Semi. Rifle: `0.083` / `0.1`, Auto,
+  15 damage, 2500 range.
+- `StartingWeaponClass` switched to `BP_CloseRangeRifle` for testing.
+
+**Fixed: projectiles spawned from behind the player.** `FireProjectile`
+was spawning at `TraceStart` — the deprojected screen point, i.e. the
+camera — so rounds flew out of the player's face. Now spawns at the
+`Muzzle` socket (verified to exist on `Darkness_AssaultRifle`) and aims
+at the point the camera-based shot would have hit, so it still converges
+on the reticle instead of flying parallel to the view. Hitscan
+deliberately still uses `TraceStart` — that's what makes it land dead-on
+the crosshair.
+
+**OPEN BUG — for tomorrow: muzzle flash always faces north.**
+Not yet fixed. What's established:
+- It is **not** coming from our C++. Both weapons have `MuzzleFlash: None`
+  and `bUseAnimationDrivenFeedback: true`, so `SpawnEmitterAttached()`
+  never runs. The flash comes from an **AnimNotify** inside the
+  SciFiWeapDark fire animation.
+- **"Use Local Space" is already enabled** on all emitters — the user
+  checked. So the usual Cascade explanation is ruled out.
+- Next thing to check: the notify's own **Attached** checkbox and
+  **Socket Name**. An unattached `PlayParticleEffect` notify spawns at a
+  world location with identity rotation, which matches the symptom
+  exactly.
+- I could not inspect this myself — the bridge exposes neither
+  AnimSequence `Notifies` nor ParticleSystem `Emitters`.
+- **Proposed fix if the notify turns out to be correct too:** split
+  `bUseAnimationDrivenFeedback` into `bAnimationDrivenSound` and
+  `bAnimationDrivenMuzzleFlash`. One flag currently governs two unrelated
+  things; the pack's animations drive sound well but its flash notify
+  doesn't suit our rig. Splitting lets us keep the notify's sound and take
+  code control of the flash, socket-attached and correctly oriented.
+  Discussed and agreed as the fallback, not yet implemented.
+
+**Also still open:**
+- The TEMP 5s re-snap timer (above) needs replacing with a real fix.
+- Rifle arm animations — the rifle currently plays `AM_Pistol_Fire` for
+  the arms, since the character's `FireMontage` is still the pistol's.
+  `MM_Rifle_Fire` exists in the Lyra set for this.
+- Battle rifle not started.
+- Stale constructor comment: `FirstPersonMesh`'s offsets are described as
+  "intentionally left at zero... needs visual tuning," but
+  `FirstPersonScale` is now `0.6f` — the clipping fix was applied at some
+  point, so that comment may no longer be accurate.
+
+---
+
+## 2026-08-30 (6)
+**Summary:** Investigated the returning "misaligned pistol" report. Found
+one solid, checkable fact that changes the diagnosis, but **did not fix
+it** — I could not converge on correct grip values by screenshot-driven
+trial and error, and stopped rather than keep guessing. All experimental
+changes reverted; the project is back to its post-(5) state.
+
+**The finding that matters: this is not caused by the `BP_Pistol` swap.**
+I put `BP_TestWeapon` back as `StartingWeaponClass` and played it — it
+shows the **same** misalignment as `BP_Pistol` (weapon oversized, barrel
+pointing screen-left instead of forward, hand not wrapped on the grip).
+So swapping the starting weapon to a new mesh in entry (5) did not cause
+this, and re-pointing `StartingWeaponClass` back at `BP_TestWeapon` will
+not fix it. Whatever it is, both weapons have it.
+Reference captures kept in the session scratchpad:
+`ref_test_crop.png` (BP_TestWeapon) vs `fpflag_crop.png` (BP_Pistol) —
+they are near-identical.
+
+**Second finding, unverified but real: a first-person render-flag
+asymmetry.** The arms (`First Person Mesh`) carry
+`FirstPersonPrimitiveType = FirstPerson` **baked in as a component
+default** on `BP_FirstPersonCharacter`. Both weapons' `WeaponMesh` default
+to `None` and depend entirely on the runtime
+`SetFirstPersonPrimitiveType()` call in
+[`WeaponHolderComponent::EquipWeapon`](../Source/ProjectBopis/Weapons/WeaponHolderComponent.cpp#L97)
+to join the first-person render path. That is exactly the fragility behind
+the original 2026-08-30 render-proxy bug, and it is still structurally
+present — the weapon reaches the FP path only if a runtime call lands at
+the right moment, while the arms never depend on timing at all. Setting
+the flag as a component default on the weapon Blueprints (pure data, no
+code) would remove that dependency. **I did not leave this change in** —
+it visibly altered the render but I could not demonstrate it was an
+improvement, so it is reverted and left as a recommendation.
+
+**What I could not settle.** The weapon's orientation relative to the hand.
+`GripRotationOffset` is applied as a rotation relative to the *attach
+socket's* axes, not world axes, so its `pitch`/`yaw`/`roll` do not map to
+anything intuitive from a screenshot. Probes: `yaw 0` → barrel points
+screen-left; `yaw +90` → points screen-right; `yaw +45` → still right;
+`yaw -90` → still left. Never forward. `GripLocationOffset` was calibrated
+though — **`+X` moves the weapon left/away from the hand, so `-X` brings it
+toward the hand.**
+Also checked and ruled out as the cause: the two meshes are not
+interchangeable in size (`Darkness_Pistol` is ~1.6x `SKM_Pistol` by bounds,
+and its geometry sits ~9.7cm further along +Y from its pivot), but since
+`BP_TestWeapon` misaligns identically, mesh size is not the bug.
+
+**Also learned:** `SKM_Manny_Simple` ships purpose-authored `HandGrip_R` /
+`HandGrip_L` sockets (`HandGrip_R` is on `hand_r`, offset
+`(-7.01, 2.05, 0)`, yaw `+90`). `WeaponAttachSocketName` defaults to the raw
+`hand_r` **bone**, bypassing them. Attaching to `HandGrip_R` instead is a
+one-property, no-code change and is worth trying, but it did not obviously
+fix orientation in my tests, so it is reverted too.
+
+**Open Questions / Next Steps:**
+1. **Grip tuning is a by-eye job and should be done interactively** — drag
+   the weapon's transform in the Details panel during PIE (the same way the
+   scale-nudge test was done for the original render-proxy bug) rather than
+   through blind offset guesses. Once values look right, put them in
+   `BP_Pistol`'s `GripLocationOffset`/`GripRotationOffset`.
+2. Worth answering first, since it reframes everything: **did
+   `BP_TestWeapon` ever actually look correct in the possessed first-person
+   view, or only when unpossessed?** If it never looked right possessed,
+   this is not a regression at all — it is the untuned-grip work that Phase
+   4 always had queued, and the "bug" framing is wrong.
+3. Consider making `FirstPersonPrimitiveType = FirstPerson` a component
+   default on the weapon Blueprints (see above).
+4. Unchanged: `BP_Pistol` still not validated in PIE; debug `RelLoc`/`RelRot`
+   readout still in `WeaponBase::Tick`; Phase 4 still uncommitted.
+
+---
+
+## 2026-08-30 (5)
+**Summary:** `BP_Pistol` created and fully configured — the first Phase 4
+weapon-config item is done. The headline is *how*: the UnrealMCP bridge
+turns out to expose full editor control, so this was done directly rather
+than as an editor-UI walkthrough.
+
+**The MCP finding — supersedes the 2026-08-30 (3) note.** That entry
+recorded that `unreal-mcp` "exposes only an `AgentSkillToolset` … no editor
+or Blueprint control of any kind," and told future sessions not to switch
+sessions expecting a different answer. **That is no longer true**, and the
+reason is the (4) entry's own fix: the toolsets are registered by the
+running editor, so with the server actually started (`ModelContextProtocol.StartServer`)
+the bridge now lists 17 toolsets, including `BlueprintTools` (create,
+set_parent, compile, CDO access, full graph editing), `ObjectTools`
+(list/get/set properties on any object or CDO), `ActorTools` (components),
+`AssetTools` (find/save/move/delete), `SkeletalMeshTools` (sockets, bones,
+materials), plus scene, material, data-table and texture toolsets. In other
+words `.uasset` configuration **is** scriptable from here. The (3)
+conclusion was correct about what it saw and wrong about why — it was
+reading a dead server, not a limited one.
+
+**Done — `BP_Pistol` (`Content/FirstPerson/Blueprints/BP_Pistol.uasset`):**
+- Created parented to `AWeaponBase`, `WeaponMesh` → `Darkness_Pistol`.
+- Stats applied from the queued table: `BaseDamage` 25, `MaxRange` 5000,
+  `FireMode` Semi, `bHasZoom`/`bIsProjectileWeapon` false,
+  `bUseAnimationDrivenFeedback` true, and the bloom five —
+  `BaseSpreadAngle` 0, `MaxSpreadAngle` 3.0, `BloomPerShot` 0.12,
+  `BloomDecayRate` 0.8, `BloomDecayDelay` 0.25, `IntendedCadence` 5.
+  Verified by reading them back off the CDO after compiling.
+- `HitDecalMaterial` → `MI_Generic_1` and `FireSound` → `PistolA_Fire01`,
+  both mirrored from `BP_TestWeapon`. The sound is inert while
+  `bUseAnimationDrivenFeedback` is true (that flag suppresses code-driven
+  sound *and* muzzle flash), but setting it now means flipping the flag
+  later needs no second pass.
+- **`MuzzleSocketName` is no longer a guess.** `Darkness_Pistol` has
+  exactly one socket and it is named `Muzzle`, so the `WeaponBase` default
+  is correct for this weapon. The other two weapons still need the same
+  check against their own meshes.
+- Compiled clean with `warnings_as_errors`, saved to disk.
+
+**Also changed:** `BP_FirstPersonCharacter`'s `WeaponHolder.StartingWeaponClass`
+swapped `BP_TestWeapon` → `BP_Pistol`, so the configured pistol is what
+actually spawns in hand. `BP_TestWeapon` was still using the *template's*
+`SKM_Pistol` mesh (not `Darkness_Pistol`), and it's slated to become the
+close-range rifle next, at which point leaving it as the starting weapon
+would hand the player a rifle with no rifle animations. One property,
+trivially reversible.
+
+**Decided:** the queued stat table is now recorded in
+`GameDesignDocument.md`'s Combat implementation notes, explicitly marked
+**Claude-proposed starting values, not design canon**. That closes open
+question 1 from the (4) entry — not by getting design input, but by writing
+the provisional numbers down where they can be argued with.
+
+**Open Questions / Next Steps:**
+1. **`BP_Pistol` has not been PIE-tested.** Everything above is verified by
+   reading properties back, not by firing the gun. Worth a play test before
+   moving on — specifically that the pistol appears in hand, that
+   `AM_Pistol_Fire` plays on fire (the animation-driven feedback path), and
+   that grip offsets need tuning (they're still zero).
+2. Still open, unchanged: remove the debug `RelLoc`/`RelRot` readout in
+   `WeaponBase::Tick` (slot `2`, dereferences `WeaponMesh` unguarded).
+   Left for the user to type, per standing preference.
+3. Still open: **none of Phase 4 is committed** — `ProjectileBase.h`/`.cpp`
+   untracked, plus the new `BP_Pistol.uasset` and the modified
+   `BP_FirstPersonCharacter.uasset` now on top of it.
+4. Next plan item: repurpose `BP_TestWeapon` into the close-range rifle
+   (`Darkness_AssaultRifle`, full-auto, `ProjectileClass` → `AProjectileBase`
+   subclass). Now that the bridge works, this should be quick.
+
+---
+
+## 2026-08-30 (4)
+**Summary:** Cleared both blockers standing in front of `BP_Pistol`
+configuration — the "missing" fire montage (a false alarm) and the dead
+UnrealMCP bridge. No code or Blueprint changes yet.
+
+**Done:**
+- **Fire Montage blocker closed — the 2026-08-30 (3) audit finding was
+  wrong.** That audit reported "no `AnimMontage` asset anywhere in
+  `Content/`" and flagged the staged deletion of
+  `MM_Pistol_Fire_Montage.uasset` as needing a decision. The montage
+  actually in use is
+  `Content/Characters/Heroes/Mannequin/Animations/Actions/AM_Pistol_Fire.uasset`
+  — it came in with the Lyra migration, under the still-untracked
+  `Content/Characters/Heroes/` tree. The sweep only matched the
+  `*_Montage` filename pattern and missed Lyra's `AM_` prefix. User
+  confirmed the `MM_Pistol_Fire_Montage` deletion was **deliberate**;
+  `AM_Pistol_Fire` supersedes it. `bUseAnimationDrivenFeedback = true` on
+  `BP_Pistol` is correct as specced — nothing needs recreating.
+  Corrected in `ProjectPlan.md:113`.
+- **UnrealMCP bridge diagnosed and started.** It is *not* a separate
+  Python server — it is Epic's engine plugin `ModelContextProtocol`
+  (`UE_5.8/Engine/Plugins/Experimental/`), already enabled in
+  `ProjectBopis.uproject`. Defaults (port `8000`, path `/mcp`, name
+  `unreal-mcp`) already match `.mcp.json`, and
+  `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini:4382`
+  already had `bAutoStartServer=True`. Root cause of the connection
+  refusal: auto-start fires once at `PostEngineInit`
+  (`ModelContextProtocolEditor.cpp:64`), so an editor instance already
+  running when that setting was ticked never starts it. Fixed live with
+  the console command `ModelContextProtocol.StartServer` — no editor
+  restart needed. Verified listening on `127.0.0.1:8000`.
+
+**Decided:**
+- `AM_Pistol_Fire` is the canonical pistol fire montage.
+
+**Open Questions / Next Steps:**
+1. **No numeric weapon spec exists.** `ProjectPlan.md` refers to a "queued
+   weapon stat table," but the GDD only has the *property glossary*
+   (§64–69) explaining what `BaseSpreadAngle`/`BloomPerShot`/
+   `IntendedCadence` mean. There are no numbers for any weapon. The pistol
+   spec is currently qualitative only: semi-auto, hitscan
+   (`bIsProjectileWeapon = false`), `Darkness_Pistol` mesh,
+   `bUseAnimationDrivenFeedback = true` → `AM_Pistol_Fire`. Everything
+   else (`BaseDamage`, `MaxRange`, the five bloom values,
+   `IntendedCadence`, grip offsets) needs either design input or
+   Claude-proposed starting values flagged as non-canon.
+2. Still open from the (3) audit, unchanged: remove the debug
+   `RelLoc`/`RelRot` readout in `WeaponBase::Tick` (slot `2`, dereferences
+   `WeaponMesh` unguarded); none of Phase 4 is committed yet.
+
+---
+
+## 2026-08-30 (3)
+**Summary:** Doc-vs-code audit before starting weapon configuration. No code
+changed; all four docs (`ProjectPlan.md`, `GameDesignDocument.md` + `.html`,
+and this file) reconciled against the actual working tree. Found five pieces
+of drift, two of which would have caused real confusion during the weapon
+config work.
+
+**First, on the MCP switch:** the previous entry moved to a new session
+hoping an Unreal editor bridge would let Blueprints be configured directly.
+`unreal-mcp` *is* connected here, but it exposes only an
+`AgentSkillToolset` (listing/reading/writing skill files) — no editor or
+Blueprint control of any kind. So `.uasset` configuration is still an
+editor-UI walkthrough. Worth recording so a future session doesn't switch
+again expecting a different answer.
+
+**Drift found, in rough order of how much it matters:**
+1. **The Fire Montage asset is gone.** `MM_Pistol_Fire_Montage.uasset` was
+   committed in `230e3228`, has since been deleted, and the deletion is
+   staged. A project-wide search finds **no `AnimMontage` asset anywhere in
+   `Content/`**. Both `ProjectPlan.md` and the previous log entry describe
+   the Fire Montage step as done and confirmed in PIE, and the queued stat
+   table sets the pistol's `bUseAnimationDrivenFeedback` to `true` on the
+   strength of it. That flag suppresses code-driven sound and muzzle flash,
+   so with no montage to play, configuring the pistol as planned would
+   produce a gun that fires with **no feedback at all** — and it'd look like
+   a config mistake rather than a missing asset. The C++ side is fine and
+   the source clip (`MM_Pistol_Fire.uasset`) still exists, so the montage
+   can be rebuilt. **Not treated as a bug** — the deletion may well have
+   been deliberate; flagged for the user to confirm.
+2. **`FirstPersonScale` was never `1.0f`.** The 2026-08-30 entry below
+   diagnosed camera/arms clipping as unaddressed because `FirstPersonScale`
+   was "currently `1.0f` (a no-op)" and `FirstPersonFieldOfView` "matches
+   the general gameplay FOV," and recommended dropping the scale to
+   ~0.5–0.65. Both halves are wrong against the source, and were already
+   wrong when written — these are *committed* values, not something changed
+   since:
+   [ProjectBopisCharacter.cpp:32-33](../Source/ProjectBopis/ProjectBopisCharacter.cpp#L32)
+   sets `FirstPersonFieldOfView = 70.0f` and `FirstPersonScale = 0.6f`, both
+   enable-flags true, and the camera's general `FieldOfView` is never
+   assigned so it stays at the engine default `90`. The anti-clip mechanism
+   is engaged, and the recommended range was already satisfied. If clipping
+   still looks wrong, it needs re-diagnosing from scratch rather than
+   starting from those two values.
+3. **The camera/arms hierarchy restructure was never written down as a
+   landed change.** The camera now attaches to the capsule and
+   `FirstPersonMesh` attaches to the camera — inverted from the template,
+   so the arms rigidly follow camera pitch instead of needing aim-offset
+   blending. It's referenced obliquely in two places (the "superseded by the
+   camera-attachment hierarchy restructure" aside below, and the Live Coding
+   gotcha) but no entry ever described the change itself or why. Now
+   documented in both the plan and the design doc. `FirstPersonMesh`'s
+   relative transform is deliberately still zero and wants tuning by eye.
+4. **Grip offsets landed undocumented.** `WeaponBase` has
+   `GripLocationOffset`/`GripRotationOffset` with getters, applied in
+   `EquipWeapon` right after the socket attach. This is the per-weapon hook
+   the long-deferred hand-socket issue (#21) was asking for — so that issue
+   is now "mechanism done, values untuned" rather than "not yet
+   investigated." Tuning folds naturally into the three weapon-config tasks.
+5. **Smaller things:** the temporary `RelLoc`/`RelRot` debug readout added
+   to diagnose the render-proxy bug is still live in `WeaponBase::Tick`
+   (and dereferences `WeaponMesh` unguarded); `GameDesignDocument.md`'s
+   backlog still numbered enemies as Phase 4 and the arena as Phase 5,
+   stale since the 2026-08-12 renumbering; and **none of Phase 4 is
+   committed** — `ProjectileBase.h/.cpp` are untracked and four other
+   source files are modified, with the last commit predating the projectile
+   fork, the grip offsets, the render fix, and the camera restructure.
+
+**The HTML twin was the worst of it.** Flagged as needing a resync since
+2026-08-17 and genuinely stale: missing the entire "Weapon tech" section,
+missing all state after 2026-08-12, and — the part that actually mattered —
+still asserting that the **battle rifle** is the projectile weapon, which
+was reversed on 2026-08-17. Anyone reading that page for design intent would
+have gotten the current call backwards. Now fully resynced: new section, new
+TOC entry, corrected scope paragraph, 2026-08-30 state, corrected backlog,
+changelog caught up.
+
+**Next steps:** unchanged from the queued plan below — configure `BP_Pistol`
+first — but two things to settle before starting: confirm whether the Fire
+Montage deletion was deliberate (and rebuild it if not, since the pistol's
+planned config depends on it), and consider committing the Phase 4 work so
+there's a clean point to return to.
+
+---
+
+## 2026-08-30 (2)
+**Summary:** Not yet done — this is the queued-up plan, written down because
+the user is switching to a new session (via MCP) to actually carry it out.
+No files changed in this entry.
+
+**Note on why the switch:** this session was asked to configure `BP_Pistol`
+directly and couldn't — `.uasset` Blueprint files are a binary/serialized
+format, not plain text, so the file-editing tools available here can't
+touch them, and there's no Unreal Editor automation bridge (Python remote
+execution / Remote Control API) connected in this session to drive the
+running editor. If the new MCP session has that kind of bridge, it may be
+able to do this work directly instead of talking the user through the
+editor UI step by step.
+
+**Next up, in order:**
+1. **Configure `BP_Pistol`** — new Blueprint, parent `WeaponBase`, mesh =
+   `Darkness_Pistol`. Stat table (Halo: Reach-accurate bloom — first shot
+   from full rest is always precise, so `BaseSpreadAngle` is `0°` on every
+   weapon, not just the pistol):
+
+   | Field | Pistol | Close-range rifle | Battle rifle |
+   |---|---|---|---|
+   | `BaseDamage` | 25 | 15 (+ fragment burst) | 35 |
+   | `MaxRange` | 5000 | 2500 | 8000 |
+   | `BaseSpreadAngle` | 0° | 0° | 0° |
+   | `MaxSpreadAngle` | 3.0° | 6.0° | 4.0° |
+   | `BloomPerShot` | 0.12 | 0.08 | 0.18 |
+   | `BloomDecayRate` | 0.8 | 0.5 | 0.6 |
+   | `BloomDecayDelay` | 0.25 | 0.2 | 0.35 |
+   | `IntendedCadence` | 5 | 10 | 3.5 |
+   | `FireMode` | Semi | Auto | Semi |
+   | `bHasZoom` | false | false | **true** (`ZoomedFOV` ≈30) |
+   | `bIsProjectileWeapon` | false | **true** (`ProjectileClass` = renamed `BP_TestWeapon`'s projectile) | false |
+   | `bUseAnimationDrivenFeedback` | **true** (Fire Montage already works) | false (flip once rifle anims exist) | false (flip once its own anims exist) |
+
+2. **Configure the close-range rifle** — rename/repurpose the existing
+   `BP_TestWeapon` (already parented to `WeaponBase`), mesh =
+   `Darkness_AssaultRifle`, wire `ProjectileClass` to the existing
+   `AProjectileBase` subclass, apply the table above.
+3. **Configure the battle rifle** — new Blueprint, mesh =
+   `Darkness_SniperRifle` (tuned down per the design doc — lower/no extreme
+   zoom, damage/range/bloom from the table above).
+4. **Rifle arm animations** — mirror the pistol's `ABP_FirstPersonArms`
+   pattern (Idle↔Move state machine on `Speed`, plus a Fire Montage) for
+   the close-range and battle rifles, sourced from the same migrated Lyra
+   `MM_`-prefixed clip library. Once each rifle's animation is in and
+   confirmed in PIE, flip its `bUseAnimationDrivenFeedback` to `true`.
+5. **Not yet started, blocked:** Reload as an Anim Montage — needs an
+   ammo/reload system built first (doesn't exist yet).
+
+Also still flagged, not part of this immediate push: camera/arms clipping
+fix (tune `FirstPersonScale` down from its current no-op `1.0f`), and the
+full-body-visibility/leg-visibility plan (see Phase 4 note in
+`ProjectPlan.md` — requires removing `GetMesh()->SetOwnerNoSee(true);` plus
+bone-hiding, deliberately deferred).
+
+---
+
+## 2026-08-30
+**Summary:** Chased down a real, subtle rendering bug behind the pistol's
+hand-grip looking wrong — three hypotheses in a row before landing on the
+actual cause. No new features; pure bugfix + one doc correction.
+
+**The bug:** pistol looked correctly gripped when ejected from possession
+but wrong (dangling artifact, fingers not wrapped) while actively
+possessing/controlling the character; separately reported as "wrong
+position" and "looks different in FPS view vs. external view"; and finally
+narrowed to "correct after an editor restart, wrong again after
+Stop→Play in the same editor session" — all symptoms of the same root
+cause, described from different angles across the session.
+
+**Ruled out, in order:**
+1. A leftover `Layered Blend Per Bone`/Aim Offset node in
+   `ABP_FirstPersonArms`, left over from an abandoned earlier
+   arms-follow-camera approach (superseded by the camera-attachment
+   hierarchy restructure). User removed it — genuinely stale and worth
+   cleaning up, but confirmed **not** the cause of this bug.
+2. Manny vs. Quinn skeleton retargeting mismatch (animations are
+   `MM_`-prefixed/Manny-authored). Looked plausible since the symptom
+   pattern matched a proportion mismatch, but user confirmed **Quinn is
+   never used** in this project — red herring. (This also corrects a
+   stale claim in this file's Phase 4 checklist, written 2026-08-18, that
+   the character's mesh is Quinn — it isn't; see correction there.)
+
+**Actual root cause, found via a live debug readout:** added a temporary
+on-screen `RelLoc`/`RelRot` printout of the weapon's transform
+(`WeaponBase::Tick`) to compare values across a "correct" run vs. a
+"wrong" run — values were identical either way, which ruled out the
+transform/offset math entirely and pointed at rendering. Confirmed by the
+user's own test: manually nudging the weapon's Scale in the Details panel
+during Play (1 → 1.2 → 1, no other change) fixed the visual position
+outright. That's the signature of a stale render proxy, not bad data.
+
+Found it: [`WeaponHolderComponent.cpp`](../Source/ProjectBopis/Weapons/WeaponHolderComponent.cpp)'s
+`EquipWeapon()` was setting `MeshComp->FirstPersonPrimitiveType` via
+**direct property assignment** instead of the proper
+`SetFirstPersonPrimitiveType()` setter. Direct assignment doesn't mark
+render state dirty, so the unified first-person rendering path could
+register/reproject the primitive using a stale transform — inconsistent
+between PIE sessions depending on render-proxy timing, and explains the
+FPS-view-vs-external-view mismatch too (two separate rendering paths, one
+of them working off stale state). **Fix:** swapped to
+`MeshComp->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson)`.
+User applied and confirmed it fixed the issue. Logged as a new Gotcha —
+see `ProjectPlan.md`.
+
+**Also discussed, not yet actioned:** camera/arms clipping. Root cause
+identified — `FirstPersonScale` is currently `1.0f` (a no-op; doesn't
+actually shrink first-person primitives at all) and `FirstPersonFieldOfView`
+matches the general gameplay FOV, so the anti-clip mechanism the unified
+first-person system is built around isn't actually engaged yet. Recommended
+starting point next session: drop `FirstPersonScale` to ~0.5–0.65 and tune
+by eye in PIE. **No code changed this session** — explicitly deferred.
+
+---
+
 ## 2026-08-17
 **Summary:** Reversed which weapon carries the real projectile, and locked
 down the in-world justification for it. No code written — design/docs only.
@@ -38,6 +577,206 @@ down the in-world justification for it. No code written — design/docs only.
   tech" section. Phase 4 checklist in `Documentation/ProjectPlan.md`
   updated to match (`AProjectileBase` now targets the close-range rifle;
   weapon configuration tasks swapped accordingly).
+
+---
+
+## 2026-08-18 (2)
+**Summary:** A genuinely valuable architecture discussion — the user
+pressure-tested the fire-feedback design with a series of sharp questions
+(does the weapon driving player animation make sense? does this work for
+AI? what about different skeletons sharing a weapon?) that surfaced a real
+design flaw before it shipped, and we fixed it the same session rather
+than just logging it for later.
+
+**Discussion, in order:**
+- "The weapon drives the player animation?" — questioned whether
+  `WeaponBase::Fire()` reaching into the character to play a montage was
+  backwards. Concluded it was *consistent* with existing patterns
+  (`FireSound`/`MuzzleFlash` already lived on the weapon) but not
+  obviously the *only* correct answer.
+- "This method should work for AI as well right?" — surfaced that
+  `WeaponHolderComponent::EquipWeapon`/`FireEquippedWeapon` both hard-cast
+  to `AProjectBopisCharacter`, and aiming goes through
+  `APlayerController::DeprojectScreenPositionToWorld` (no viewport for an
+  AI to deproject from at all). Logged as a gotcha, deliberately not
+  fixed — AI aiming needs a genuinely different targeting method anyway
+  (perception/line-of-sight, not screen-space), so this was never a small
+  fix regardless.
+- Follow-up clarified the question was about **extensibility**, not
+  current functionality: is the coupling *narrow*, so a future fix is
+  small? Answer: yes — the core firing logic (bloom/hitscan/projectile/
+  damage) is already fully actor-agnostic; only the holder/feedback layer
+  assumes a player, and that's a bounded, well-understood fix (an
+  interface instead of a concrete-class cast) when it's actually needed.
+- **The real catch**: "If the Player animation and Enemy Animation is
+  different but using the same weapon, then you cant use the same
+  weaponbase" — because `FireMontage` lived on `WeaponBase`, and an
+  `UAnimMontage` is authored against one specific skeleton. A single
+  property could only ever be correct for one skeleton. This is a
+  dependency-direction problem, not a "which skeleton" problem: the
+  weapon shouldn't need to know how to animate whoever's holding it.
+
+**Fixed the same session (not deferred):**
+- `FireMontage` removed from `WeaponBase` entirely. `WeaponBase` now only
+  exposes `UsesAnimationDrivenFeedback()` (a pure bool signal it computes
+  from its own existing flag).
+- `AProjectBopisCharacter` gained its own `FireMontage` property, and
+  `DoFire()` now plays it on its own `FirstPersonMesh` after checking that
+  signal. `WeaponBase::Fire()` no longer references the character,
+  animation, or montages at all — clean separation restored.
+- This establishes the actual pattern for later: each animator (player
+  now, each enemy archetype eventually) owns its own montage/feedback
+  data, rather than the weapon holding one hardcoded answer — and
+  explicitly *not* a `TMap` on the weapon keyed by consumer type, which
+  would just be the same inverted dependency with extra steps.
+- **User asked me to write the code directly this time** (rather than the
+  usual type-it-yourself workflow) — did so for all four file edits.
+  Caught a real bug while reading the files first: a leftover typo
+  (`UAnimaMontage` vs `UAnimMontage`) meant the *original*
+  weapon-owned-montage version had likely never actually compiled.
+  Compiled clean after the fix, reviewed, correct.
+
+**Next steps:** Reload as an Anim Montage is blocked on an ammo/reload
+system that doesn't exist yet — not just a montage away. Next real steps:
+rifle Idle/Move/Fire (mirroring what's proven for the pistol), then
+configuring the three actual weapons. Still deferred: pistol hand-offset
+(#21), headshot-marker reticle (#37), surface-reactive Niagara impacts
+(#38), decal/sound variation arrays (#39), the AI-extensibility gotcha
+(equip/aim layer, logged, not urgent).
+
+---
+
+## 2026-08-18
+**Summary:** Finished the projectile system end-to-end (fragmentation
+compiled, Instigator chain fixed, `WeaponBase` forked into hitscan/
+projectile paths), then pivoted to POV arms animation using a Lyra
+Starter Game migration instead of the original generic animset plan —
+got a working Idle/Move state machine for the pistol in PIE by end of
+session.
+
+**Done:**
+- `AProjectileBase` fragmentation burst compiled, reviewed, correct —
+  closes out that checklist item entirely.
+- Closed a long-standing gap: `WeaponHolderComponent::EquipWeapon` now
+  calls `SetInstigator`/`SetOwner` on the equipped weapon, so
+  `GetInstigatorController()` (called since Phase 1, always silently
+  null) finally resolves to something real, all the way down the chain
+  character → weapon → projectile.
+- Forked `WeaponBase::Fire()` into a shared prefix/suffix (feedback,
+  bloom-driven spread, cadence bookkeeping) with `FireHitscan`/
+  `FireProjectile` handling just the differing resolution logic.
+  `FireProjectile` relies on `UProjectileMovementComponent`'s default
+  "launch along owning actor's local forward" behavior rather than
+  manually setting velocity. Compiled clean, reviewed, correct — **Phase
+  4's projectile system is now fully wired end to end**, though no
+  weapon is actually configured to use it yet (that's the remaining
+  "configure the three weapons" checklist items).
+- **Animation source changed:** dropped the original `PistolAnimset`/
+  `RifleAnimset` plan in favor of migrating raw clips from Epic's **Lyra
+  Starter Game** sample via the editor's Migrate tool. Talked through the
+  practical steps, the version-drift risk, and the two real scope forks
+  (simple raw-clip reuse vs. adopting Lyra's actual layered-animation
+  architecture) before the user committed to the simple path — matches
+  this project's whole "Reach-style bloom over recoil systems" philosophy
+  of not over-building.
+- User migrated the **full** `Content/Characters/Heroes/Mannequin/Animations/`
+  library (454+ files) rather than cherry-picking — deliberately kept the
+  extras on disk ("better to have them and not need 'em") rather than
+  pruning. Only a handful of clips actually in use.
+- Worked out Lyra's `MM_`/`MF_` naming (Manny/Quinn mannequin variants) —
+  character's mesh is Quinn, but Fire/Reload actions only exist as `MM_`
+  (no Quinn-specific variant), so decided to just use `MM_` for
+  everything now, deferring gender-variant branching to a follow-up in
+  the ABP itself rather than designing it blind.
+- Built `ABP_FirstPersonArms`: `Speed` float updated every frame via
+  `TryGetPawnOwner → GetVelocity → VectorLength`, a 2-state `Locomotion`
+  state machine (Idle ↔ Move, `Speed` vs. `10.0` transition threshold).
+  Assigned as `FirstPersonMesh`'s Anim Class. **Confirmed working in
+  PIE.** Two real fixes along the way: `MM_Pistol_Jog_Fwd` visibly drops
+  the weapon pose (wrong clip for this context) — swapped to
+  `MM_Pistol_Walk_Fwd`; and the `Play` animation nodes needed **Loop**
+  turned on explicitly in each state's sub-graph.
+
+**Open question — user explicitly asked to be asked again next session:**
+build Fire/Reload as Anim Montages next (this is what `bUseAnimationDrivenFeedback`
+on `WeaponBase` was built for — proves the pipeline end-to-end), or mirror
+the Idle/Move setup to the rifle first before adding montages to either?
+Not decided as of session end.
+
+**Next steps:**
+1. Answer the open question above first thing.
+2. Fire/Reload Anim Montages (whichever weapon), wiring `Montage_Play` into `WeaponBase::Fire()`'s animation-driven path.
+3. Rifle Idle/Move (mirror of pistol setup).
+4. Then: configure the three actual weapons (`BP_Pistol`, close-range rifle as the projectile weapon, battle rifle as hitscan) — the projectile system built today has nothing using it yet.
+5. Still deferred: pistol hand-offset (#21), headshot-marker reticle (#37), surface-reactive Niagara impacts (#38), decal/sound variation arrays (#39).
+
+---
+
+## 2026-08-17 (3)
+**Summary:** Started `AProjectileBase` — shell compiled and confirmed,
+fragmentation burst code given but not yet compiled.
+
+**Done:**
+- `AProjectileBase` shell: `USphereComponent` root, `UProjectileMovementComponent`
+  (gravity off, flat trajectory), `InitialLifeSpan` so misses don't linger,
+  `OnComponentHit` bound in `BeginPlay` to a `UFUNCTION() OnHit` applying
+  direct damage via `GetInstigatorController()`. Compiled clean, reviewed,
+  correct.
+- Hit a scare mid-way: IntelliSense flagged `OnComponentHit.AddDynamic(...)`
+  as an unresolved symbol. Turned out to be a well-known IntelliSense
+  false-positive (it can't follow the template trickery `AddDynamic`'s
+  macro does to validate delegate signatures) — the actual build compiled
+  fine. Logged as a project gotcha so it doesn't cause a scare again.
+- Added the fragmentation burst on top: `FragmentRadius`/`FragmentDamage`,
+  a zero-distance `SweepMultiByChannel` (idiom for "what overlaps this
+  point") against `ECC_Pawn`, excluding the directly-hit actor so the
+  burst catches *other* nearby targets rather than stacking bonus damage
+  on the one already hit — matches the design doc's "strong against
+  grouped/exposed targets" intent. **Not yet compiled** — resume here.
+- Discussed decal/sound variation arrays (picking a random decal/sound per
+  shot instead of always the same one) — deliberately deferred rather than
+  built now; parked as task #39. Worth noting: `SciFiWeapDark`'s Sound Cue
+  assets likely already randomize internally between wav variants, so
+  sound may not need a code-side array at all — check before duplicating
+  that.
+
+**Next steps:** compile the fragmentation code, then fork `WeaponBase` to
+actually spawn an `AProjectileBase` for the close-range rifle instead of
+tracing. Still deferred: pistol hand-offset (#21), headshot-marker reticle
+(#37), surface-reactive Niagara impacts (#38), decal/sound variation
+arrays (#39).
+
+---
+
+## 2026-08-17 (2)
+**Summary:** Finished the hit-impact decal step (Phase 4's second item),
+fixing a real distance-culling bug and adding a toggleable debug trace
+along the way.
+
+**Done:**
+- `HitDecalMaterial`/`DecalSize`/`DecalLifeSpan` on `WeaponBase`, decals
+  spawning on any surface hit via the restructured `Fire()` hit block,
+  oriented correctly via `HitResult.ImpactNormal.Rotation()`. Compiled
+  clean, reviewed, correct — closes out the decal step.
+- **Bug found during testing:** decals weren't visible from a distance.
+  Root cause: `UGameplayStatics::SpawnDecalAtLocation` doesn't expose
+  `FadeScreenSize` (decals' built-in distance-based culling — they fade
+  out once they'd render below a screen-size threshold) at the call site.
+  Fixed by capturing the returned `UDecalComponent` and calling
+  `SetFadeScreenSize(0.0f)` on it to disable the cutoff.
+- Added a toggleable debug trace: `CVarShowWeaponTrace` (console command
+  `Weapon.ShowTrace`), a file-scope `TAutoConsoleVariable<bool>` gating
+  the existing `DrawDebugLine` call. Chose a CVar over a per-weapon
+  `UPROPERTY` deliberately — this is a global debug-visualization switch,
+  not something that varies by weapon identity, so it doesn't belong
+  cluttering every weapon Blueprint's defaults.
+- **Phase 4 now 2/8 items done:** fire feedback and hit decals.
+
+**Next steps:** `AProjectileBase` actor class next (for the close-range
+rifle, per the 2026-08-17 reversal), then forking `WeaponBase` for
+projectile firing, then POV arms animation, then the three weapon
+configs. Still deferred: pistol hand-offset (#21), headshot-marker
+reticle (#37), surface-reactive Niagara impacts (#38).
 
 ---
 

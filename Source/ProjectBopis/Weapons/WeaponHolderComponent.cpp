@@ -8,6 +8,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "TimerManager.h"
 
 // Sets default values for this component's properties
 UWeaponHolderComponent::UWeaponHolderComponent()
@@ -33,8 +34,12 @@ void UWeaponHolderComponent::BeginPlay()
 		}
 	}
 
+	// TEMP DEBUG: re-snap after 5s to test whether the initial attach is mistimed.
+	GetWorld()->GetTimerManager().SetTimer(DebugResnapTimerHandle, this,
+		&UWeaponHolderComponent::AttachWeaponToHand, 5.0f, false);
+
 	// ...
-	
+
 }
 
 
@@ -78,24 +83,12 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 
 	EquippedWeapon = WeaponToEquip;
 
-	if (AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner()))
-	{
-		if (USkeletalMeshComponent* ArmsMesh = OwningCharacter->GetFirstPersonMesh())
-		{
-			EquippedWeapon->AttachToComponent(ArmsMesh,
-				FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
-
-			if (USkeletalMeshComponent* MeshComp = EquippedWeapon->GetWeaponMesh())
-			{
-				MeshComp->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
-			}
-		}
-	}
+	AttachWeaponToHand();
 
 	EquippedWeapon->SetActorHiddenInGame(false);
 }
 
-void UWeaponHolderComponent::FireEquippedWeapon()
+void UWeaponHolderComponent::AttachWeaponToHand()
 {
 	if (!EquippedWeapon)
 	{
@@ -108,10 +101,44 @@ void UWeaponHolderComponent::FireEquippedWeapon()
 		return;
 	}
 
+	USkeletalMeshComponent* ArmsMesh = OwningCharacter->GetFirstPersonMesh();
+	if (!ArmsMesh)
+	{
+		return;
+	}
+
+	EquippedWeapon->AttachToComponent(ArmsMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
+
+	EquippedWeapon->SetActorRelativeLocation(EquippedWeapon->GetGripLocationOffset());
+	EquippedWeapon->SetActorRelativeRotation(EquippedWeapon->GetGripRotationOffset());
+
+	EquippedWeapon->SetInstigator(OwningCharacter);
+	EquippedWeapon->SetOwner(OwningCharacter);
+
+	if (USkeletalMeshComponent* MeshComp = EquippedWeapon->GetWeaponMesh())
+	{
+		MeshComp->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
+	}
+}
+
+bool UWeaponHolderComponent::FireEquippedWeapon()
+{
+	if (!EquippedWeapon)
+	{
+		return false;
+	}
+
+	AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner());
+	if (!OwningCharacter)
+	{
+		return false;
+	}
+
 	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
 	if (!PlayerController)
 	{
-		return;
+		return false;
 	}
 
 	int32 ViewportSizeX = 0;
@@ -124,8 +151,10 @@ void UWeaponHolderComponent::FireEquippedWeapon()
 	FVector TraceDirection;
 	if (PlayerController->DeprojectScreenPositionToWorld(CrosshairScreenPosition.X, CrosshairScreenPosition.Y, TraceStart, TraceDirection))
 	{
-		EquippedWeapon->Fire(TraceStart, TraceDirection);
+		return EquippedWeapon->Fire(TraceStart, TraceDirection);
 	}
+
+	return false;
 }
 
 

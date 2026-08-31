@@ -13,6 +13,7 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UWeaponHolderComponent;
+class UAnimMontage;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -40,6 +41,10 @@ class AProjectBopisCharacter : public ACharacter
 	/** Widget class to spawn for the reticle HUD */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UReticleWidget> ReticleWidgetClass;
+
+	/** Montage played on FirstPersonMesh when firing, for weapons with animation-driven feedback */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TObjectPtr<UAnimMontage> FireMontage;
 
 protected:
 
@@ -97,6 +102,10 @@ protected:
 	/**Handle fire inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoFire();
+
+	/** Handles the trigger being held down — only continues firing for full-auto weapons. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoFireHeld();
 
 	/** Handles aim-start inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")

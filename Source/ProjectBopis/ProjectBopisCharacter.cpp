@@ -19,24 +19,28 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	
-	// Create the first person mesh that will be viewed only by this character's owner
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("First Person Mesh"));
 	WeaponHolder = CreateDefaultSubobject<UWeaponHolderComponent>(TEXT("WeaponHolder"));
 
-	FirstPersonMesh->SetupAttachment(GetMesh());
-	FirstPersonMesh->SetOnlyOwnerSee(true);
-	FirstPersonMesh->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
-	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
-
-	// Create the Camera Component	
+	// Create the Camera Component first — the arms attach to it (not the other way around),
+	// so the arms rigidly follow camera pitch instead of needing skeletal aim-offset blending
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("First Person Camera"));
-	FirstPersonCameraComponent->SetupAttachment(FirstPersonMesh, FName("head"));
-	FirstPersonCameraComponent->SetRelativeLocationAndRotation(FVector(-2.8f, 5.89f, 0.0f), FRotator(0.0f, 90.0f, -90.0f));
+	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 90.0f));
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 	FirstPersonCameraComponent->bEnableFirstPersonFieldOfView = true;
 	FirstPersonCameraComponent->bEnableFirstPersonScale = true;
 	FirstPersonCameraComponent->FirstPersonFieldOfView = 70.0f;
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
+
+	// Create the first person mesh, now attached to the camera instead of the body.
+	// Relative location/rotation intentionally left at zero — this attachment
+	// relationship is new, so there's no prior tuned offset to reuse; needs
+	// visual tuning in the editor once compiled.
+	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("First Person Mesh"));
+	FirstPersonMesh->SetupAttachment(FirstPersonCameraComponent);
+	FirstPersonMesh->SetOnlyOwnerSee(true);
+	FirstPersonMesh->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
+	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
 
 	// configure the character comps
 	GetMesh()->SetOwnerNoSee(true);
@@ -76,6 +80,9 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		//Firing
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this,
 			&AProjectBopisCharacter::DoFire);
+
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this,
+			&AProjectBopisCharacter::DoFireHeld);
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::MoveInput);
@@ -151,8 +158,40 @@ void AProjectBopisCharacter::DoFire()
 {
 	if (WeaponHolder)
 	{
-		WeaponHolder->FireEquippedWeapon();
+		// Only animate if the shot actually happened — a rate-capped click must not replay the montage.
+		const bool bDidFire = WeaponHolder->FireEquippedWeapon();
+
+		if (bDidFire)
+		{
+			if (AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
+			{
+				if (EquippedWeapon->UsesAnimationDrivenFeedback() && FireMontage)
+				{
+					if (UAnimInstance* AnimInstance = FirstPersonMesh->GetAnimInstance())
+					{
+						AnimInstance->Montage_Play(FireMontage);
+					}
+				}
+			}
+		}
 	}
+}
+
+void AProjectBopisCharacter::DoFireHeld()
+{
+	if (!WeaponHolder)
+	{
+		return;
+	}
+
+	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
+	if (!EquippedWeapon || EquippedWeapon->GetFireMode() != EWeaponFireMode::Auto)
+	{
+		return;
+	}
+
+	// The weapon's own fire-rate cap paces this; Triggered fires every frame the trigger is held.
+	DoFire();
 }
 
 void AProjectBopisCharacter::DoAimStart()

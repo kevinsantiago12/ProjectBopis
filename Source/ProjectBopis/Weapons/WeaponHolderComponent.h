@@ -26,8 +26,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
 	void EquipWeapon(AWeaponBase* WeaponToEquip);
 
+	/** Fires the equipped weapon. Returns false if nothing fired (no weapon, no controller, or rate-capped). */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
-	void FireEquippedWeapon();
+	bool FireEquippedWeapon();
 
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }
@@ -35,6 +36,12 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	/** Attaches the equipped weapon to the owner's hand socket and applies its grip offsets. */
+	void AttachWeaponToHand();
+
+	/** TEMP DEBUG: re-runs the attach 5s after BeginPlay, to test whether the initial snap is mistimed. */
+	FTimerHandle DebugResnapTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	int32 MaxCarriedWeapons = 2;

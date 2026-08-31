@@ -3,6 +3,14 @@
 
 #include "Weapons/WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/DecalComponent.h"
+#include "Weapons/ProjectileBase.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimSequence.h"
+
+
+static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
+	true,TEXT("Draw debug trace lines for weapon fire."),ECVF_Cheat);
 
 // Sets default values
 AWeaponBase::AWeaponBase()
@@ -15,27 +23,63 @@ AWeaponBase::AWeaponBase()
 
 }
 
-void AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
+bool AWeaponBase::CanFire() const
 {
-	/*Fire Sound Effect*/
-	if (FireSound && !bUseAnimationDrivenFeedback)
+	return TimeSinceLastShot >= TimeBetweenShots;
+}
+
+bool AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
+{
+	if (!CanFire())
 	{
-		UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
+		return false;
 	}
 
-	if (MuzzleFlash && !bUseAnimationDrivenFeedback)
+	if (!bUseAnimationDrivenFeedback)
 	{
-		UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName);
+		if (FireSound)
+		{
+			UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
+		}
+
+		if (MuzzleFlash)
+		{
+			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName);
+		}
+	}
+	else if (FireAnimation)
+	{
+		WeaponMesh->PlayAnimation(FireAnimation, false);
 	}
 
-
-	// Lerps between Base and Max Bloom Angle based on 0-1 CurrentBloom
 	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, CurrentBloom);
-
-	//UE's built in "Cone on this direction" function, set direction offset
 	const FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
 
-	//Apply Bloom spread to trace angle
+	if (bIsProjectileWeapon && ProjectileClass)
+	{
+		FireProjectile(TraceStart, SpreadDirection);
+	}
+	else
+	{
+		FireHitscan(TraceStart, SpreadDirection);
+	}
+
+	float BloomToAdd = BloomPerShot;
+
+	if (IntendedTimeBetweenShots > 0.0f && TimeSinceLastShot < IntendedTimeBetweenShots)
+	{
+		const float CadenceViolationRatio = 1.0f - (TimeSinceLastShot / IntendedTimeBetweenShots);
+		BloomToAdd += BloomPerShot * CadenceViolationRatio;
+	}
+
+	CurrentBloom = FMath::Min(1.0f, CurrentBloom + BloomToAdd);
+	TimeSinceLastShot = 0.0f;
+
+	return true;
+}
+
+void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection)
+{
 	const FVector TraceEnd = TraceStart + (SpreadDirection * MaxRange);
 
 	FCollisionQueryParams QueryParams;
@@ -43,34 +87,61 @@ void AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
 	QueryParams.AddIgnoredActor(GetOwner());
 
 	FHitResult HitResult;
-	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd,
-		ECC_Visibility, QueryParams);
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
 
 	const FVector DebugLineStart = TraceStart + (SpreadDirection * 150.0f);
 
-	DrawDebugLine(GetWorld(), DebugLineStart, bHit ? HitResult.Location : TraceEnd, bHit ?
-		FColor::Green : FColor::Red, false, 2.0f, 0, 1.0f);
-
-	if (bHit && HitResult.GetActor())
+	if (CVarShowWeaponTrace.GetValueOnGameThread())
 	{
-
-		UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), BaseDamage, SpreadDirection,
-			HitResult, GetInstigatorController(), this, nullptr);
+		DrawDebugLine(GetWorld(), DebugLineStart, bHit ? HitResult.Location : TraceEnd, bHit ?
+			FColor::Green : FColor::Red, false, 2.0f, 0, 1.0f);
 	}
 
-	//Apply semi-auto penalty when violating cadence, adds 0-1 bloom per shot based on Cadence violation ratio
-	const float MinTimeBetweenShots = 1.0f / IntendedCadence;
-	float BloomToAdd = BloomPerShot;
-
-	if (TimeSinceLastShot < MinTimeBetweenShots)
+	if (bHit)
 	{
-		const float CadenceViolationRatio = 1.0 - (TimeSinceLastShot / MinTimeBetweenShots);
-		BloomToAdd += BloomPerShot * CadenceViolationRatio;
+		if (HitDecalMaterial)
+		{
+			if (UDecalComponent* SpawnedDecal = UGameplayStatics::SpawnDecalAtLocation(this, HitDecalMaterial, DecalSize,
+				HitResult.Location, HitResult.ImpactNormal.Rotation(), DecalLifeSpan))
+			{
+				SpawnedDecal->SetFadeScreenSize(0.0f);
+			}
+		}
+
+		if (HitResult.GetActor())
+		{
+			UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), BaseDamage, SpreadDirection,
+				HitResult, GetInstigatorController(), this, nullptr);
+		}
+	}
+}
+
+void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
 	}
 
-	//Apply Bloom
-	CurrentBloom = FMath::Min(1.0f, CurrentBloom + BloomToAdd);
-	TimeSinceLastShot = 0.0f;
+	const FVector MuzzleLocation = WeaponMesh->DoesSocketExist(MuzzleSocketName)
+		? WeaponMesh->GetSocketLocation(MuzzleSocketName)
+		: WeaponMesh->GetComponentLocation();
+
+	// Aim from the muzzle toward where the camera-based shot would have landed, so the
+	// projectile converges on the reticle instead of flying parallel to the view.
+	const FVector AimPoint = TraceStart + (SpreadDirection * MaxRange);
+	const FRotator SpawnRotation = (AimPoint - MuzzleLocation).Rotation();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	if (AProjectileBase* Projectile = World->SpawnActor<AProjectileBase>(ProjectileClass, MuzzleLocation,
+		SpawnRotation, SpawnParams))
+	{
+		Projectile->SetDamage(BaseDamage);
+	}
 }
 
 // Called when the game starts or when spawned

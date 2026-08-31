@@ -8,6 +8,9 @@
 
 class USoundBase;
 class UParticleSystem;
+class UMaterialInterface;
+class UAnimSequence;
+class AProjectileBase;
 
 UENUM(BlueprintType)
 enum class EWeaponFireMode : uint8
@@ -28,11 +31,22 @@ public:
 	/** Returns the weapon's mesh component **/
 	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };
 
+	EWeaponFireMode GetFireMode() const { return FireMode; }
 	bool HasZoom() const { return bHasZoom; }
 	float GetZoomedFOV() const { return ZoomedFOV; }
+	bool UsesAnimationDrivenFeedback() const { return bUseAnimationDrivenFeedback; }
+	FVector GetGripLocationOffset() const { return GripLocationOffset; }
+	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
 
+	/** Whether enough time has passed since the last shot for this weapon to fire again. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void Fire(const FVector& TraceStart, const FVector& TraceDirection);
+	bool CanFire() const;
+
+	/** Fires the weapon. Returns false if the shot was blocked by the fire-rate cap. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	bool Fire(const FVector& TraceStart, const FVector& TraceDirection);
+	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
+	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
 
 	float GetCurrentBloom() const { return CurrentBloom; }
 
@@ -46,6 +60,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponFireMode FireMode = EWeaponFireMode::Semi;
 
+	/** Minimum seconds between shots — a hard mechanical cap; tapping faster than this does nothing.
+	    Should be shorter than IntendedTimeBetweenShots, which is the softer accuracy-based limit.
+	    Set to 0 to disable the cap entirely. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	float TimeBetweenShots = 0.125f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float BaseDamage = 10.0f;
 
@@ -58,6 +78,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float ZoomedFOV = 40.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	bool bIsProjectileWeapon = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<AProjectileBase> ProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	FVector GripLocationOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	FRotator GripRotationOffset = FRotator::ZeroRotator;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<USoundBase> FireSound;
 
@@ -69,6 +101,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	bool bUseAnimationDrivenFeedback = false;
+
+	/** Played on the weapon's own mesh when firing, if this weapon uses animation-driven feedback. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UAnimSequence> FireAnimation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UMaterialInterface> HitDecalMaterial;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	FVector DecalSize = FVector(5.0f, 5.0, 5.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	float DecalLifeSpan = 10.0f;
 
 	/** Accuracy cone at zero bloom - best-case spread, in degrees. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
@@ -90,9 +135,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
 	float BloomDecayDelay = 0.3f;
 
-	/** Shots per second this weapon is "meant" to be fired at - exceeding this adds extra bloom penalty. */
+	/** Seconds between shots this weapon is "meant" to be fired at - firing sooner adds extra bloom penalty.
+	    Should be longer than TimeBetweenShots, which is the hard mechanical cap. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float IntendedCadence = 6.0f;
+	float IntendedTimeBetweenShots = 0.167f;
 
 	float CurrentBloom = 0.0f;
 	float TimeSinceLastShot = 0.0f;
