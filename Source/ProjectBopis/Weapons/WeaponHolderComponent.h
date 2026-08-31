@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Weapons/WeaponBase.h"
 #include "WeaponHolderComponent.generated.h"
 
 class AWeaponBase;
@@ -26,9 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
 	void EquipWeapon(AWeaponBase* WeaponToEquip);
 
-	/** Fires the equipped weapon. Returns false if nothing fired (no weapon, no controller, or rate-capped). */
+	/** Fires the equipped weapon. See EFireResult for why a shot may not have happened. */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
-	bool FireEquippedWeapon();
+	EFireResult FireEquippedWeapon();
 
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }

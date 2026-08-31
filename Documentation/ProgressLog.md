@@ -12,6 +12,144 @@
 
 ---
 
+## 2026-08-31 (2)
+**Summary:** Big feature session — battle rifle configured, Halo-style scoped
+zoom, per-weapon animation selection, first/third-person mesh split, and
+Phase A of the ammo system. Also several bridge-workflow lessons learned
+the hard way.
+
+**Battle rifle configured** — new `BP_BattleRifle` (`Darkness_SniperRifle`
+mesh, `Fire_SniperRifle_W`, `SniperRifleA_Fire01`,
+`P_SniperRifle_MuzzleFlash_Dark`, `MI_Generic_1` decal). 35 damage, 8000
+range, `MaxSpreadAngle 4`, `BloomPerShot 0.18`, `TimeBetweenShots 0.2` /
+`IntendedTimeBetweenShots 0.286`, Semi, zoom at FOV 30. That completes all
+three weapon-configuration items in Phase 4. Left animation-driven since
+its mesh and fire animation are the same asset family. **Note:** the live
+instance reported its mesh as `Darkness_AssaultRifle`, not the
+`Darkness_SniperRifle` set — unverified, likely the same missing-compile
+issue described below.
+
+**Halo-style scoped zoom.** Zoom previously narrowed world FOV only, and
+the arms didn't change — which was the deliberate Phase 3 call
+(`FirstPersonFieldOfView` is a separate projection from the main FOV, so
+zooming wouldn't distort the gun). User wanted different behaviour;
+options were (1) hide arms+weapon while scoped, Halo-style, (2) scale
+`FirstPersonFieldOfView` too, (3) ADS-style reposition. **Chose (1)** —
+matches the Bungie-era touchstone, avoids near-camera perspective
+distortion, and sidesteps the untuned grip position entirely. New
+`SetFirstPersonVisibility()` on the character, called from
+`DoAimStart`/`DoAimEnd`, gated on `HasZoom()` going in but **restored
+unconditionally** on aim-end so a weapon swap while zoomed can't strand
+you with invisible arms. Still missing a scope overlay widget.
+
+**Per-weapon animation selection (Option A of three).** Considered:
+(A) weapon-type enum + Blend Poses by Enum, (B) Lyra-style Anim Layer
+Interface with linked layers, (C) data asset of clips. **Chose A** — one
+state machine, only the leaf clips swap, and adding a weapon is an enum
+value rather than a graph restructure. B is genuinely better at ~5+
+weapons or when weapons need distinct movesets, and A → B is a clean
+migration later since the enum becomes the layer selector.
+- New `EWeaponAnimType` (Pistol/Rifle) + `AnimType` property and a
+  `BlueprintPure GetAnimType()` on `WeaponBase`. The weapon states only
+  *which type it is* — consistent with the 2026-08-18 rule that the
+  animator owns the clips.
+- `FireMontage` on the character became
+  `TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> FireMontages`. Required
+  including `Weapons/WeaponBase.h` in the character header: UHT needs the
+  complete enum type for reflection, so a forward declaration won't do.
+- ABP graph work (enum variable + Blend Poses by Enum inside the existing
+  Idle/Move states) is user-side and still in progress.
+
+**Removed the `bUseAnimationDrivenFeedback` gate from the fire montage.**
+That flag was governing two unrelated things: where the *weapon's* sound
+and muzzle flash come from, and whether the *character* plays its arms
+animation. Switching the close-range rifle to code-driven feedback
+therefore silently disabled its arm animation. The arms montage now plays
+for any weapon with one mapped, independent of the flag. This is a
+narrower fix than the earlier proposal to split the flag in two, and
+removes the conflation at its source.
+
+**Muzzle flash position fix.** `SpawnEmitterAttached` returns a particle
+component that renders in **normal world space**, while `WeaponMesh` is
+tagged `FirstPersonPrimitiveType::FirstPerson` and renders through the FP
+projection — so the flash drew at the gun's true world position while the
+gun drew somewhere else on screen. Now calls
+`SetFirstPersonPrimitiveType(FirstPerson)` on the spawned component.
+**This may also be the answer to the standing "muzzle flash faces north"
+bug** — a world-projected effect on an FP-projected gun would look both
+misplaced and misaligned, which would explain why the Cascade local-space
+check came up clean. Needs retesting to confirm.
+
+**First/third-person mesh split — corrected mid-implementation.** First
+pass removed `GetMesh()->SetOwnerNoSee(true)` and hid `spine_01` upward on
+the body so the owner could see their own legs. **User corrected this:**
+`FirstPersonMesh` is itself a full-body `SKM_Manny_Simple` positioned at
+`(-15, 0, -155)` relative to the camera — standing under it, feet at
+ground level — so *it* already provides the legs. `GetMesh()` never needed
+to be owner-visible, and hiding `thigh_l`/`thigh_r` on the FP mesh would
+have deleted exactly the legs wanted. Final shape: `SetOwnerNoSee(true)`
+restored, `OwnerHiddenBodyBones` removed entirely, and a single
+`HiddenFirstPersonBones` array (default `head`) trimming only what the
+camera sits inside. Side benefit: no shadow stump, since the body mesh is
+untouched.
+
+**Ammo system — Phase A complete and tested.** Planned across four phases
+(A: state + gating + dry fire, B: reload, C: HUD, D: pickups). Decisions
+taken: **separate reserves per weapon** (not a shared pool),
+**auto-reload off** by default, **reload cancels on swap**.
+- New `EFireResult { Fired, RateLimited, Empty, NoWeapon }`. `Fire()` and
+  `FireEquippedWeapon()` now return it instead of `bool`. **Key design
+  point:** ammo was deliberately *not* folded into `CanFire()`, because
+  rate-limited and empty need different responses — rate-limited must be
+  silent, empty must click and (later) auto-reload. The enum widens the
+  channel that already existed rather than adding a parallel one.
+- `MagazineSize` / `StartingReserveAmmo` / `MaxReserveAmmo` /
+  `bInfiniteReserve` / `DryFireSound` on `WeaponBase`, initialised in
+  `BeginPlay` (not the constructor — per-Blueprint defaults aren't applied
+  yet at construction).
+- **Subtle bit:** the dry-fire path resets `TimeSinceLastShot`. Without
+  it `CanFire()` stays true every frame and a held trigger machine-guns
+  the click.
+- Ammo gate lives in `Fire()`, so future AI inherits it; `bInfiniteReserve`
+  is the opt-out.
+- On-screen `Ammo: <mag> / <reserve>` debug readout added under the bloom
+  line. **Confirmed working in PIE — fire stops when out of ammo.**
+
+**Bridge workflow lessons (important, cost real time):**
+- **A CDO read-back is not proof.** `AnimType` was set on the weapon CDOs
+  and verified as `Rifle`, but only `BP_FirstPersonCharacter` was
+  compiled — so spawned instances kept the C++ default (`Pistol`) and the
+  ABP faithfully reported Pistol. **Rule: set → compile *that* Blueprint →
+  save → verify against a live PIE instance, not the CDO.**
+- `reset_properties` can return `true` without actually clearing the
+  value; setting `"None"` explicitly worked where reset didn't.
+- Verified `GripLocationOffset` *does* apply correctly (live instance
+  matched `(0, -10, -2)`); it reads as "not changing" because the values
+  are small, further reduced by `FirstPersonScale 0.6`, and because the
+  offset is in **socket space** — X/Y/Z don't map to forward/right/up.
+- Montage assets can be duplicated and repointed via the bridge, but
+  `SequenceLength` is read-only and `CompositeSections` unreadable, so a
+  duplicated montage ends up internally inconsistent. `AM_Rifle_Fire` was
+  created this way and accepted as-is.
+
+**Open / carried forward:**
+- `TryGetPawnOwner` returns None every frame and floods the log. Fires
+  even with PIE stopped, so it's an editor-side preview instance — almost
+  certainly the ABP editor window being open. Harmless but buries real
+  errors.
+- Muzzle flash "faces north" — retest after the FP-tagging fix above.
+- The TEMP 5s re-snap timer still needs deleting (measured as doing
+  nothing).
+- `GripLocationOffset` tuning — the rifle still renders far too close.
+- Battle rifle mesh may be `Darkness_AssaultRifle` rather than the
+  intended sniper mesh.
+- Ammo Phase B (reload), C (HUD), D (pickups). Per-weapon magazine sizes
+  not yet set — all three currently use the `12/60/120` C++ default.
+  Rough proposal: pistol `12/60/120`, close-range rifle `32/160/320`,
+  battle rifle `18/72/144`.
+
+---
+
 ## 2026-08-31
 **Summary:** Projectile polish session — self-collision fixed properly,
 projectile spawn origin moved to the crosshair, and impact decals added

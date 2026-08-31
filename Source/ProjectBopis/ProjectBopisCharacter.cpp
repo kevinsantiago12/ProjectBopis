@@ -42,9 +42,16 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	FirstPersonMesh->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
 	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
 
-	// configure the character comps
+	// configure the character comps. The body is the world-space representation for
+	// other viewers and shadows only — the owner sees FirstPersonMesh instead, which
+	// is a full body under the camera and so provides the legs seen looking down.
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
+
+	// The camera sits inside this mesh's head, so hide the head and up. Legs and
+	// torso stay visible — HideBoneByName also hides a bone's children, so don't
+	// add anything further up the spine unless you want the arms gone too.
+	HiddenFirstPersonBones.Add(TEXT("head"));
 
 	GetCapsuleComponent()->SetCapsuleSize(34.0f, 96.0f);
 
@@ -58,6 +65,11 @@ void AProjectBopisCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	DefaultFOV = FirstPersonCameraComponent->FieldOfView;
+
+	for (const FName& BoneName : HiddenFirstPersonBones)
+	{
+		FirstPersonMesh->HideBoneByName(BoneName, EPhysBodyOp::PBO_None);
+	}
 
 	if (IsLocallyControlled() && ReticleWidgetClass)
 	{
@@ -158,18 +170,26 @@ void AProjectBopisCharacter::DoFire()
 {
 	if (WeaponHolder)
 	{
-		// Only animate if the shot actually happened — a rate-capped click must not replay the montage.
-		const bool bDidFire = WeaponHolder->FireEquippedWeapon();
+		// Only a real shot animates. RateLimited must stay silent, and Empty is
+		// handled by the weapon's own dry-fire sound.
+		const EFireResult FireResult = WeaponHolder->FireEquippedWeapon();
 
-		if (bDidFire)
+		if (FireResult == EFireResult::Fired)
 		{
 			if (AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
 			{
-				if (EquippedWeapon->UsesAnimationDrivenFeedback() && FireMontage)
+				// Deliberately not gated on UsesAnimationDrivenFeedback() — that flag
+				// says where the *weapon's* sound and muzzle flash come from. The arms
+				// animation is the character animating itself, and plays either way.
+				// Look the montage up by the weapon's anim type, so each weapon gets
+				// its own fire animation without the weapon owning the asset.
+				TObjectPtr<UAnimMontage>* FoundMontage = FireMontages.Find(EquippedWeapon->GetAnimType());
+
+				if (FoundMontage && *FoundMontage)
 				{
 					if (UAnimInstance* AnimInstance = FirstPersonMesh->GetAnimInstance())
 					{
-						AnimInstance->Montage_Play(FireMontage);
+						AnimInstance->Montage_Play(*FoundMontage);
 					}
 				}
 			}
@@ -205,6 +225,10 @@ void AProjectBopisCharacter::DoAimStart()
 			if (EquippedWeapon->HasZoom())
 			{
 				FirstPersonCameraComponent->SetFieldOfView(EquippedWeapon->GetZoomedFOV());
+
+				// Halo-style zoom: the magnified view replaces the weapon entirely
+				// rather than magnifying it, so hide the arms and gun while scoped.
+				SetFirstPersonVisibility(false);
 			}
 		}
 	}
@@ -214,4 +238,27 @@ void AProjectBopisCharacter::DoAimEnd()
 {
 	bIsAiming = false;
 	FirstPersonCameraComponent->SetFieldOfView(DefaultFOV);
+
+	// Unconditional, matching the FOV reset — a weapon swap while zoomed must
+	// never leave the arms hidden.
+	SetFirstPersonVisibility(true);
+}
+
+void AProjectBopisCharacter::SetFirstPersonVisibility(bool bVisible)
+{
+	if (FirstPersonMesh)
+	{
+		FirstPersonMesh->SetVisibility(bVisible, true);
+	}
+
+	if (WeaponHolder)
+	{
+		if (AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
+		{
+			if (USkeletalMeshComponent* WeaponMesh = EquippedWeapon->GetWeaponMesh())
+			{
+				WeaponMesh->SetVisibility(bVisible, true);
+			}
+		}
+	}
 }
