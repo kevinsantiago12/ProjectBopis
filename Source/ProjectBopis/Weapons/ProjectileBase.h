@@ -8,6 +8,7 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class UMaterialInterface;
 
 UCLASS()
 class PROJECTBOPIS_API AProjectileBase : public AActor
@@ -19,6 +20,11 @@ public:
 	AProjectileBase();
 
 	void SetDamage(float InDamage) { Damage = InDamage; }
+
+	/** Permanently stops this projectile colliding with or damaging the given actor.
+	    Used for whoever fired it, since the round spawns inside their own collision. */
+	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	void AddIgnoredActor(AActor* ActorToIgnore);
 
 protected:
 	// Called when the game starts or when spawned
@@ -40,7 +46,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
 	float FragmentDamage = 10.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Impact")
+	TObjectPtr<UMaterialInterface> HitDecalMaterial;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Impact")
+	FVector DecalSize = FVector(5.0f, 5.0f, 5.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Impact")
+	float DecalLifeSpan = 10.0f;
+
 	float Damage = 20.0f;
+
+	/** Actors this projectile must never collide with or damage — the firer and their weapon. */
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> IgnoredActors;
 
 public:	
 	// Called every frame

@@ -124,23 +124,22 @@ void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& Sprea
 		return;
 	}
 
-	const FVector MuzzleLocation = WeaponMesh->DoesSocketExist(MuzzleSocketName)
-		? WeaponMesh->GetSocketLocation(MuzzleSocketName)
-		: WeaponMesh->GetComponentLocation();
-
-	// Aim from the muzzle toward where the camera-based shot would have landed, so the
-	// projectile converges on the reticle instead of flying parallel to the view.
-	const FVector AimPoint = TraceStart + (SpreadDirection * MaxRange);
-	const FRotator SpawnRotation = (AimPoint - MuzzleLocation).Rotation();
-
+	// Spawn dead centre on the crosshair and fly straight down it — same origin the
+	// hitscan trace uses, so projectile and hitscan weapons agree on where shots go.
+	// The firer is ignored in AProjectileBase so this can't detonate on spawn.
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
 
-	if (AProjectileBase* Projectile = World->SpawnActor<AProjectileBase>(ProjectileClass, MuzzleLocation,
-		SpawnRotation, SpawnParams))
+	if (AProjectileBase* Projectile = World->SpawnActor<AProjectileBase>(ProjectileClass, TraceStart,
+		SpreadDirection.Rotation(), SpawnParams))
 	{
 		Projectile->SetDamage(BaseDamage);
+
+		// Explicit, so the round can't hit whoever fired it even if Instigator is unset.
+		Projectile->AddIgnoredActor(GetInstigator());
+		Projectile->AddIgnoredActor(GetOwner());
+		Projectile->AddIgnoredActor(this);
 	}
 }
 

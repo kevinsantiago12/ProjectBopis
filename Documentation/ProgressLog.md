@@ -12,6 +12,117 @@
 
 ---
 
+## 2026-08-31
+**Summary:** Projectile polish session — self-collision fixed properly,
+projectile spawn origin moved to the crosshair, and impact decals added
+(with a real bug found along the way). Also ran the first **live PIE
+measurement** using the editor bridge, which disproved two standing
+theories rather than confirming them.
+
+**Live PIE measurement — a genuinely new capability.** The `unreal-mcp`
+bridge can start/stop PIE (`StartPIE`/`StopPIE` with a warmup delay),
+find actors in the running PIE world (`find_actors` — refPaths look like
+`.../UEDPIE_0_Lvl_FirstPerson...`), read live actor transforms
+(`get_actor_transform`), read socket transforms off mesh assets, and
+capture the editor image. That means weapon-positioning questions can be
+answered with **numbers instead of screenshot guesswork** — which is how
+the earlier grip-offset attempts failed. Note `CaptureEditorImage`
+returns base64 too large for a tool result; decode the saved result file
+to a .png and read that instead.
+
+**Theory disproven: the TEMP 5s re-snap timer is not causing weapon
+misposition.** Measured the rifle's world transform ~1s into PIE and
+again after the 5s timer fired: `(30.8, 13.0, 355.8) yaw -71.97` vs
+`(31.2, 13.4, 356.4) yaw -71.80` — identical within idle-animation sway.
+The re-snap changes nothing measurable. (The timer is still in
+`BeginPlay` and still unnecessary; removing it is now a cleanup task, not
+a fix.)
+
+**Theory disproven: "correct the 72° grip yaw."** The weapon's world yaw
+sits ~72° off the camera's facing with `GripRotationOffset` at zero. I
+took that as an error, set `GripRotationOffset` yaw to 72, and measured
+the result — world yaw went to `-0.06`, i.e. numerically "aligned". But
+the user checked it visually and it was **wrong**: you ended up sighting
+down the side of the receiver. Reverted to zero. **Lesson: the weapon
+mesh's local +X is not its barrel axis**, so "align local +X with the
+view" is not the same as "point the gun forward" — and by extension the
+muzzle-position maths derived from that assumption was also wrong. Don't
+re-derive muzzle position from the actor transform; measure the socket's
+world transform directly if it's ever needed again.
+
+**Fixed: projectiles hitting the firer.** First attempt used
+`IgnoreActorWhenMoving` on the instigator/owner plus actor comparisons in
+`OnHit` — **not sufficient**, rounds still detonated on the player.
+Replaced with an explicit ignore list on `AProjectileBase`:
+- New `IgnoredActors` array + public `AddIgnoredActor()`.
+- `AddIgnoredActor` ignores **in both directions** — the projectile's own
+  movement sweeps ignore that actor, *and* that actor's root component
+  ignores the projectile. The one-way ignore was the hole: the other
+  side's sweep could still generate the blocking hit.
+- `AWeaponBase::FireProjectile` now calls `AddIgnoredActor` explicitly
+  for instigator/owner/self right after spawning, so it doesn't depend on
+  `Instigator` being wired correctly. `BeginPlay` still does its own pass.
+- `OnHit` early-returns on ignored actors **before `Destroy()`**, so a
+  stray self-hit passes through rather than consuming the round; the
+  fragment burst consults the same list.
+
+**Changed: projectile spawn origin → dead centre on the crosshair.**
+Reverted the 2026-08-30 muzzle-socket spawn. `FireProjectile` now spawns
+at `TraceStart` (the deprojected crosshair point) along `SpreadDirection`
+— the same origin `FireHitscan` uses, so projectile and hitscan weapons
+agree exactly on where shots go, bloom applies identically, and the
+weapon's grip orientation stops mattering for trajectory entirely. This
+only became viable once the self-collision fix landed, which was the
+original objection to spawning at the camera. Visual tradeoff accepted:
+rounds originate at the eye, not the barrel; if that ever reads badly the
+fix is cosmetic (muzzle flash/tracer at the socket, real projectile on
+the crosshair).
+
+**New: projectile impact decals** — `HitDecalMaterial`, `DecalSize`,
+`DecalLifeSpan` on `AProjectileBase` under a `Projectile|Impact`
+category. Put on the projectile rather than passed down from the weapon,
+matching how `FragmentRadius`/`FragmentDamage` already live there: the
+projectile owns its impact behaviour.
+
+**Real bug found and fixed: decals only appeared on some surfaces.**
+Initially looked like a decal *facing* problem, and the first instinct
+(surface `bReceivesDecals` settings) was wrong too — ruled out by the
+user's observation that **hitscan decals worked fine on the same
+surfaces**, so it had to be the code path. Root cause: the projectile
+passed `Hit.Location` where it should pass `Hit.ImpactPoint`.
+- `ImpactPoint` = the point on the surface that was struck.
+- `Location` = where the *querying shape's origin* ended up.
+- For a line trace (zero-thickness ray) these coincide — which is why
+  hitscan was never affected.
+- For a **swept sphere** the shape stops when its surface touches, so its
+  centre is still one radius out. `CollisionComponent` is
+  `InitSphereRadius(5.0f)`, so the decal spawned 5cm off the surface.
+- A decal is a **projection box**, and `DecalSize.X` is its projection
+  depth — also 5. So the box reached exactly as far as the gap, leaving
+  the surface right on the boundary: whether it painted came down to
+  angle, curvature, and float precision. Hence "only certain surfaces".
+- **General rule:** use `ImpactPoint` for anything placed *on* a surface
+  (decals, impact FX, scorch marks); reserve `Location` for where the
+  moving object actually ended up (stuck projectiles, ricochet origins).
+
+**Still open (carried forward):**
+- **Muzzle flash always faces north** — untouched today. See the
+  2026-08-30 (7) entry for everything already ruled out; next check is
+  the AnimNotify's Attached/Socket Name.
+- The TEMP 5s re-snap timer — now known to be doing nothing useful;
+  remove it.
+- Weapon grip position: the rifle renders far too close/large to the
+  camera (weapon origin only ~31cm out), and the hand pose still doesn't
+  grip properly. Untuned `GripLocationOffset`.
+- Decal roll is undefined on floors (`FVector::Rotation()` gives an
+  arbitrary yaw for a straight-up normal) — cosmetic, and worth solving
+  together with decal variation (task #39) via a random roll.
+- The fragment sweep still uses `Hit.Location`; harmless at a 150-unit
+  radius, but `ImpactPoint` would be consistent.
+- Rifle arm animations, battle rifle, reload/ammo system.
+
+---
+
 ## 2026-08-30 (7)
 **Summary:** Big session. Fixed the weapon-position bug for real (twice —
 two genuinely different root causes), built a fire-rate system from
