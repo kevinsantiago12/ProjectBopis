@@ -31,6 +31,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
 	EFireResult FireEquippedWeapon();
 
+	/** Reloads the equipped weapon. Returns false if it couldn't start. */
+	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
+	bool ReloadEquippedWeapon();
+
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }
 

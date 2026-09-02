@@ -106,6 +106,10 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AProjectBopisCharacter::DoAimStart);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AProjectBopisCharacter::DoAimEnd);
 
+		// Reloading
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this,
+			&AProjectBopisCharacter::DoReload);
+
 	}
 	else
 	{
@@ -168,31 +172,67 @@ void AProjectBopisCharacter::DoJumpEnd()
 
 void AProjectBopisCharacter::DoFire()
 {
-	if (WeaponHolder)
+	if (!WeaponHolder)
 	{
-		// Only a real shot animates. RateLimited must stay silent, and Empty is
-		// handled by the weapon's own dry-fire sound.
-		const EFireResult FireResult = WeaponHolder->FireEquippedWeapon();
+		return;
+	}
 
-		if (FireResult == EFireResult::Fired)
+	// Only a real shot animates. RateLimited and Reloading must stay silent, and
+	// Empty is handled by the weapon's own dry-fire sound.
+	const EFireResult FireResult = WeaponHolder->FireEquippedWeapon();
+
+	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
+	if (!EquippedWeapon)
+	{
+		return;
+	}
+
+	if (FireResult == EFireResult::Fired)
+	{
+		// Deliberately not gated on UsesAnimationDrivenFeedback() — that flag says
+		// where the *weapon's* sound and muzzle flash come from. The arms animation
+		// is the character animating itself, and plays either way. Looked up by the
+		// weapon's anim type, so each weapon gets its own without owning the asset.
+		TObjectPtr<UAnimMontage>* FoundMontage = FireMontages.Find(EquippedWeapon->GetAnimType());
+
+		if (FoundMontage && *FoundMontage)
 		{
-			if (AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
+			if (UAnimInstance* AnimInstance = FirstPersonMesh->GetAnimInstance())
 			{
-				// Deliberately not gated on UsesAnimationDrivenFeedback() — that flag
-				// says where the *weapon's* sound and muzzle flash come from. The arms
-				// animation is the character animating itself, and plays either way.
-				// Look the montage up by the weapon's anim type, so each weapon gets
-				// its own fire animation without the weapon owning the asset.
-				TObjectPtr<UAnimMontage>* FoundMontage = FireMontages.Find(EquippedWeapon->GetAnimType());
-
-				if (FoundMontage && *FoundMontage)
-				{
-					if (UAnimInstance* AnimInstance = FirstPersonMesh->GetAnimInstance())
-					{
-						AnimInstance->Montage_Play(*FoundMontage);
-					}
-				}
+				AnimInstance->Montage_Play(*FoundMontage);
 			}
+		}
+	}
+	else if (FireResult == EFireResult::Empty && EquippedWeapon->ShouldAutoReloadWhenEmpty())
+	{
+		// Handled here rather than inside the weapon, so the montage and the state
+		// change stay together — the weapon has no business knowing about montages.
+		DoReload();
+	}
+}
+
+void AProjectBopisCharacter::DoReload()
+{
+	// The montage only plays if a reload actually started, so mashing the key on a
+	// full magazine does nothing rather than replaying the animation.
+	if (!WeaponHolder || !WeaponHolder->ReloadEquippedWeapon())
+	{
+		return;
+	}
+
+	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
+	if (!EquippedWeapon)
+	{
+		return;
+	}
+
+	TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(EquippedWeapon->GetAnimType());
+
+	if (FoundMontage && *FoundMontage)
+	{
+		if (UAnimInstance* AnimInstance = FirstPersonMesh->GetAnimInstance())
+		{
+			AnimInstance->Montage_Play(*FoundMontage);
 		}
 	}
 }

@@ -77,6 +77,9 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 
 	if (EquippedWeapon)
 	{
+		// Or the timer fires on a weapon we're no longer holding.
+		EquippedWeapon->CancelReload();
+
 		EquippedWeapon->SetActorHiddenInGame(true);
 		EquippedWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
 	}
@@ -120,6 +123,11 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 	{
 		MeshComp->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
 	}
+}
+
+bool UWeaponHolderComponent::ReloadEquippedWeapon()
+{
+	return EquippedWeapon ? EquippedWeapon->Reload() : false;
 }
 
 EFireResult UWeaponHolderComponent::FireEquippedWeapon()

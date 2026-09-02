@@ -1,379 +1,394 @@
-# ProjectBopis — Implementation Design Document
+# ProjectBopis — Game Design Document
 
-> Local-only. Written by Claude, from the implementation side of this
-> project. The narrative canon in [Lore_And_Design_Notes.md](Lore_And_Design_Notes.md)
-> is authored by the user and their design partner (ChatGPT) — that file is
-> the source of truth for story, world, and lore, and I'm not rewriting it
-> or putting words in its mouth. What follows is my own read on what that
-> design asks of the codebase.
+> **A pitch-facing document.** No code, no parameters, no jargon. This is what
+> the game *is* and why it works that way.
 >
-> Each section leads with a plain-English explanation of the idea and why
-> it matters. Where there's an actual technical spec, it's broken out into
-> a separate **Implementation Notes** block — that's where the jargon lives.
+> Technical specifications live in
+> [Documentation/TechnicalDesignSpec.md](../Documentation/TechnicalDesignSpec.md).
+> Build sequence lives in [Documentation/ProjectPlan.md](../Documentation/ProjectPlan.md).
+> Narrative and world canon is owned by the design side and lives in
+> [Lore_And_Design_Notes.md](Lore_And_Design_Notes.md) — this document
+> summarises it for pitch purposes and does not extend it.
+>
+> Sections marked **Open** are genuinely undecided, not omissions.
 
-## What kind of game this is, mechanically
+---
 
-ProjectBopis is a straight-line shooter campaign set in a cyberpunk
-Philippines, but the setting isn't my department — that's the design side.
-My job starts where the trigger gets pulled. The combat touchstone is
-old-school Bungie Halo (the original trilogy, plus ODST and Reach), which
-is a clear target: gunfights are won by where you stand and how you use
-the trigger, not by staring down a scope or memorizing a pattern. That
-rules a few things out right away — no bonus for aiming down sights, no
-recoil pattern to practice, no bullet-sponge enemies — and gives the
-combat a proven shape to build toward instead of an open-ended one.
+## Overview
 
-## Combat: why "bloom" instead of the usual alternatives
+**A first-person shooter set in the Philippines, 2098.** Hostile synthetics
+have turned on the country that built them. You have a gun.
 
-Most shooters keep guns accurate one of three ways: you get more accurate
-by aiming down sights, the gun kicks upward in a pattern you have to fight,
-or the gun gets less accurate the longer you hold the trigger and recovers
-once you ease off — that last one is what Halo: Reach called "bloom," and
-it shows up as your crosshair visibly widening and shrinking. The design
-rules out the first two, and I think that's the right call here, not just
-because Reach did it:
+The combat touchstone is Bungie-era Halo — the original trilogy, ODST, and
+Reach. That is a deliberate, narrow reference, and it settles a lot of
+questions before they're asked: fights are won by where you stand and how you
+pace your trigger, not by holding a scope steady or memorising a recoil
+pattern. No bullet-sponge enemies. No aim-down-sights bonus. A weapon you like
+should stay useful for most of the campaign.
 
-- **Aiming for accuracy** rewards standing still and posting up, which
-  fights against a game that wants you moving, strafing, and using cover
-  creatively.
-- **A recoil pattern** turns "skill" into memorizing how one specific gun
-  kicks, practiced outside the fight. That's fine in some games, but it
-  doesn't suit fast, improvised firefights that are supposed to be won by
-  reading the room, not a known pattern.
-- **Bloom** ties accuracy to pacing, and that's something you can read in
-  the moment just by looking at your crosshair — do I have time for
-  another shot, or should I ease off? That's a skill that carries over to
-  every gun, which matters if picking up any weapon is supposed to feel
-  immediately usable.
+The setting is the part nobody else is making. Not "generic cyberpunk city with
+Filipino signage" — a Philippines that is recognisably descended from the real
+one, where modern and historical Filipino culture, languages, institutions,
+architecture, religion and social structures visibly survive, transformed by
+decades of technology and money.
 
-So the rule is simple: **aiming down sights only changes what you see, not
-how accurate the gun is.** Accuracy comes from bloom, full stop. That has
-to hold true everywhere the weapon code touches accuracy, or the whole
-system quietly breaks back into "aiming is just better."
+### The three pillars
 
-### Implementation notes
-- Weapon accuracy is driven entirely by a bloom value, not by aim state.
-- Aiming (right-click/LT) must not touch spread, cone angle, bloom
-  growth/decay, or damage — it's purely a camera/UI state. It's allowed to
-  add a center dot to the reticle, and to trigger a zoomed FOV *if the
-  weapon has zoom*, but nothing that resolves the shot.
-- Per-weapon data needed to drive bloom:
+**Trigger discipline over twitch aim.** The core skill is firing as fast as
+you can while keeping your accuracy suitable for the distance you're fighting
+at. It's readable in the moment, it carries across every weapon in the game,
+and it makes picking up an unfamiliar gun feel immediately usable.
 
-  | Parameter | What it controls |
-  |---|---|
-  | `BaseSpreadAngle` | Accuracy cone at zero bloom (best case). |
-  | `MaxSpreadAngle` | Accuracy cone at full bloom (worst case). |
-  | `BloomPerShot` | Bloom added per shot fired (0–1 scale). |
-  | `BloomDecayRate` | Bloom recovered per second while not firing. |
-  | `BloomDecayDelay` | Grace period after the last shot before decay starts. |
-  | `IntendedCadence` | For semi-auto/precision weapons — firing faster than this adds an extra bloom penalty on top of the normal per-shot amount. |
+**Linear navigation, nonlinear combat.** You go one way through the level.
+Once you're in a fight, the space supports many approaches — not because
+there are separate routes for separate playstyles, but because the geometry
+itself rewards different weapons in different ways.
 
-- **Configured values (2026-08-30).** The table above is the *glossary*; the
-  numbers below are the first actual tuning pass, landed on `BP_Pistol`.
-  They are **Claude-proposed starting values, not design canon** — chosen to
-  be Halo: Reach-accurate in shape (a first shot from full rest is always
-  precise, so `BaseSpreadAngle` is `0°`, not just on the pistol but on every
-  planned weapon) and expected to move once there's something to shoot at.
+**The world is specific.** Every part of the setting should be somewhere you
+couldn't set another game without changing it.
 
-  | Field | Pistol (landed) | Close-range rifle (planned) | Battle rifle (planned) |
-  |---|---|---|---|
-  | `BaseDamage` | 25 | 15 (+ fragment burst) | 35 |
-  | `MaxRange` | 5000 | 2500 | 8000 |
-  | `BaseSpreadAngle` | 0° | 0° | 0° |
-  | `MaxSpreadAngle` | 3.0° | 6.0° | 4.0° |
-  | `BloomPerShot` | 0.12 | 0.08 | 0.18 |
-  | `BloomDecayRate` | 0.8 | 0.5 | 0.6 |
-  | `BloomDecayDelay` | 0.25 | 0.2 | 0.35 |
-  | `IntendedCadence` | 5 | 10 | 3.5 |
-  | `FireMode` | Semi | Auto | Semi |
-  | `bHasZoom` | false | false | true (`ZoomedFOV` ≈30) |
-  | `bIsProjectileWeapon` | false | true | false |
-  | `bUseAnimationDrivenFeedback` | true | false (until rifle anims exist) | false (until its anims exist) |
+---
 
-- The live bloom value (0–1) must drive both the actual random spread used
-  to resolve a shot *and* the reticle's visual expansion, from the same
-  source number — if those two are ever computed separately, the reticle
-  can lie about the gun's real accuracy, which breaks the whole premise.
-- Zoom is a separate per-weapon flag from generic aim, so giving a weapon a
-  scope can't accidentally also grant it better accuracy.
+## Combat
 
-## Weapons should be tuning knobs, not one-off systems
+### Accuracy comes from pacing, not from aiming
 
-If we want a favorite gun to stay useful for most of the game, weapons
-can't each be their own special, hand-built system — they should mostly be
-the same gun underneath, just tuned differently: how fast it fires, how
-its accuracy behaves, how much damage it does, how far it reaches, whether
-it zooms. Ammo should work the same way across guns too, rather than each
-weapon having its own separate reload rules, so running low nudges you
-toward switching weapons instead of forcing it.
+Most shooters handle gun accuracy one of three ways: aiming down sights makes
+you accurate, the gun kicks in a pattern you fight, or the gun loses accuracy
+the faster you fire and recovers when you ease off. That third one — Halo:
+Reach called it **bloom** — is the model here, and the other two are ruled out
+on purpose.
 
-One thing I can't decide myself: how many guns you can carry at once. Two
-is the classic Halo answer, but design hasn't locked that in yet, so I'm
-building things so that number can change later without a rebuild.
+**Aiming for accuracy** rewards standing still and posting up, which fights
+against a game that wants you moving, strafing and using cover creatively.
 
-### Implementation notes
-- Shared weapon base class, differentiated by data (fire mode, the bloom
-  table above, damage, range falloff, zoom flag) rather than per-weapon
-  custom firing code.
-- Shared ammo-pool/pickup model rather than bespoke per-weapon reload
-  logic.
-- Weapon-holder component built with a **configurable** carry capacity
-  (not hardcoded to 2), since the carry limit is still undecided.
+**A recoil pattern** turns skill into memorising how one specific gun kicks,
+practised outside the fight. That suits some games; it doesn't suit fast,
+improvised firefights meant to be won by reading the room.
 
-## Weapon tech: why one gun is a real projectile, not hitscan
+**Bloom** ties accuracy to pacing, and you can read it in the moment by looking
+at your crosshair — do I have time for another shot, or should I ease off?
 
-Three weapons, one of them a real travel-time projectile instead of an
-instant hitscan trace — the design reason is dodgeability. A projectile is
-only interesting if the player can actually see it coming and juke it, and
-that only matters at **close range**, where an enemy would otherwise have
-zero reaction window against an instant-hit weapon. So it's the
-close-range weapon that gets the slow, visible round; the mid-range battle
-rifle stays hitscan, because at its intended engagement distance a
-perceptible travel time would just read as an aiming penalty, not a
-dodge-skill test.
+The rule, stated plainly: **aiming changes what you see, never how accurate you
+are.** Your crosshair widens as you fire and tightens as you stop. A first shot
+from rest always goes exactly where you point it.
 
-The in-world justification is electromagnetic, not plasma — coilguns
-accelerate a solid slug through a sequence of magnetic coil stages, so
-muzzle velocity scales with how many stages/how much barrel length the
-weapon has. A compact close-range weapon simply doesn't have room for
-enough stages to reach hitscan-equivalent speeds; the mid-range battle
-rifle's longer barrel does. That's a physical reason for the split, not an
-arbitrary gameplay carve-out, and it stays consistent if more coilgun-type
-weapons get added later (short gun → slow, long gun → fast).
+### Hip-fire is the default, not a penalty
 
-To avoid "slow" reading as "weak," the close-range weapon's round is a
-saboted, pre-scored slug that fragments on impact — it trades penetration
-for a burst of shrapnel, so a hit that's slower to land also dumps more
-damage than a clean kinetic punch-through would. That gives it a real
-niche instead of just being an inferior hitscan gun: strongest against
-close/grouped/exposed targets, weaker against hard cover or armor plating,
-which is where the hitscan pistol and battle rifle stay relevant instead.
+You fight normally while moving, strafing, switching targets and meleeing.
+There is no arbitrary hip-fire accuracy penalty. Aiming is available and does
+something useful — it's targeting information and precision placement, and it
+may change your reticle — but it does not make the gun shoot straighter.
 
-### Implementation notes
-- `AProjectileBase` (real movement + collision + on-hit damage) belongs to
-  the **close-range weapon**, not the battle rifle. Pistol and battle
-  rifle stay hitscan.
-- On-hit behavior for the close-range projectile should express the
-  fragmentation as gameplay, not just visual flavor — e.g. a small-radius
-  damage burst / multi-trace spread centered on the impact point, rather
-  than a single point-damage hit like the hitscan weapons use.
+**Zoom is a separate thing from aiming**, restricted to weapons that earn it.
+It improves visibility and target acquisition. It does not improve accuracy.
+When a scoped weapon zooms, the view magnifies cleanly and the weapon leaves
+the screen — the Halo approach, rather than an over-the-shoulder sight picture.
 
-## Enemies should read at a glance, not just look different
+### What this means at higher difficulty
 
-The enemies are meant to be machines, not people, in a bunch of different
-shapes and sizes — and the player should be able to tell what they're
-dealing with instantly, the same way you can immediately clock an Elite
-versus a Grunt in Halo. That kind of instant read doesn't come from one
-generic enemy reskinned to look different — a floating drone and a
-four-legged war machine shouldn't move or behave the same way underneath.
-So rather than one catch-all enemy type with special cases bolted on over
-time, enemies should be built from interchangeable pieces — how they move,
-how they attack, what role they play in a fight — that get mixed and
-matched per enemy type.
+Harder settings demand better positioning, target prioritisation, accuracy
+management, ammo management, weapon knowledge and use of the arena — not a
+single correct solution to each room.
 
-### Implementation notes
-- The template's `ShooterNPC`/`ShooterAIController` classes were removed
-  along with the rest of `Variant_Shooter` — this gets built fresh rather
-  than extended from that code.
-- New base synthetic enemy actor, with movement type, attack behavior, and
-  battlefield role (grunt / elite / support) as data-driven, combinable
-  pieces, instead of one class accumulating `if (Type == Hover)`-style
-  branches over time.
-- Per-archetype StateTree assets (the StateTree plugin is already enabled
-  in the project) are a more natural fit than one shared tree with
-  branching conditions for every chassis.
+---
 
-## What the level philosophy asks of the code
+## Weapons
 
-This part is mostly a level-design job, not a code job — a room's shape is
-what makes a shotgun and a sniper rifle both work in the same space
-without needing separate paths for each. But it does put one constraint on
-the code: the system that decides where enemies spawn and when new waves
-trigger can't assume anything about a room's layout — no hardcoded idea of
-"the sniper lane" or "the flank route" — because the whole point is that
-the *same* room supports different playstyles. Practically, that means
-spawn points and encounter pacing should be data that whoever builds a
-level places by hand, using a shared tool, rather than assumptions baked
-into the game code itself.
+Weapons encourage playstyles. Levels never hard-force a weapon type. The goal
+is *"this weapon gives you another good way to solve this"*, never *"this room
+requires this exact gun."*
 
-## Narrative surface area stays small, on purpose
+Ammo availability is a **soft** pressure. Running low nudges you toward
+switching or picking something up; it doesn't strand you.
 
-There are no dialogue choices and no voiced opinions from the main
-character, which actually makes my job easier — no branching conversation
-system to build, nothing to track about what the player "said," no save
-data for choices that were never made. The story gets told one direction
-only, through other characters, cutscenes, and things you notice in the
-world. Unless that changes, I'm not building any kind of conversation
-system.
+### The starting three
 
-## Where the codebase actually is right now
+**Pistol** — a precise semi-automatic sidearm. Reliable at range if you pace
+your shots, punished if you spam them.
 
-Both the Shooter and Horror template variants are being removed — decided
-2026-08-09, we're building the gameplay systems from scratch rather than
-adapting the template's versions. That means the weapon/AI classes this
-document originally planned to audit and extend (`ShooterWeapon`,
-`ShooterNPC`, etc.) no longer exist; the systems below get built fresh
-against this doc's spec instead of grown out of template code. What
-remains is the base `FirstPerson` scaffolding (character/game
-mode/controller), which is still the project's default and still works.
-See `Documentation/ProjectPlan.md` for the ordered, phase-by-phase build
-sequence — this section just tracks current state, the plan tracks the
-path.
+**Close-range rifle** — full-automatic, built for corners and short sightlines.
+The one weapon that fires a *real projectile* rather than an instant hit.
 
-As of 2026-08-11, Phase 1 (weapon foundation) is **fully complete and
-tested working in PIE**: `AWeaponBase` (data-driven fire mode/damage/range/
-zoom, a hitscan `Fire()` that dispatches real damage via
-`UGameplayStatics::ApplyPointDamage`) and `UWeaponHolderComponent`
-(carry/equip, hand-socket attachment onto `FirstPersonMesh`, screen-accurate
-firing) both exist, compile, and work end to end. No accuracy model yet —
-that's Phase 2, in progress. Things worth flagging for whoever picks this
-up next:
-- Damage correctly dispatches on hit, but nothing has a `Health`
-  property or overrides `TakeDamage` yet, so it's currently inert —
-  intentional, since Phase 4 (enemies) is what's meant to consume it.
-- The weapon-holder's `StartingWeaponClass` (spawns a weapon at
-  `BeginPlay`) is a deliberate placeholder for testing, not the intended
-  final weapon-acquisition design — no pickup system exists yet.
-- A marketplace weapon pack, `Content/SciFiWeapDark/` (7 animated
-  weapons — Pistol/AssaultRifle/Shotgun/SniperRifle/RocketLauncher/
-  GrenadeLauncher/Knife — with sounds, FX, pickup Blueprints), was added
-  and is now the source for weapon meshes (currently `Darkness_Pistol`,
-  unanimated for now). It's kept in its own top-level folder, untouched —
-  moving/renaming assets inside a pack this size risks breaking its
-  internal cross-references, so treat it as read-only vendor content and
-  reference it from our own Blueprints/data rather than reorganizing it.
-  This is also why `WeaponBase::WeaponMesh` is a `USkeletalMeshComponent`
-  now, not `UStaticMeshComponent` — needed to use the pack's animated
-  meshes.
-- The weapon's trace source is **not** simple camera-forward. Per a
-  deliberate Halo-accuracy request, `WeaponHolderComponent` deprojects a
-  specific screen-space point (`CrosshairViewportPositionY = 0.667`,
-  i.e. horizontal center, 2/3 down the viewport — matching Halo's actual
-  reticle position) via `APlayerController::DeprojectScreenPositionToWorld`,
-  rather than tracing from the raw camera transform. This is the
-  intended permanent behavior, not a placeholder.
+**Battle rifle** — mid-range, semi-automatic, deliberate. The scoped weapon,
+and the one most likely to become a player's favourite for a long stretch of
+the campaign.
 
-As of 2026-08-12, Phase 2 (bloom/accuracy) is also **fully complete**:
-`WeaponBase` now has real bloom state (`CurrentBloom`/`TimeSinceLastShot`),
-spread driven by `FMath::Lerp`/`FMath::VRandCone`, decay, and a cadence
-penalty for firing faster than a weapon's intended pace — matching the
-combat spec in full, not just planned. Phase 3 (reticle/aim/zoom UI) is
-underway: `UReticleWidget` exists as the C++ foundation, and a second
-marketplace pack, `Content/CleanFlatIcons/` (generic icon set, ~17,800
-files), was added for crosshair art — same "leave vendor content in its
-own folder, untouched" rule as `SciFiWeapDark`. The reticle is confirmed
-showing on screen in PIE, and aim input/state (`AProjectBopisCharacter::IsAiming()`)
-is wired up.
+### Why one gun fires a real projectile
 
-As of 2026-08-17, Phase 3 is **fully complete**: zoom FOV gating
-(`WeaponBase::HasZoom()`/`GetZoomedFOV()`, camera `FieldOfView` — not
-`FirstPersonFieldOfView`, a separate property that only governs the
-arms/weapon rendering pass) and the sanity check both closed out, including
-a real fix — zoom and the Halo-accurate off-center trace source
-(`CrosshairViewportPositionY = 0.667`) permanently disagreed on where
-"center" was once FOV actually changed, since FOV always narrows around
-the camera's true optical center. Simplified back to `0.5f` (true center)
-for both hip-fire and zoom rather than building dynamic per-state
-repositioning — a deliberate scope call. Phase 4 fire feedback (per-weapon
-`FireSound`/`MuzzleFlash`/`MuzzleSocketName`, plus a `bUseAnimationDrivenFeedback`
-flag for once real fire animations exist) is also complete; the
-hit-impact decal step is in progress using a newly imported pack,
-`Content/UWC_Bullet_Holes/` (real per-surface decal materials).
+A travel-time projectile is only interesting if you can see it coming and
+dodge it — and that only matters at **close range**, where an enemy would
+otherwise have no reaction window at all against an instant hit. At the battle
+rifle's engagement distance, visible travel time would just read as an aiming
+penalty rather than a test of anyone's reflexes.
 
-As of 2026-08-18, hit decals, `AProjectileBase` (movement/collision/
-direct damage/fragmentation burst), and forking `WeaponBase` into
-`FireHitscan`/`FireProjectile` are all **complete and compiled** — the
-projectile weapon system works end to end, though no weapon is actually
-configured to use it yet. Along the way, `GetInstigatorController()`
-(called since Phase 1, always silently null) finally resolves correctly,
-since `WeaponHolderComponent::EquipWeapon` now sets `Instigator`/`Owner`
-on the equipped weapon. POV arms animation is underway using clips
-migrated from Epic's **Lyra Starter Game** sample (not the originally
-planned generic animset) — a basic Idle/Move state machine
-(`ABP_FirstPersonArms`) is confirmed working in PIE for the pistol; Fire/
-Reload montages and the rifle's equivalent setup are still open.
+The in-world reason is electromagnetic, not exotic. These are coilguns: they
+accelerate a solid slug through a sequence of magnetic stages, so muzzle
+velocity scales with how much barrel you have. A compact close-range weapon
+doesn't have room for enough stages to reach the speeds a longer weapon
+manages. Short gun, slow round. Long gun, fast round. That rule holds if more
+weapons get added later.
 
-**Architecture principle established 2026-08-18: animation feedback data belongs
-to the animator, not the weapon.** The first pass put `FireMontage` directly on
-`WeaponBase`, triggered by reaching into the owning character. That broke down
-under a simple test: an `UAnimMontage` is authored against one specific
-skeleton, so a single montage property on the weapon could only ever be
-correct for one skeleton — the moment the same weapon is fired by a
-different skeleton (a future AI enemy, most likely), it's wrong. Fixed by
-moving `FireMontage` onto `AProjectBopisCharacter` itself; `WeaponBase` now
-only exposes a pure bool (`UsesAnimationDrivenFeedback()`). The rule going
-forward: a weapon may say *whether* it wants animation-driven feedback, but
-never *what* to play — each animator (the player character now, each enemy
-archetype later) owns its own skeleton-appropriate montage/feedback lookup.
+To stop "slow" reading as "weak", the close-range round is pre-scored to
+fragment on impact — it trades penetration for a burst of shrapnel. Strongest
+against close, grouped or exposed targets; weakest against armour and hard
+cover, which is exactly where the other two stay relevant.
 
-As of 2026-08-30, the first-person rig itself changed shape, and a subtle
-rendering bug behind it got fixed. The camera and arms now attach the
-opposite way round from the FPS template: the camera hangs off the capsule,
-and `FirstPersonMesh` hangs off the *camera*, so the arms rigidly follow
-where you're looking instead of needing skeletal aim-offset blending to fake
-it. Separately, `WeaponBase` gained `GripLocationOffset`/`GripRotationOffset`
-— per-weapon corrections applied on equip, so a weapon whose mesh pivot
-doesn't line up with the hand socket can be nudged into place from data
-rather than by editing the mesh. Both defaults are zero; nothing is tuned
-yet.
+### Open
 
-The bug worth remembering: the equipped pistol rendered in the wrong place,
-but only sometimes — correct on a fresh editor start, wrong after a
-Stop→Play in the same session, and different again between first-person and
-external views. The transform data was right the whole time. The cause was
-`FirstPersonPrimitiveType` being set by direct field assignment instead of
-through `SetFirstPersonPrimitiveType()`, which left the render proxy holding
-a stale transform. **General rule this establishes: any `UPROPERTY` that
-affects how something renders should be set through its paired setter, not
-assigned directly** — the setter is what invalidates render state. This
-matters most at runtime; construction-time assignment is harmless, since
-there's no proxy yet.
+- **How many weapons you carry at once.** Two is the classic Halo answer.
+  Not locked.
+- **The full weapon roster** beyond these three.
 
-**Scope decision (2026-08-12):** enemies (old Phase 4) are deliberately
-deferred behind a new phase focused on getting three weapons fully
-realized first — sound, muzzle flash, hit decals, a real projectile
-weapon (the close-range rifle; pistol and battle rifle stay hitscan —
-reversed from the original 2026-08-12 call, see the "Weapon tech" section
-above for why), and proper POV arms animation. See `Documentation/ProjectPlan.md`
-Phase 4 for the full breakdown. Animation scope was briefly considered for
-*both* `FirstPersonMesh` (POV) and `Mesh` (the body — how any other actor
-would see the player), reasoning that keeping both functional now would
-avoid retrofitting for spectate/co-op later — but that was walked back to
-just the arms; animating the body is deferred until spectate/co-op is
-actually being built, not done preemptively.
+---
 
-**Engineering gotcha worth knowing before touching native classes again:**
-Unreal's Live Coding cannot safely handle a class member's *type* changing
-(confirmed 2026-08-12, via the engine's own log warning after `WeaponMesh`
-went from `UStaticMeshComponent` to `USkeletalMeshComponent`) — it silently
-corrupts any Blueprint built on that class rather than failing loudly. Any
-change to an existing member's type needs a full editor restart + Rebuild
-Solution, never a Live Coding patch. Full detail in `Documentation/ProjectPlan.md`'s
-"Gotchas" section.
+## Enemies
 
-## Engineering backlog
-Superseded by `Documentation/ProjectPlan.md`, which breaks this same work
-into ordered phases meant to be tackled incrementally. Keeping a short
-pointer here rather than a duplicate list:
-1. Weapon foundation + bloom accuracy model (Project Plan Phases 1-2). ✅
-2. Reticle/aim/zoom UI (Phase 3). ✅
-3. Weapon content & feel — three fully-realized weapons (Phase 4, in progress).
-4. Enemy archetype foundation (Phase 5).
-5. First playable arena to validate the combat loop (Phase 6).
+The enemies are machines. Not people.
+
+"AI" is the intelligence; **synthetics** are the physical force you fight —
+machine bodies controlled or inhabited by it. Humans remain in the story as
+corrupt, antagonistic, manipulative or simply responsible for dangerous
+technology, but they are not what you shoot.
+
+### Readability is the design requirement
+
+You should be able to tell what you're dealing with instantly, the way you can
+immediately clock an Elite from a Grunt in Halo. That instant read doesn't come
+from one enemy reskinned several ways — a hovering drone and a four-legged war
+machine shouldn't move or behave the same underneath.
+
+So enemies are built from interchangeable pieces — how they move, how they
+attack, what role they play in a fight — mixed and matched per type. Distinct
+silhouettes, distinct behaviours, distinct battlefield roles.
+
+Possible chassis: humanoid infantry, quadrupeds, hovering units, repurposed
+industrial machines, swarms, heavily armoured elites, enormous combat
+platforms.
+
+### Open
+
+- **Why the synthetics turned hostile.** Deliberately unresolved, and
+  deliberately *not* the default "AI wakes up and decides humanity must die" —
+  the cause should be specific to this world's history.
+- **The synthetic hierarchy** — what ranks and roles exist.
+
+---
+
+## World
+
+### The Philippines, 2098
+
+The country spotted an opportunity. As the rest of the world responded to the
+harms of frontier AI research with restrictions — while cheerfully continuing
+to *buy* AI-derived products — the Philippines made itself the place where the
+restricted work could legally happen.
+
+The result is a genuine contradiction rather than a simple dystopia. Foreign
+money poured in. So did infrastructure, tech transfer, industry and
+corruption. Decades of real economic growth followed: modernised
+infrastructure, a serious domestic robotics and defence industry, globally
+important universities, powerful Filipino tech companies, engineers moving
+*in* rather than out.
+
+And the Filipino counter-argument is a good one: wealthy nations benefited
+from this technology and then tried to pull the ladder up. By 2098 the AI
+economy is too important to the world to simply switch off.
+
+### Corporate espionage as a world engine
+
+Because so many competing international research operations sit physically
+close together, espionage is constant — poaching, prototype theft, sabotage,
+convenient facility fires, infiltration, bribery, reverse engineering.
+
+This matters beyond flavour: it explains why 2098 synthetics are so
+sophisticated, and why **no single corporation fully understands or controls
+the ecosystem**. One company's locomotion, another's stolen cognition, a
+third's theft of that, all reverse-engineered locally. Eventually nobody can
+say who invented what.
+
+### Luzon — "The Factory"
+
+A vast continuous sprawl, far bigger than Manila. Flatlands converted to solar
+farms feeding compute. Between them: data centres, automated factories,
+synthetic assembly plants, worker cities, cooling infrastructure, corporate
+research campuses.
+
+Old Philippine towns survive embedded inside it. The visual thesis is
+contrast — a centuries-old church, an ordinary neighbourhood, sari-sari
+commerce, a barangay basketball court, sitting beneath enormous futuristic
+industrial infrastructure.
+
+### High City and Low City
+
+Not one Midgar-style plate, but the accumulated result of decades of building
+over what was already there — new roads over old roads, rail over roads,
+corporate districts spanning older ones, decks connecting towers.
+
+**High City** is clean, orderly, maintained, spacious and sunlit. Glass,
+composite, landscaping, automated transit, restrained high-tech. The future
+visibly *works* here. The darkness is beneath the surface: surveillance,
+sensors, private security, synthetic labour, biometric access, corporate
+ownership.
+
+**Low City** is the original ground-level Philippines, buried underneath.
+Dense old concrete, endless modification, exposed cabling, cheap holographic
+advertising, wet streets, food stalls, repair shops, synthetic chop shops.
+Large parts get little direct sunlight because High City has the sky — which
+gives the neon an environmental reason rather than a stylistic one.
+
+Crucially, **Low City is not uniformly poor.** It holds poor communities, an
+established middle class, commercial districts, old wealthy enclaves,
+industrial businesses, and people who simply refused to leave. High City is
+planned and corporate; Low City is chaotic and culturally alive. Both stay
+recognisably Filipino — neither is Tokyo, neither is Night City.
+
+### Visayas — "The Resort"
+
+The counterpart to Luzon's industry: the entire region reshaped around
+leisure and tourism. Luxury destinations, nightlife, artificial reefs, medical
+tourism, corporate retreats, floating hotels, entertainment districts.
+
+Millions still live there — it isn't emptied — but the economy and land use
+are built around visitors, wealthy residents and international consumption.
+The available contrast: immaculate resort districts supported by worker
+communities deliberately kept out of sight.
+
+### Open
+
+- **Mindanao.** Left undefined on purpose rather than forced into a trio.
+- **The major corporations, families and factions.**
+- **The exact regulatory mechanism** the Philippines used.
+
+---
+
+## Narrative
+
+### The protagonist is the player
+
+There is no strongly authored personality. The protagonist may have a
+functional identity — why they're there, what they can do, what they carry —
+but the game never states what they think or believe.
+
+**No dialogue choices.** Not a technical shortcut; a deliberate position on
+whose viewpoint the story belongs to.
+
+### Viewpoints come from everyone else
+
+Supporting characters carry the opinions, and they're allowed to be
+interesting: they disagree, they argue about corporations and AI and politics,
+they lie, they misunderstand, they hold biases, and they can be sincere and
+wrong at the same time.
+
+The protagonist never declares which of them is correct. The player decides.
+
+### Lore serves the shooter
+
+The immediate premise has to land in one sentence: **hostile synthetics, here's
+a gun.** Everything deeper — the history, the politics, the competing
+interpretations of how the country got here — arrives through supporting
+characters, environments, background detail, optional lore, and corporate and
+government messaging.
+
+The world contains contradictions on purpose. Governments condemn frontier AI
+while importing its products. Foreign critics are economically dependent on
+Philippine technology. Corrupt officials take corporate money, and the
+resulting boom genuinely improves the country. High City offers a real
+standard of living and embodies corporate surveillance. Low City suffers
+neglect and is where the culture lives.
+
+**The FPS comes first.**
+
+### Open
+
+- **The inciting incident.**
+- **The protagonist's role, background and designation.**
+
+---
+
+## Scope
+
+### Campaign shape
+
+A **linear campaign, minimum ten levels**, built around a repeating and
+escalating loop:
+
+> 30 seconds of fun → a combat encounter → an encounter sequence → a level →
+> the campaign
+
+Core guaranteed gameplay is on-foot first-person combat. Everything else has
+to earn its place.
+
+### Arenas
+
+Navigation is linear; arenas are mini-sandboxes. This explicitly **does not**
+mean branching routes — there is no separate sniper path or stealth path.
+Everyone fights through the same space.
+
+Freedom comes from how you use the geometry. A battle-rifle player exploits a
+long central hallway; a close-range player exploits the short-sightline
+corners beside it. Same room, different tactics.
+
+The test for a good arena: **it stays fun with a different loadout.**
+
+### Deliberately out of scope
+
+**Vehicles** are not guaranteed. Nothing is designed around them unless they're
+added later and proven fun.
+
+**Branching conversation** doesn't exist, because dialogue choices don't.
+
+**Third-person and co-op** are not being built toward. Body animation for how
+other players would see you is deferred until there's an actual reason.
+
+### Where the build is
+
+The combat foundation is real and playable, not planned. Working today:
+
+- Weapons that fire, with the full bloom accuracy model driving both the shot
+  and the reticle
+- Three configured weapons — pistol, close-range rifle, battle rifle — with
+  distinct roles and tuning
+- A real projectile weapon with fragmenting impact
+- Fire rate limits, full-automatic fire, and per-weapon fire animation
+- Halo-style scoped zoom
+- Ammunition with magazines, reserves and reloading
+- Hit decals, muzzle flash, weapon sound
+
+Next: enemies. That's the milestone where the combat loop becomes a *game*
+rather than a shooting range — everything above currently has nothing to shoot
+at.
+
+---
+
+## Document map
+
+| Document | Purpose | Owner |
+|---|---|---|
+| **GameDesignDocument.md** | What the game is. Pitch-facing, non-technical. | Design |
+| **Lore_And_Design_Notes.md** | Narrative and world canon. | Design |
+| **TechnicalDesignSpec.md** | What the design asks of the codebase. | Implementation |
+| **ProjectPlan.md** | Ordered build sequence. | Implementation |
+| **ProgressLog.md** | Dated session history and decisions. | Implementation |
+
+---
 
 ## Changelog
+
 - 2026-08-09 — Initial skeleton created.
-- 2026-08-09 — Rewritten against locked canon from `Lore_And_Design_Notes.md`; added combat/bloom implementation spec and engineering backlog.
-- 2026-08-09 — Converted to local HTML artifact, rendered from the Markdown source.
-- 2026-08-09 — Reworded in full as an original implementation-design document, not a restructured summary of the lore notes.
-- 2026-08-09 — Rewritten again to separate plain-English explanations from technical jargon, which is now confined to "Implementation notes" blocks.
-- 2026-08-09 — Both template variants removed (starting gameplay systems from scratch); engineering backlog superseded by `Documentation/ProjectPlan.md`.
-- 2026-08-09 — Phase 1 weapon foundation (`WeaponBase`, `WeaponHolderComponent`, hitscan fire, input wiring) mostly implemented; noted as inert until Phase 4 adds a damage-consuming enemy.
-- 2026-08-11 — Phase 1 fully complete and tested in PIE. Integrated the `SciFiWeapDark` marketplace weapon pack (weapon mesh is now skeletal, not static). Trace source reworked to deproject a Halo-accurate screen-space point rather than using raw camera-forward. Phase 2 (bloom) started.
-- 2026-08-12 — Phase 2 (bloom/accuracy) fully complete and matches the combat spec. Diagnosed and documented a Live Coding data-type-change gotcha. Phase 3 (reticle UI) started; added the `CleanFlatIcons` marketplace pack for crosshair art.
-- 2026-08-12 — Reticle confirmed visible in PIE; aim input/state tracking added and compiled.
-- 2026-08-17 — Projectile-weapon assignment reversed: the close-range rifle is now the real-projectile weapon (electromagnetic coilgun, fragmenting round, dodgeable at close range by design); battle rifle and pistol stay hitscan. Added "Weapon tech" section explaining the coil-stage-length rule and fragmentation rationale.
-- 2026-08-18 — Projectile system complete end to end; animation-feedback ownership principle established (montage data belongs to the animator, not the weapon).
-- 2026-08-30 — First-person rig restructured (camera → capsule, arms → camera) and per-weapon grip offsets added. Documented the render-proxy/setter rule learned from the pistol-position bug.
-- 2026-08-30 — Doc sync: corrected the engineering backlog's stale phase numbers (enemies are Phase 5, the arena Phase 6, since the 2026-08-12 renumbering), and resynced the HTML twin, which was still missing the "Weapon tech" section and still claimed the battle rifle was the projectile weapon.
-- 2026-08-30 — First weapon tuning pass recorded: `BP_Pistol` configured and its stat values written into the Combat implementation notes, flagged as Claude-proposed starting values rather than design canon. Planned rifle columns included alongside for comparison.
+- 2026-08-09 — Rewritten against locked canon from `Lore_And_Design_Notes.md`.
+- 2026-08-09 — Reworded as an original implementation-design document.
+- 2026-08-09 — Restructured to separate plain-English explanations from
+  technical jargon.
+- 2026-08-12 — Enemies deferred behind a weapon-focused phase; backlog
+  superseded by `ProjectPlan.md`.
+- 2026-08-17 — Projectile-weapon assignment reversed to the close-range rifle;
+  coilgun and fragmentation rationale added.
+- 2026-08-18 — Animation-feedback ownership principle established.
+- 2026-08-30 — First-person rig restructured; render-proxy rule documented;
+  first weapon tuning pass recorded.
+- 2026-08-31 — **Rewritten as a non-technical pitch document.** All
+  implementation detail moved to
+  [Documentation/TechnicalDesignSpec.md](../Documentation/TechnicalDesignSpec.md).
+  Restructured into Overview / Combat / Weapons / Enemies / World / Narrative /
+  Scope, with undecided items marked **Open** rather than silently omitted.

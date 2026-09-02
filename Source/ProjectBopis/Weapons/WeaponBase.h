@@ -36,7 +36,48 @@ enum class EFireResult : uint8
 	Fired,
 	RateLimited,
 	Empty,
+	Reloading,
 	NoWeapon
+};
+
+/** Per-weapon reticle appearance. Radii are in UV space, where 0.5 is the widget's
+    edge — keep MaxRadius comfortably below that or the ring clips.
+
+    Each weapon may use an entirely different crosshair material. The convention is
+    that any such material exposes the parameters below by name — `Radius`,
+    `Thickness`, `Color` — so bloom can drive it regardless of what it draws.
+    Setting a parameter a material doesn't declare is harmless, so a material is
+    free to ignore any of them. */
+USTRUCT(BlueprintType)
+struct FCrosshairSettings
+{
+	GENERATED_BODY()
+
+	/** The material drawn as the reticle. Leave unset to keep the widget's default. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	TObjectPtr<UMaterialInterface> Material;
+
+	/** Reticle size in pixels; the widget is square, so this is both width and height.
+	    Radius and Thickness are fractions of this, so changing it scales the whole
+	    reticle uniformly — stroke weight included. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	float Size = 100.0f;
+
+	/** Ring radius at zero bloom. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	float MinRadius = 0.12f;
+
+	/** Ring radius at full bloom. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	float MaxRadius = 0.36f;
+
+	/** Stroke width. Constant in pixels regardless of radius, since the ring is
+	    drawn procedurally rather than scaled. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	float Thickness = 0.02f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
+	FLinearColor Color = FLinearColor::White;
 };
 
 UCLASS()
@@ -76,6 +117,27 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	int32 GetReserveAmmo() const { return CurrentReserveAmmo; }
+
+	/** Starts a reload. Returns false if one is already running, the magazine is
+	    full, or there's nothing in reserve. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	bool Reload();
+
+	/** Aborts an in-progress reload without transferring ammo. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
+	void CancelReload();
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	bool CanReload() const;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	bool IsReloading() const { return bIsReloading; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	bool ShouldAutoReloadWhenEmpty() const { return bAutoReloadWhenEmpty; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Feedback")
+	FCrosshairSettings GetCrosshairSettings() const { return Crosshair; }
 	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
 	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
 
@@ -141,6 +203,9 @@ protected:
 	TObjectPtr<UAnimSequence> FireAnimation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	FCrosshairSettings Crosshair;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UMaterialInterface> HitDecalMaterial;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
@@ -191,8 +256,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	TObjectPtr<USoundBase> DryFireSound;
 
+	/** Seconds a reload takes. Tune to match the holder's reload montage; the timer
+	    is authoritative, not the animation. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	float ReloadDuration = 2.0f;
+
+	/** Whether firing on an empty magazine should start a reload by itself. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	bool bAutoReloadWhenEmpty = false;
+
+	void FinishReload();
+
 	int32 CurrentAmmoInMagazine = 0;
 	int32 CurrentReserveAmmo = 0;
+
+	bool bIsReloading = false;
+	FTimerHandle ReloadTimerHandle;
 
 	float CurrentBloom = 0.0f;
 	float TimeSinceLastShot = 0.0f;

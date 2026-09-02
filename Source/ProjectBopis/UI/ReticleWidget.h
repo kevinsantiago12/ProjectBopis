@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Weapons/WeaponBase.h"
 #include "ReticleWidget.generated.h"
 
 /**
@@ -17,5 +18,9 @@ class PROJECTBOPIS_API UReticleWidget : public UUserWidget
 public:
 	UFUNCTION(BlueprintPure, Category = "Reticle")
 	float GetCurrentBloom() const;
+
+	/** The equipped weapon's reticle settings, or sane defaults when nothing is held. */
+	UFUNCTION(BlueprintPure, Category = "Reticle")
+	FCrosshairSettings GetCrosshairSettings() const;
 	
 };

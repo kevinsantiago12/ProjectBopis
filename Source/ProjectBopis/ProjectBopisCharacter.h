@@ -49,6 +49,10 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> FireMontages;
 
+	/** Reload montages played on FirstPersonMesh, keyed by the equipped weapon's anim type. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> ReloadMontages;
+
 	/** Bones hidden on the first person mesh — the camera sits inside its head, so that
 	    much is removed while arms, torso and legs stay visible when looking down. */
 	UPROPERTY(EditDefaultsOnly, Category = "Components")
@@ -79,6 +83,10 @@ protected:
 	/** Aim Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AimAction;
+
+	/** Reload Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ReloadAction;
 	
 public:
 	AProjectBopisCharacter();
@@ -114,6 +122,10 @@ protected:
 	/** Handles the trigger being held down — only continues firing for full-auto weapons. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoFireHeld();
+
+	/** Handles reload inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoReload();
 
 	/** Handles aim-start inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")

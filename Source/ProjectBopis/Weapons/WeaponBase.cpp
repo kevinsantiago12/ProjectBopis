@@ -8,6 +8,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "TimerManager.h"
 
 
 static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
@@ -29,11 +30,68 @@ bool AWeaponBase::CanFire() const
 	return TimeSinceLastShot >= TimeBetweenShots;
 }
 
+bool AWeaponBase::CanReload() const
+{
+	return !bIsReloading
+		&& CurrentAmmoInMagazine < MagazineSize
+		&& (bInfiniteReserve || CurrentReserveAmmo > 0);
+}
+
+bool AWeaponBase::Reload()
+{
+	if (!CanReload())
+	{
+		return false;
+	}
+
+	bIsReloading = true;
+
+	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
+		&AWeaponBase::FinishReload, ReloadDuration, false);
+
+	return true;
+}
+
+void AWeaponBase::FinishReload()
+{
+	// Top up only what's missing and leave the remainder in reserve — a partial
+	// magazine is pooled, not discarded.
+	const int32 Needed = MagazineSize - CurrentAmmoInMagazine;
+	const int32 Transfer = bInfiniteReserve ? Needed : FMath::Min(Needed, CurrentReserveAmmo);
+
+	CurrentAmmoInMagazine += Transfer;
+
+	if (!bInfiniteReserve)
+	{
+		CurrentReserveAmmo -= Transfer;
+	}
+
+	bIsReloading = false;
+}
+
+void AWeaponBase::CancelReload()
+{
+	if (!bIsReloading)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
+	bIsReloading = false;
+}
+
 EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
 {
 	if (!CanFire())
 	{
 		return EFireResult::RateLimited;
+	}
+
+	// After the rate check, so a shot that's both too soon and mid-reload reports
+	// the more specific reason.
+	if (bIsReloading)
+	{
+		return EFireResult::Reloading;
 	}
 
 	if (CurrentAmmoInMagazine <= 0)
@@ -185,8 +243,8 @@ void AWeaponBase::Tick(float DeltaTime)
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, FString::Printf(TEXT("Bloom: %.2f"), CurrentBloom));
-		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, FString::Printf(TEXT("Ammo: %d / %d"),
-			CurrentAmmoInMagazine, CurrentReserveAmmo));
+		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, FString::Printf(TEXT("Ammo: %d / %d%s"),
+			CurrentAmmoInMagazine, CurrentReserveAmmo, bIsReloading ? TEXT("  [RELOADING]") : TEXT("")));
 	}
 
 	TimeSinceLastShot += DeltaTime;

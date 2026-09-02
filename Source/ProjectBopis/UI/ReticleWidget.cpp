@@ -22,4 +22,21 @@ float UReticleWidget::GetCurrentBloom() const
 	return 0.0f;
 }
 
+FCrosshairSettings UReticleWidget::GetCrosshairSettings() const
+{
+	if (AProjectBopisCharacter* Character = Cast<AProjectBopisCharacter>(GetOwningPlayerPawn()))
+	{
+		if (UWeaponHolderComponent* Holder = Character->GetWeaponHolder())
+		{
+			if (AWeaponBase* Weapon = Holder->GetEquippedWeapon())
+			{
+				return Weapon->GetCrosshairSettings();
+			}
+		}
+	}
+
+	// Defaults rather than zeroes, so the reticle stays visible with nothing equipped.
+	return FCrosshairSettings();
+}
+
 

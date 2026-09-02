@@ -12,6 +12,183 @@
 
 ---
 
+## 2026-08-31 (5)
+**Summary:** Built the bloom reticle for real — it had never actually been
+wired — then replaced the texture crosshair with procedural materials and a
+per-weapon crosshair system. All confirmed working in PIE.
+
+**Found: the reticle never consumed bloom.** `UReticleWidget::GetCurrentBloom()`
+has existed since Phase 3 and is `BlueprintPure`, but `WBP_ReticleWidget`'s
+event graph contained exactly three nodes — `PreConstruct`, `Construct`,
+`Tick` — **all with zero connected pins**. The crosshair was a static image.
+Phase 3 was marked complete on "reticle confirmed visible in PIE", and the
+expansion step was quietly assumed done. The design doc has always required
+bloom to drive the spread *and* the reticle from the same number; only the
+spread half existed. Not a regression — an unimplemented requirement.
+
+**Why a material, not a scaled texture.** First pass drove
+`SetRenderScale` from bloom. That works, but scaling a bitmap thickens the
+stroke along with everything else — the user wanted the circle to grow at
+constant line weight. Options weighed: (1) split into separate line images
+and *move* them apart (what most shooters do, but can't produce a growing
+circle), (2) a material with radius/thickness as parameters, (3) nine-slice
+(fails on curved edges). **Chose (2).** Since the widget never scales,
+`Thickness` stays constant in real pixels no matter how far `Radius` grows.
+
+**Two materials built through the bridge**, both UI-domain translucent:
+- **`M_Reticle`** — ring. `length(UV − 0.5)` compared against `Radius`, with
+  a `Thickness` band, into Opacity; `Color` into Emissive.
+- **`M_Reticle_Corners`** — rounded-square corner brackets. Distance is
+  `lerp(max(|x|,|y|), length(p), Roundness)` — a squircle whose corner
+  rounding is one dial. The brackets come from masking on
+  `min(|x|,|y|)`: large only near corners, near zero at the middle of each
+  side, so thresholding it cuts the sides away.
+
+**Bug in the corner material, fixed.** `CornerCut` was an *absolute*
+threshold (0.11) while idle `Radius` was 0.12 — so at rest the mask erased
+almost the entire shape and the crosshair looked invisible with near-zero
+thickness, then brackets appeared from nowhere as bloom grew. Thickness was
+never actually changing; the mask was eating it. Fixed by making the
+threshold **`Radius × CornerCut`**, so brackets hold the same proportion of
+each side at any radius. `CornerCut` is now a fraction (0.55), not a
+distance — old absolute values are meaningless.
+
+**Per-weapon crosshairs.** New `FCrosshairSettings` USTRUCT on `WeaponBase`
+(`Material`, `Size`, `MinRadius`, `MaxRadius`, `Thickness`, `Color`) plus
+`GetCrosshairSettings()` on both `WeaponBase` and `UReticleWidget` (the
+latter returning a default-constructed struct when nothing is equipped, so
+the reticle never collapses to zero). A crosshair isn't skeleton-specific
+the way a montage is, so it belongs on the weapon alongside `FireSound` and
+`HitDecalMaterial`.
+- **Convention:** every crosshair material exposes `Radius`, `Thickness`,
+  `Color` by name. Materials may draw anything and ignore any of them —
+  setting a parameter a material doesn't declare is a silent no-op — but
+  this is what keeps the widget generic instead of knowing which weapon uses
+  which material.
+- Widget graph compares the weapon's `Material` against a new
+  `LastCrosshairMaterial` variable and only calls `SetBrushFromMaterial`
+  **on change**. Swapping every tick would rebuild the dynamic material
+  instance each frame and discard the parameters written to the previous one.
+  Because it keys off the equipped weapon rather than a swap event, it works
+  for every acquisition path without any of them notifying the UI.
+- `Size` drives the canvas slot each tick. Needed because `Radius` and
+  `Thickness` are fractions of the widget — `Radius` can't exceed ~0.5
+  without clipping outside it, so widget size is the only way to make the
+  reticle physically bigger. Uniform scaling was chosen over
+  pixel-constant thickness, so existing tuned values keep their meaning.
+  Note this now overrides the designer's slot size at runtime, and a `Size`
+  of 0 draws nothing.
+
+**Final values:** pistol `M_Reticle_Corners` (thickness 0.05, user-set),
+close-range rifle `M_Reticle` 0.16→0.44 / 0.022, battle rifle `M_Reticle`
+0.08→0.26 / 0.014 — tighter and thinner reads as more precise.
+
+**Bridge notes:** the material toolset turned out to be fully capable —
+`create_material`, `add_expression`, `connect_expressions`,
+`connect_to_output`, `recompile` were enough to author both materials
+end to end. Two API details worth remembering: a Blueprint **variable needs a
+compile before its getter/setter node types exist**, and overloaded nodes
+(`SetScalarParameterValue`, `GetDynamicMaterial`, `SetBrushFromMaterial`)
+need `declaring_class` to disambiguate — without it you get the
+MaterialParameterCollection or by-ref-Brush variant instead.
+
+**Recurring friction:** the `unreal-mcp` client caches a failed connection
+and never re-probes, so once the editor closes mid-session the bridge stays
+dead for that session even after the editor returns. Confirmed repeatedly by
+curling the endpoint (HTTP 405 = listening) while the tools stayed
+unavailable. Only a fresh session clears it.
+
+---
+
+## 2026-08-31 (4)
+**Summary:** Ammo Phase B (reload) built, wired and **confirmed working in
+PIE**. Also corrected a wrong call from earlier in the day about what the
+editor bridge can build.
+
+**Reload.** Timer-driven off `ReloadDuration`, not animation notifies —
+deliberate, since a notify would put authoritative timing inside an asset
+the weapon can't see and would break for any holder whose montage differs.
+Partial magazines are kept rather than discarded. `EFireResult::Reloading`
+added so firing mid-reload is distinguishable and silent. Reload cancels on
+weapon swap, handled in `EquipWeapon`'s teardown — otherwise the timer fires
+on a weapon no longer held. `bAutoReloadWhenEmpty` is data on the weapon but
+acted on by the character, keeping the montage and the state change together.
+The montage only plays if a reload actually started, so mashing the key on a
+full magazine does nothing.
+
+**Corrected an earlier wrong conclusion.** I'd said reload montages couldn't
+be built through the bridge, because `SequenceLength` is read-only and a
+montage duplicated from the 0.667s fire montage would truncate a 2s reload.
+The first half was right; the conclusion wasn't. **Opening the asset editor
+(`OpenEditorForAsset`) forces the recalculation.** Working method:
+duplicate → repoint the `SlotAnimTracks` segment → open the asset editor →
+save. Recorded as a Gotcha.
+
+Built this way: `AM_Pistol_Reload` (2.0s) and `AM_Rifle_Reload` (2.2s). Also
+went back and fixed `AM_Rifle_Fire`, which had been sitting inconsistent
+since yesterday — segment 0.533s against a montage claiming 0.667s — so that
+accepted tradeoff is gone too.
+
+**Also done via the bridge:** `IA_Reload` created and mapped to `R` in
+`IMC_Default`. Note UE 5.8 keeps mappings in `defaultKeyMappings`, not the
+`Mappings` property, which reads as empty and will mislead. Writing that
+array replaces all of it, so the asset was duplicated to
+`IMC_Default_BACKUP` first; all 14 original entries survived with their
+modifier sub-object references intact. **That backup is still present and
+unsaved** — delete once movement is confirmed.
+
+User assigned the Blueprint values (`ReloadAction`, `ReloadMontages`,
+per-weapon `ReloadDuration`) directly.
+
+**Still open:** ammo HUD (Phase C) and pickups (Phase D), per-weapon magazine
+sizes (all three still on the `12/60/120` default), plus everything carried
+from earlier entries — muzzle flash retest, the TEMP 5s timer, grip position,
+ABP `Blend Poses by Enum`, left-hand IK.
+
+---
+
+## 2026-08-31 (3)
+**Summary:** Documentation restructure, no code. Split the design document
+in two: a pitch-facing non-technical piece and a new technical spec.
+
+**Why:** `GameDesignDocument.md` had become a hybrid — plain-English design
+rationale interleaved with parameter tables, class names, and a running
+"where the codebase is" log. Fine for implementation, useless for a pitch.
+
+**What changed:**
+- **New `Documentation/TechnicalDesignSpec.md`** — everything
+  implementation-facing: bloom and rate-of-fire parameters, the configured
+  weapon values table, trace-source reasoning, weapon/ammo architecture,
+  projectile spawn and self-collision rules, enemy composition approach,
+  the three architecture principles (animation ownership, render-affecting
+  setters, first-person projection), first-person rig layout, vendor-content
+  policy, and a gotchas summary. Updated to current state while moving —
+  the old doc still had `IntendedCadence` in shots-per-second and no ammo
+  section at all.
+- **`Design Document/GameDesignDocument.md` rewritten as a pitch document.**
+  No code, no parameters, no jargon. Sections: Overview (with three pillars),
+  Combat, Weapons, Enemies, World, Narrative, Scope. Undecided items are
+  marked **Open** rather than silently omitted, which reads as deliberate
+  rather than incomplete.
+- **`Design Document/GameDesignDocument.html` rebuilt** as a tabbed document
+  — one tab per section, deep-linkable by hash, keyboard-navigable with arrow
+  keys, light and dark themes. Design: sunlit-composite neutrals with a warm
+  amber accent (the flag's sun, and Low City's glow without resorting to
+  neon-on-black cyberpunk cliché), teal reserved semantically for Open
+  questions, Archivo/Newsreader/IBM Plex Mono. A layered-rule motif in the
+  masthead echoes the High City / Low City elevation idea.
+- **`CLAUDE.md` updated** — this matters for future sessions, since it
+  previously pointed at `GameDesignDocument.md` as the file to work from for
+  code decisions. Now points at `TechnicalDesignSpec.md`, and explicitly says
+  to keep the design document non-technical.
+
+**Constraint respected:** nothing was invented to fill the lore file's
+`[UNDECIDED]` gaps. Those became the **Open** callouts — synthetic hostility
+cause, protagonist background, Mindanao, corporations/factions, carry limit,
+inciting incident, regulatory mechanism.
+
+---
+
 ## 2026-08-31 (2)
 **Summary:** Big feature session — battle rifle configured, Halo-style scoped
 zoom, per-weapon animation selection, first/third-person mesh split, and

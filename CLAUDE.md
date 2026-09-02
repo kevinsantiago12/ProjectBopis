@@ -13,10 +13,13 @@ Halo.
   Canon lives in `Design Document/Lore_And_Design_Notes.md` — treat it as
   source of truth for narrative/world/story content. Do not invent lore to
   fill its `[UNDECIDED]` gaps; ask or wait for design input instead.
-- **Implementation**: this is Claude's role. `Design Document/GameDesignDocument.md`
-  is the implementation-facing translation of the lore canon into concrete
-  systems specs (see especially its Combat System and Engineering Backlog
-  sections) — that's the file to work from for code decisions.
+- **Implementation**: this is Claude's role. `Documentation/TechnicalDesignSpec.md`
+  is the implementation-facing translation of the design into concrete systems
+  specs (bloom parameters, weapon/ammo architecture, architecture principles,
+  gotchas) — that's the file to work from for code decisions.
+- `Design Document/GameDesignDocument.md` is **pitch-facing and deliberately
+  non-technical** as of 2026-08-31. Keep it that way: no code, no parameter
+  names, no jargon. New technical detail belongs in `TechnicalDesignSpec.md`.
 
 ## Session start
 - Read [Documentation/ProgressLog.md](Documentation/ProgressLog.md) for
@@ -24,7 +27,7 @@ Halo.
 - Read [Documentation/ProjectPlan.md](Documentation/ProjectPlan.md) for the
   ordered, phase-by-phase build sequence — this is the actual task list,
   worked one item at a time.
-- Read [Design Document/GameDesignDocument.md](Design%20Document/GameDesignDocument.md)
+- Read [Documentation/TechnicalDesignSpec.md](Documentation/TechnicalDesignSpec.md)
   for implementation specs/constraints behind those tasks.
 
 ## Session end
@@ -32,7 +35,9 @@ Halo.
   `Documentation/ProgressLog.md`.
 - Check off completed items in `Documentation/ProjectPlan.md` as they land.
 - If new design/lore canon arrives from the user, import it into
-  `Design Document/Lore_And_Design_Notes.md` and re-translate the relevant
-  parts of `GameDesignDocument.md`.
-- If implementation decisions were made, update `GameDesignDocument.md`
+  `Design Document/Lore_And_Design_Notes.md`, then re-translate the relevant
+  parts into `Documentation/TechnicalDesignSpec.md` (systems) and summarise
+  for pitch purposes in `Design Document/GameDesignDocument.md` (+ its `.html`
+  twin, which has the same content as tabbed pages).
+- If implementation decisions were made, update `TechnicalDesignSpec.md`
   accordingly (resolve `TBD`s).
