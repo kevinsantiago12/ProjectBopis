@@ -8,7 +8,7 @@
 #include "Weapons/WeaponBase.h"
 #include "ProjectBopisCharacter.generated.h"
 
-class UReticleWidget;
+class UPlayerHUDWidget;
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
@@ -39,9 +39,9 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UWeaponHolderComponent* WeaponHolder;
 
-	/** Widget class to spawn for the reticle HUD */
+	/** Widget class to spawn for the player HUD */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UReticleWidget> ReticleWidgetClass;
+	TSubclassOf<UPlayerHUDWidget> HUDWidgetClass;
 
 	/** Fire montages played on FirstPersonMesh, keyed by the equipped weapon's anim type.
 	    The character owns these rather than the weapon, since a montage is authored

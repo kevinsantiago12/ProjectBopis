@@ -113,6 +113,51 @@ repositioning. A deliberate scope call.
 
 ---
 
+## Rendering target
+
+**Decided 2026-08-31 (6): Halo 1–2 fidelity. Baked lighting, minimal dynamic
+lighting, fun over fidelity.** The reasoning is in the design document; this
+section covers what it asks of the project.
+
+### Current state vs. target
+
+The project is still on UE5 defaults, which are the opposite of this target:
+
+| Setting | Current | Target | Note |
+|---|---|---|---|
+| `r.AllowStaticLighting` | `False` | `True` | **Nothing can bake lightmaps until this is True.** Off by default in UE5. |
+| `r.DynamicGlobalIlluminationMethod` | `1` (Lumen) | `0` (None) | GI comes from lightmaps instead. |
+| `r.ReflectionMethod` | `1` (Lumen) | Reflection captures | Era-appropriate and cheap. |
+| `r.RayTracing` | `True` | `False` | Unused once Lumen is off. |
+| `r.Nanite.ProjectEnabled` | `True` | Open question | See below. |
+
+### What switching actually costs
+
+- **`AllowStaticLighting` requires an editor restart** and changes how every
+  existing asset is lit. It is not a reversible toggle mid-session.
+- **Meshes need lightmap UVs.** Vendor content (`SciFiWeapDark`, and anything
+  migrated from Lyra) was authored for dynamic lighting and may not have a
+  second UV channel. Unreal can generate them on import, but quality varies.
+- **Levels need relighting and a light build.** The FirstPerson template map
+  is lit dynamically; it would need static lights and a bake.
+- **Nanite and baked lighting coexist awkwardly.** Nanite geometry supports
+  static lighting but not well, and Nanite mostly buys detail density that
+  this target doesn't want. Probably worth disabling, but it's a separate
+  call from the lighting one and shouldn't be bundled with it.
+
+### Implications for gameplay work
+
+Baked lighting means **muzzle flashes and weapon fire should not cast dynamic
+light** by default — a per-shot point light is exactly the kind of cost this
+target is avoiding. Impact and muzzle effects carry their read through
+emissive materials and particles instead, which is also what the era did.
+
+Enemy synthetics benefit here: emissive panels and glowing elements read
+strongly against baked environments without costing dynamic lights, and they
+support the "readable at a glance" requirement in the enemy spec.
+
+---
+
 ## Weapons: data, not code
 
 Weapons are one class differentiated by data, not per-weapon custom firing

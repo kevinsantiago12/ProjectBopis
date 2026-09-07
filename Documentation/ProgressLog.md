@@ -12,6 +12,53 @@
 
 ---
 
+## 2026-08-31 (6)
+**Summary:** Remaining Phase 4 order agreed, HUD C++ written (awaiting
+review), and a fidelity target locked in.
+
+**Order for the rest of Phase 4:** HUD → pickups → weapon switching →
+everything else. Weapon switching sits after pickups deliberately:
+`MaxCarriedWeapons` is already 2, but nothing can currently fill the second
+slot, so switching has nothing to switch between until pickups exist.
+
+**Ammo HUD, C++ side written.** Three `BlueprintPure` accessors on
+`UReticleWidget` — `GetAmmoInMagazine`, `GetReserveAmmo`, `IsReloading` —
+plus a `GetEquippedWeapon()` helper that collapses the Character →
+WeaponHolder → Weapon walk the existing accessors were each repeating.
+**Presented for review, not yet built.** The widget side is blocked on a
+Text Block being placed by hand: the editor bridge has no UMG toolset, so it
+can edit widget graphs and properties but cannot add widgets to the tree.
+
+**Process correction.** The user reasserted: *always have me review any C++
+code.* Over the preceding stretch they had repeatedly said "apply it
+yourself", and I let that harden into a default rather than treating each as
+a one-off. Memory updated — approval is per-instance and never carries
+forward, and this applies to small changes too, not just substantial ones.
+
+**Fidelity target decided: Halo 1–2. Baked lighting, minimal dynamic
+lighting, fun over fidelity.** Briefly considered and dropped an
+Xbox/PS2-era target before settling here. Rationale recorded in the design
+document: performance headroom converts into more enemies on screen and a
+steadier frame rate, both of which matter more to a firefight than surface
+detail; the High City / Low City art direction reads on shape and colour
+rather than micro-detail; and it keeps scope pointed at combat design.
+
+**Found while recording it: the project is currently configured the exact
+opposite way.** `r.AllowStaticLighting=False` (the UE5 default) means nothing
+can bake lightmaps at all, alongside Lumen GI, Lumen reflections, ray tracing
+and Nanite all enabled. Documented the full current-vs-target table and the
+switching costs in `TechnicalDesignSpec.md` — notably that
+`AllowStaticLighting` needs an editor restart, vendor meshes may lack
+lightmap UVs, levels need relighting and a bake, and Nanite is a separate
+call that shouldn't be bundled in. **No settings changed** — flagged for the
+user's decision, since it's project-wide and disruptive.
+
+Also noted for later: with this target, muzzle flashes and weapon fire should
+not cast dynamic light — emissive materials and particles carry the read
+instead, which is what the era did anyway.
+
+---
+
 ## 2026-08-31 (5)
 **Summary:** Built the bloom reticle for real — it had never actually been
 wired — then replaced the texture crosshair with procedural materials and a

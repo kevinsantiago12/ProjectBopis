@@ -11,7 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ProjectBopis.h"
 #include "Blueprint/UserWidget.h"
-#include "UI/ReticleWidget.h"
+#include "UI/PlayerHUDWidget.h"
 #include "Weapons/WeaponBase.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
@@ -71,11 +71,11 @@ void AProjectBopisCharacter::BeginPlay()
 		FirstPersonMesh->HideBoneByName(BoneName, EPhysBodyOp::PBO_None);
 	}
 
-	if (IsLocallyControlled() && ReticleWidgetClass)
+	if (IsLocallyControlled() && HUDWidgetClass)
 	{
-		if (UReticleWidget* ReticleWidget = CreateWidget<UReticleWidget>(GetWorld(), ReticleWidgetClass))
+		if (UPlayerHUDWidget* HUDWidget = CreateWidget<UPlayerHUDWidget>(GetWorld(), HUDWidgetClass))
 		{
-			ReticleWidget->AddToViewport();
+			HUDWidget->AddToViewport();
 		}
 	}
 }

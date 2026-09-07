@@ -32,6 +32,23 @@ one, where modern and historical Filipino culture, languages, institutions,
 architecture, religion and social structures visibly survive, transformed by
 decades of technology and money.
 
+### Fidelity target: fun over fidelity
+
+The visual bar is **Halo 1–2**, deliberately — not a modern-realism target
+dressed in cyberpunk colours. Lighting is baked rather than simulated in real
+time, with dynamic lights kept to a minimum.
+
+This isn't a compromise, it's a choice with three things going for it. It
+buys **performance headroom**, which in a shooter converts directly into more
+enemies on screen and a steadier frame rate — both of which matter more to how
+a firefight feels than surface detail does. It suits the **art direction**,
+since High City's clean planes and Low City's neon read on strong shapes and
+colour rather than on micro-detail. And it keeps **scope honest** for a
+project whose bottleneck is combat design, not rendering.
+
+The test for any visual work is whether it makes the game more fun to play,
+not whether it looks more expensive.
+
 ### The three pillars
 
 **Trigger discipline over twitch aim.** The core skill is firing as fast as
