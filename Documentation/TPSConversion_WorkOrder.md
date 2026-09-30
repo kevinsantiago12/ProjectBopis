@@ -196,7 +196,7 @@ you can no longer shoot through the cover you're standing behind.
 > full rebuild**, not Live Coding. Do the tuning first, then the deletion.
 
 - [ ] Re-tune `GripLocationOffset`/`GripRotationOffset` per weapon from scratch. Old values were fitted to the arms rig at first-person scale and are meaningless now. **Supersedes** the existing rifle-grip backlog item.
-- [ ] **Delete the TEMP 5s re-snap timer** (`WeaponHolderComponent.cpp:36-38`, handle `.h:51`). It was a first-person attach-timing band-aid. Verify the attach is correct without it before removing — if it's still needed, the underlying timing bug is real and separate.
+- [x] **Delete the TEMP 5s re-snap timer** — **done 2026-09-30, and it answered the question.** Removed the `FTimerHandle`, the `SetTimer` call and the dead `TimerManager.h` include. Verified in PIE: **the weapon position is identical for the whole session, with no change at the five-second mark.** The timer was doing nothing. `ProjectPlan.md`'s claim that it was "what makes the weapon position correct" was stale and has been corrected. (`WeaponHolderComponent.cpp:36-38`, handle `.h:51`). It was a first-person attach-timing band-aid. Verify the attach is correct without it before removing — if it's still needed, the underlying timing bug is real and separate.
 - [ ] Confirm `hand_r` is still the right socket on the body mesh.
 
 ---
@@ -212,7 +212,27 @@ Asset and AnimGraph work. Weeks, not days. Nothing here needs C++.
 - [ ] **Aim offset** for pitch. Mandatory now, wasn't in first person.
 - [ ] **Turn-in-place** for the aim state, or the character skates when the camera swings while stationary.
 - [ ] Upper/lower body layering so firing and reloading play over locomotion.
-- [ ] Mine the Lyra library under `Content/Characters/Heroes/` before authoring anything — it has strafe sets and aim offsets on this skeleton already.
+- [x] **Library inventory done 2026-09-30.** Far better stocked than assumed — see below. Step 7 is **assembly and AnimGraph wiring, not authoring**; revised from weeks to days.
+
+**What exists (`Content/Characters/Heroes/Mannequin/Animations/`):**
+- **Aim offsets, built:** `AO_MM_Rifle_Idle_Hipfire`, `AO_MM_Pistol_Idle_ADS`,
+  `AO_MM_Unarmed_Idle_Ready` — real `AimOffsetBlendSpace` assets, full 15-pose
+  grids (3 pitch × 5 yaw). Plus simpler pitch-only `AO_Rifle` / `AO_Pistol` in
+  the template tree at `Content/Characters/Mannequins/Anims/`.
+  **Asymmetry to note:** rifle has a *hipfire* offset, pistol has an *ADS* one.
+  Our two stances want both for each; component poses exist either way.
+  `AO_MF_*` are Quinn — the rig already found to be unaligned. Use `MM_`.
+- **Strafe clips, complete:** Rifle and Pistol each have Walk and Jog in
+  Fwd/Bwd/Left/Right, every one with Start, Stop and Pivot variants.
+- **Turn-in-place, complete:** `TurnLeft_90/180`, `TurnRight_90/180` for both.
+- **Also there:** jump/fall sets, idle breaks, jog leans.
+- **Only three BlendSpaces are assembled:** `BS_MM_Rifle_Crouch_Walk`,
+  `BS_MM_Rifle_Jog_Leans`, `BS_MM_Unarmed_Jog_Walk`. The standing strafe
+  blendspaces must be **assembled from existing clips** — editor work on a
+  blendspace grid, not animation authoring.
+
+**Verify before relying on it:** that these bind to the same skeleton as the
+body mesh. Both trees are mannequin-based so almost certainly yes.
 - [ ] Folds in: the **ABP `Blend Poses by Enum`** backlog item, and **left-hand IK** (approach 2, per-weapon `LeftHandGrip` socket — now much more visible with the weapon on screen at full size).
 
 ---

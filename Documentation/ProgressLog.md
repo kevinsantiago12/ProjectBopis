@@ -12,6 +12,101 @@
 
 ---
 
+## 2026-09-30
+**Summary:** Third-person conversion: four of six active steps landed and
+tested. Two lore imports. Enemy and combat-ability specs written. One
+long-standing bug proved to be a non-bug.
+
+**Branch `tps-conversion`.** Created 2026-09-25 after an audit found
+first-person assumptions confined to three files (`ProjectBopisCharacter`,
+`WeaponHolderComponent::AttachWeaponToHand`, and one line of `WeaponBase`).
+Work order at [TPSConversion_WorkOrder.md](TPSConversion_WorkOrder.md),
+sequenced by rebuild boundary rather than topic.
+
+**Steps landed, each confirmed in PIE:**
+- **Step 1 — camera rig + mesh consolidation.** `FirstPersonMesh`,
+  `HiddenFirstPersonBones` and `SetFirstPersonVisibility` deleted; spring arm
+  + camera added; weapon attaches to `GetMesh()`. Atomic — deleting
+  `GetFirstPersonMesh()` breaks the holder and both montage calls in the same
+  compile.
+- **Step 2 — GRB movement.** `DoMove` now derives axes from control-rotation
+  yaw (was actor vectors, only ever correct in first person). `EMovementStance`
+  + `ApplyMovementStance()` owns the mutually-exclusive rotation flag pair.
+  Written with **three** states — `FreeRun`, `Aiming`, `AnimationDriven` — the
+  third for the shootdodge's prone turn-in-place, so call sites need no revisit.
+- **Step 3 — aim stance + camera move.** Implemented **pull-style**:
+  `DoAimStart`/`DoAimEnd` set state only, and `UpdateCameraTransition()` derives
+  boom length, socket offset and FOV from state every frame. Character now
+  ticks; tick is load-bearing. Fixed a real bug in passing — aim was gated on
+  `HasZoom()`, so unscoped weapons had no aim stance at all.
+- **Step 5 — firing and aim source.** The only correctness fix in the
+  conversion. Two-stage: camera trace decides *what* you hit, muzzle decides
+  *where* the shot comes from. `GetMuzzleLocation()`/`GetMaxRange()` added to
+  `AWeaponBase`; `MinConvergenceDistance` (200) clamps convergence so a
+  near-wall hit can't aim the shot backwards. Confirmed: bullets now leave the
+  barrel, and shooting through cover you're standing behind is fixed.
+
+**Step 4 (crouch) moved to backlog** — deferred, not reversed. The stated
+reason (a second full strafe blendspace) turned out to be **wrong**; see below.
+
+**TEMP 5s timer removed — and it was never doing anything.** Deleted the
+`FTimerHandle`, the `SetTimer` call and the dead include. Measured in PIE: the
+weapon position is *identical* for a whole session with no change at the
+five-second mark. `ProjectPlan.md` claimed the timer was "what makes the weapon
+position correct"; that claim is now corrected, and the August mistimed-attach
+diagnosis is downgraded to unproven.
+
+**Lyra library inventory** (prompted by the Step 7 estimate). Aim offsets are
+**already built** as `AimOffsetBlendSpace` assets with full 15-pose grids.
+Complete strafe clip sets for Rifle and Pistol — Walk and Jog, four directions,
+each with Start/Stop/Pivot — plus turn-in-place. Only three BlendSpaces are
+assembled, so the standing strafe blendspaces need *assembly from existing
+clips*, not authoring. **Step 7 revised from weeks to days.**
+
+**Correction that changes a decision:** crouch was backlogged partly because I
+said it dragged a crouched strafe set behind it. It doesn't — full crouch sets
+exist for both weapons (entry, exit, idle, four-way walk with starts/stops/
+pivots, crouch turn-in-place) and `BS_MM_Rifle_Crouch_Walk` is already
+assembled. Crouch's animation cost is near zero; the C++ is an afternoon. Worth
+reconsidering the deferral.
+
+**Lore — two imports, gameplay content excluded by instruction.**
+- `Project_Bopis_2003_Current_Lore.txt` — 2002→2003, real history →
+  alternate history, femme fatale second lead, conspiracy, story spine.
+- `Project_Bopis_Noir_Action_Horror_Direction.txt` — **genre pivot to noir
+  action horror**. Aswang ruling class literally feeding on the people beneath
+  them. Now PART 1 of the lore notes.
+- Both sources say "first-person" in their *gameplay* sections, which the
+  standing instruction excludes — so the third-person conversion is unaffected,
+  and the reasoning is recorded so it isn't re-litigated.
+- **The coup plot was dropped** in conversation: Plan A/Plan C, the generals,
+  the Senator, the President and the military fragmentation are struck. PART 1's
+  four-step ladder is the spine. **The climax is now an open question** — the
+  coup was the *event* that ended the story, and a revelation is not an ending.
+- Also decided: Aswang are Underworld-style (normal clothes, monstrous head and
+  hands), do **not** transform mid-combat, are **not known to exist**, and the
+  protagonist has **no human allies**. The story is being rewritten, so PART 2's
+  plot sections are marked `[PROVISIONAL]`.
+
+**Tech spec** gained a rewritten **Enemies** section (three families, two-layer
+health so the resilience break produces an *event* and tankiness doesn't erode
+the bloom skill test, vocalizations as state telemetry, readability layered by
+distance) and a new **Combat abilities** section (dual pistols by pose
+mirroring, shootdodge adapted from a two-handed pistol asset, prone as a
+transient post-dive state, `CustomTimeDilation` for bullet-time).
+
+**Next session:** Step 6 grip re-tune (data pass — offsets are meaningless
+against a full body at world scale), then Step 7 animation. Open: whether to
+bring crouch forward given the corrected cost, and the muzzle-inside-geometry
+case from Step 5.
+
+**Editor bridge:** not used this session. New standing rule — ask before any
+`unreal-mcp` call; the responses are large. Grepping `.uasset` binaries for
+`/Game/...` paths and listing asset folders covered everything needed here,
+including the whole animation inventory.
+
+---
+
 ## 2026-09-21
 **Summary:** Weapon pack swapped to conventional firearms. Stale references
 cleaned. No C++ changed.
