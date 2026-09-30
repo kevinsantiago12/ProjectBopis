@@ -92,6 +92,11 @@ public:
 	/** Returns the weapon's mesh component **/
 	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; };
 
+	/** World location of the muzzle socket — where shots actually leave from. */
+	FVector GetMuzzleLocation() const;
+
+	float GetMaxRange() const { return MaxRange; }
+
 	EWeaponFireMode GetFireMode() const { return FireMode; }
 
 	/** Which animation set the holder should use for this weapon. */

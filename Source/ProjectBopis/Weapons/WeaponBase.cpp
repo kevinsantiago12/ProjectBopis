@@ -118,14 +118,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 		if (MuzzleFlash)
 		{
-			// Tagged first-person to match WeaponMesh. Without this the flash renders
-			// through the normal world projection while the gun renders through the
-			// first-person one, so it appears detached from the barrel on screen.
-			if (UParticleSystemComponent* SpawnedFlash =
-				UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName))
-			{
-				SpawnedFlash->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
-			}
+			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName);
 		}
 	}
 	else if (FireAnimation)
@@ -255,3 +248,15 @@ void AWeaponBase::Tick(float DeltaTime)
 	}
 }
 
+
+FVector AWeaponBase::GetMuzzleLocation() const
+{
+	if (WeaponMesh && WeaponMesh->DoesSocketExist(MuzzleSocketName))
+	{
+		return WeaponMesh->GetSocketLocation(MuzzleSocketName);
+	}
+
+	// Fall back to the actor origin. Returning zero would put every shot at world
+	// origin if the socket were ever renamed — a spectacular and confusing bug.
+	return GetActorLocation();
+}

@@ -10,371 +10,321 @@
 > [Lore_And_Design_Notes.md](Lore_And_Design_Notes.md) — this document
 > summarises it for pitch purposes and does not extend it.
 >
-> Sections marked **Open** are genuinely undecided, not omissions.
+> **Rewritten 2026-09-13** for the change of setting. The previous 2098
+> cyberpunk premise is discarded in full.
+>
+> Sections marked **Open** are genuinely undecided, not omissions. Sections
+> marked **Under reconsideration** are ideas from the previous version that
+> are neither confirmed nor dropped yet.
 
 ---
 
 ## Overview
 
-**A first-person shooter set in the Philippines, 2098.** Hostile synthetics
-have turned on the country that built them. You have a gun.
+**A gritty, noir first-person action shooter set in the Philippines, 2002.**
 
-The combat touchstone is Bungie-era Halo — the original trilogy, ODST, and
-Reach. That is a deliberate, narrow reference, and it settles a lot of
-questions before they're asked: fights are won by where you stand and how you
-pace your trigger, not by holding a scope steady or memorising a recoil
-pattern. No bullet-sponge enemies. No aim-down-sights bonus. A weapon you like
-should stay useful for most of the campaign.
+The narrative is heavy noir: dark, brooding, cynical, crime-focused, built
+on morally compromised institutions and a protagonist who is rarely sure
+who to trust. The action is John Woo — heroic bloodshed, extravagant and
+stylish, kinetic gunfights that escalate into large set-piece shootouts.
+Those two things live together on purpose: **the story stays grim while the
+combat is deliberately extravagant.**
 
-The setting is the part nobody else is making. Not "generic cyberpunk city with
-Filipino signage" — a Philippines that is recognisably descended from the real
-one, where modern and historical Filipino culture, languages, institutions,
-architecture, religion and social structures visibly survive, transformed by
-decades of technology and money.
+The identity is Filipino. Classic Filipino crime and action cinema — the FPJ,
+Rudy Fernandez, Lito Lapid, Phillip Salvador tradition — informs the
+attitude, locations, villains, firearms and larger-than-life action, rather
+than the game leaning only on Hong Kong or American references.
 
-### Fidelity target: fun over fidelity
-
-The visual bar is **Halo 1–2**, deliberately — not a modern-realism target
-dressed in cyberpunk colours. Lighting is baked rather than simulated in real
-time, with dynamic lights kept to a minimum.
-
-This isn't a compromise, it's a choice with three things going for it. It
-buys **performance headroom**, which in a shooter converts directly into more
-enemies on screen and a steadier frame rate — both of which matter more to how
-a firefight feels than surface detail does. It suits the **art direction**,
-since High City's clean planes and Low City's neon read on strong shapes and
-colour rather than on micro-detail. And it keeps **scope honest** for a
-project whose bottleneck is combat design, not rendering.
-
-The test for any visual work is whether it makes the game more fun to play,
-not whether it looks more expensive.
+The explicit goal is **not** "Max Payne in the Philippines." Max Payne and
+John Woo are useful reference points for translating noir and cinematic
+gunplay into a shooter; the game develops its own Filipino crime-noir
+identity from there.
 
 ### The three pillars
 
-**Trigger discipline over twitch aim.** The core skill is firing as fast as
-you can while keeping your accuracy suitable for the distance you're fighting
-at. It's readable in the moment, it carries across every weapon in the game,
-and it makes picking up an unfamiliar gun feel immediately usable.
+**Grim story, extravagant action.** The narrative is dark and grounded; the
+gunfights are stylised and spectacular. Neither is toned down to meet the
+other.
 
-**Linear navigation, nonlinear combat.** You go one way through the level.
-Once you're in a fight, the space supports many approaches — not because
-there are separate routes for separate playstyles, but because the geometry
-itself rewards different weapons in different ways.
+**Filipino crime-noir, not a transplant.** The setting, the villains, the
+weapons, the locations and the attitude come from the Philippines and its
+own cinema. Hong Kong and American references are tools, not the template.
 
-**The world is specific.** Every part of the setting should be somewhere you
-couldn't set another game without changing it.
+**Overlapping interests, not one conspiracy.** The corruption the story
+exposes is a web of favours, protection arrangements, debts and people
+taking their cut — criminals, police, businessmen, fixers and politicians
+each pursuing their own interest. Not a single centralised villain behind
+everything.
+
+### Fidelity target: fun over fidelity
+
+The visual bar is **early-2000s, Halo 1–2 era** — a deliberate choice that
+happens to sit naturally alongside a 2002 setting. Lighting is baked rather
+than simulated in real time, with dynamic lights kept to a minimum.
+
+It buys performance headroom, which for a game built on large escalating
+shootouts converts directly into more enemies on screen and a steadier frame
+rate. It suits the material — fluorescent interiors, wet concrete and neon
+read on strong shapes and colour rather than surface detail. And it keeps
+scope honest for a project whose bottleneck is combat and story, not
+rendering.
+
+The test for any visual work is whether it makes the game more fun to play,
+not whether it looks more expensive.
 
 ---
 
 ## Combat
 
-### Accuracy comes from pacing, not from aiming
+### Action direction
 
-Most shooters handle gun accuracy one of three ways: aiming down sights makes
-you accurate, the gun kicks in a pattern you fight, or the gun loses accuracy
-the faster you fire and recovers when you ease off. That third one — Halo:
-Reach called it **bloom** — is the model here, and the other two are ruled out
-on purpose.
+The primary inspiration is John Woo's heroic-bloodshed films — Hard Boiled,
+The Killer, A Better Tomorrow. The action language the game is reaching for:
 
-**Aiming for accuracy** rewards standing still and posting up, which fights
-against a game that wants you moving, strafing and using cover creatively.
+- Extremely kinetic gunfights
+- Dual-wielded firearms
+- Diving or sliding gunfire
+- Slow motion / bullet-time-style mechanics, if appropriate
+- Destructible-feeling environments — shattered glass, debris, sparks,
+  furniture, environmental chaos
+- Dramatic standoffs
+- Large, escalating shootouts
+- Close-range pistol combat
+- Stylised cinematic violence
+- **Strong choreography and movement rather than static cover shooting**
 
-**A recoil pattern** turns skill into memorising how one specific gun kicks,
-practised outside the fight. That suits some games; it doesn't suit fast,
-improvised firefights meant to be won by reading the room.
+That last point is the organising principle. The player is meant to be
+moving through a fight, not hiding from it.
 
-**Bloom** ties accuracy to pacing, and you can read it in the moment by looking
-at your crosshair — do I have time for another shot, or should I ease off?
+### Under reconsideration
 
-The rule, stated plainly: **aiming changes what you see, never how accurate you
-are.** Your crosshair widens as you fire and tightens as you stop. A first shot
-from rest always goes exactly where you point it.
+The previous version of the game built its combat on a specific accuracy
+model — no bonus for aiming down sights, hip-fire fully effective, accuracy
+governed by how you pace your trigger rather than by a recoil pattern, with
+the crosshair widening as you fire and tightening as you stop. That model is
+built and working today.
 
-### Hip-fire is the default, not a penalty
+It is neither confirmed nor dropped for the new game. It's being reconsidered
+against the John Woo direction — and it's worth noting that "hip-fire is the
+default, movement over cover" is a natural fit for heroic bloodshed. But that
+is a decision for design to make, not an assumption to carry forward.
 
-You fight normally while moving, strafing, switching targets and meleeing.
-There is no arbitrary hip-fire accuracy penalty. Aiming is available and does
-something useful — it's targeting information and precision placement, and it
-may change your reticle — but it does not make the gun shoot straighter.
+### Open
 
-**Zoom is a separate thing from aiming**, restricted to weapons that earn it.
-It improves visibility and target acquisition. It does not improve accuracy.
-When a scoped weapon zooms, the view magnifies cleanly and the weapon leaves
-the screen — the Halo approach, rather than an over-the-shoulder sight picture.
-
-### What this means at higher difficulty
-
-Harder settings demand better positioning, target prioritisation, accuracy
-management, ammo management, weapon knowledge and use of the arena — not a
-single correct solution to each room.
+- Which of dual-wielding, dive/slide gunfire and slow motion actually make
+  it in, and in what form.
+- How "destructible-feeling" is delivered — cosmetic chaos versus mechanical
+  destruction.
+- Whether the existing accuracy model stays, changes, or goes.
 
 ---
 
 ## Weapons
 
-Weapons encourage playstyles. Levels never hard-force a weapon type. The goal
-is *"this weapon gives you another good way to solve this"*, never *"this room
-requires this exact gun."*
+### Direction
 
-Ammo availability is a **soft** pressure. Running low nudges you toward
-switching or picking something up; it doesn't strand you.
+Firearms of the period, drawn from Filipino action cinema as much as from
+Hong Kong or Hollywood. The direction names **close-range pistol combat**
+and **dual-wielded firearms** specifically, which makes handguns the centre
+of the arsenal rather than one option among many.
 
-### The starting three
+### What exists today
 
-**Pistol** — a precise semi-automatic sidearm. Reliable at range if you pace
-your shots, punished if you spam them.
+Three weapons are built and working as a test bed — a semi-automatic pistol,
+a full-automatic close-range rifle, and a semi-automatic scoped rifle — with
+distinct handling, ammunition, reloading, and per-weapon crosshairs. Their
+current art is placeholder sci-fi and will be replaced. Their *roles* were
+designed for the previous premise and are open to revision.
 
-**Close-range rifle** — full-automatic, built for corners and short sightlines.
-The one weapon that fires a *real projectile* rather than an instant hit.
+The previous version also had one weapon fire a visible, dodgeable
+projectile, justified by future-tech physics. That justification is gone
+with the setting. The projectile system itself is built and working and is
+a natural fit for things like grenades or thrown weapons — but nothing in
+the new direction has claimed it yet.
 
-**Battle rifle** — mid-range, semi-automatic, deliberate. The scoped weapon,
-and the one most likely to become a player's favourite for a long stretch of
-the campaign.
+### Under reconsideration
 
-### Why one gun fires a real projectile
-
-A travel-time projectile is only interesting if you can see it coming and
-dodge it — and that only matters at **close range**, where an enemy would
-otherwise have no reaction window at all against an instant hit. At the battle
-rifle's engagement distance, visible travel time would just read as an aiming
-penalty rather than a test of anyone's reflexes.
-
-The in-world reason is electromagnetic, not exotic. These are coilguns: they
-accelerate a solid slug through a sequence of magnetic stages, so muzzle
-velocity scales with how much barrel you have. A compact close-range weapon
-doesn't have room for enough stages to reach the speeds a longer weapon
-manages. Short gun, slow round. Long gun, fast round. That rule holds if more
-weapons get added later.
-
-To stop "slow" reading as "weak", the close-range round is pre-scored to
-fragment on impact — it trades penetration for a burst of shrapnel. Strongest
-against close, grouped or exposed targets; weakest against armour and hard
-cover, which is exactly where the other two stay relevant.
+Weapons encouraging playstyles rather than levels forcing them; a favourite
+general-purpose weapon staying viable across most of the game; ammo as a
+*soft* pressure that nudges you toward switching rather than stranding you.
 
 ### Open
 
-- **How many weapons you carry at once.** Two is the classic Halo answer.
-  Not locked.
-- **The full weapon roster** beyond these three.
+- The actual weapon roster.
+- How many weapons are carried at once.
+- Whether and how dual-wielding works mechanically.
+- What, if anything, uses the projectile system.
 
 ---
 
 ## Enemies
 
-The enemies are machines. Not people.
+The enemies are people. Criminals, syndicate muscle, corrupt police,
+private security, hired killers — the human fabric of a 2002 crime world.
 
-"AI" is the intelligence; **synthetics** are the physical force you fight —
-machine bodies controlled or inhabited by it. Humans remain in the story as
-corrupt, antagonistic, manipulative or simply responsible for dangerous
-technology, but they are not what you shoot.
+That world, as the direction sketches it: kidnapping-for-ransom syndicates,
+jueteng and illegal gambling networks tied to officials and law enforcement,
+shabu trafficking and the wider drug trade, organised crime, vigilantism and
+extrajudicial violence, and the post-EDSA political instability that sits
+underneath all of it.
 
-### Readability is the design requirement
+These are possible ingredients rather than a required roster — the game
+doesn't need to reproduce specific real cases.
 
-You should be able to tell what you're dealing with instantly, the way you can
-immediately clock an Elite from a Grunt in Halo. That instant read doesn't come
-from one enemy reskinned several ways — a hovering drone and a four-legged war
-machine shouldn't move or behave the same underneath.
+### Under reconsideration
 
-So enemies are built from interchangeable pieces — how they move, how they
-attack, what role they play in a fight — mixed and matched per type. Distinct
-silhouettes, distinct behaviours, distinct battlefield roles.
-
-Possible chassis: humanoid infantry, quadrupeds, hovering units, repurposed
-industrial machines, swarms, heavily armoured elites, enormous combat
-platforms.
+The previous version's rule that enemies must **read at a glance** — distinct
+silhouettes, behaviours and battlefield roles so the player can size up a
+fight instantly. The synthetic premise it was written for is gone, but the
+principle applies just as well to a syndicate enforcer versus a beat cop
+versus a hired shooter.
 
 ### Open
 
-- **Why the synthetics turned hostile.** Deliberately unresolved, and
-  deliberately *not* the default "AI wakes up and decides humanity must die" —
-  the cause should be specific to this world's history.
-- **The synthetic hierarchy** — what ranks and roles exist.
+- The enemy roster and how factions differ in play.
+- Whether readability-at-a-glance stays a design requirement.
 
 ---
 
 ## World
 
-### The Philippines, 2098
+### The Philippines, 2002
 
-The country spotted an opportunity. As the rest of the world responded to the
-harms of frontier AI research with restrictions — while cheerfully continuing
-to *buy* AI-derived products — the Philippines made itself the place where the
-restricted work could legally happen.
+Not a stylised past — the real social, political, criminal and technological
+atmosphere of the early-2000s Philippines. Real historical conditions form
+the backdrop; the main plot stays fictional, so the game never has to rewrite
+major events.
 
-The result is a genuine contradiction rather than a simple dystopia. Foreign
-money poured in. So did infrastructure, tech transfer, industry and
-corruption. Decades of real economic growth followed: modernised
-infrastructure, a serious domestic robotics and defence industry, globally
-important universities, powerful Filipino tech companies, engineers moving
-*in* rather than out.
+### Period texture
 
-And the Filipino counter-argument is a good one: wealthy nations benefited
-from this technology and then tried to pull the ladder up. By 2098 the AI
-economy is too important to the world to simply switch off.
+Nokia-era mobile phones and SMS culture, and everything that implies:
+pre-smartphone communication, limited mobile internet, text messaging as a
+tool for politics, rumours, threats, informants and criminal business.
 
-### Corporate espionage as a world engine
+CRT televisions and monitors. Jeepneys, buses, taxis, motorcycles and period
+cars. Early-2000s Manila nightlife. Fluorescent interiors, concrete urban
+spaces, rain and humid streets.
 
-Because so many competing international research operations sit physically
-close together, espionage is constant — poaching, prototype theft, sabotage,
-convenient facility fires, infiltration, bribery, reverse engineering.
+Karaoke bars, restaurants, hotels, warehouses, docks, police stations,
+government offices, dense residential districts. Catholic imagery and other
+distinctly Filipino environmental and cultural detail. Tabloids, radio and
+television news. Political uncertainty and rumour. A mix of English and
+Filipino/Tagalog where appropriate.
 
-This matters beyond flavour: it explains why 2098 synthetics are so
-sophisticated, and why **no single corporation fully understands or controls
-the ecosystem**. One company's locomotion, another's stolen cognition, a
-third's theft of that, all reverse-engineered locally. Eventually nobody can
-say who invented what.
+### The backdrop
 
-### Luzon — "The Factory"
+Political instability after EDSA II and EDSA III. Public distrust of
+politicians and institutions. Corruption and patronage networks. Police
+corruption and criminal links. Military dissatisfaction and rumours of coup
+plotting. Post-9/11 security anxiety, terrorism and insurgency in the
+national atmosphere.
 
-A vast continuous sprawl, far bigger than Manila. Flatlands converted to solar
-farms feeding compute. Between them: data centres, automated factories,
-synthetic assembly plants, worker cities, cooling infrastructure, corporate
-research campuses.
+This is atmosphere and raw material, not a checklist the story must tick.
 
-Old Philippine towns survive embedded inside it. The visual thesis is
-contrast — a centuries-old church, an ordinary neighbourhood, sari-sari
-commerce, a barangay basketball court, sitting beneath enormous futuristic
-industrial infrastructure.
+### Cinema references
 
-### High City and Low City
+For action language: John Woo — Hard Boiled, The Killer, A Better Tomorrow.
+Max Payne, as a reference for translating noir and cinematic gunplay into a
+shooter, not as a setting to copy.
 
-Not one Midgar-style plate, but the accumulated result of decades of building
-over what was already there — new roads over old roads, rail over roads,
-corporate districts spanning older ones, decks connecting towers.
-
-**High City** is clean, orderly, maintained, spacious and sunlit. Glass,
-composite, landscaping, automated transit, restrained high-tech. The future
-visibly *works* here. The darkness is beneath the surface: surveillance,
-sensors, private security, synthetic labour, biometric access, corporate
-ownership.
-
-**Low City** is the original ground-level Philippines, buried underneath.
-Dense old concrete, endless modification, exposed cabling, cheap holographic
-advertising, wet streets, food stalls, repair shops, synthetic chop shops.
-Large parts get little direct sunlight because High City has the sky — which
-gives the neon an environmental reason rather than a stylistic one.
-
-Crucially, **Low City is not uniformly poor.** It holds poor communities, an
-established middle class, commercial districts, old wealthy enclaves,
-industrial businesses, and people who simply refused to leave. High City is
-planned and corporate; Low City is chaotic and culturally alive. Both stay
-recognisably Filipino — neither is Tokyo, neither is Night City.
-
-### Visayas — "The Resort"
-
-The counterpart to Luzon's industry: the entire region reshaped around
-leisure and tourism. Luxury destinations, nightlife, artificial reefs, medical
-tourism, corporate retreats, floating hotels, entertainment districts.
-
-Millions still live there — it isn't emptied — but the economy and land use
-are built around visitors, wealthy residents and international consumption.
-The available contrast: immaculate resort districts supported by worker
-communities deliberately kept out of sight.
-
-### Open
-
-- **Mindanao.** Left undefined on purpose rather than forced into a trio.
-- **The major corporations, families and factions.**
-- **The exact regulatory mechanism** the Philippines used.
+For the Filipino identity: *On the Job* (crime, assassins, police, political
+corruption, overlapping institutions), *BuyBust* (claustrophobic urban
+combat in dense Filipino environments), *Metro Manila* (desperation, class,
+crime, Manila), *Manila in the Claws of Light* (distinctly Filipino urban
+darkness and noir foundations), and classic Filipino action cinema.
 
 ---
 
 ## Narrative
 
-### The protagonist is the player
+### Tone
 
-There is no strongly authored personality. The protagonist may have a
-functional identity — why they're there, what they can do, what they carry —
-but the game never states what they think or believe.
+Heavy noir. Dark, brooding, cynical, crime-focused. Morally compromised
+institutions; betrayal, corruption and conflicting loyalties. The
+protagonist is frequently unsure who can be trusted.
 
-**No dialogue choices.** Not a technical shortcut; a deliberate position on
-whose viewpoint the story belongs to.
+The story exposes **systems** of corruption rather than presenting good
+against evil. The most believable version is an apparently ordinary crime —
+a kidnapping, a murder, an organised-crime case — that gradually reveals
+overlapping networks of criminals, police, businessmen, fixers and
+politicians. Not one giant conspiracy: overlapping interests, favours,
+protection arrangements, debts, and people taking their cut.
 
-### Viewpoints come from everyone else
+Humour can exist, but the lead is deliberately **not** Tequila from Hard
+Boiled — no cheerful, cool swagger.
 
-Supporting characters carry the opinions, and they're allowed to be
-interesting: they disagree, they argue about corporations and AI and politics,
-they lie, they misunderstand, they hold biases, and they can be sincere and
-wrong at the same time.
+### The protagonist
 
-The protagonist never declares which of them is correct. The player decides.
+A defined, authored character — the previous version's player-projection
+protagonist is discarded.
 
-### Lore serves the shooter
+Male, at least 35, preferably late 30s to early 40s. Dark, brooding, cynical.
+Tired and experienced. Observant, suspicious, restrained. Dry or fatalistic
+humour rather than playful banter.
 
-The immediate premise has to land in one sentence: **hostile synthetics, here's
-a gun.** Everything deeper — the history, the politics, the competing
-interpretations of how the country got here — arrives through supporting
-characters, environments, background detail, optional lore, and corporate and
-government messaging.
-
-The world contains contradictions on purpose. Governments condemn frontier AI
-while importing its products. Foreign critics are economically dependent on
-Philippine technology. Corrupt officials take corporate money, and the
-resulting boom genuinely improves the country. High City offers a real
-standard of living and embodies corporate surveillance. Low City suffers
-neglect and is where the culture lives.
-
-**The FPS comes first.**
+Not a one-note angry tough guy: his darkness shows as quiet exhaustion,
+distrust and resignation rather than shouting. He should keep some buried
+moral line so the cynicism never becomes total nihilism — he expects
+institutions and people to fail him, and still can't ignore innocent people
+in danger.
 
 ### Open
 
-- **The inciting incident.**
-- **The protagonist's role, background and designation.**
+- **The story.** This is the current major design task: a plot that grows
+  from the older cynical protagonist, Philippine crime-noir conditions,
+  overlapping criminal and institutional interests, a personal reason for
+  him to keep digging, and a structure that naturally escalates into
+  spectacular John Woo-style encounters.
+- **The protagonist's** history, profession, name, exact age, personal
+  tragedy or motivation, and his connection to the main crime plot.
+- Whether dialogue choices exist. The previous version had none, tied to
+  the neutral protagonist; with an authored lead, that's no longer settled
+  either way.
 
 ---
 
 ## Scope
 
-### Campaign shape
+### Under reconsideration
 
-A **linear campaign, minimum ten levels**, built around a repeating and
-escalating loop:
+The previous version's structure: a **linear campaign of at least ten
+levels**, built on a repeating and escalating loop of encounter → sequence
+→ level → campaign, with **linear navigation and nonlinear combat** —
+mini-sandbox arenas where freedom comes from how you use the geometry rather
+than from branching routes.
 
-> 30 seconds of fun → a combat encounter → an encounter sequence → a level →
-> the campaign
+None of that is discarded. None of it is confirmed. Each piece gets weighed
+against what a noir story and John Woo action actually need.
 
-Core guaranteed gameplay is on-foot first-person combat. Everything else has
-to earn its place.
+### Deliberately open
 
-### Arenas
-
-Navigation is linear; arenas are mini-sandboxes. This explicitly **does not**
-mean branching routes — there is no separate sniper path or stealth path.
-Everyone fights through the same space.
-
-Freedom comes from how you use the geometry. A battle-rifle player exploits a
-long central hallway; a close-range player exploits the short-sightline
-corners beside it. Same room, different tactics.
-
-The test for a good arena: **it stays fun with a different loadout.**
-
-### Deliberately out of scope
-
-**Vehicles** are not guaranteed. Nothing is designed around them unless they're
-added later and proven fun.
-
-**Branching conversation** doesn't exist, because dialogue choices don't.
-
-**Third-person and co-op** are not being built toward. Body animation for how
-other players would see you is deferred until there's an actual reason.
+- **Vehicles** — never guaranteed, still not.
+- **Mission count and campaign shape** — depends on the story, which doesn't
+  exist yet.
 
 ### Where the build is
 
-The combat foundation is real and playable, not planned. Working today:
+The combat foundation is real and playable. Working today:
 
-- Weapons that fire, with the full bloom accuracy model driving both the shot
-  and the reticle
-- Three configured weapons — pistol, close-range rifle, battle rifle — with
-  distinct roles and tuning
-- A real projectile weapon with fragmenting impact
-- Fire rate limits, full-automatic fire, and per-weapon fire animation
-- Halo-style scoped zoom
+- Weapons that fire, with an accuracy model driving both the shot and the
+  reticle from one number
+- Three configured test-bed weapons with distinct handling
+- A working projectile weapon with fragmenting impact
+- Fire rate limits, full-automatic fire, per-weapon fire animation
+- Scoped zoom
 - Ammunition with magazines, reserves and reloading
+- A composable HUD — reticle and ammo readout as separate, mix-and-match
+  elements
+- Per-weapon procedural crosshairs
 - Hit decals, muzzle flash, weapon sound
 
-Next: enemies. That's the milestone where the combat loop becomes a *game*
-rather than a shooting range — everything above currently has nothing to shoot
-at.
+All of it was built under the old premise, and all of it is **implementation
+state rather than canon** — the test bed the new direction gets evaluated
+against. The systems are setting-agnostic; the art and the roles they were
+tuned for are not.
+
+Next: the story. Then enemies — which is when this becomes a game rather than
+a shooting range.
 
 ---
 
@@ -394,18 +344,14 @@ at.
 
 - 2026-08-09 — Initial skeleton created.
 - 2026-08-09 — Rewritten against locked canon from `Lore_And_Design_Notes.md`.
-- 2026-08-09 — Reworded as an original implementation-design document.
-- 2026-08-09 — Restructured to separate plain-English explanations from
-  technical jargon.
-- 2026-08-12 — Enemies deferred behind a weapon-focused phase; backlog
-  superseded by `ProjectPlan.md`.
-- 2026-08-17 — Projectile-weapon assignment reversed to the close-range rifle;
-  coilgun and fragmentation rationale added.
-- 2026-08-18 — Animation-feedback ownership principle established.
-- 2026-08-30 — First-person rig restructured; render-proxy rule documented;
-  first weapon tuning pass recorded.
-- 2026-08-31 — **Rewritten as a non-technical pitch document.** All
-  implementation detail moved to
-  [Documentation/TechnicalDesignSpec.md](../Documentation/TechnicalDesignSpec.md).
-  Restructured into Overview / Combat / Weapons / Enemies / World / Narrative /
-  Scope, with undecided items marked **Open** rather than silently omitted.
+- 2026-08-12 — Enemies deferred behind a weapon-focused phase.
+- 2026-08-17 — Projectile-weapon assignment reversed to the close-range rifle.
+- 2026-08-30 — First-person rig restructured; first weapon tuning pass.
+- 2026-08-31 — **Rewritten as a non-technical pitch document.** Implementation
+  detail moved to `TechnicalDesignSpec.md`. Fidelity target recorded.
+- 2026-09-13 — **Rewritten for the change of setting: Philippines 2002,
+  noir narrative, John Woo action, authored protagonist.** The 2098 cyberpunk
+  premise, synthetic enemies and neutral protagonist are discarded. Previous
+  gameplay ideas are marked *under reconsideration* rather than removed, per
+  the new direction. Fidelity target retained — it sits naturally with a
+  2002 setting.

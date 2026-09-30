@@ -12,7 +12,10 @@
 **"Managing Complexity in the Halo 2 AI System"**
 Source: https://www.youtube.com/watch?v=m9W-hpxuApk
 Relevant to: [Phase 5 — Enemy archetype foundation](ProjectPlan.md) (StateTree-based,
-composable synthetic enemy archetypes; explicit Halo reference per `CLAUDE.md`).
+composable enemy archetypes). Originally studied because Halo was the primary
+touchstone; after the 2026-09-13 setting change the enemies are human rather
+than synthetic and Halo is no longer the reference, but everything below is
+about readable, composable behaviour and applies just as well.
 
 ### Core architecture
 - **Behavior tree, really a DAG** — nodes ("behaviors") are temporal programs

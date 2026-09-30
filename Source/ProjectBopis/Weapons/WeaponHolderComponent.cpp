@@ -8,7 +8,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "TimerManager.h"
 
 // Sets default values for this component's properties
 UWeaponHolderComponent::UWeaponHolderComponent()
@@ -33,12 +32,6 @@ void UWeaponHolderComponent::BeginPlay()
 			AddWeapon(StartingWeapon);
 		}
 	}
-
-	// TEMP DEBUG: re-snap after 5s to test whether the initial attach is mistimed.
-	GetWorld()->GetTimerManager().SetTimer(DebugResnapTimerHandle, this,
-		&UWeaponHolderComponent::AttachWeaponToHand, 5.0f, false);
-
-	// ...
 
 }
 
@@ -104,13 +97,13 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 		return;
 	}
 
-	USkeletalMeshComponent* ArmsMesh = OwningCharacter->GetFirstPersonMesh();
-	if (!ArmsMesh)
+	USkeletalMeshComponent* CharacterMesh = OwningCharacter->GetMesh();
+	if (!CharacterMesh)
 	{
 		return;
 	}
 
-	EquippedWeapon->AttachToComponent(ArmsMesh,
+	EquippedWeapon->AttachToComponent(CharacterMesh,
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
 
 	EquippedWeapon->SetActorRelativeLocation(EquippedWeapon->GetGripLocationOffset());
@@ -118,11 +111,6 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 
 	EquippedWeapon->SetInstigator(OwningCharacter);
 	EquippedWeapon->SetOwner(OwningCharacter);
-
-	if (USkeletalMeshComponent* MeshComp = EquippedWeapon->GetWeaponMesh())
-	{
-		MeshComp->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
-	}
 }
 
 bool UWeaponHolderComponent::ReloadEquippedWeapon()
@@ -155,14 +143,44 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 
 	const FVector2D CrosshairScreenPosition(ViewportSizeX * 0.5f, ViewportSizeY * CrosshairViewportPositionY);
 
-	FVector TraceStart;
-	FVector TraceDirection;
-	if (PlayerController->DeprojectScreenPositionToWorld(CrosshairScreenPosition.X, CrosshairScreenPosition.Y, TraceStart, TraceDirection))
+	FVector CameraLocation;
+	FVector CameraDirection;
+	if (!PlayerController->DeprojectScreenPositionToWorld(
+		CrosshairScreenPosition.X, CrosshairScreenPosition.Y, CameraLocation, CameraDirection))
 	{
-		return EquippedWeapon->Fire(TraceStart, TraceDirection);
+		return EFireResult::NoWeapon;
 	}
 
-	return EFireResult::NoWeapon;
+	// Stage 1 — the camera decides WHAT you hit. Trace from the crosshair to find
+	// the point the player is actually looking at. In third person the camera sits
+	// behind and beside the character, so firing along this ray directly would send
+	// shots through cover the character is standing behind.
+	const float AimRange = EquippedWeapon->GetMaxRange();
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwningCharacter);
+	QueryParams.AddIgnoredActor(EquippedWeapon);
+
+	FHitResult AimHit;
+	const bool bAimHit = GetWorld()->LineTraceSingleByChannel(
+		AimHit, CameraLocation, CameraLocation + (CameraDirection * AimRange),
+		ECC_Visibility, QueryParams);
+
+	// Taken along the ray rather than from ImpactPoint, so it can be clamped.
+	const float HitDistance = bAimHit ? AimHit.Distance : AimRange;
+	const float ConvergeDistance = FMath::Max(HitDistance, MinConvergenceDistance);
+	const FVector AimPoint = CameraLocation + (CameraDirection * ConvergeDistance);
+
+	// Stage 2 — the muzzle decides WHERE the shot comes from.
+	const FVector MuzzleLocation = EquippedWeapon->GetMuzzleLocation();
+
+	FVector FireDirection = (AimPoint - MuzzleLocation).GetSafeNormal();
+	if (FireDirection.IsNearlyZero())
+	{
+		FireDirection = CameraDirection;
+	}
+
+	return EquippedWeapon->Fire(MuzzleLocation, FireDirection);
 }
 
 

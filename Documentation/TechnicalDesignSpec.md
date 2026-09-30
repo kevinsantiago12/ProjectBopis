@@ -15,6 +15,61 @@
 
 ---
 
+## Setting change 2026-09-13 — implications
+
+The premise changed from 2098 sci-fi/cyberpunk to **Philippines, 2002, noir
+narrative, John Woo action, authored protagonist**. Full canon is in
+`Design Document/Lore_And_Design_Notes.md` PART 1. What that does to this file:
+
+**Carried, unchanged.** Everything built so far is setting-agnostic systems
+work and stays: `AWeaponBase` + data-driven weapons, the bloom model and its
+parameters, fire-rate cap, full-auto, per-weapon anim selection, ammo
+(magazine/reserve/timer reload), `AProjectileBase`, the composable HUD, the
+first-person rig, the rendering target, and every gotcha below. None of it is
+*canon* any more — it's the test bed the new direction gets evaluated against
+— but none of it needs to be torn out either.
+
+**Superseded — rationale gone, code stays.**
+- The close-range rifle's projectile was justified as a coilgun with
+  fragmenting rounds. That justification is discarded. The projectile system
+  is general and works; what (if anything) fires a visible projectile in 2002
+  — grenades, thrown weapons, something else — is a design decision. Until
+  then the close-range rifle keeps its projectile configuration as a test bed.
+- Enemies are no longer synthetics. **Superseded again on 2026-09-28** by the
+  horror pivot: they are now mature Aswang, ferals and (rarely) humans — see
+  the Enemies section. The composable data-driven architecture applies
+  throughout; the "emissive panels read against baked lighting" note does not.
+- The "no conversation system" rule was derived from the neutral
+  protagonist. The protagonist is now authored, and dialogue choices are
+  design-open. Don't build a conversation system yet; don't rule it out.
+- Weapon *assets* were re-pointed 2026-09-21 from `SciFiWeapDark` to
+  `MilitaryWeapSilver` (conventional firearms: `Pistols_A`,
+  `Assault_Rifle_A`, `Sniper_Rifle_A`, with matching `Fire_*_W` animations,
+  sounds and muzzle-flash FX). The sci-fi pack is removed. Weapon *roles*
+  (pistol / close-range full-auto / scoped semi-auto) were designed for the
+  old premise and are still open to revision. The 2002 arsenal is a design
+  decision; the military pack is what the test bed uses meanwhile.
+
+**Action-direction candidates.** Dual-wielding, dive/slide gunfire and
+bullet-time were **designed on 2026-09-30** — see *Combat abilities* below.
+Still unscheduled, but no longer unexamined. The remainder:
+- "Destructible-feeling" is cosmetic first (particles, decals, physics
+  props) and only becomes a system if design asks for mechanical destruction.
+- Large shootouts are the strongest argument for the baked-lighting target:
+  enemy count is where the performance headroom gets spent.
+- Standoffs are a scripting/encounter concern, not a system.
+
+**Under reconsideration, per the design doc** (neither confirmed nor
+dropped): hip-fire-first accuracy model, linear campaign structure,
+mini-sandbox arenas, weapons-dictate-playstyle. The code makes no assumption
+that depends on any of these being decided either way.
+
+*Enemy readability-at-a-glance came off this list on 2026-09-28 — resolved,
+see Enemies. The campaign's coup plot was dropped the same day; the story is
+being rewritten, so nothing downstream of it should be planned yet.*
+
+---
+
 ## Combat: bloom accuracy model
 
 The design rules out ADS-for-accuracy and camera-climb recoil. Accuracy is
@@ -135,7 +190,7 @@ The project is still on UE5 defaults, which are the opposite of this target:
 
 - **`AllowStaticLighting` requires an editor restart** and changes how every
   existing asset is lit. It is not a reversible toggle mid-session.
-- **Meshes need lightmap UVs.** Vendor content (`SciFiWeapDark`, and anything
+- **Meshes need lightmap UVs.** Vendor content (`MilitaryWeapSilver`, and anything
   migrated from Lyra) was authored for dynamic lighting and may not have a
   second UV channel. Unreal can generate them on import, but quality varies.
 - **Levels need relighting and a light build.** The FirstPerson template map
@@ -152,9 +207,11 @@ light** by default — a per-shot point light is exactly the kind of cost this
 target is avoiding. Impact and muzzle effects carry their read through
 emissive materials and particles instead, which is also what the era did.
 
-Enemy synthetics benefit here: emissive panels and glowing elements read
-strongly against baked environments without costing dynamic lights, and they
-support the "readable at a glance" requirement in the enemy spec.
+The 2002 setting is a good fit: fluorescent interiors, wet concrete and neon
+signage read on strong shapes and colour, which is exactly what baked
+lighting plus emissive materials does well. If enemy readability-at-a-glance
+survives reconsideration, it'll come from silhouette, costume and behaviour
+rather than glow.
 
 ---
 
@@ -171,16 +228,22 @@ logic.
 
 ### Projectile vs hitscan
 
-`AProjectileBase` (real movement + collision + on-hit damage) belongs to the
-**close-range weapon**. Pistol and battle rifle stay hitscan.
+`AProjectileBase` (real movement + collision + on-hit damage) is currently
+assigned to the **close-range rifle** as a test bed. Pistol and battle rifle
+are hitscan.
 
-On-hit behaviour expresses fragmentation as gameplay, not visual flavour — a
-small-radius damage burst centred on the impact point rather than a single
-point-damage hit.
+**Setting change note:** the original reason for a projectile here — a
+coilgun firing fragmenting rounds — is discarded with the 2098 premise. The
+system is kept because it works and because 2002 has obvious uses for it
+(grenades, thrown weapons); which weapon, if any, uses it is a design
+decision. Until that lands the configuration below stays so the system
+keeps getting exercised.
 
-Projectile defaults: 3000 u/s (~30 m/s, watchable and dodgeable at its 25m
-range, which is the entire design premise), gravity disabled, 5s lifespan,
-150-unit fragment radius at 10 damage.
+On-hit behaviour is a small-radius damage burst centred on the impact point
+rather than a single point-damage hit.
+
+Projectile defaults: 3000 u/s (~30 m/s, watchable and dodgeable at 25m
+range), gravity disabled, 5s lifespan, 150-unit burst radius at 10 damage.
 
 **Spawn origin:** projectiles spawn at `TraceStart` — the deprojected
 crosshair point, the same origin the hitscan trace uses. This makes projectile
@@ -239,13 +302,248 @@ is the opt-out.
 
 ## Enemies
 
+Rewritten 2026-09-30 for the Aswang direction. Lore in
+`Design Document/Lore_And_Design_Notes.md` PART 1; the decisions below came
+out of a design conversation on 2026-09-28/30 and are implementation-side.
+
 - The template's `ShooterNPC`/`ShooterAIController` were removed with
   `Variant_Shooter` — this gets built fresh, not extended from that code.
-- New base synthetic enemy actor, with movement type, attack behaviour, and
-  battlefield role as data-driven, combinable pieces, instead of one class
-  accumulating `if (Type == Hover)`-style branches.
+- New base enemy actor, with movement, attack behaviour and battlefield role
+  as data-driven, combinable pieces, instead of one class accumulating
+  `if (Type == Enforcer)`-style branches.
 - Per-archetype StateTree assets (the plugin is already enabled) are a better
-  fit than one shared tree with branching conditions for every chassis.
+  fit than one shared tree with branching conditions for every archetype.
+- Enemy *count* and aggressive positioning matter more than individual enemy
+  sophistication. Halo 2's AI notes in [Research.md](Research.md) still apply
+  — they're about readable behaviour, not about what the enemies are.
+
+### Three families
+
+| Family | Share | Behaviour | Build cost |
+|---|---|---|---|
+| **Mature Aswang** | The overwhelming majority | Gun users. Composed, clothed, armed. Always already in monstrous form when combat is possible. | The main enemy. Full ranged AI. |
+| **Ferals** (newly turned) | Deliberately rare — ~3 encounters in the campaign | Mindless melee chargers. No firearms. | **Cheaper than a gun user**, not harder. |
+| **Humans** | Kept rare and deliberate | Ordinary ranged enemies. | Reuses the Aswang rig. |
+
+**Humans stay rare on purpose.** If almost nothing the player kills is human,
+the few humans who are killed carry weight. This is a design rule, not a
+content shortfall.
+
+**Ferals are the cheap one.** A mindless charger needs no cover reasoning, no
+line-of-sight firing logic, no aim, no engagement-range decisions — navigate
+to player, attack in range. That is a markedly simpler StateTree than the
+ranged Aswang. The cost sits in model and animation, which scripting the
+encounters would not have avoided, so **build it properly rather than
+scripting three one-offs**.
+
+### What the design buys us
+
+- **No mid-combat transformation.** Aswang aware of a threat are already in
+  monstrous form. The model/skeleton swap — previously the most expensive
+  unknown here — is off the table.
+- **Aswang and humans share a skeleton, rig and animation set.** They wear
+  ordinary clothes and keep human proportions; the difference is head mesh,
+  hands and materials. This makes the one-base-actor approach *more* valuable,
+  not less.
+- **No companion AI.** The protagonist has no human allies. The femme fatale
+  is a scripted set-piece at most, never a general system. Companion AI is one
+  of the most expensive things in a shooter and it is simply not needed.
+
+### Two-layer health — required, not cosmetic
+
+Aswang are tanky and do not die to a single headshot. Implemented naïvely as a
+larger `Health` number this **breaks the bloom skill test**: when everything
+takes a magazine, shot placement stops mattering and the correct play becomes
+holding the trigger, which is the opposite of what the accuracy model rewards.
+
+Model it as Halo's shields instead — two distinct pools:
+
+1. **Supernatural resilience** — the outer pool. Soaks punishment. Depleting
+   it fires a **break event**.
+2. **Mortal health** — underneath. Small, and precision matters again.
+
+The break event is the point. A single sliding health value gives nothing to
+react to; two pools produce a discrete transition that can be announced,
+which is what tells the player *precision pays now*. Tankiness, preserved
+trigger discipline, and a dramatic beat all fall out of one decision.
+
+**Headshots:** no precision-damage system exists yet — deferred out of Phase 3.
+"Doesn't die to one headshot" need not mean "headshots aren't special": a
+heavy multiplier that isn't an instant kill still rewards placement.
+`HitResult.BoneName` already comes back from the existing trace.
+
+**Knock-on:** ammo values (pistol 12/60/120, close rifle 30/60/120, battle
+12/60/120) were tuned against enemies that don't exist. Expect a retune once
+something can actually die.
+
+### Vocalization system
+
+Aswang must not read as reskinned human shooter enemies. Growls, screams and
+animalistic gestures are **state telemetry**, not flavour — the Halo
+precedent, where an Elite's shield breaking is announced audibly because the
+player can't see a health bar across a firefight.
+
+Triggers worth announcing:
+
+| Trigger | Purpose |
+|---|---|
+| `Alert` | Spotted the player. |
+| `ResilienceBroken` | The most important one — the only mid-fight state change the player must be told about. |
+| `Enrage` | Only if behaviour *actually* changes. Announcing a state that plays identically trains players to ignore the audio. |
+| `Pain` / `Death` | Cheap, high value. |
+| `AmbientIdle` | The horror one. Fires **outside** combat, from somewhere unseen. |
+
+Shape it like the systems already built: an enum plus
+`TMap<EAswangVocalization, FAswangVocalization>` on the enemy, where the
+struct pairs a sound with an optional montage so audio and body language fire
+together. One `PlayVocalization(ETrigger)` entry point, called from the
+StateTree and the damage handling. Same pattern as `FireMontages` /
+`ReloadMontages` on the character.
+
+Three things that bite if left late:
+- **Throttling** — a pain grunt on every hit becomes comedy. Per-category
+  cooldown plus priority (death > enrage > pain).
+- **Concurrency** — eight Aswang roaring at once is mud. `USoundConcurrency`
+  handles this as configuration, not code.
+- **Attenuation** — for `AmbientIdle`, direction and distance *are* the
+  mechanic.
+
+**Design the base enemy with state-change broadcasts from day one.**
+Retrofitting announcements onto a finished state machine is how transitions
+end up silently doing nothing.
+
+### Readability layers by distance
+
+The old tension (horror wants unreadable enemies, design wants legible ones)
+is **resolved**: no mid-combat transformation means enemies in combat are
+always revealed, and the "ordinary people may not be human" dread lives
+outside combat. Full readability applies again.
+
+One catch remains. Ordinary clothes and human proportions mean **silhouette
+alone will not separate an Aswang from a human at range** — which is normally
+where readability comes from. So it layers:
+
+- **Close** — face, eyes, mouth, coloration, fingernails.
+- **At range** — **motion**. Posture, gait, how they close and take cover.
+  This makes animalistic locomotion a readability mechanism and it should be
+  specced that way, not treated as set dressing.
+- **Unseen** — vocalization as positional information.
+
+---
+
+## Combat abilities — dual-wield, shootdodge, bullet-time
+
+Designed 2026-09-30, **none built**. Recorded because the animation
+constraints shape the code, and the approaches below were worked out against
+what the project actually owns.
+
+### Dual pistols
+
+No dual-wield animation exists. It is not needed — the existing single-pistol
+pose applied twice covers it.
+
+- A `UMirrorDataTable` auto-populates from the `_l`/`_r` bone naming the
+  mannequin already uses. The AnimGraph `Mirror` node produces a mirrored
+  pistol pose; `Layered blend per bone` rooted at `clavicle_l` takes the left
+  arm from it. Two nodes, no new assets.
+- **Alternate fire** (left, right, left, right). Only one arm recoils at a
+  time, which halves the animation problem and matches the source films. Fits
+  the existing cadence cap directly — same `TimeBetweenShots`, alternating
+  which weapon consumes it.
+- **Check whether Lyra's pistol fire animations are additive.** If they are,
+  per-arm recoil is nearly free. If they're full-body, converting them to
+  additive against the idle pose is an asset setting, not new animation.
+- **Reload is the real gap** and cannot be faked from a single-pistol reload.
+  The answer is the films': **don't reload dual pistols — throw them away when
+  dry** and fall back to the primary. Dual-wield becomes a state you *spend*
+  rather than sustain, the animation problem disappears, and the mechanic gets
+  a natural duration limit.
+
+Code surface: `UWeaponHolderComponent` holds one `EquippedWeapon` today, fire
+input maps one action to one weapon, and the HUD shows one ammo count. All
+three widen.
+
+### Shootdodge
+
+An asset exists: a **two-handed pistol shootdodge that lands prone, with a
+prone turn-in-place**. That is the full Max Payne loop — dive directionally,
+land, reacquire, keep firing, get up.
+
+**Adapting it to other weapons.** The dive's lower body and spine are
+weapon-agnostic; only the arms differ.
+- **Dual pistols** — the same mirror rig as the standing pose. Build it once,
+  it serves both.
+- **Rifles** — the **left-hand IK backlog item** (Two Bone IK onto the weapon
+  foregrip) does most of the work: weapon stays on `hand_r` and follows the
+  dive, left hand IKs to the foregrip. No rifle dive needs authoring. It won't
+  be perfect — a pistol dive extends the arms further than a rifle grip wants
+  — but a dive is the most forgiving place in the game for an approximate
+  pose: one second, moving camera, and under slow-motion the player is
+  watching the spectacle, not the elbow.
+
+**Keying:** `TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> DodgeMontages` on
+the character — same shape and lookup as `FireMontages`/`ReloadMontages`.
+Because those already use "only play if a montage was found", **an empty
+Rifle entry means rifles simply don't dodge, with no special-case code.**
+Worth considering as a deliberate choice rather than a fallback: it reinforces
+*weapons dictate playstyle* (pistols move-and-gun, rifles stand-and-fight) and
+is honest about where the animation looks good.
+
+**Directional dodge only makes sense while aiming.** In the aim state yaw is
+locked to the camera and the character strafes, so "left" is unambiguous and
+maps onto the strafe input already driving movement. In free-run the character
+orients to its own velocity, so direction has no stable meaning. Rule:
+**directional while aiming, forward-only or disabled while free-running** —
+which also halves what the animation set must cover.
+
+Before planning further, check the asset for: **root motion** (interacts with
+the rotation-mode toggling), and **whether the right arm crosses the body**
+(the one failure mode of the mirror trick — mirrored frames can clip the
+torso).
+
+### Prone as a transient state
+
+The dive lands prone, but this does **not** reverse the no-prone decision of
+2026-09-25. Two different things:
+
+- **Prone as a stance** — ruled out. Needs standing→prone transitions,
+  crawling, prone locomotion, getting up from arbitrary states.
+- **Prone as a post-dive state** — what the asset gives. Entered only by
+  diving, exited by getting up. No crawl, no prone-walk, no manual entry. A
+  fraction of the cost, and the animations came with the pack.
+
+Stance model: **standing, crouched (toggle), prone (transient, dive-only).**
+
+Landing prone is also what makes the dive *cost* something. A dive that only
+evades is free; one that puts you on the floor for a second is a trade. That
+comes from the animation set rather than needing to be designed in.
+
+**The rotation gotcha.** In the aim state `bUseControllerRotationYaw` snaps
+capsule yaw to the camera instantly, while a prone turn-in-place animates a
+slow rotation. Run both and the capsule spins while the body lags, firing
+where the body isn't pointing. **Prone must hand rotation authority to the
+animation** — disable controller yaw for the duration and let root motion or
+the montage drive it.
+
+Consequence for the TPS work: the `ApplyMovementMode` helper in
+[ProjectPlan.md](ProjectPlan.md) Phase 4.5 is **three states, not two** —
+non-aim, aim, and prone-with-animation-authority. Cheaper to write that way
+than to retrofit.
+
+Smaller ones: the crouch half-height is almost certainly fine as the prone
+capsule for a two-second transient (don't build a second capsule config unless
+it visibly floats), and the spring arm will need its own length/offset near
+the floor or the camera looks at concrete.
+
+### Bullet-time — the counterintuitive part
+
+Global time dilation slows **everything on world time**, which includes
+`TimeBetweenShots`, `ReloadDuration` and bloom recovery. Naïve slow-motion
+therefore slows *the player's own gun* along with the world — the opposite of
+the intended feel.
+
+Fix: `AActor::CustomTimeDilation` on the player, keeping them near normal
+while the world crawls. Cheap to do, painful to discover late.
 
 ---
 
@@ -263,10 +561,12 @@ tool, not assumptions baked into game code.
 
 ## Narrative
 
-No dialogue choices and no voiced protagonist opinions means **no branching
-conversation system**, nothing to track about what the player "said", and no
-save data for choices that were never made. Unless that changes, no
-conversation system gets built.
+The protagonist is now an **authored character** (2026-09-13). The previous
+"no dialogue choices, no conversation system" rule was derived from the
+neutral protagonist and is no longer settled either way — it's a design
+question. Until it's decided: no conversation system gets built, and nothing
+in the code should assume one won't exist. The story itself is the current
+major design task and is not an engineering input yet.
 
 ---
 
@@ -359,12 +659,16 @@ See [ProgressLog.md](ProgressLog.md) for dated detail and
   tuning, ammo HUD and pickups, left-hand IK.
 - **Phase 5 (enemies)** not started. This is when the damage code — dispatching
   correctly but inert since Phase 1, because nothing has `Health` or overrides
-  `TakeDamage` — finally does something.
+  `TakeDamage` — finally does something. Enemies will be human, per the
+  setting change.
+- **Setting changed 2026-09-13** — see the implications section at the top.
+  No code changed as a result; the weapon art is now placeholder.
 
 ### Vendor content
 
 Marketplace packs live in their own top-level folders, **untouched**:
-`SciFiWeapDark` (weapons), `CleanFlatIcons` (reticle art), `UWC_Bullet_Holes`
+`MilitaryWeapSilver` (weapons — conventional firearms, replaced
+`SciFiWeapDark` on 2026-09-21), `CleanFlatIcons` (reticle art), `UWC_Bullet_Holes`
 (decals), `ImpactsVFXVol1` (Niagara impacts, imported by accident, deferred),
 and the migrated Lyra animation library under `Content/Characters/Heroes/`.
 
@@ -405,3 +709,23 @@ ones most likely to bite:
   way: renamed cadence parameters, added the rate-of-fire and ammo sections,
   the first-person projection principle, the projectile spawn-origin and
   self-collision rules, and the current-state summary.
+- 2026-09-13 — Setting change (2098 sci-fi → 2002 Philippines noir). Added
+  the implications section; removed the coilgun/fragmentation rationale from
+  the projectile section (system kept, purpose open); enemies reworded from
+  synthetic to human; narrative "no conversation system" rule reopened;
+  weapon art marked placeholder. No parameter or architecture changes.
+- 2026-09-21 — Weapon pack swapped: `SciFiWeapDark` → `MilitaryWeapSilver`.
+  All three weapon Blueprints re-pointed by the user; one stale
+  `AnimationData.AnimToPlay` on `BP_Pistol`'s `WeaponMesh` template cleared
+  via the editor bridge. `SK_Mannequin` still carries an editor-only preview
+  attachment of the old rifle (bridge can't reach it; cleared by hand).
+- 2026-09-28 — Horror pivot (Aswang). Enemies are no longer human-only.
+- 2026-09-30 — **Enemies section rewritten** for the Aswang direction: three
+  families, two-layer health (resilience over mortal, required so the break
+  event exists and the bloom skill test survives tankiness), the vocalization
+  system as state telemetry, and readability layered by distance. **New
+  Combat abilities section** covering dual pistols via pose mirroring,
+  shootdodge adapted from the two-handed pistol asset, prone as a transient
+  post-dive state, and the `CustomTimeDilation` requirement for bullet-time.
+  None of it is built; all of it is design worked out against assets the
+  project actually owns.

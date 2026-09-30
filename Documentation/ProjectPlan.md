@@ -9,6 +9,20 @@
 
 Status legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
+> **Setting changed 2026-09-13.** The game is now a noir first-person action
+> shooter set in the Philippines, 2002 (John Woo action, authored
+> protagonist, human enemies). The 2098 sci-fi premise is discarded. Nothing
+> in Phases 0–4 changes as a result — it's all setting-agnostic systems work
+> — but the *rationale* recorded in some completed items (coilgun physics,
+> synthetic enemies, Halo as primary touchstone) is now historical, not
+> canon. Those entries are left as written because they're a record of what
+> was decided at the time. Weapon art was swapped from `SciFiWeapDark` to
+> `MilitaryWeapSilver` (conventional firearms) on 2026-09-21.
+> Phases 5–7 are reworded below; their content is otherwise unchanged
+> pending the new story, which is design's current task. See
+> `Design Document/Lore_And_Design_Notes.md` PART 1 and the implications
+> section at the top of [TechnicalDesignSpec.md](TechnicalDesignSpec.md).
+
 ---
 
 ## Phase 0 — Clear the ground
@@ -199,26 +213,158 @@ pickups are what make a second carried weapon possible in the first place —
 - [ ] **Replace the TEMP 5s re-snap timer with a real fix.** **Update 2026-08-31: measured in live PIE and the timer does nothing** — the rifle's world transform is identical before and after it fires (`yaw -71.97` → `-71.80`, within idle sway). So this is now a straight cleanup (delete the timer and its `FTimerHandle`), not a fix that needs replacing. The original mistimed-attach diagnosis is unconfirmed.
 - [ ] **Tune `GripLocationOffset` on the rifle.** The rifle renders far too close to the camera and fills the screen — the weapon origin sits only ~31cm out. Separate knob from `GripRotationOffset`, which is correctly left at zero (see Gotchas — do not "correct" the 72° yaw). The hand pose also still doesn't grip the weapon properly, which is an animation problem offsets won't solve. `UWeaponHolderComponent::BeginPlay` currently sets a 5-second timer that re-runs `AttachWeaponToHand()`, which is what makes the weapon position correct. It's a band-aid — the weapon sits visibly wrong for the first 5 seconds of every session. The real fix is attaching once the arms mesh pose is actually initialized rather than on a fixed delay. See the mistimed-attach Gotcha below.
 
+## Phase 4.5 — Third-person conversion
+Goal: move the game from first-person to third-person, with **Ghost Recon:
+Breakpoint** movement. Scoped 2026-09-25 after an audit of how much
+first-person assumption is actually baked into the code — answer: very
+little. Three files touch it, and one of them has a single line.
+
+**Sits here deliberately, before enemies.** Phase 5 defines how AI aims,
+moves and reads the player; doing that against a rig that's about to change
+means doing it twice. The conversion is also cheapest now, while the only
+thing animating is the player.
+
+**Scope boundary — this is a camera and rig change, nothing more.** It does
+not touch campaign structure, level design, world size, or what kind of game
+this is. The structural questions carried forward from the setting change
+(linear campaign, mission count, mini-sandbox arenas) stay exactly as open as
+they were, and none of them are answered by this phase. An open-world /
+GTA-PS2-era rescope was raised and **declined on 2026-09-25** — nothing
+below assumes, enables, or leans toward it, and no item here should be read
+as a step in that direction. Vehicles remain out of scope and unguaranteed.
+
+**Movement model (GR: Breakpoint).** Two states off the existing `bIsAiming`
+flag:
+- **Non-aim** — full camera-relative motion. Input is transformed by camera
+  yaw; the character *turns to face* where it's going. Camera looks around
+  freely without turning the character.
+- **Aim** — movement is relative to the aim direction: the character's yaw
+  locks to the camera and it **strafes** instead of turning.
+
+The input transform is **identical in both states** — camera-relative either
+way. The only thing that changes is whether the character rotates to face
+its velocity. That's one pair of mutually exclusive flags, not two movement
+systems.
+
+### Camera rig
+- [ ] Replace the first-person camera setup in `AProjectBopisCharacter`'s constructor (`ProjectBopisCharacter.cpp:26-33`) with a `USpringArmComponent` + `UCameraComponent` on the arm. `bUsePawnControlRotation` moves to the **spring arm**, not the camera. Delete `bEnableFirstPersonFieldOfView`, `bEnableFirstPersonScale`, `FirstPersonFieldOfView`, `FirstPersonScale`.
+- [ ] Add `Spring Arm` to `PublicDependencyModuleNames`? — **not needed**, `USpringArmComponent` is in `Engine`. No `Build.cs` change for the conversion at all.
+- [ ] Spring arm defaults: `bEnableCameraLag` / `bEnableCameraRotationLag` for weight, `SocketOffset` for the over-shoulder offset, `ProbeChannel`/`ProbeSize` for wall collision. Values are feel-tuning, do them in the BP not C++.
+- [ ] Revisit `AProjectBopisCameraManager`'s pitch limits (`-70`/`+80`). Those were picked for a head-mounted camera; a spring arm wants a narrower range or the arm swings through the floor.
+- [ ] `GetFirstPersonCameraComponent()` accessor renamed (`GetCameraComponent()`) — check Blueprint callers before renaming, the ABP or HUD may bind it.
+
+### Mesh consolidation
+- [ ] Delete `FirstPersonMesh` entirely (`ProjectBopisCharacter.h:32`, constructor `:39-43`). The stock `ACharacter::GetMesh()` becomes the one visible mesh.
+- [ ] Delete `HiddenFirstPersonBones` (`:59`) and the `HideBoneByName` loop in `BeginPlay` (`:69-72`) — no camera inside the head any more.
+- [ ] Delete `SetFirstPersonVisibility()` (`.h:139`, `.cpp:287-304`).
+- [ ] Remove `GetMesh()->SetOwnerNoSee(true)` and the `FirstPersonPrimitiveType` assignment (`:48-49`).
+- [ ] Remove `SetFirstPersonPrimitiveType` on the muzzle flash (`Weapons/WeaponBase.cpp:127`) and on the weapon mesh (`Weapons/WeaponHolderComponent.cpp:124`).
+- [ ] **Expect a pile of bugs to vanish here**, not appear: the stale render-proxy snap, the FirstPerson tagging needed on every spawned particle, and the muzzle flash rendering through the wrong projection were all artefacts of the unified first-person path.
+
+### Movement — the GRB model
+- [ ] **Rewrite `DoMove`** (`ProjectBopisCharacter.cpp:151-159`). It currently uses `GetActorRightVector()` / `GetActorForwardVector()`, which is only correct in first person where actor facing *is* view facing. Must become control-rotation-derived: take `GetControlRotation()`, zero pitch and roll, build the axes from `FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X)` and `(EAxis::Y)`, and feed those to `AddMovementInput`. **This one change is the whole camera-relative model** and is shared by both states.
+- [ ] **Non-aim state:** `bOrientRotationToMovement = true` on the movement component, `bUseControllerRotationYaw = false` on the character. Character turns to face travel.
+- [ ] **Aim state:** `bOrientRotationToMovement = false`, `bUseControllerRotationYaw = true`. Character faces the camera and strafes.
+- [ ] These two flags are **mutually exclusive** — both true and they fight each other every frame (character snaps to control yaw, then movement tries to rotate it to velocity). Set them as a pair, never independently.
+- [ ] Consider `bUseControllerDesiredRotation = true` instead of `bUseControllerRotationYaw` for the aim state — it rotates *toward* control rotation at `RotationRate` rather than snapping, which reads better on the transition into aim. Try the hard lock first; it's one flag either way.
+- [ ] Hang the state switch off the existing `bIsAiming` — it's already set in `DoAimStart`/`DoAimEnd`. A small `ApplyMovementMode(...)` helper called from both keeps the flag pair in one place. **Three states, not two** (2026-09-30): non-aim, aim, and prone-with-animation-authority — see *Combat abilities* in [TechnicalDesignSpec.md](TechnicalDesignSpec.md).
+- [ ] `RotationRate` (movement component) governs how snappily the character turns to face travel in non-aim. Default `(0, 500, 0)` is twitchy for a tired 40-year-old; tune down.
+- [ ] `MaxWalkSpeed` drops in the aim state. Two values on the character, applied by the same helper.
+- [ ] Decide whether **sprint breaks aim** (GRB: it does). If yes, sprint input calls `DoAimEnd` rather than being blocked while aiming.
+- [ ] **Crouch** (decided in, 2026-09-25). `ACharacter` already implements it — `Crouch()` / `UnCrouch()`, replicated `bIsCrouched`, `CrouchedHalfHeight`, `MaxWalkSpeedCrouched`. No custom state machine needed.
+- [ ] **`GetCharacterMovement()->NavAgentProps.bCanCrouch = true` is required** or `Crouch()` silently does nothing and `CanCrouch()` returns false with no warning. It is `false` by default. This is the single most common way crouch "doesn't work".
+- [ ] New `UInputAction` for crouch (`IA_Crouch`) — none exists today. Bind `Started`→`DoCrouchStart`, and `Completed`→`DoCrouchEnd` only if hold-to-crouch wins over toggle. **Recommend toggle** for a tired-protagonist feel and because it frees the key during sustained aiming.
+- [ ] Crouch is **orthogonal to the aim/non-aim pair** — all four combinations are legal (crouched or standing × aiming or not). Keep `ApplyMovementMode(bAiming)` unaware of crouch; let the movement component own stance and speed.
+- [ ] Crouched max speed via `MaxWalkSpeedCrouched`. Note this interacts with the aim-state `MaxWalkSpeed` drop — decide whether crouch+aim takes the lower of the two or its own value.
+- [ ] **Camera behaviour on crouch.** The spring arm is on the capsule, so it follows the half-height change automatically — but UE snaps capsule half-height instantly while the mesh interpolates, which reads as a camera pop. If it's visible, lerp the arm's relative Z rather than letting the capsule drive it directly. Check before fixing; the spring arm's own lag may absorb it.
+- [ ] Uncrouch must fail gracefully under low ceilings — `ACharacter` handles the overlap test itself, but confirm the character doesn't get stuck crouched with no feedback.
+
+### Aim / ADS
+- [ ] **`DoAimStart` currently gates everything on `EquippedWeapon->HasZoom()`** (`:265`). In third person, aim is a *stance* every weapon has — only the scope magnification is weapon-specific. Split it: movement mode + camera shoulder-in happen unconditionally; `HasZoom()` keeps gating the FOV change and (later) a scope overlay.
+- [ ] Replace the FOV-swap zoom with a **camera move**: lerp spring arm `TargetArmLength` and `SocketOffset` between hip and aim values. `bHasZoom`/`ZoomedFOV` on `WeaponBase` still drive magnified optics on top.
+- [ ] `DoAimEnd` must stay unconditional in restoring state, same reasoning as today — a weapon swap mid-aim can't strand the player in aim stance.
+
+### Weapon attachment
+- [ ] `AttachWeaponToHand()` (`Weapons/WeaponHolderComponent.cpp:107`) — `GetFirstPersonMesh()` becomes `GetMesh()`.
+- [ ] **Re-tune `GripLocationOffset` / `GripRotationOffset` per weapon from scratch.** Current values were fitted to the arms rig at first-person scale and are meaningless against the full body. The existing backlog item for rifle grip tuning is superseded by this.
+- [ ] Delete the **TEMP 5s re-snap timer** (`WeaponHolderComponent.cpp:36-38`, handle at `.h:51`). It was a band-aid for first-person attach timing; re-evaluate the attach on the new rig and it should simply be unnecessary. (Already on the backlog — this is where it dies.)
+- [ ] Confirm `WeaponAttachSocketName` (`hand_r`) is still right on the body mesh — likely yes, it's the same skeleton family.
+
+### Firing and aim source
+- [ ] **The real problem of the conversion.** `FireEquippedWeapon()` (`WeaponHolderComponent.cpp:130-161`) deprojects screen centre and fires the shot *from the camera*. Correct in first person, wrong in third: the camera sits behind and off to one side, so a shot fired from the camera ray passes through cover the character is actually standing behind.
+- [ ] Fix is two-stage: **trace from the camera** to find the aim point, then **fire from the muzzle toward that point**. Camera trace decides *what you hit*; muzzle decides *where the bullet comes from*.
+- [ ] This finally makes `MuzzleSocketName` load-bearing. Right now projectiles spawn at `TraceStart` and the socket is decorative — verify it's correctly placed on all three `MilitaryWeapSilver` meshes before relying on it.
+- [ ] Decide the near-field behaviour: when the aim trace hits something closer than the muzzle, or the muzzle is inside geometry. Standard answers are a minimum convergence distance or a muzzle-blocked check that suppresses the shot.
+- [ ] `CrosshairViewportPositionY` is already `0.5` — no change, but confirm it still reads true once the camera is off-centre.
+- [ ] Bloom/spread is applied to `SpreadDirection` inside `WeaponBase::Fire` and is unaffected by any of this.
+
+### Animation
+- [ ] **This is the actual cost of the conversion** — the C++ above is roughly a day; this is weeks.
+- [ ] `FireMontages` / `ReloadMontages` keyed by `EWeaponAnimType` **survive architecturally unchanged** — the character still owns montages for its own skeleton. Every *asset* in them is replaced with a full-body clip. Update the two `UPROPERTY` comments that say "played on FirstPersonMesh" (`ProjectBopisCharacter.h:46,52`).
+- [ ] Montages must now play on `GetMesh()`'s anim instance (`:200`, `:233`).
+- [ ] **Non-aim locomotion:** character always faces travel, so a forward-only set (idle / walk / jog / sprint) covers it. Cheap.
+- [ ] **Aim locomotion:** needs a full 8-way **strafe blendspace**, since the character moves in directions it isn't facing. This is the expensive half.
+- [ ] **Aim offset** for pitch — the body must point where the camera points. Not needed in first person, mandatory now.
+- [ ] **Turn-in-place** for the aim state, or the character skates when you swing the camera while stationary.
+- [ ] **Crouched locomotion, both states.** Crouch adds a second full set: a crouched forward-only set for non-aim, and a crouched 8-way strafe blendspace for aim. Budget for it — this is the real cost of crouch, and it roughly doubles the strafe authoring rather than adding a single idle pose.
+- [ ] Crouch stance must layer with firing and reloading the same way standing does, so the upper/lower split has to be in place before crouched clips are worth wiring.
+- [ ] No cover animation set is needed (cover declined 2026-09-25) — crouched stances carry the whole "taking cover" read.
+- [ ] Upper/lower body layering so firing and reloading play over locomotion instead of overriding it.
+- [ ] The migrated Lyra library under `Content/Characters/Heroes/` already contains strafe sets and aim offsets authored against this skeleton — check what's usable before authoring anything.
+- [ ] The existing **ABP `Blend Poses by Enum`** backlog item (per-weapon locomotion by `EWeaponAnimType`) folds into this work rather than preceding it.
+- [ ] **Left-hand IK** (backlog) becomes both more visible and more valuable — the weapon is now on screen constantly at full size. Approach (2) from that item, the per-weapon `LeftHandGrip` socket, is the one to do.
+
+### HUD
+- [ ] `UPlayerHUDElementWidget` / `UAmmoWidget` / `UReticleWidget` / `UPlayerHUDWidget` need **no code change** — they walk Character → WeaponHolder → Weapon and never touch the camera.
+- [ ] Reticle stays bloom-driven and screen-centred, and stays *truthful* provided the camera-trace-then-fire-from-muzzle model above is what ships. Re-verify on the new rig rather than assuming.
+- [ ] Consider whether the reticle should hide in non-aim (GRB does). Design call, not a blocker.
+
+### Documentation consequences
+- [ ] `CLAUDE.md` opening line says "first-person action shooter" — update on landing.
+- [ ] `Design Document/GameDesignDocument.md` + `.html` describe a first-person game throughout (Overview, Combat, and the "first-person" framing in Scope). Pitch-level rewrite of those references.
+- [ ] `TechnicalDesignSpec.md`'s **"First-person rig"** section and the **"First-person projection is a separate rendering path"** architecture principle become historical — rewrite as a third-person rig section, keep the old one as a dated note (it explains why a lot of past decisions look the way they do).
+- [ ] `TechnicalDesignSpec.md` trace-source section documents deprojection-from-camera as the permanent approach; that's now half the story.
+
+### Decided 2026-09-25
+- **Crouch: in. Prone: out.** One extra stance, not two. Crouch work is itemised under Movement and Animation above. **Deferred to backlog 2026-09-30** — still in as a decision, but not part of the third-person conversion sequence; it is purely additive and drags a second full strafe blendspace behind it. See Step 4 in [TPSConversion_WorkOrder.md](TPSConversion_WorkOrder.md).
+- **No stick-to-wall cover system.** No cover snapping, no cover-to-cover moves, no lean-from-cover. This follows the action direction's *strong choreography and movement rather than static cover shooting* — the player takes cover by standing behind things, not by entering a cover state.
+  - **This is a statement about the player, not about level geometry.** Arenas still want cover to stand behind — sightlines, corners, waist-high obstacles — and Phase 5 enemies may still *use* cover as AI positioning. None of that is blocked by this decision; only a player cover-state mechanic is.
+  - Practical consequence: no cover volumes/splines to author, no cover-entry animation set, and the aim-state strafe blendspace stays the whole of the aiming movement vocabulary.
+
+### Open — decide before starting
+- [ ] **Camera shoulder swap** (left/right). Cheap once `SocketOffset` is already being lerped.
+- [ ] Whether the conversion lands on `main` incrementally or on a branch. It's a large mechanical change with a clean revert point — a branch is cheap insurance.
+
+---
+
 ## Phase 5 — Enemy archetype foundation
 Goal: a minimal, composable enemy so combat can be tested against something
 real instead of a static target.
+
+Enemies are **human** as of the 2026-09-13 setting change — criminals,
+syndicate muscle, corrupt police, hired shooters. The roster is design-open;
+this phase builds the pattern, not the roster.
 
 Note: same caveat as Phase 1 — `ShooterNPC`/`ShooterAIController` are gone
 with `Variant_Shooter`, so this is built fresh against the design doc's
 archetype-composition idea, not extended from the old classes.
 
-- [ ] New base synthetic enemy actor.
+- [ ] New base enemy actor.
 - [ ] Movement, attack behavior, and battlefield role as separate pieces that combine per archetype, rather than one class with type branches.
-- [ ] One working archetype end-to-end (e.g. basic humanoid infantry) using StateTree, as proof of concept for the pattern.
+- [ ] One working archetype end-to-end (e.g. a basic armed thug) using StateTree, as proof of concept for the pattern.
 - [ ] Basic spawn/placement so an enemy can exist in a test level.
 
 ## Phase 6 — First playable arena (vertical slice)
-Goal: prove the "linear navigation, nonlinear combat" pillar in an actual
-space, with real weapons and real enemies.
+Goal: prove the core combat loop in an actual space, with real weapons and
+real enemies. The "linear navigation, nonlinear combat" pillar this phase was
+written around is *under reconsideration* since the setting change — the
+slice should be built to answer what the John Woo direction needs (movement
+over cover, escalating shootouts), and the arena-shape question can be
+settled by playing it rather than decided up front.
 
 - [ ] Blockout one small arena with varied sightlines, corners, and cover (per the design doc's Levels section).
 - [ ] Place 2+ enemy archetypes and at least one weapon pickup.
-- [ ] Playtest question to answer: does the same room genuinely support both a close-range and a long-range approach?
+- [ ] Playtest question to answer: does the same room genuinely support both a close-range and a long-range approach? (Kept from the old premise — still worth asking, but no longer the only question. Also: does the space push the player to keep moving?)
 
 ## Phase 7 — Expand from the slice
 Once Phase 6 validates the core loop, branch out: more weapons, more enemy
@@ -229,6 +375,7 @@ planning further than that now would be guessing.
 ---
 
 ## Gotchas learned the hard way
+- **Swapping a weapon's mesh/animation in the Details panel leaves a hidden reference behind.** After `BP_Pistol` was re-pointed to `MilitaryWeapSilver`, its `WeaponMesh` component template still held `AnimationData.AnimToPlay = SciFiWeapDark/.../Fire_Pistol_W` — a leftover from previewing the animation on the component, never shown in the Blueprint's own properties and inert at runtime (`AnimationMode` is `AnimationBlueprint`), but a real hard reference that would have kept the old pack from deleting cleanly. Found 2026-09-21 by grepping the `.uasset` for `/Game/SciFiWeapDark`; confirmed and cleared via the bridge (`ObjectTools.get_properties` on `Default__BP_Pistol_C:WeaponMesh`, set `AnimationData.animToPlay` to `"None"`, compile, save). Rule: before deleting a vendor pack, grep the binaries for its `/Game/` path, not just the Blueprint Details panel — and check component templates, not only the CDO.
 - **Searching for an asset by filename convention will miss vendor/migrated content.** The 2026-08-30 (3) audit concluded "no `AnimMontage` asset anywhere in `Content/`" and flagged a fabricated blocker on `BP_Pistol` as a result — but `AM_Pistol_Fire.uasset` was sitting in `Content/Characters/Heroes/Mannequin/Animations/Actions/` the whole time. Two compounding causes: the sweep matched our own `*_Montage` naming convention rather than the asset *class*, so Lyra's `AM_` prefix slipped past; and the Lyra tree is still **untracked** in git, so anything reasoning from `git ls-files` wouldn't see it either. Rule: search assets by type/class (the editor's Content Browser filter, or `.uasset` class inspection), never by filename pattern, and remember that untracked/vendor trees are invisible to git-based searches. Corrected 2026-08-30 (4).
 - **The UnrealMCP bridge only auto-starts at editor launch, so ticking the setting mid-session does nothing.** The MCP server isn't a separate process — it's Epic's engine plugin `ModelContextProtocol` (`UE_5.8/Engine/Plugins/Experimental/`), enabled in `ProjectBopis.uproject`, serving on port `8000` at path `/mcp` (name `unreal-mcp`) — defaults that already match `.mcp.json`. Auto-start is gated on `bAutoStartServer` in `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini` but fires exactly once, at `PostEngineInit` (`ModelContextProtocolEditor.cpp:64`). So an editor instance that was already running when the box got ticked will never start the server, and Claude Code's connection is refused despite every setting looking correct. **Fix without restarting the editor:** run `ModelContextProtocol.StartServer` in the editor console (`.StopServer` and `.RefreshTools` also exist). Verify with `netstat -ano | grep :8000` — a bare `GET /mcp` returning **405** is healthy, not broken (streamable HTTP wants POST). **Separately: Claude Code only attaches MCP servers at its own startup**, so the server must be up *before* Claude Code launches — starting it mid-session can't be picked up without restarting Claude Code. Confirmed 2026-08-30 (4).
 - **The weapon-firing pipeline currently assumes a player, not just a Pawn.** `WeaponHolderComponent::EquipWeapon`/`FireEquippedWeapon` both `Cast<AProjectBopisCharacter>(GetOwner())`, and `FireEquippedWeapon`'s aim source is `APlayerController::DeprojectScreenPositionToWorld` — an AI-controlled pawn has no `PlayerController`/viewport to deproject from at all. Confirmed 2026-08-18 while adding animation-driven fire feedback (the montage-playing code hit the same cast). Deliberately **not** fixed preemptively — `AWeaponBase`'s core firing logic (`FireHitscan`/`FireProjectile`, bloom, damage) is actually actor-agnostic and fine; it's specifically the holder/feedback layer that assumes a player. AI aiming can't reuse screen-deprojection anyway (no screen to deproject from — it'd need line-of-sight/perception-based targeting instead), so this was never going to be a small swap-a-cast-for-an-interface fix. Revisit when Phase 5 (enemies) actually defines how AI fires weapons, not before.
@@ -282,3 +429,6 @@ planning further than that now would be guessing.
 - 2026-08-31 — **Projectile polish.** Fixed projectiles hitting the firer (explicit two-way ignore list; the one-way `IgnoreActorWhenMoving` was insufficient). Moved the projectile spawn origin to the crosshair (`TraceStart`), reverting the muzzle-socket approach — this removes the weapon's grip orientation from trajectory entirely and matches hitscan exactly. Added impact decals to `AProjectileBase`, which needed a real fix: `Hit.ImpactPoint` not `Hit.Location` (swept-sphere hits report the sphere centre, one radius off the surface, so decals only landed on some surfaces). First session using **live PIE measurement** via the editor bridge — which disproved two standing theories: the TEMP 5s re-snap timer does nothing measurable, and "correcting" the weapon's 72° grip yaw is numerically clean but visually wrong. Three new Gotchas recorded.
 - 2026-08-31 (2) — **Feature session.** Battle rifle configured, completing all three Phase 4 weapons. Halo-style scoped zoom (hide arms+weapon rather than magnify them). Per-weapon animation selection via a new `EWeaponAnimType` enum + `FireMontages` map on the character — chose the enum/Blend-Poses approach over Lyra-style linked anim layers, with a clean migration path if weapon count grows. Removed the `bUseAnimationDrivenFeedback` gate from the fire montage, which had been silently disabling arm animation for code-driven weapons. Fixed the muzzle flash rendering through the world projection instead of the first-person one (may also explain the standing "faces north" bug). First/third-person mesh split, corrected mid-way once it emerged that `FirstPersonMesh` is itself a full body and already supplies the legs. **Ammo system Phase A complete and tested** — `EFireResult` enum, magazine/reserve state, fire gating, dry fire; separate reserves per weapon, auto-reload off, reload cancels on swap. Three new Gotchas recorded, all about verifying through the editor bridge rather than trusting a read-back.
 - 2026-08-31 (5) — **Bloom reticle built for real, plus per-weapon crosshairs.** Discovered the reticle had never consumed bloom despite Phase 3 being closed — the widget graph was empty. Replaced the texture crosshair with two procedural UI materials (`M_Reticle` ring, `M_Reticle_Corners` bracket), chosen because scaling a bitmap thickens the stroke while a material keeps line weight constant as radius grows. Added `FCrosshairSettings` on `WeaponBase` so each weapon carries its own material, size, radius range, thickness and colour, with a shared parameter-name convention keeping the widget generic. Fixed a corner-mask bug where an absolute threshold made the crosshair vanish at idle. Three new Gotchas, including two editor-bridge API details.
+- 2026-09-13 — **Setting change.** 2098 sci-fi/cyberpunk → Philippines 2002 noir, John Woo action, authored protagonist. Dated note added at the top; Phases 5–6 reworded (human enemies; arena pillar under reconsideration). No task status changed. Design docs rewritten: `Lore_And_Design_Notes.md` (new canon as PART 1, old gameplay ideas as PART 2 for reconsideration), `GameDesignDocument.md` + `.html` (full rewrite), `TechnicalDesignSpec.md` (implications section, coilgun rationale removed, enemies human, conversation rule reopened), `CLAUDE.md`.
+- 2026-09-21 — `SciFiWeapDark` replaced by `MilitaryWeapSilver`. Weapon Blueprints re-pointed to `Pistols_A` / `Assault_Rifle_A` / `Sniper_Rifle_A` and their animations/sounds/FX. Stale sci-fi references cleaned (see ProgressLog).
+- 2026-09-25 — **Phase 4.5 added: third-person conversion.** Scoped after an audit found first-person assumptions confined to `ProjectBopisCharacter`, `WeaponHolderComponent::AttachWeaponToHand`, and one line of `WeaponBase`. Movement model specified as Ghost Recon: Breakpoint — camera-relative motion with the character facing travel when not aiming, yaw locked to camera with strafing when aiming. Gunplay inspiration is unchanged (John Woo action direction, free-aim). Placed before Phase 5 so enemy AI isn't built twice against two different player rigs. Added, reverted, then reinstated the same day; the intervening open-world/GTA-PS2 rescope was **declined** and is explicitly out of scope. Not started; several items still open for decision.

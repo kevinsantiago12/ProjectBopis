@@ -1,108 +1,681 @@
 # PROJECT BOPIS — DESIGN & LORE NOTES
 
-> Source: compiled by the user's design partner (ChatGPT), imported verbatim
-> from `Project_Bopis_Design_and_Lore_Notes.txt` on 2026-08-09. This is the
-> canonical design/lore reference. **Design and lore ownership sits with the
-> user + ChatGPT** — Claude's role here is implementation, not authorship.
-> Do not edit the canon sections below without the user importing an updated
-> source doc; see `GameDesignDocument.md` for the implementation-facing
-> translation of this material.
+> Source: compiled by the user's design partner (ChatGPT). **This is the
+> canonical design/lore reference.** Design and lore ownership sits with the
+> user + ChatGPT — Claude's role here is implementation, not authorship. Do not
+> edit the canon sections below without the user importing an updated source
+> doc; see `GameDesignDocument.md` for the pitch-facing summary and
+> `Documentation/TechnicalDesignSpec.md` for the implementation-facing
+> translation.
+>
+> **Import history:**
+> - 2026-08-09 — original 2098 sci-fi/cyberpunk premise imported from
+>   `Project_Bopis_Design_and_Lore_Notes.txt`.
+> - **2026-09-13 — superseded.** 2002 Philippines noir direction imported from
+>   `Project_Bopis_2002_Noir_Setting_Change.txt`. The 2098 world canon
+>   discarded.
+> - **2026-09-28 (a) — story canon** imported from
+>   `Project_Bopis_2003_Current_Lore.txt`: story spine, second lead,
+>   conspiracy, and the revised setting (2002 → 2003; real history →
+>   alternate history). Now **PART 2**.
+> - **2026-09-28 (b) — genre pivot** imported from
+>   `Project_Bopis_Noir_Action_Horror_Direction.txt`: the game becomes
+>   **noir action horror**, adding an Aswang layer beneath the crime story.
+>   Now **PART 1**.
+>
+> - **2026-09-28 (c) — decisions made in conversation with the user**, not
+>   from a source doc. Recorded inline and marked *(conv. 2026-09-28)*: the
+>   coup plot is dropped in favour of crimes-against-humanity; Aswang are not
+>   publicly known to exist; their appearance is fixed (Underworld-style); they
+>   do not transform mid-combat; the protagonist has no human allies.
+>
+> **Gameplay content in both 2026-09-28 sources was deliberately excluded per
+> the user's standing instruction** ("take only the lore notes, ignore any
+> gameplay related stuff"). Specifically not imported: camera perspective
+> ("first-person"), enumerated combat mechanics (gun-heavy combat, aggressive
+> movement, dual weapons, diving/sliding fire, slow motion, destructible
+> glass/debris), and level structure (arc counts, levels per arc, total level
+> count, Max Payne 2 chapter structure, "a dedicated level should feature the
+> feral enemies"). Those are implementation-side decisions tracked in
+> `Documentation/ProjectPlan.md` — **nothing in these sources overrides them.**
 
-STATUS KEY
-- CANON / LOCKED: Explicitly established in discussion.
-- DIRECTION / TBD: Current preference or idea, but details are not final.
+---
 
-## 1. Core Identity
-[CANON / LOCKED] Sci-fi cyberpunk FPS. Primary rule: RULE OF COOL > GENRE PURITY — cyberpunk conventions are a toolbox, not a constraint; anything consistent with Bopis and cool is fair game.
+# PART 1 — GENRE & HORROR CANON (imported 2026-09-28)
 
-Primary gameplay inspiration: **Bungie-era Halo only** (CE, 2, 3, ODST, Reach). Later non-Bungie Halo titles are not a primary reference unless a specific feature is deliberately selected.
+*From `Project_Bopis_Noir_Action_Horror_Direction.txt`, narrative content
+only.*
 
-## 2. FPS Combat Philosophy
-[CANON / LOCKED]
-- Combat is fast-paced, NOT reliant on aiming down sights.
-- **Hip-fire**: fully combat-effective, no arbitrary hip-fire accuracy penalty. Player fights normally while moving/strafing/switching targets/meleeing. A weapon's inherent accuracy does not improve just from aiming/zooming.
-- **Aim**: available but does not mechanically improve accuracy — it's targeting-info / precision-placement only. Normal crosshair may have no center dot; aiming may add a center dot. Aim can change the reticle without changing actual weapon accuracy.
-- **Zoom**: distinct from aim. Restricted to appropriate weapons (not every weapon magnifies). Improves visibility/target acquisition, not accuracy. Precision weapons can have magnification; others may only get an aim reticle.
-- **Recoil/Bloom**: Halo: Reach-style bloom is the primary accuracy/recoil mechanic. Firing expands the reticle/firing cone; bloom recovers when firing stops or is paced. Sustained auto fire builds bloom. Semi-auto/precision weapons can punish firing faster than intended cadence. Reticle expansion communicates current bloom. Traditional camera-climb recoil is not the core skill test (visual kick/feedback can still exist). Aim/zoom does not remove bloom or grant accuracy bonus.
-- Core skill: trigger discipline — firing as fast as possible while maintaining bloom suitable for engagement distance.
+## GENRE IDENTITY
 
-## 3. Campaign Structure
-[CANON / LOCKED] Linear FPS campaign, minimum 10 levels, built around a repeatable/escalating "30 seconds of fun" loop: 30s of fun → combat encounter → encounter sequence → level → campaign. Core guaranteed gameplay is on-foot FPS combat.
+Project Bopis is now **NOIR ACTION HORROR**.
 
-[UNDECIDED] Vehicles are not guaranteed — don't design around them unless later added and proven fun.
+Three core pillars:
 
-## 4. Linear Levels, Mini-Sandbox Arenas
-[CANON / LOCKED] Navigation is linear; arenas are mini-sandboxes. This does **not** mean branching routes (no separate sniper/shotgun/stealth paths) — everyone fights through the same map/path. Freedom comes from how the player uses the geometry within the arena (e.g. a BR-style weapon exploits a long central hallway; a shotgun exploits adjacent short-sightline hallways/corners — same space, different tactics).
+### 1. NOIR
+- Political corruption.
+- Organized crime.
+- Ambiguous loyalties.
+- Investigation.
+- Distrust and paranoia.
+- A cynical 2003 Philippine atmosphere.
 
-Core rule: **linear navigation, nonlinear combat.** Arenas should support varied engagement distances/positioning via sightlines, corners, open/confined areas, cover, elevation, movement space, enemy positioning. A good arena stays fun with a different loadout.
+### 2. ACTION
+- John Woo / heroic-bloodshed influence.
+- Cinematic shootouts.
+- **Firearms remain the dominant combat language even for supernatural
+  enemies.**
 
-## 5. Weapons Dictate Playstyle
-[CANON / LOCKED] Weapons encourage playstyle; levels should not hard-force a weapon type. Philosophy mirrors Bungie-era Halo on standard difficulty: a liked general-purpose weapon (e.g. BR-equivalent) should be usable through much of the game if ammo is maintained. Ammo availability is a *soft* pressure on loadout, not a hard requirement. Avoid "this enemy/room requires this exact weapon" — aim for "this weapon gives another good way to solve it." Higher difficulty demands better positioning/target prioritization/bloom management/ammo management/weapon knowledge/arena use, not a single correct solution.
+### 3. HORROR
+- Aswang infiltration of human society.
+- Cannibalism and feeding.
+- Transformation / body horror.
+- Missing people and hidden feeding sites.
+- Feral humans caught mid-turn.
+- **The fear that apparently ordinary people may not be human.**
 
-## 6. Protagonist & Narrative Viewpoint
-[CANON / LOCKED] Protagonist has no strongly authored personality — protagonist IS the player. May have functional identity (why present, capabilities, role, equipment, possibly name/designation/background) but the game never states what the protagonist thinks/believes. **No dialogue choices.** Narrative viewpoints are projected through supporting characters, who can hold strong opinions, disagree, argue politics/corporations/AI/society, lie, misunderstand, be biased, be sincere-but-wrong. Protagonist doesn't declare a correct viewpoint; the player decides.
+## CORE STRUCTURE
 
-## 7. Setting
-[CANON / LOCKED] Location: **The Philippines**. Year: **2098**. Must remain recognizably descended from the Philippines, not a generic cyberpunk city with Filipino signage — modern/historical Filipino culture, languages, institutions, architecture, communities, religion, urban patterns, social structures visibly survive, transformed by tech and economic development.
+**The horror should emerge from the noir crime story rather than replace it.**
 
-## 8. Global AI Background
-[CANON / DIRECTION] Mid-to-late 21st century AI causes major political/economic/environmental problems (automation unemployment, data-center water/energy use, exploitative rare-earth mining, corporate data exploitation, AI arms races, autonomous weapons, great-power fear of rivals' AI advantage). International response is NOT a total ban — most of the world imposes **stopgaps/restrictions on frontier AI research**, while **commercial consumption of AI-derived products remains legal, profitable, encouraged** (hypercapitalist contradiction). Possible restriction types: compute thresholds, self-improving-system limits, synthetic-cognition limits, autonomous-weapons-research limits, licensing/inspection of large compute facilities, restrictions on specific AI classes — but certified commercial products can still be sold. **Research restricted, consumption encouraged.** A corporation may be barred from frontier research at home but can still import/sell a finished, certified product developed elsewhere.
+The escalation ladder:
 
-## 9. The Philippine AI Loophole
-[CANON / DIRECTION] The Philippine government spots the economic opportunity and creates a regulatory haven — international AI-development stopgaps don't meaningfully apply inside Philippine territory / designated zones (possible structure: "Special Autonomous Technology Economic Zones" or equivalent; exact legal mechanism TBD). Result: foreign corporations can legally do frontier AI research in the Philippines that's restricted elsewhere. Government accepts massive foreign investment, infrastructure, tech transfer, and political money/corruption. Not purely negative — decades of real economic growth, infrastructure modernization, tech-sector employment, engineers staying/moving in, domestic manufacturing/robotics/defense industry growth, globally important Filipino universities, powerful domestic tech companies, transformation into a major tech power. Legitimate Philippine counter-argument: wealthy nations benefited from AI then tried to pull up the ladder — why should the Philippines accept that? By 2098 the AI economy is too important to the world to simply shut down.
+1. Early game: **crime thriller**.
+2. Then: **something is wrong with these criminals**.
+3. Then: **the criminals are monsters**.
+4. Then: **the monsters are embedded in politics, organized crime, police and
+   government**.
 
-## 10. International Investment — US & China
-[CANON / DIRECTION] Both American and Chinese investment shape the rise.
-- **US**: early advantage from colonial history, cultural/military/economic ties, English proficiency, BPO/service legacy — expands into AI research, robotics, synthetic cognition, advanced campuses.
-- **China**: geographic proximity, regional manufacturing/electronics/batteries/robotics/logistics/supply-chain ties.
-The Philippines doesn't pick a side — plays competition between US, China, Japan, Korea, Europe, others ("why choose?"), turning regulatory arbitrage into national strategy. US/China rivalry also discourages either from shutting the system down (neither wants the other to dominate AI). Filipino companies eventually become major players themselves. By 2098 the tech doesn't read as simply "American" or "Chinese" — decades of import/localization/reverse-engineering/espionage/Filipino engineering/cross-company theft produce a distinct Philippine tech ecosystem.
+## CORE PREMISE
 
-## 11. Corporate Espionage
-[CANON / LOCKED] Widespread, because many competing international AI/robotics research operations sit physically close together in the Philippines. Includes engineer poaching, prototype theft, industrial sabotage, mysterious facility fires, network attacks, neural/model-data theft, air-gapped-facility infiltration, bribery, stolen patents, reverse engineering, corporate security ops. Companies maintain powerful private security given the IP value. Espionage causes technological cross-pollination (Company A's locomotion + Company B's stolen cognition + Company C's theft of that + Filipino reverse-engineering of the combo) — eventually it's unclear who invented what. Explains why 2098 synthetic systems are extremely sophisticated and why no single corporation fully understands/controls the ecosystem.
+A 2003 Philippine noir crime story where an investigation into drugs,
+gambling and political corruption uncovers an **Aswang ruling class literally
+feeding on the people beneath them**.
 
-## 12. Synthetics / Enemies
-[CANON / LOCKED] Main combat enemies must be **non-human**. Leading direction: **synthetic AI** — "AI" is the intelligence, "synthetics" is the physical enemy force; the player fights machines/synthetic bodies controlled or inhabited by AI. Humans can still be corrupt/antagonistic/causal/manipulative/politically conflicting/responsible for dangerous tech, but primary FPS battlefield enemies are non-human. Synthetics don't need to all be humanoid — possible chassis: humanoid infantry, quadrupeds, hovering units, repurposed industrial machines, swarms, heavily armored elites, enormous combat platforms. Design should emphasize Halo-like combat readability: distinct silhouettes, behaviors, ranks, battlefield roles for fast situational reading.
+## ASWANG BASELINE
 
-[UNDECIDED] Why synthetics turn hostile is not established — avoid the default "AI becomes self-aware, decides humanity must die"; the cause should be specific to Bopis/2098 Philippines history.
+- Aswang are pseudo-human cannibal vampires/predators.
+- They can appear as normal humans.
+- They can morph into humanoid monster forms.
+- They eat people.
+- They possess increased strength, speed and agility, but are **not
+  superhero-level**.
+- Guns remain more efficient than melee combat, so **mature Aswang commonly
+  use firearms**.
+- They can deliberately turn humans into Aswang.
+- Mid-turn humans become **effectively mindless from overwhelming hunger**
+  until the transformation stabilizes. Feral, partially transformed enemies
+  exist as a distinct group — these are the newly turned.
 
-## 13. Luzon — "The Factory"
-[CANON / LOCKED] By 2098 Luzon is a vast continuous cyberpunk sprawl (Metro Manila / Central Luzon / CALABARZON / surrounding centers blurred together via expressways, rail, industrial corridors, logistics networks, corporate zones) — "the Sprawl" is much bigger than Manila. Flatlands are extensively converted to solar farms feeding AI compute, data centers, automated factories, synthetic production, industrial/urban/logistics systems. Between solar fields: data centers, automated factories, synthetic assembly plants, warehouses, worker cities, cooling infrastructure, corporate research campuses, logistics hubs. Old Philippine towns/communities survive embedded within — visual contrast encouraged (centuries-old church, ordinary neighborhood, sari-sari-style commerce, barangay basketball court beneath/alongside enormous futuristic industrial infrastructure).
+### Appearance *(conv. 2026-09-28)*
 
-## 14. High City / Low City
-[CANON / LOCKED] Strong High City / Low City concept — not one Midgar-style plate, but the accumulated result of decades of building over existing infrastructure (new roads over old roads, rail over roads, corporate districts spanning older districts, artificial decks connecting towers). Many physical elevation layers can exist.
+Aswang look like **Underworld-style vampires**, not creatures:
 
-**High City** — visual inspiration: *Ghost in the Shell* anime/TV. Clean, orderly, modern, maintained, integrated, spacious, sunlit, landscaped, tech-sophisticated (clean concrete, glass, white/composite materials, modern towers, elevated highways, automated transit, restrained high-tech info systems, greenery, public spaces, corporate campuses, newer infrastructure). The future visibly works here; darkness is beneath the surface (corporate surveillance, sensors, private security, synthetic labor, biometric access, political influence, corporate ownership/control).
+- They wear normal clothing and keep human proportions. They read as *people
+  who are wrong*, not as monsters in the wild.
+- The monstrousness is localized — **head, mouth, eyes, skin coloration, and
+  fingernails**.
+- Consequence: at a distance, in ordinary clothes, an Aswang and a human are
+  hard to tell apart. Proximity, motion and sound carry the difference.
 
-**Low City** — visual inspiration: *Cyberpunk 2077* Night City slums. Heavily the original ground-level Philippines buried beneath newer development. Dense, old concrete, repeated modifications, exposed cables, AC units, improvised connections, cheap holographic/neon ads, wet streets, graffiti, food stalls, repair shops, bars, synthetic chop shops, warehouses, packed apartments, old roads turned tunnel-like by structures above. Large portions get little/no direct sunlight (High City occupies the sky) — gives the neon look an environmental reason; some areas feel like evening even in daytime.
+**Mature Aswang** are composed — dressed, armed, in control. **Ferals** are
+transitional and visibly wrong. The contrast should read instantly.
 
-Low City is **not** universally poor — poor communities, established middle class, commercial districts, old wealthy enclaves, industrial businesses, communities that refused to leave; some genuinely prefer it. High City: planned/clean/corporate. Low City: chaotic/crowded/culturally alive. Both must stay recognizably Filipino, not copies of Tokyo or Night City.
+### They do not hide in a fight *(conv. 2026-09-28)*
 
-## 15. Visayas
-[CANON / LOCKED] By 2098 the entire Visayas region is effectively transformed into a vast resort/tourism region. Concept: **Luzon = Production/Factory, Visayas = Leisure/Resort.** Bigger than modern tourism — possible elements: tropical luxury destinations, nightlife, casinos, artificial reefs, extreme sports, luxury medical tourism, corporate retreats, synthetic entertainment, floating hotels, private/artificial islands, underwater hotels, huge entertainment districts, advanced resort infrastructure. Millions of Filipinos still live there (not emptied), but economy/infrastructure/land-use is heavily redesigned around tourism/visitors/wealthy residents/international consumption. Possible contrast: immaculate resort districts supported by worker communities/service infrastructure kept away from tourist-facing areas.
+An Aswang that knows a threat is nearby is **already in its monstrous form**.
+There is no mid-combat transformation — the human face is for the world
+outside the fight, and once the fight starts there is nothing left to
+protect.
 
-## 16. Mindanao
-[CANON] TBD. Do not force an identity onto Mindanao just to complete a Luzon/Visayas/Mindanao trio — its role should emerge later from setting and story.
+### Nobody believes they exist *(conv. 2026-09-28)*
 
-## 17. Overall Thematic / World Principles
-2098 Philippines should not just be "modern Philippines + neon" — should feel transformed by decades of frontier AI research, foreign investment, hypercapitalism, corruption, genuine economic growth, robotics, industrialization, corporate competition, geopolitical rivalry, technological cross-pollination. World should contain contradictions (governments condemning frontier AI while importing its products; foreign critics economically dependent on Philippine tech; corrupt governments taking corporate money while the resulting boom genuinely improves the country; US/China exploited by PH politicians who are in turn exploited by them; High City offering a great standard of living while embodying surveillance/corporate power; Low City containing poverty/neglect while culturally vibrant and desirable to some).
+Aswang are **not known to exist**. They are folklore: everyone has heard the
+stories since childhood, and no one credits them. This is the engine of the
+protagonist's isolation.
 
-Lore should provide context for the FPS, not overwhelm it. Player should grasp the immediate premise simply: "Hostile synthetics. Here's a gun." Deeper history/politics/competing interpretations come through supporting characters, environments, background details, optional lore, corporate/government messaging, visual storytelling. **The FPS comes first.**
+- He cannot report what he finds. Saying it out loud sounds like a breakdown,
+  not a case.
+- The people who *did* believe were dismissed as superstitious long ago — and
+  were right. A witness nobody listens to is a live noir asset.
+- Exposure is **existential** for the Aswang, not merely scandalous. Their
+  secrecy is about their species, which is why losing it triggers such a
+  disproportionate response.
+- Disappearances read as ordinary crime — runaways, trafficking, the usual
+  violence done to the poor — so institutions have mundane explanations ready
+  without needing to be complicit.
+- Many corrupt humans in the network genuinely **do not know what they are
+  protecting**.
 
-## 18. Current Major Undecided Questions
-- What specifically causes the synthetic/AI conflict in 2098?
-- What is the protagonist's functional role/background/designation?
-- What is Mindanao like in 2098?
-- What are the major corporations/families/factions?
-- What exact international AI accord/regulatory regime exists?
-- What legal loophole/exemption did the Philippines use?
-- How is the Philippine government structured in 2098?
-- How independent/powerful are corporations relative to the state?
-- What specific synthetic enemy hierarchy exists?
-- What are the player's weapons?
-- Is there a two-weapon carry limit?
-- Are vehicles included at all?
-- What is the inciting incident?
-- Where does Level 1 begin?
-- What is the minimum 10-level campaign sequence?
-- How much of the campaign takes place in Luzon versus elsewhere?
-- Does the AI crisis remain Philippine/local, or become global?
+## THEMATIC CORE
+
+The Aswang conspiracy **literalizes the metaphor** of blood-sucking and
+cannibalistic institutions.
+
+They:
+- Run or protect drug operations for money.
+- Exploit illegal gambling and organized crime.
+- Finance political candidates and corrupt officials.
+- Use political influence to protect their feeding and criminal networks.
+- **Disproportionately prey on people from the lower rungs of society**,
+  because their disappearances attract less institutional concern.
+
+The result is a world where predatory institutions do not merely exploit the
+vulnerable metaphorically. **They literally consume them.**
+
+---
+
+# PART 2 — STORY CANON — ⚠ BEING REWRITTEN
+
+> **The coup plot was dropped on 2026-09-28** in conversation. The story is
+> now **crimes against humanity committed by Aswang, protected by Aswang and
+> compromised humans inside government** — not a political takeover.
+>
+> **PART 1's four-step ladder is now the story spine.** It was always a
+> complete structure; the coup was a leftover from the pre-horror draft
+> bolted on top of it.
+>
+> **Struck entirely:** Plan A / Plan C, the compromised generals, the military
+> fragmentation, the President, the Senator, and the coup finale. Removed from
+> this file rather than marked — see git history for the text.
+>
+> **Retained and still canon:** the setting, tone, protagonist, femme fatale,
+> TRUST NOBODY EASILY, the suspension, and gambling→drugs as the investigative
+> on-ramp.
+>
+> Sections still marked `[PROVISIONAL]` are awaiting the user's story rewrite.
+> Do not build level plans or enemy rosters on them, and do not propagate to
+> `GameDesignDocument.md` until the rewrite lands.
+
+*Character and setting material from `Project_Bopis_2003_Current_Lore.txt`;
+structural decisions from conversation, marked inline.*
+
+## CORE SETTING
+
+- Philippines, 2003.
+- Alternate-history timeline splitting around a fictionalized equivalent of
+  the EDSA / People Power upheaval.
+- Real Philippine geography and culture can remain recognizable, while major
+  plot-relevant political events and figures are fictionalized/approximated.
+- **The fictional revolution still needs an in-universe name.** `[TBD]`
+- The current regime remains unstable after the revolution.
+
+## TONE
+
+- Heavy noir narrative.
+- John Woo / heroic-bloodshed influence.
+- Filipino crime and action cinema influence.
+- Early-2000s Philippine atmosphere.
+- Dark, brooding, cynical, paranoid, morally uncertain.
+- Do not reduce the identity to "Max Payne in the Philippines."
+
+## PROTAGONIST
+
+- Male, **exactly 35**.
+- Dark, brooding, cynical, experienced, suspicious, restrained and
+  world-weary.
+- Dry/fatalistic humor rather than cheerful banter.
+- Deliberately the opposite of Tequila from Hard Boiled.
+- Avoid making him a permanently angry one-note tough guy.
+- He retains a moral core beneath his cynicism.
+- Exact name, profession/department, personal history and central personal
+  motivation remain `[TBD]`.
+
+*Implied but not stated: he is law enforcement of some kind. He investigates
+crime, has a **Chief** who can suspend him, and is "removed from duty".
+Department and rank are still `[TBD]`.*
+
+## FEMME FATALE / SECOND LEAD
+
+- Female, age 27.
+- Dubious/uncertain loyalty.
+- **PDEA connection is a leading possibility.**
+- Structurally comparable to Alan in Hard Boiled, but not a literal copy.
+- Major parallel/deuteragonist figure closer to the conspiracy/criminal side
+  of the story.
+- Has her own objective independent of the protagonist.
+- Can help him while withholding information, obstruct him, disappear at
+  suspicious times, and know things she seemingly should not.
+- The player should not immediately know whether she is trustworthy.
+- Attraction/tension is possible, but she is not merely a love interest.
+
+## THE ARRANGEMENT `[PROVISIONAL]` *(reshaped conv. 2026-09-28)*
+
+Not a plot to seize the state. An **arrangement that keeps predation safe and
+profitable**, running since around 2001, under cover of a regime too unstable
+to look closely.
+
+- Aswang run and protect drug operations, illegal gambling and organized crime
+  — money first, and the criminal economy is also convenient cover for
+  disappearances.
+- Proceeds finance political candidates and buy officials.
+- **Aswang in human form hold positions inside government**, and use that
+  influence to protect feeding and criminal networks from scrutiny.
+- It is an **overlapping network**, not one organization micromanaging every
+  street criminal.
+- Many low-level participants — and many bought officials — do not know what
+  the money ultimately supports, or what they are shielding.
+- Predation concentrates on **people from the lower rungs of society**,
+  because their disappearances attract the least institutional concern.
+
+*The crime is the feeding. The corruption exists to protect it. This inverts
+the pre-pivot version, where crime financed a bid for power.*
+
+## PLAYER-CAUSED ESCALATION `[PROVISIONAL]` *(reframed conv. 2026-09-28)*
+
+- The protagonist follows the criminal/financial network farther than anyone
+  expected, and reaches what the money is actually for.
+- What he threatens is not a timetable — it is **the secret that Aswang
+  exist**.
+- They no longer know how much he knows, whom he has told, or whether copies
+  of evidence exist. "The cat is out of the bag."
+- Because that secrecy is existential rather than merely political, the
+  response is disproportionate and fast: silence him, recover or destroy
+  evidence, find out who else knows.
+- **His success is what brings the violence down on him.**
+
+## STORY ARCS `[PROVISIONAL]`
+
+*Narrative content of the four arcs. How they map to levels is a gameplay
+question and is not set here.*
+
+### ARC I — GAMBLING
+- Illegal gambling / organized crime.
+- The protagonist initially appears to be investigating conventional crime.
+- He finds large amounts of off-book cash, criminal protection, corrupt
+  connections and a trail toward narcotics.
+- The player does not yet understand the political significance.
+
+### ARC II — DRUGS
+- Drug trafficking / production / distribution.
+- Natural point for the PDEA-linked woman to become central.
+- Gambling and narcotics overlap through money, protection, fixers, officials
+  and logistics.
+- Evidence shows proceeds are being redirected into something larger.
+- The protagonist reaches information dangerous enough to threaten the
+  conspiracy.
+
+### SUSPENSION
+- Political/institutional pressure reaches his chain of command.
+- His chief suspends him.
+- The player should not know whether the chief is corrupt, threatened,
+  following legitimate orders, trying to protect him, or hiding something.
+- The protagonist goes home.
+
+### ARC III — RETALIATION / HOME
+- Core area: the protagonist's apartment building and surrounding familiar
+  neighborhood.
+- **Ideally established earlier so it feels safe/familiar** before it is
+  violated.
+- **They come for him — and they are Aswang** *(conv. 2026-09-28)*. Not a
+  human hit squad; the thing he has been chasing, in his own hallway.
+- Purpose is emergency cleanup: kill him, recover evidence, identify who else
+  knows, destroy unrecoverable information.
+- He survives.
+- This is the ladder's third rung landing in the place he sleeps. The question
+  stops being "who protects these criminals?" and becomes "what *are* they?"
+  — and then "how far up does this go?"
+
+### ARC IV — GOVERNMENT `[PROVISIONAL]` *(reshaped conv. 2026-09-28)*
+- The trail arrives where the protection comes from: **Aswang holding
+  positions inside government**, shielding the feeding networks from scrutiny.
+- The ladder's fourth rung — the monsters are the institution.
+- **The climax is `[TBD]`.** See PART 5: the coup was the *event* that used to
+  end the story, and nothing has replaced it yet. A revelation is not an
+  ending.
+
+## CORE NARRATIVE RULE — TRUST NOBODY EASILY
+
+Throughout the entire game, the player should NOT know who can be trusted.
+
+Institutional affiliation does not establish loyalty. Apparent helpfulness
+does not establish loyalty. Opposition to the conspiracy does not
+automatically make someone morally good.
+
+Uncertainty should surround: the Chief, the PDEA-linked femme fatale, police,
+government officials, informants, political figures, and apparent allies.
+
+*Two questions now attach to everyone: **whose side are you on**, and
+**are you human**.*
+
+Characters may help for selfish reasons; conceal information while remaining
+loyal; appear compromised without being traitors; be corrupt without
+knowing what they are protecting; oppose the arrangement while still being
+morally compromised; betray the protagonist; save him despite appearing hostile; or
+act under coercion or political pressure.
+
+- Avoid an early clean split into obvious heroes and villains.
+- The Chief's suspension should plausibly look like betrayal even if his real
+  motive is different.
+- The femme fatale should remain especially difficult to read.
+- **The Chief's suspension has a fourth reading** *(conv. 2026-09-28)*: he may
+  sincerely believe his investigator has lost his mind — and given what the
+  protagonist is claiming, that is not an unreasonable conclusion. The player
+  should not be able to rule it out.
+- **The player should not distrust everyone because everyone is secretly evil.
+  The player should distrust everyone because they lack enough information to
+  know who is actually trustworthy.**
+- Resolve individual loyalties gradually while introducing new uncertainty.
+  Maintain noir paranoia through the final act.
+
+*PART 1 adds a second, literal axis to this rule: apparently ordinary people
+may not be human at all.*
+
+**No human allies** *(conv. 2026-09-28)*. The protagonist fights alone. The
+isolation is causal rather than stylistic — he cannot tell anyone what he has
+found without sounding insane. The femme fatale is the only possible
+exception, and only sometimes.
+
+## DISCARDED / SUPERSEDED CONCEPTS
+
+Do not restore unless explicitly requested:
+
+- 2098 cyberpunk setting.
+- Synthetic/robot enemy premise.
+- AI manufacturing-zone storyline.
+- National optimization AI antagonist.
+- Active Armor / Powersource sci-fi lore.
+- VECTOR futuristic international-operator premise.
+- Personality-neutral protagonist.
+- **Private army / conspiracy paramilitary.**
+- **Three-plan strategy.**
+- **Separate Plan B.**
+- **The coup plot** *(dropped conv. 2026-09-28)* — Plan A political capture,
+  Plan C military takeover, the compromised generals, the military
+  fragmentation into coup-aligned/loyalist/neutral commands, the ousted
+  President, and the Senator as "hope of the country". Dropped because it
+  built two of four acts on killing humans in volume, which is the specific
+  thing the Aswang premise exists to avoid.
+
+## CURRENT STORY SPINE `[PROVISIONAL]`
+
+PART 1's ladder is the spine. The arcs hang off its four rungs.
+
+| Rung | Arc | Beat |
+|---|---|---|
+| **Crime thriller** | Arc I — Gambling | Protagonist investigates illegal gambling; finds off-book cash, protection and connections that do not add up. |
+| **Something is wrong with these criminals** | Arc II — Drugs | The trail runs into narcotics and deeper institutional protection. The PDEA-linked femme fatale becomes central. Details stop being explicable as ordinary crime. |
+| — | Suspension | The Chief removes him from duty under ambiguous circumstances. He goes home. |
+| **The criminals are monsters** | Arc III — Retaliation / Home | Aswang come for him where he lives. He survives, and can no longer pretend he doesn't know what they are. |
+| **The monsters are the institution** | Arc IV — Government | The protection traces to Aswang holding office, shielding the feeding networks. |
+| **`[TBD]`** | Finale | **Open — see PART 5.** |
+
+**Background:** the arrangement has run since roughly 2001, under a regime too
+unstable after the fictionalized revolution to notice or care.
+
+---
+
+# PART 3 — RETAINED SETTING & TEXTURE CANON (2026-09-13)
+
+> PART 2 does not cover period texture, cinema references, or the full
+> action-direction list, and does not contradict them. They remain canon.
+> **Where PART 2 and PART 3 disagree, PART 2 wins** — the two known
+> divergences are marked inline.
+
+## TIME AND PLACE
+
+~~Year: 2002.~~ → **2003 per PART 2.** Country: Philippines.
+
+~~Real historical conditions can form the backdrop, but the main plot can
+remain fictional so the game does not need to rewrite major historical
+events.~~ → **Superseded.** PART 2 establishes an **alternate-history
+timeline** splitting around a fictionalized People Power equivalent.
+Geography and culture stay recognizable; plot-relevant political events and
+figures are fictionalized.
+
+Useful period texture includes:
+- Nokia-era mobile phones and SMS culture.
+- Pre-smartphone communication and limited mobile internet.
+- CRT televisions and monitors.
+- Jeepneys, buses, taxis, motorcycles and period cars.
+- Early-2000s Manila nightlife.
+- Fluorescent interiors, concrete urban spaces, rain and humid streets.
+- Karaoke bars, restaurants, hotels, warehouses, docks, police stations,
+  government offices and dense residential districts.
+- Catholic imagery and other distinctly Filipino environmental/cultural
+  details.
+- Tabloids, radio and television news.
+- Political uncertainty and rumors.
+- A mix of English and Filipino/Tagalog where appropriate.
+
+*Catholic imagery gains weight under PART 1 — Aswang are Philippine folk
+horror, and folk-Catholic apotropaia sit naturally alongside them.*
+
+## CRIMINAL / SOCIAL BACKDROP
+
+Retained as texture and raw material. Note that PART 2 promotes several of
+these from "possible ingredient" to **load-bearing plot**: jueteng-style
+gambling (Arc I), shabu and the wider drug trade (Arc II), police corruption
+and criminal links (throughout), and predation on the poor concentrated where
+disappearances go uncounted.
+
+*Military dissatisfaction and coup plotting are no longer plot material — the
+coup was dropped 2026-09-28. They remain usable as period atmosphere only.*
+
+Still available as background colour: public distrust of politicians and
+institutions; corruption and patronage networks; kidnapping-for-ransom
+syndicates; organized crime; vigilantism and extrajudicial violence;
+post-9/11 security anxiety, terrorism and insurgency in the national
+atmosphere; SMS as a tool for politics, rumors, threats, informants and
+criminal communication.
+
+*PART 1 repurposes one of these directly: **missing people**. Disappearances
+that institutions ignore are now feeding, not just crime statistics.*
+
+*Real-world references to EDSA II / EDSA III and the 2003 Oakwood mutiny are
+now filtered through the alternate-history frame — usable as inspiration and
+texture, not as literal events.*
+
+## ACTION DIRECTION
+
+Primary action inspiration: John Woo films / heroic bloodshed.
+
+Desired action language can include:
+- Extremely kinetic gunfights.
+- Dual-wielded firearms.
+- Diving or sliding gunfire.
+- Slow motion / bullet-time-style mechanics if appropriate.
+- Destructible-feeling environments: shattered glass, debris, sparks,
+  furniture and environmental chaos.
+- Dramatic standoffs.
+- Large, escalating shootouts.
+- Close-range pistol combat.
+- Stylized cinematic violence.
+- Strong choreography and movement rather than static cover shooting.
+
+The narrative can remain grim while the combat is deliberately extravagant.
+
+Classic Filipino action cinema should also inform the attitude, locations,
+villains, firearms and larger-than-life action rather than relying exclusively
+on Hong Kong or American references.
+
+## NARRATIVE TONE
+
+Heavily noir: dark, brooding, cynical, crime-focused; morally compromised
+institutions; betrayal, corruption and conflicting loyalties; the protagonist
+frequently uncertain who can be trusted; the story exposes systems of
+corruption rather than presenting a simple good-versus-evil worldview.
+
+Humor can exist, but the lead is NOT intended to have Tequila's
+cheerful/cool swagger from Hard Boiled.
+
+*PART 2's "TRUST NOBODY EASILY" section is the fully developed version of
+this principle and takes precedence where they overlap.*
+
+## FILM / CINEMA REFERENCES
+
+Primary:
+- John Woo heroic-bloodshed films, especially Hard Boiled, The Killer and
+  A Better Tomorrow, for action language.
+- Max Payne as a useful reference for translating noir + cinematic gunplay
+  into an interactive shooter, but not as a setting/template to simply copy.
+
+Filipino references worth studying:
+- On the Job (2013): crime, assassins, police, political corruption and
+  overlapping institutions.
+- BuyBust (2018): claustrophobic urban combat and sustained action in dense
+  Filipino environments.
+- Metro Manila (2013): desperation, class, crime and Manila.
+- Manila in the Claws of Light (1975): distinctly Filipino urban darkness,
+  exploitation and noir/social-drama foundations.
+- Classic Filipino action cinema, particularly the FPJ / Rudy Fernandez /
+  Lito Lapid / Phillip Salvador tradition, for local action-film language and
+  attitude.
+
+*No horror references are named yet — the reference list predates PART 1 and
+has no folk-horror or action-horror entries. Worth a design pass.*
+
+---
+
+# PART 4 — GAMEPLAY: STILL UNDER RECONSIDERATION
+
+Neither canon nor obsolete. Each to be judged individually, on the
+implementation side. **Neither 2026-09-28 lore import settles any of these** —
+their gameplay content was excluded by instruction.
+
+## Campaign structure
+Linear campaign, minimum 10 levels, built on an escalating encounter →
+sequence → level → campaign loop. On-foot combat guaranteed; vehicles never
+guaranteed.
+
+*Arc-to-level mapping is **blocked**, not merely open: PART 2's arcs are
+being rewritten (see its banner). PART 1's four-step escalation ladder —
+crime thriller → something is wrong → the criminals are monsters → the
+monsters are institutions — is the **stable** structural input for now, since
+it comes from the newer source and survives whatever the arcs become.*
+
+## Linear levels, mini-sandbox arenas
+Linear navigation, nonlinear combat. Freedom comes from how the player uses
+the geometry within an arena, not from branching routes.
+
+## FPS combat philosophy
+Hip-fire fully effective with no ADS accuracy bonus; aim as targeting
+information rather than an accuracy buff; zoom restricted to appropriate
+weapons and distinct from aim; Halo: Reach-style **bloom** as the primary
+accuracy mechanic, with trigger discipline as the core skill; no camera-climb
+recoil as the skill test. *Built and working today.*
+
+## Weapons dictate playstyle
+Weapons encourage playstyles; levels should not hard-force a weapon type. A
+liked general-purpose weapon should stay viable across much of the game if
+ammo is maintained. Ammo availability is a *soft* pressure, not a hard gate.
+
+## Combat readability — resolved *(conv. 2026-09-28)*
+Distinct silhouettes, behaviours, ranks and battlefield roles for fast
+situational reading.
+
+**The tension is gone.** Two decisions removed it: the coup was dropped (no
+more identically-uniformed factions), and Aswang no longer transform
+mid-combat — one aware of a threat is *already* in monstrous form. Enemies in
+combat are always revealed, so full readability applies again. The
+"apparently ordinary people may not be human" dread now lives outside combat,
+in scenes and NPCs.
+
+**One catch it leaves.** Aswang wear ordinary clothes and keep human
+proportions, so silhouette alone will not separate them from a human at
+range. Readability has to be layered by distance:
+- **Close** — face, eyes, mouth, coloration, fingernails.
+- **At range** — **motion**. Posture, gait, how they close and take cover.
+  This makes animalistic locomotion a readability mechanism, not decoration,
+  and it should be specced that way.
+- **Unseen** — vocalization. Growls and screams as positional information.
+
+## Enemy composition — materially changed by PART 1
+Previously "enemies are human". Now three families:
+
+1. **Mature Aswang** — the overwhelming majority of what the player fights.
+   Composed, clothed, armed, gun-using. Monstrous head and hands. Already in
+   monstrous form whenever combat is possible.
+2. **Ferals** — the newly turned, mindless with hunger. Melee chargers, no
+   firearms, visibly transitional rather than composed. Deliberately rare.
+3. **Humans** — criminals, corrupt police, private security. **Kept rare and
+   deliberate** *(conv. 2026-09-28)*: if almost nothing the player kills is
+   human, the few humans who are killed carry real weight.
+
+**Scoping consequences, all favourable:**
+- **No mid-combat transformation** — the model/skeleton swap is off the table
+  entirely. This was the most expensive unknown in the enemy plan.
+- Aswang and humans share a **skeleton, rig and animation set**; the
+  difference is head mesh, hands and materials. The "one base enemy actor,
+  differentiated by data" approach gets more valuable, not less.
+- **No companion AI** — the protagonist has no human allies. The femme fatale
+  is a scripted exception at most, never a general system.
+- A mindless melee charger is a **simpler** StateTree than a gun user, not a
+  harder one: no cover reasoning, no line-of-sight firing, no aim. The cost is
+  model and animation, not behaviour.
+
+**Still to be designed on the implementation side** (not lore, tracked
+separately): the two-layer resilience model — supernatural resilience over
+mortal health, so that depleting the first produces a *break event* to
+announce, preserving the bloom skill test instead of eroding it into bullet
+sponges; and the vocalization system that announces state changes (alert,
+resilience broken, enrage, pain/death, ambient idle) with throttling,
+concurrency limits and attenuation.
+
+## Camera perspective
+Third-person conversion decided 2026-09-25, scoped as Phase 4.5 in
+`Documentation/ProjectPlan.md`, branch `tps-conversion`. **Unaffected by
+either 2026-09-28 lore import** — both sources say "first-person", but both
+say it in their gameplay sections, which were excluded by instruction.
+
+---
+
+# PART 5 — OPEN ITEMS, TBDs AND RECONCILIATION
+
+## Input for the story rewrite
+
+PART 2's plot is being rewritten. These are the questions the rewrite gets to
+answer, kept so none is lost.
+
+**Answered 2026-09-28** — recorded so they are not reopened by accident:
+- *Are the conspirators Aswang?* Yes — Aswang in human form hold office and
+  protect the feeding networks.
+- *Which motive is the root?* Feeding. The crime funds it; the corruption
+  protects it. Power is the means, not the end.
+- *Does the coup survive?* No. Dropped entirely.
+- *Where does the first monstrous reveal land?* Arc III, at his home.
+
+**Still open:**
+- **What is the climax?** The single biggest hole. The coup was the *event*
+  that ended the story; the ladder ends on a revelation, and a revelation is
+  not an ending. Something has to happen in the final act. Noir tradition
+  argues for a costly, local win inside a world that stays rotten — you can
+  kill an Aswang in a ministry, not the arrangement that put him there — but
+  both source docs state plainly that the bad guys do not win. Those are
+  compatible; they need deciding on purpose.
+- **What does evidence of an Aswang look like?** The whole escalation turns on
+  "copies of evidence may exist". If a corpse is simply a corpse with unusual
+  dentition, he has proof and the secret is fragile. If they revert, decay, or
+  are recovered too fast, he has nothing and the paranoia is total. Two very
+  different games.
+- **Is the protagonist human?** Never addressed. Worth answering explicitly,
+  if only to rule it out.
+- **Who is and isn't human?** The femme fatale and the Chief both now carry an
+  unanswered second question.
+- **Does the investigation still open on gambling?** PART 1's premise names
+  "drugs, gambling and political corruption" as the way in, so the entry point
+  survives even if the arc containing it does not.
+- **Does Arc III's apartment need an earlier playable visit**, or does
+  establishing it in cutscene and dialogue suffice?
+- **Is the femme fatale ever playable**, or purely an NPC?
+
+## `[TBD]` — design-owned, do not invent
+
+- **The revolution's in-universe name.** Explicitly called out in PART 2.
+- **Protagonist:** exact name, profession/department, personal history,
+  central personal motivation.
+- **Femme fatale:** name; whether the PDEA connection is confirmed.
+- **The Chief:** name, and his actual motive behind the suspension — now with
+  a fourth possibility, that he sincerely believes his investigator has lost
+  his mind.
+- **Named Aswang** — the sources describe the network structurally but name no
+  one. The story needs at least one face at the top of it.
+- **Aswang specifics:** whether folkloric traits beyond those listed apply
+  (segmentation, the tiktik/wakwak bird call, salt, garlic, stingray tails,
+  daylight), whether there are recognised kinds, whether turning is
+  deliberate-only, and whether anything reliably identifies one in human form.
+  PART 1 gives a deliberately thin baseline — everything past it is open.
+- **Whether "Bopis" is now a deliberate pun.** The dish is made of minced
+  lungs and heart; a game about things eating people makes that read as
+  intentional. Confirm or deny, since it affects how the title is presented.
+

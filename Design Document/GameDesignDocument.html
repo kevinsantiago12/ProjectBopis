@@ -6,25 +6,27 @@
 <title>ProjectBopis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;1,400&family=Courier+Prime:wght@400;700&display=swap">
 <style>
   :root {
-    --ground:      #EFF1EE;
-    --surface:     #F1F4F0;
-    --raised:      #FFFFFF;
-    --ink:         #12171A;
-    --ink-muted:   #5C6A70;
-    --line:        #D5DAD4;
-    --line-soft:   #E2E6E0;
-    --accent:      #B5620C;
-    --accent-ink:  #8A4A08;
-    --accent-soft: rgba(181, 98, 12, 0.10);
+    --ground:      #EDE8DC;
+    --surface:     #E6E0D2;
+    --raised:      #F4F0E6;
+    --ink:         #1A1714;
+    --ink-muted:   #5E574E;
+    --line:        #C9C1B0;
+    --line-soft:   #DAD3C3;
+    --accent:      #B3241C;
+    --accent-ink:  #8C1A14;
+    --accent-soft: rgba(179, 36, 28, 0.10);
     --open:        #2E6E6B;
-    --open-soft:   rgba(46, 110, 107, 0.10);
+    --open-soft:   rgba(46, 110, 107, 0.12);
+    --recon:       #7A5A1E;
+    --recon-soft:  rgba(122, 90, 30, 0.12);
 
-    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-    --body:    "Newsreader", Georgia, "Times New Roman", serif;
-    --mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+    --display: "Oswald", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body:    "Spectral", Georgia, "Times New Roman", serif;
+    --mono:    "Courier Prime", "Courier New", Courier, monospace;
 
     --measure: 66ch;
   }
@@ -35,139 +37,177 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ground:      #0E1214;
-      --surface:     #141A1D;
-      --raised:      #1A2124;
-      --ink:         #E4E9E7;
-      --ink-muted:   #93A2A6;
-      --line:        #262F33;
-      --line-soft:   #1E262A;
-      --accent:      #E4913C;
-      --accent-ink:  #F0A959;
-      --accent-soft: rgba(228, 145, 60, 0.14);
-      --open:        #63B3AD;
-      --open-soft:   rgba(99, 179, 173, 0.14);
+      --ground:      #131110;
+      --surface:     #1A1715;
+      --raised:      #211D1A;
+      --ink:         #E8E1D3;
+      --ink-muted:   #A79E8F;
+      --line:        #3A342E;
+      --line-soft:   #2C2723;
+      --accent:      #D9433A;
+      --accent-ink:  #E86A61;
+      --accent-soft: rgba(217, 67, 58, 0.14);
+      --open:        #5FAAA6;
+      --open-soft:   rgba(95, 170, 166, 0.14);
+      --recon:       #C9A25A;
+      --recon-soft:  rgba(201, 162, 90, 0.14);
       color-scheme: dark;
     }
   }
 
   :root[data-theme="dark"] {
-    --ground:      #0E1214;
-    --surface:     #141A1D;
-    --raised:      #1A2124;
-    --ink:         #E4E9E7;
-    --ink-muted:   #93A2A6;
-    --line:        #262F33;
-    --line-soft:   #1E262A;
-    --accent:      #E4913C;
-    --accent-ink:  #F0A959;
-    --accent-soft: rgba(228, 145, 60, 0.14);
-    --open:        #63B3AD;
-    --open-soft:   rgba(99, 179, 173, 0.14);
+    --ground:      #131110;
+    --surface:     #1A1715;
+    --raised:      #211D1A;
+    --ink:         #E8E1D3;
+    --ink-muted:   #A79E8F;
+    --line:        #3A342E;
+    --line-soft:   #2C2723;
+    --accent:      #D9433A;
+    --accent-ink:  #E86A61;
+    --accent-soft: rgba(217, 67, 58, 0.14);
+    --open:        #5FAAA6;
+    --open-soft:   rgba(95, 170, 166, 0.14);
+    --recon:       #C9A25A;
+    --recon-soft:  rgba(201, 162, 90, 0.14);
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
 
-  body {
+  html, body {
     margin: 0;
+    padding: 0;
     background: var(--ground);
     color: var(--ink);
     font-family: var(--body);
-    font-size: 1.0625rem;
-    line-height: 1.65;
+    font-size: 17px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Newsprint grain — subtle, so the page reads as paper rather than a screen. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.045) 0.6px, transparent 0.7px),
+      radial-gradient(rgba(0,0,0,0.03) 0.5px, transparent 0.6px);
+    background-size: 5px 5px, 9px 9px;
+    background-position: 0 0, 3px 4px;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 28px 96px;
   }
 
   /* ---------- Masthead ---------- */
 
   .masthead {
-    border-bottom: 1px solid var(--line);
-    background: var(--surface);
+    padding: 56px 0 22px;
+    border-bottom: 3px double var(--ink);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
   }
 
-  .masthead-inner {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 2.75rem 1.5rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-  }
-
-  .eyebrow {
+  .masthead .kicker {
     font-family: var(--mono);
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.16em;
+    font-size: 12px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--ink-muted);
-    margin: 0;
+    color: var(--accent);
+    margin: 0 0 10px;
   }
 
-  .wordmark {
+  .masthead h1 {
     font-family: var(--display);
-    font-weight: 700;
-    font-size: clamp(2.6rem, 7vw, 4.25rem);
+    font-weight: 600;
+    font-size: clamp(44px, 7vw, 76px);
     line-height: 0.95;
-    letter-spacing: -0.03em;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
     margin: 0;
-    text-wrap: balance;
   }
 
-  .standfirst {
-    font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-    line-height: 1.5;
+  .masthead .deck {
+    font-family: var(--body);
+    font-size: 20px;
+    font-style: italic;
     color: var(--ink-muted);
-    max-width: 46ch;
-    margin: 0;
+    margin: 14px 0 0;
+    max-width: 44ch;
   }
 
-  .standfirst strong {
+  .masthead .meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-align: right;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+
+  .masthead .meta strong {
     color: var(--ink);
-    font-weight: 500;
+    font-weight: 700;
   }
 
-  /* Strata motif — the High City / Low City elevation layers */
-  .strata {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    margin-top: 0.6rem;
+  .notice {
+    margin: 18px 0 0;
+    padding: 12px 16px;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    font-size: 15px;
+    color: var(--ink);
   }
-  .strata span { display: block; height: 2px; background: var(--line); }
-  .strata span:nth-child(1) { width: 100%; background: var(--accent); opacity: 0.85; }
-  .strata span:nth-child(2) { width: 72%; }
-  .strata span:nth-child(3) { width: 43%; }
-  .strata span:nth-child(4) { width: 22%; }
+
+  .notice code {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
 
   /* ---------- Tabs ---------- */
 
   .tabs {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 1.6rem 1.5rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--ground);
+    border-bottom: 1px solid var(--ink);
+    margin-top: 22px;
     display: flex;
-    gap: 0.15rem;
+    gap: 0;
     overflow-x: auto;
-    scrollbar-width: thin;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
 
   .tab {
     appearance: none;
+    background: none;
     border: 0;
-    background: transparent;
-    color: var(--ink-muted);
-    font-family: var(--mono);
-    font-size: 0.775rem;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    padding: 14px 18px 12px;
+    font-family: var(--display);
     font-weight: 500;
-    letter-spacing: 0.09em;
+    font-size: 15px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    padding: 0.7rem 0.95rem;
+    color: var(--ink-muted);
     cursor: pointer;
     white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s ease, border-color 0.15s ease;
+    transition: color 120ms ease;
   }
 
   .tab:hover { color: var(--ink); }
@@ -179,183 +219,256 @@
 
   .tab:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: -3px;
-    border-radius: 2px;
+    outline-offset: -2px;
   }
 
   /* ---------- Panels ---------- */
 
-  main {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem 5rem;
-  }
+  .panel { display: none; padding-top: 40px; }
+  .panel.is-active { display: block; }
+  .panel:focus { outline: none; }
 
-  .panel { display: none; }
-  .panel.is-active { display: block; animation: rise 0.28s ease both; }
-
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: none; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .panel.is-active { animation: none; }
-    * { transition: none !important; }
-  }
-
-  .panel > * { max-width: var(--measure); }
-  .panel > .full { max-width: none; }
-
-  h2 {
+  .panel h2 {
     font-family: var(--display);
     font-weight: 600;
-    font-size: clamp(1.7rem, 3.4vw, 2.3rem);
-    line-height: 1.12;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.4rem;
-    text-wrap: balance;
+    font-size: 38px;
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin: 0 0 6px;
   }
 
-  h3 {
+  .panel h2::after {
+    content: "";
+    display: block;
+    width: 64px;
+    height: 4px;
+    background: var(--accent);
+    margin: 14px 0 22px;
+  }
+
+  .panel h3 {
     font-family: var(--display);
-    font-weight: 600;
-    font-size: 1.18rem;
-    line-height: 1.25;
-    letter-spacing: -0.008em;
-    margin: 2.6rem 0 0.5rem;
-    text-wrap: balance;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin: 40px 0 10px;
   }
 
-  .deck {
-    font-size: 1.15rem;
-    color: var(--ink-muted);
-    margin: 0 0 2.2rem;
-    padding-bottom: 1.6rem;
-    border-bottom: 1px solid var(--line-soft);
+  .panel p {
+    max-width: var(--measure);
+    margin: 0 0 16px;
   }
 
-  p { margin: 0 0 1.1rem; }
+  .panel p.lede {
+    font-size: 21px;
+    line-height: 1.45;
+    max-width: 52ch;
+    margin-bottom: 24px;
+  }
 
-  strong { font-weight: 500; color: var(--ink); }
+  .panel ul {
+    max-width: var(--measure);
+    padding-left: 22px;
+    margin: 0 0 16px;
+  }
+  .panel li { margin: 0 0 6px; }
+  .panel li::marker { color: var(--accent); }
 
-  em { font-style: italic; }
+  .panel strong { font-weight: 600; }
+  .panel em { font-style: italic; }
 
-  ul { margin: 0 0 1.2rem; padding-left: 1.15rem; }
-  li { margin-bottom: 0.5rem; }
-  li::marker { color: var(--accent); }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 7px 1px;
+    border: 1px solid currentColor;
+    vertical-align: middle;
+    margin-left: 8px;
+    position: relative;
+    top: -2px;
+  }
+  .tag.open  { color: var(--open); }
+  .tag.recon { color: var(--recon); }
 
   /* ---------- Pillars ---------- */
 
   .pillars {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    margin: 2rem 0 2.4rem;
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    margin: 28px 0 32px;
   }
 
   .pillar {
     background: var(--raised);
-    padding: 1.4rem 1.3rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    padding: 22px 20px 24px;
+  }
+
+  .pillar .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
   }
 
   .pillar h4 {
     font-family: var(--display);
     font-weight: 600;
-    font-size: 1rem;
-    letter-spacing: -0.005em;
-    margin: 0;
+    font-size: 19px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1.15;
+    margin: 0 0 10px;
   }
 
   .pillar p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--ink-muted);
+    font-size: 15.5px;
     line-height: 1.55;
+    margin: 0;
+    color: var(--ink);
   }
 
-  /* ---------- Rule callout ---------- */
+  /* ---------- Callouts ---------- */
 
-  .rule {
-    border-left: 2px solid var(--accent);
-    background: var(--accent-soft);
-    padding: 1.1rem 1.3rem;
-    margin: 1.8rem 0;
-    font-size: 1.1rem;
-    line-height: 1.5;
-  }
-  .rule p { margin: 0; }
-  .rule strong { color: var(--accent-ink); font-weight: 500; }
-
-  /* ---------- Open questions ---------- */
-
-  .open {
-    border: 1px solid var(--line);
-    border-left: 2px solid var(--open);
-    background: var(--open-soft);
-    padding: 1.1rem 1.3rem 0.6rem;
-    margin: 2.2rem 0 0;
+  .callout {
+    max-width: calc(var(--measure) + 40px);
+    margin: 22px 0 26px;
+    padding: 16px 20px 16px 22px;
+    border-left: 4px solid var(--ink);
+    background: var(--surface);
   }
 
-  .open-label {
+  .callout .label {
     font-family: var(--mono);
-    font-size: 0.68rem;
-    font-weight: 500;
+    font-size: 11px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--open);
-    margin: 0 0 0.6rem;
-  }
-
-  .open ul { margin-bottom: 0.7rem; }
-  .open li::marker { color: var(--open); }
-  .open li { font-size: 0.97rem; }
-
-  /* ---------- Weapon / spec cards ---------- */
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    margin: 1.8rem 0 2.2rem;
-  }
-
-  .card {
-    background: var(--raised);
-    padding: 1.3rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-  }
-
-  .card-role {
-    font-family: var(--mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin: 0;
-  }
-
-  .card h4 {
-    font-family: var(--display);
-    font-weight: 600;
-    font-size: 1.05rem;
-    margin: 0;
-  }
-
-  .card p {
-    margin: 0;
-    font-size: 0.94rem;
-    line-height: 1.55;
+    margin: 0 0 8px;
     color: var(--ink-muted);
+  }
+
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  .callout p, .callout li { font-size: 16px; }
+
+  .callout.open {
+    border-left-color: var(--open);
+    background: var(--open-soft);
+  }
+  .callout.open .label { color: var(--open); }
+
+  .callout.recon {
+    border-left-color: var(--recon);
+    background: var(--recon-soft);
+  }
+  .callout.recon .label { color: var(--recon); }
+
+  .callout.accent {
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .callout.accent .label { color: var(--accent); }
+
+  /* ---------- Pull quote ---------- */
+
+  .pull {
+    max-width: var(--measure);
+    margin: 26px 0 30px;
+    padding: 0 0 0 24px;
+    border-left: 4px solid var(--accent);
+    font-family: var(--body);
+    font-style: italic;
+    font-size: 23px;
+    line-height: 1.35;
+  }
+
+  /* ---------- Two-column texture lists ---------- */
+
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 36px;
+    max-width: 80ch;
+    margin: 0 0 20px;
+  }
+  .cols ul { margin: 0; }
+
+  /* ---------- Reference grid ---------- */
+
+  .refs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+    margin: 18px 0 26px;
+  }
+
+  .ref {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--ink);
+    padding: 14px 16px 16px;
+  }
+
+  .ref .title {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0 0 2px;
+  }
+
+  .ref .year {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin: 0 0 8px;
+  }
+
+  .ref p {
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ---------- Tables ---------- */
+
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 15.5px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    border-bottom: 2px solid var(--ink);
+  }
+
+  td strong { font-weight: 600; }
+  td code {
+    font-family: var(--mono);
+    font-size: 13.5px;
   }
 
   /* ---------- Status list ---------- */
@@ -363,114 +476,100 @@
   .status {
     list-style: none;
     padding: 0;
-    margin: 1.4rem 0 1.8rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
+    max-width: var(--measure);
+    margin: 0 0 20px;
   }
-
   .status li {
-    margin: 0;
-    padding-left: 1.5rem;
+    padding: 8px 0 8px 28px;
+    border-bottom: 1px solid var(--line-soft);
     position: relative;
-    font-size: 0.99rem;
+    margin: 0;
   }
-
   .status li::before {
     content: "";
     position: absolute;
-    left: 0;
-    top: 0.62em;
-    width: 9px;
-    height: 2px;
+    left: 6px;
+    top: 17px;
+    width: 8px;
+    height: 8px;
     background: var(--accent);
+    transform: rotate(45deg);
   }
 
-  /* ---------- Loop diagram ---------- */
+  /* ---------- Changelog ---------- */
 
-  .loop {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin: 1.6rem 0 2rem;
-    padding: 1.2rem;
-    border: 1px solid var(--line);
-    background: var(--raised);
+  .changelog {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-width: 80ch;
   }
-  .loop span { color: var(--ink); }
-  .loop i { color: var(--accent); font-style: normal; }
-
-  /* ---------- Table ---------- */
-
-  .table-wrap { overflow-x: auto; margin: 1.6rem 0 2rem; max-width: none; }
-
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 0.94rem;
-    min-width: 520px;
-  }
-
-  th, td {
-    text-align: left;
-    padding: 0.7rem 0.9rem;
+  .changelog li {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 16px;
+    padding: 8px 0;
     border-bottom: 1px solid var(--line-soft);
-    vertical-align: top;
+    font-size: 15.5px;
   }
-
-  th {
+  .changelog .date {
     font-family: var(--mono);
-    font-size: 0.68rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 13px;
     color: var(--ink-muted);
-    border-bottom-color: var(--line);
+    padding-top: 3px;
   }
-
-  td:first-child { font-weight: 500; white-space: nowrap; }
-
-  /* ---------- Footer ---------- */
 
   footer {
-    border-top: 1px solid var(--line);
-    background: var(--surface);
-    padding: 2rem 1.5rem;
-  }
-
-  .footer-inner {
-    max-width: 1080px;
-    margin: 0 auto;
+    margin-top: 72px;
+    padding-top: 18px;
+    border-top: 3px double var(--ink);
     font-family: var(--mono);
-    font-size: 0.73rem;
-    letter-spacing: 0.05em;
+    font-size: 12px;
     color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     display: flex;
+    justify-content: space-between;
+    gap: 16px;
     flex-wrap: wrap;
-    gap: 0.5rem 1.6rem;
   }
 
-  @media (max-width: 640px) {
-    .masthead-inner { padding-top: 2rem; }
-    main { padding-top: 2.2rem; }
+  @media (max-width: 760px) {
+    .page { padding: 0 18px 72px; }
+    .masthead { grid-template-columns: 1fr; padding-top: 36px; }
+    .masthead .meta { text-align: left; white-space: normal; }
+    .pillars { grid-template-columns: 1fr; }
+    .cols { grid-template-columns: 1fr; }
+    .panel h2 { font-size: 32px; }
+    .changelog li { grid-template-columns: 1fr; gap: 2px; }
   }
 </style>
 </head>
 <body>
+<div class="page">
 
-<header class="masthead">
-  <div class="masthead-inner">
-    <p class="eyebrow">Game Design Document</p>
-    <h1 class="wordmark">ProjectBopis</h1>
-    <p class="standfirst">A first-person shooter set in the Philippines, <strong>2098</strong>. Hostile synthetics have turned on the country that built them.</p>
-    <div class="strata" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <header class="masthead">
+    <div>
+      <p class="kicker">Game Design Document — Pitch</p>
+      <h1>Project<br>Bopis</h1>
+      <p class="deck">A gritty, noir first-person action shooter set in the Philippines, 2002.</p>
+    </div>
+    <div class="meta">
+      <strong>Manila &middot; 2002</strong><br>
+      Unreal Engine 5.8<br>
+      Rewritten 2026-09-13
+    </div>
+  </header>
+
+  <div class="notice">
+    Pitch-facing and non-technical. Specifications live in
+    <code>Documentation/TechnicalDesignSpec.md</code>; canon is owned by design in
+    <code>Lore_And_Design_Notes.md</code>. <strong>Open</strong> marks things genuinely
+    undecided. <strong>Under reconsideration</strong> marks ideas from the previous
+    version that are neither confirmed nor dropped.
   </div>
-  <nav class="tabs" role="tablist" aria-label="Design document sections">
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" id="tab-overview"  aria-controls="panel-overview"  aria-selected="true">Overview</button>
     <button class="tab" role="tab" id="tab-combat"    aria-controls="panel-combat"    aria-selected="false">Combat</button>
     <button class="tab" role="tab" id="tab-weapons"   aria-controls="panel-weapons"   aria-selected="false">Weapons</button>
@@ -479,282 +578,372 @@
     <button class="tab" role="tab" id="tab-narrative" aria-controls="panel-narrative" aria-selected="false">Narrative</button>
     <button class="tab" role="tab" id="tab-scope"     aria-controls="panel-scope"     aria-selected="false">Scope</button>
   </nav>
-</header>
 
-<main>
-
-  <!-- OVERVIEW -->
+  <!-- ================= OVERVIEW ================= -->
   <section class="panel is-active" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
     <h2>What this is</h2>
-    <p class="deck">A straight-line shooter campaign with Bungie-era Halo combat, set in a Philippines transformed by half a century of frontier AI money.</p>
 
-    <p>The combat touchstone is deliberately narrow: the original Halo trilogy, ODST, and Reach. That settles a lot of questions before they're asked. Fights are won by where you stand and how you pace your trigger — not by holding a scope steady or memorising a recoil pattern. No bullet-sponge enemies. No aim-down-sights bonus. A weapon you like should stay useful for most of the campaign.</p>
+    <p class="lede">A gritty, noir first-person action shooter set in the Philippines, 2002.</p>
 
-    <p>The setting is the part nobody else is making. Not "generic cyberpunk city with Filipino signage" — a Philippines recognisably descended from the real one, where culture, languages, institutions, architecture, religion and social structures visibly survive, transformed by decades of technology and money.</p>
+    <p>The narrative is heavy noir: dark, brooding, cynical, crime-focused, built on morally
+    compromised institutions and a protagonist who is rarely sure who to trust. The action is
+    John Woo &mdash; heroic bloodshed, extravagant and stylish, kinetic gunfights that escalate
+    into large set-piece shootouts. Those two things live together on purpose.</p>
 
-    <div class="pillars full">
+    <div class="pull">The story stays grim while the combat is deliberately extravagant.</div>
+
+    <p>The identity is Filipino. Classic Filipino crime and action cinema &mdash; the FPJ, Rudy
+    Fernandez, Lito Lapid, Phillip Salvador tradition &mdash; informs the attitude, locations,
+    villains, firearms and larger-than-life action, rather than the game leaning only on Hong
+    Kong or American references.</p>
+
+    <p>The explicit goal is <strong>not</strong> &ldquo;Max Payne in the Philippines.&rdquo; Max
+    Payne and John Woo are reference points for translating noir and cinematic gunplay into a
+    shooter; the game develops its own Filipino crime-noir identity from there.</p>
+
+    <div class="pillars">
       <div class="pillar">
-        <h4>Trigger discipline over twitch aim</h4>
-        <p>Fire as fast as you can while keeping accuracy suitable for the distance. Readable in the moment, carries across every weapon, makes an unfamiliar gun immediately usable.</p>
+        <div class="num">01</div>
+        <h4>Grim story, extravagant action</h4>
+        <p>The narrative is dark and grounded; the gunfights are stylised and spectacular. Neither is toned down to meet the other.</p>
       </div>
       <div class="pillar">
-        <h4>Linear navigation, nonlinear combat</h4>
-        <p>You go one way through the level. Inside a fight, the geometry itself rewards different weapons differently — no separate routes required.</p>
+        <div class="num">02</div>
+        <h4>Filipino crime-noir, not a transplant</h4>
+        <p>The setting, villains, weapons, locations and attitude come from the Philippines and its own cinema. Hong Kong and American references are tools, not the template.</p>
       </div>
       <div class="pillar">
-        <h4>The world is specific</h4>
-        <p>Every part of the setting should be somewhere you couldn't relocate without changing the game.</p>
+        <div class="num">03</div>
+        <h4>Overlapping interests, not one conspiracy</h4>
+        <p>A web of favours, protection arrangements, debts and people taking their cut &mdash; not a single villain behind everything.</p>
       </div>
     </div>
 
-    <h3>The premise, in one line</h3>
-    <div class="rule"><p><strong>Hostile synthetics. Here's a gun.</strong></p></div>
-    <p>Everything deeper — the history, the politics, the competing interpretations of how the country got here — arrives through supporting characters, environments, background detail and optional lore. The shooter comes first.</p>
+    <h3>Fidelity target: fun over fidelity</h3>
+    <p>The visual bar is <strong>early-2000s, Halo 1&ndash;2 era</strong> &mdash; a deliberate choice
+    that happens to sit naturally alongside a 2002 setting. Lighting is baked rather than simulated
+    in real time, with dynamic lights kept to a minimum.</p>
+    <p>It buys performance headroom, which for a game built on large escalating shootouts converts
+    directly into more enemies on screen and a steadier frame rate. It suits the material &mdash;
+    fluorescent interiors, wet concrete and neon read on strong shapes and colour rather than
+    surface detail. And it keeps scope honest for a project whose bottleneck is combat and story,
+    not rendering.</p>
+    <p>The test for any visual work is whether it makes the game more fun to play, not whether it
+    looks more expensive.</p>
   </section>
 
-  <!-- COMBAT -->
+  <!-- ================= COMBAT ================= -->
   <section class="panel" role="tabpanel" id="panel-combat" aria-labelledby="tab-combat" tabindex="0">
     <h2>Combat</h2>
-    <p class="deck">Accuracy comes from pacing, not from aiming.</p>
 
-    <p>Most shooters handle gun accuracy one of three ways: aiming down sights makes you accurate, the gun kicks in a pattern you fight, or the gun loses accuracy the faster you fire and recovers when you ease off. That third one — Halo: Reach called it <em>bloom</em> — is the model here. The other two are ruled out on purpose.</p>
+    <p class="lede">The primary inspiration is John Woo&rsquo;s heroic-bloodshed films &mdash; Hard Boiled, The Killer, A Better Tomorrow.</p>
 
-    <ul>
-      <li><strong>Aiming for accuracy</strong> rewards standing still and posting up, which fights against a game that wants you moving, strafing and using cover creatively.</li>
-      <li><strong>A recoil pattern</strong> turns skill into memorising how one gun kicks, practised outside the fight. That suits some games; not fast, improvised firefights meant to be won by reading the room.</li>
-      <li><strong>Bloom</strong> ties accuracy to pacing, and you read it in the moment by looking at your crosshair — do I have time for another shot, or should I ease off?</li>
-    </ul>
+    <h3>Action direction</h3>
+    <div class="cols">
+      <ul>
+        <li>Extremely kinetic gunfights</li>
+        <li>Dual-wielded firearms</li>
+        <li>Diving or sliding gunfire</li>
+        <li>Slow motion / bullet-time-style mechanics, if appropriate</li>
+        <li>Destructible-feeling environments &mdash; shattered glass, debris, sparks, furniture, environmental chaos</li>
+      </ul>
+      <ul>
+        <li>Dramatic standoffs</li>
+        <li>Large, escalating shootouts</li>
+        <li>Close-range pistol combat</li>
+        <li>Stylised cinematic violence</li>
+        <li><strong>Strong choreography and movement rather than static cover shooting</strong></li>
+      </ul>
+    </div>
 
-    <div class="rule"><p><strong>Aiming changes what you see, never how accurate you are.</strong> Your crosshair widens as you fire and tightens as you stop. A first shot from rest always goes exactly where you point it.</p></div>
+    <p>That last point is the organising principle. The player is meant to be moving
+    <em>through</em> a fight, not hiding from it.</p>
 
-    <h3>Hip-fire is the default, not a penalty</h3>
-    <p>You fight normally while moving, strafing, switching targets and meleeing. There is no arbitrary hip-fire accuracy penalty. Aiming is available and does something useful — targeting information and precision placement, and it may change your reticle — but it does not make the gun shoot straighter.</p>
+    <h3>Under reconsideration <span class="tag recon">carried forward</span></h3>
+    <div class="callout recon">
+      <p class="label">From the previous version</p>
+      <p>The previous game built its combat on a specific accuracy model &mdash; no bonus for aiming
+      down sights, hip-fire fully effective, accuracy governed by how you pace your trigger rather
+      than by a recoil pattern, with the crosshair widening as you fire and tightening as you stop.
+      That model is built and working today.</p>
+      <p>It is neither confirmed nor dropped. It&rsquo;s being reconsidered against the John Woo
+      direction &mdash; and &ldquo;hip-fire is the default, movement over cover&rdquo; is a natural
+      fit for heroic bloodshed. But that is a decision for design, not an assumption to carry forward.</p>
+    </div>
 
-    <p><strong>Zoom is a separate thing from aiming</strong>, restricted to weapons that earn it. It improves visibility and target acquisition, not accuracy. When a scoped weapon zooms, the view magnifies cleanly and the weapon leaves the screen — the Halo approach, rather than an over-the-shoulder sight picture.</p>
-
-    <h3>What difficulty actually changes</h3>
-    <p>Harder settings demand better positioning, target prioritisation, accuracy management, ammo management, weapon knowledge and use of the arena — not a single correct solution to each room.</p>
+    <div class="callout open">
+      <p class="label">Open</p>
+      <ul>
+        <li>Which of dual-wielding, dive/slide gunfire and slow motion actually make it in, and in what form.</li>
+        <li>How &ldquo;destructible-feeling&rdquo; is delivered &mdash; cosmetic chaos versus mechanical destruction.</li>
+        <li>Whether the existing accuracy model stays, changes, or goes.</li>
+      </ul>
+    </div>
   </section>
 
-  <!-- WEAPONS -->
+  <!-- ================= WEAPONS ================= -->
   <section class="panel" role="tabpanel" id="panel-weapons" aria-labelledby="tab-weapons" tabindex="0">
     <h2>Weapons</h2>
-    <p class="deck">Weapons encourage playstyles. Levels never force one.</p>
 
-    <p>The goal is always <em>"this weapon gives you another good way to solve this"</em>, never <em>"this room requires this exact gun."</em> Ammo availability is a <strong>soft</strong> pressure — running low nudges you toward switching or picking something up; it doesn't strand you.</p>
+    <p class="lede">Firearms of the period, drawn from Filipino action cinema as much as from Hong Kong or Hollywood.</p>
 
-    <div class="cards full">
-      <div class="card">
-        <p class="card-role">Sidearm · Semi-auto</p>
-        <h4>Pistol</h4>
-        <p>Precise and reliable at range if you pace your shots. Punished if you spam them.</p>
-      </div>
-      <div class="card">
-        <p class="card-role">Close range · Full-auto</p>
-        <h4>Close-range rifle</h4>
-        <p>Built for corners and short sightlines. The one weapon firing a real travel-time projectile rather than an instant hit.</p>
-      </div>
-      <div class="card">
-        <p class="card-role">Mid range · Semi-auto</p>
-        <h4>Battle rifle</h4>
-        <p>Deliberate and scoped. The one most likely to become a player's favourite for a long stretch of the campaign.</p>
-      </div>
+    <p>The direction names <strong>close-range pistol combat</strong> and <strong>dual-wielded
+    firearms</strong> specifically, which makes handguns the centre of the arsenal rather than one
+    option among many.</p>
+
+    <h3>What exists today</h3>
+    <p>Three weapons are built and working as a test bed &mdash; a semi-automatic pistol, a
+    full-automatic close-range rifle, and a semi-automatic scoped rifle &mdash; with distinct
+    handling, ammunition, reloading, and per-weapon crosshairs. Their current art is placeholder
+    sci-fi and will be replaced. Their <em>roles</em> were designed for the previous premise and are
+    open to revision.</p>
+
+    <p>The previous version also had one weapon fire a visible, dodgeable projectile, justified by
+    future-tech physics. That justification is gone with the setting. The projectile system itself
+    is built and working and is a natural fit for things like grenades or thrown weapons &mdash; but
+    nothing in the new direction has claimed it yet.</p>
+
+    <div class="callout recon">
+      <p class="label">Under reconsideration</p>
+      <p>Weapons encouraging playstyles rather than levels forcing them; a favourite general-purpose
+      weapon staying viable across most of the game; ammo as a <em>soft</em> pressure that nudges you
+      toward switching rather than stranding you.</p>
     </div>
 
-    <h3>Why one gun fires a real projectile</h3>
-    <p>A travel-time projectile is only interesting if you can see it coming and dodge it — and that only matters at <strong>close range</strong>, where an enemy would otherwise have no reaction window at all against an instant hit. At the battle rifle's engagement distance, visible travel time would just read as an aiming penalty rather than a test of anyone's reflexes.</p>
-
-    <p>The in-world reason is electromagnetic, not exotic. These are coilguns: they accelerate a solid slug through a sequence of magnetic stages, so muzzle velocity scales with how much barrel you have. A compact weapon doesn't have room for enough stages to reach the speeds a longer one manages. <strong>Short gun, slow round. Long gun, fast round.</strong> That rule holds if more weapons get added later.</p>
-
-    <p>To stop "slow" reading as "weak", the close-range round is pre-scored to fragment on impact — trading penetration for a burst of shrapnel. Strongest against close, grouped or exposed targets; weakest against armour and hard cover, which is exactly where the other two stay relevant.</p>
-
-    <div class="open">
-      <p class="open-label">Open</p>
+    <div class="callout open">
+      <p class="label">Open</p>
       <ul>
-        <li><strong>How many weapons you carry at once.</strong> Two is the classic Halo answer. Not locked.</li>
-        <li><strong>The full weapon roster</strong> beyond these three.</li>
+        <li>The actual weapon roster.</li>
+        <li>How many weapons are carried at once.</li>
+        <li>Whether and how dual-wielding works mechanically.</li>
+        <li>What, if anything, uses the projectile system.</li>
       </ul>
     </div>
   </section>
 
-  <!-- ENEMIES -->
+  <!-- ================= ENEMIES ================= -->
   <section class="panel" role="tabpanel" id="panel-enemies" aria-labelledby="tab-enemies" tabindex="0">
     <h2>Enemies</h2>
-    <p class="deck">The enemies are machines. Not people.</p>
 
-    <p>"AI" is the intelligence; <strong>synthetics</strong> are the physical force you fight — machine bodies controlled or inhabited by it. Humans remain in the story as corrupt, antagonistic, manipulative or simply responsible for dangerous technology, but they are not what you shoot.</p>
+    <p class="lede">The enemies are people. Criminals, syndicate muscle, corrupt police, private security, hired killers &mdash; the human fabric of a 2002 crime world.</p>
 
-    <h3>Readability is the design requirement</h3>
-    <p>You should be able to tell what you're dealing with instantly, the way you can immediately clock an Elite from a Grunt in Halo. That instant read doesn't come from one enemy reskinned several ways — a hovering drone and a four-legged war machine shouldn't move or behave the same underneath.</p>
+    <p>That world, as the direction sketches it: kidnapping-for-ransom syndicates, jueteng and
+    illegal gambling networks tied to officials and law enforcement, shabu trafficking and the wider
+    drug trade, organised crime, vigilantism and extrajudicial violence, and the post-EDSA political
+    instability that sits underneath all of it.</p>
 
-    <p>So enemies are built from interchangeable pieces — how they move, how they attack, what role they play in a fight — mixed and matched per type. Distinct silhouettes, distinct behaviours, distinct battlefield roles.</p>
+    <p>These are possible ingredients rather than a required roster &mdash; the game doesn&rsquo;t
+    need to reproduce specific real cases.</p>
 
-    <p>Possible chassis: humanoid infantry, quadrupeds, hovering units, repurposed industrial machines, swarms, heavily armoured elites, enormous combat platforms.</p>
+    <div class="callout recon">
+      <p class="label">Under reconsideration</p>
+      <p>The previous version&rsquo;s rule that enemies must <strong>read at a glance</strong>
+      &mdash; distinct silhouettes, behaviours and battlefield roles so the player can size up a
+      fight instantly. The synthetic premise it was written for is gone, but the principle applies
+      just as well to a syndicate enforcer versus a beat cop versus a hired shooter.</p>
+    </div>
 
-    <div class="open">
-      <p class="open-label">Open</p>
+    <div class="callout open">
+      <p class="label">Open</p>
       <ul>
-        <li><strong>Why the synthetics turned hostile.</strong> Deliberately unresolved — and deliberately <em>not</em> the default "AI wakes up and decides humanity must die". The cause should be specific to this world's history.</li>
-        <li><strong>The synthetic hierarchy</strong> — what ranks and roles exist.</li>
+        <li>The enemy roster and how factions differ in play.</li>
+        <li>Whether readability-at-a-glance stays a design requirement.</li>
       </ul>
     </div>
   </section>
 
-  <!-- WORLD -->
+  <!-- ================= WORLD ================= -->
   <section class="panel" role="tabpanel" id="panel-world" aria-labelledby="tab-world" tabindex="0">
     <h2>World</h2>
-    <p class="deck">The Philippines, 2098 — a genuine contradiction rather than a simple dystopia.</p>
 
-    <p>The country spotted an opportunity. As the rest of the world responded to the harms of frontier AI research with restrictions — while cheerfully continuing to <em>buy</em> AI-derived products — the Philippines made itself the place where the restricted work could legally happen.</p>
+    <p class="lede">The Philippines, 2002. Not a stylised past &mdash; the real social, political, criminal and technological atmosphere of the early-2000s.</p>
 
-    <p>Foreign money poured in. So did infrastructure, tech transfer, industry and corruption. Decades of real economic growth followed: modernised infrastructure, a serious domestic robotics and defence industry, globally important universities, powerful Filipino tech companies, engineers moving <em>in</em> rather than out.</p>
+    <p>Real historical conditions form the backdrop; the main plot stays fictional, so the game
+    never has to rewrite major events.</p>
 
-    <p>And the Filipino counter-argument is a good one: wealthy nations benefited from this technology and then tried to pull the ladder up. By 2098 the AI economy is too important to the world to simply switch off.</p>
-
-    <h3>Corporate espionage as a world engine</h3>
-    <p>Because so many competing international research operations sit physically close together, espionage is constant — poaching, prototype theft, sabotage, convenient facility fires, infiltration, bribery, reverse engineering.</p>
-
-    <p>This matters beyond flavour. It explains why 2098 synthetics are so sophisticated, and why <strong>no single corporation fully understands or controls the ecosystem</strong>. One company's locomotion, another's stolen cognition, a third's theft of that, all reverse-engineered locally. Eventually nobody can say who invented what.</p>
-
-    <h3>Luzon — "The Factory"</h3>
-    <p>A vast continuous sprawl, far bigger than Manila. Flatlands converted to solar farms feeding compute. Between them: data centres, automated factories, synthetic assembly plants, worker cities, cooling infrastructure, corporate research campuses.</p>
-
-    <p>Old Philippine towns survive embedded inside it. The visual thesis is contrast — a centuries-old church, an ordinary neighbourhood, sari-sari commerce, a barangay basketball court, sitting beneath enormous futuristic industrial infrastructure.</p>
-
-    <h3>High City and Low City</h3>
-    <p>Not one Midgar-style plate, but the accumulated result of decades of building over what was already there — new roads over old roads, rail over roads, corporate districts spanning older ones, decks connecting towers.</p>
-
-    <div class="cards full">
-      <div class="card">
-        <p class="card-role">Above</p>
-        <h4>High City</h4>
-        <p>Clean, orderly, maintained, spacious, sunlit. Glass, composite, landscaping, automated transit. The future visibly works here — the darkness is beneath the surface: surveillance, private security, synthetic labour, corporate ownership.</p>
-      </div>
-      <div class="card">
-        <p class="card-role">Below</p>
-        <h4>Low City</h4>
-        <p>The original ground-level Philippines, buried underneath. Dense old concrete, endless modification, exposed cabling, cheap holographic advertising, wet streets, food stalls, repair shops, synthetic chop shops.</p>
-      </div>
+    <h3>Period texture</h3>
+    <div class="cols">
+      <ul>
+        <li>Nokia-era mobile phones and SMS culture</li>
+        <li>Pre-smartphone communication, limited mobile internet</li>
+        <li>Text messaging as a tool for politics, rumours, threats, informants and criminal business</li>
+        <li>CRT televisions and monitors</li>
+        <li>Jeepneys, buses, taxis, motorcycles and period cars</li>
+        <li>Early-2000s Manila nightlife</li>
+        <li>Fluorescent interiors, concrete urban spaces, rain and humid streets</li>
+      </ul>
+      <ul>
+        <li>Karaoke bars, restaurants, hotels, warehouses, docks</li>
+        <li>Police stations, government offices, dense residential districts</li>
+        <li>Catholic imagery and other distinctly Filipino cultural detail</li>
+        <li>Tabloids, radio and television news</li>
+        <li>Political uncertainty and rumour</li>
+        <li>A mix of English and Filipino/Tagalog where appropriate</li>
+      </ul>
     </div>
 
-    <p>Large parts of Low City get little direct sunlight because High City has the sky — which gives the neon an environmental reason rather than a stylistic one.</p>
+    <h3>The backdrop</h3>
+    <p>Political instability after EDSA II and EDSA III. Public distrust of politicians and
+    institutions. Corruption and patronage networks. Police corruption and criminal links. Military
+    dissatisfaction and rumours of coup plotting. Post-9/11 security anxiety, terrorism and
+    insurgency in the national atmosphere.</p>
+    <p>This is atmosphere and raw material, not a checklist the story must tick.</p>
 
-    <p>Crucially, <strong>Low City is not uniformly poor.</strong> It holds poor communities, an established middle class, commercial districts, old wealthy enclaves, industrial businesses, and people who simply refused to leave. High City is planned and corporate; Low City is chaotic and culturally alive. Both stay recognisably Filipino — neither is Tokyo, neither is Night City.</p>
+    <h3>Cinema references</h3>
+    <p>For action language: John Woo &mdash; Hard Boiled, The Killer, A Better Tomorrow. Max Payne,
+    as a reference for translating noir and cinematic gunplay into a shooter, not as a setting to
+    copy.</p>
 
-    <h3>Visayas — "The Resort"</h3>
-    <p>The counterpart to Luzon's industry: the entire region reshaped around leisure and tourism. Luxury destinations, nightlife, artificial reefs, medical tourism, corporate retreats, floating hotels, entertainment districts.</p>
-
-    <p>Millions still live there — it isn't emptied — but the economy and land use are built around visitors, wealthy residents and international consumption. The available contrast: immaculate resort districts supported by worker communities deliberately kept out of sight.</p>
-
-    <div class="open">
-      <p class="open-label">Open</p>
-      <ul>
-        <li><strong>Mindanao.</strong> Left undefined on purpose rather than forced into a trio.</li>
-        <li><strong>The major corporations, families and factions.</strong></li>
-        <li><strong>The exact regulatory mechanism</strong> the Philippines used.</li>
-      </ul>
+    <div class="refs">
+      <div class="ref">
+        <p class="title">On the Job</p>
+        <p class="year">2013</p>
+        <p>Crime, assassins, police, political corruption and overlapping institutions.</p>
+      </div>
+      <div class="ref">
+        <p class="title">BuyBust</p>
+        <p class="year">2018</p>
+        <p>Claustrophobic urban combat and sustained action in dense Filipino environments.</p>
+      </div>
+      <div class="ref">
+        <p class="title">Metro Manila</p>
+        <p class="year">2013</p>
+        <p>Desperation, class, crime and Manila.</p>
+      </div>
+      <div class="ref">
+        <p class="title">Manila in the Claws of Light</p>
+        <p class="year">1975</p>
+        <p>Distinctly Filipino urban darkness, exploitation, and noir / social-drama foundations.</p>
+      </div>
+      <div class="ref">
+        <p class="title">Classic Filipino action cinema</p>
+        <p class="year">FPJ &middot; Rudy Fernandez &middot; Lito Lapid &middot; Phillip Salvador</p>
+        <p>Local action-film language and attitude.</p>
+      </div>
     </div>
   </section>
 
-  <!-- NARRATIVE -->
+  <!-- ================= NARRATIVE ================= -->
   <section class="panel" role="tabpanel" id="panel-narrative" aria-labelledby="tab-narrative" tabindex="0">
     <h2>Narrative</h2>
-    <p class="deck">The protagonist is the player. The opinions belong to everyone else.</p>
 
-    <p>There is no strongly authored personality. The protagonist may have a functional identity — why they're there, what they can do, what they carry — but the game never states what they think or believe.</p>
+    <p class="lede">Heavy noir. Dark, brooding, cynical, crime-focused. Morally compromised institutions; betrayal, corruption and conflicting loyalties.</p>
 
-    <div class="rule"><p><strong>No dialogue choices.</strong> Not a technical shortcut; a deliberate position on whose viewpoint the story belongs to.</p></div>
+    <p>The protagonist is frequently unsure who can be trusted. The story exposes
+    <strong>systems</strong> of corruption rather than presenting good against evil.</p>
 
-    <h3>Viewpoints come from supporting characters</h3>
-    <p>They carry the opinions, and they're allowed to be interesting: they disagree, they argue about corporations and AI and politics, they lie, they misunderstand, they hold biases, and they can be sincere and wrong at the same time.</p>
+    <p>The most believable version is an apparently ordinary crime &mdash; a kidnapping, a murder, an
+    organised-crime case &mdash; that gradually reveals overlapping networks of criminals, police,
+    businessmen, fixers and politicians. Not one giant conspiracy: overlapping interests, favours,
+    protection arrangements, debts, and people taking their cut.</p>
 
-    <p>The protagonist never declares which of them is correct. The player decides.</p>
+    <p>Humour can exist, but the lead is deliberately <strong>not</strong> Tequila from Hard Boiled
+    &mdash; no cheerful, cool swagger.</p>
 
-    <h3>Lore serves the shooter</h3>
-    <p>The immediate premise has to land in one sentence. Everything deeper arrives through supporting characters, environments, background detail, optional lore, and corporate and government messaging.</p>
+    <h3>The protagonist</h3>
+    <p>A defined, authored character &mdash; the previous version&rsquo;s player-projection
+    protagonist is discarded.</p>
+    <p>Male, at least 35, preferably late 30s to early 40s. Dark, brooding, cynical. Tired and
+    experienced. Observant, suspicious, restrained. Dry or fatalistic humour rather than playful
+    banter.</p>
+    <p>Not a one-note angry tough guy: his darkness shows as quiet exhaustion, distrust and
+    resignation rather than shouting. He should keep some buried moral line so the cynicism never
+    becomes total nihilism &mdash; he expects institutions and people to fail him, and still
+    can&rsquo;t ignore innocent people in danger.</p>
 
-    <p>The world contains contradictions on purpose. Governments condemn frontier AI while importing its products. Foreign critics are economically dependent on Philippine technology. Corrupt officials take corporate money, and the resulting boom genuinely improves the country. High City offers a real standard of living and embodies corporate surveillance. Low City suffers neglect and is where the culture lives.</p>
-
-    <div class="open">
-      <p class="open-label">Open</p>
+    <div class="callout open">
+      <p class="label">Open</p>
       <ul>
-        <li><strong>The inciting incident.</strong></li>
-        <li><strong>The protagonist's role, background and designation.</strong></li>
+        <li><strong>The story.</strong> This is the current major design task: a plot that grows from
+        the older cynical protagonist, Philippine crime-noir conditions, overlapping criminal and
+        institutional interests, a personal reason for him to keep digging, and a structure that
+        naturally escalates into spectacular John Woo-style encounters.</li>
+        <li><strong>The protagonist&rsquo;s</strong> history, profession, name, exact age, personal
+        tragedy or motivation, and his connection to the main crime plot.</li>
+        <li>Whether dialogue choices exist. The previous version had none, tied to the neutral
+        protagonist; with an authored lead, that&rsquo;s no longer settled either way.</li>
       </ul>
     </div>
   </section>
 
-  <!-- SCOPE -->
+  <!-- ================= SCOPE ================= -->
   <section class="panel" role="tabpanel" id="panel-scope" aria-labelledby="tab-scope" tabindex="0">
     <h2>Scope</h2>
-    <p class="deck">A linear campaign, minimum ten levels, built on one repeating loop.</p>
 
-    <div class="loop full">
-      <span>30 seconds of fun</span> <i>&rarr;</i>
-      <span>combat encounter</span> <i>&rarr;</i>
-      <span>encounter sequence</span> <i>&rarr;</i>
-      <span>level</span> <i>&rarr;</i>
-      <span>campaign</span>
+    <div class="callout recon">
+      <p class="label">Under reconsideration</p>
+      <p>The previous version&rsquo;s structure: a <strong>linear campaign of at least ten
+      levels</strong>, built on a repeating and escalating loop of encounter &rarr; sequence &rarr;
+      level &rarr; campaign, with <strong>linear navigation and nonlinear combat</strong> &mdash;
+      mini-sandbox arenas where freedom comes from how you use the geometry rather than from
+      branching routes.</p>
+      <p>None of that is discarded. None of it is confirmed. Each piece gets weighed against what a
+      noir story and John Woo action actually need.</p>
     </div>
 
-    <p>Core guaranteed gameplay is on-foot first-person combat. Everything else has to earn its place.</p>
-
-    <h3>Arenas</h3>
-    <p>Navigation is linear; arenas are mini-sandboxes. This explicitly <strong>does not</strong> mean branching routes — there is no separate sniper path or stealth path. Everyone fights through the same space.</p>
-
-    <p>Freedom comes from how you use the geometry. A battle-rifle player exploits a long central hallway; a close-range player exploits the short-sightline corners beside it. Same room, different tactics.</p>
-
-    <div class="rule"><p>The test for a good arena: <strong>it stays fun with a different loadout.</strong></p></div>
-
-    <h3>Deliberately out of scope</h3>
+    <h3>Deliberately open <span class="tag open">open</span></h3>
     <ul>
-      <li><strong>Vehicles</strong> are not guaranteed. Nothing is designed around them unless they're added later and proven fun.</li>
-      <li><strong>Branching conversation</strong> doesn't exist, because dialogue choices don't.</li>
-      <li><strong>Third-person and co-op</strong> are not being built toward.</li>
+      <li><strong>Vehicles</strong> &mdash; never guaranteed, still not.</li>
+      <li><strong>Mission count and campaign shape</strong> &mdash; depends on the story, which doesn&rsquo;t exist yet.</li>
     </ul>
 
     <h3>Where the build is</h3>
-    <p>The combat foundation is real and playable, not planned. Working today:</p>
-
+    <p>The combat foundation is real and playable. Working today:</p>
     <ul class="status">
-      <li>Weapons that fire, with the full bloom accuracy model driving both the shot and the reticle</li>
-      <li>Three configured weapons — pistol, close-range rifle, battle rifle — with distinct roles and tuning</li>
-      <li>A real projectile weapon with fragmenting impact</li>
-      <li>Fire rate limits, full-automatic fire, and per-weapon fire animation</li>
-      <li>Halo-style scoped zoom</li>
+      <li>Weapons that fire, with an accuracy model driving both the shot and the reticle from one number</li>
+      <li>Three configured test-bed weapons with distinct handling</li>
+      <li>A working projectile weapon with fragmenting impact</li>
+      <li>Fire rate limits, full-automatic fire, per-weapon fire animation</li>
+      <li>Scoped zoom</li>
       <li>Ammunition with magazines, reserves and reloading</li>
+      <li>A composable HUD &mdash; reticle and ammo readout as separate, mix-and-match elements</li>
+      <li>Per-weapon procedural crosshairs</li>
       <li>Hit decals, muzzle flash, weapon sound</li>
     </ul>
 
-    <p>Next: <strong>enemies</strong>. That's the milestone where the combat loop becomes a game rather than a shooting range — everything above currently has nothing to shoot at.</p>
+    <div class="callout accent">
+      <p class="label">Status of the build</p>
+      <p>All of it was built under the old premise, and all of it is <strong>implementation state
+      rather than canon</strong> &mdash; the test bed the new direction gets evaluated against. The
+      systems are setting-agnostic; the art and the roles they were tuned for are not.</p>
+      <p>Next: the story. Then enemies &mdash; which is when this becomes a game rather than a
+      shooting range.</p>
+    </div>
 
     <h3>Document map</h3>
-    <div class="table-wrap full">
+    <div class="table-wrap">
       <table>
         <thead>
           <tr><th>Document</th><th>Purpose</th><th>Owner</th></tr>
         </thead>
         <tbody>
-          <tr><td>GameDesignDocument</td><td>What the game is. Pitch-facing, non-technical.</td><td>Design</td></tr>
-          <tr><td>Lore_And_Design_Notes</td><td>Narrative and world canon.</td><td>Design</td></tr>
-          <tr><td>TechnicalDesignSpec</td><td>What the design asks of the codebase.</td><td>Implementation</td></tr>
-          <tr><td>ProjectPlan</td><td>Ordered build sequence.</td><td>Implementation</td></tr>
-          <tr><td>ProgressLog</td><td>Dated session history and decisions.</td><td>Implementation</td></tr>
+          <tr><td><strong>GameDesignDocument</strong></td><td>What the game is. Pitch-facing, non-technical.</td><td>Design</td></tr>
+          <tr><td><strong>Lore_And_Design_Notes</strong></td><td>Narrative and world canon.</td><td>Design</td></tr>
+          <tr><td><strong>TechnicalDesignSpec</strong></td><td>What the design asks of the codebase.</td><td>Implementation</td></tr>
+          <tr><td><strong>ProjectPlan</strong></td><td>Ordered build sequence.</td><td>Implementation</td></tr>
+          <tr><td><strong>ProgressLog</strong></td><td>Dated session history and decisions.</td><td>Implementation</td></tr>
         </tbody>
       </table>
     </div>
+
+    <h3>Changelog</h3>
+    <ul class="changelog">
+      <li><span class="date">2026-08-09</span><span>Initial skeleton created.</span></li>
+      <li><span class="date">2026-08-09</span><span>Rewritten against locked canon from the lore notes.</span></li>
+      <li><span class="date">2026-08-12</span><span>Enemies deferred behind a weapon-focused phase.</span></li>
+      <li><span class="date">2026-08-17</span><span>Projectile-weapon assignment reversed to the close-range rifle.</span></li>
+      <li><span class="date">2026-08-30</span><span>First-person rig restructured; first weapon tuning pass.</span></li>
+      <li><span class="date">2026-08-31</span><span><strong>Rewritten as a non-technical pitch document.</strong> Implementation detail moved to the technical spec. Fidelity target recorded.</span></li>
+      <li><span class="date">2026-09-13</span><span><strong>Rewritten for the change of setting: Philippines 2002, noir narrative, John Woo action, authored protagonist.</strong> The 2098 cyberpunk premise, synthetic enemies and neutral protagonist are discarded. Previous gameplay ideas are marked <em>under reconsideration</em> rather than removed. Fidelity target retained.</span></li>
+    </ul>
   </section>
 
-</main>
+  <footer>
+    <span>ProjectBopis &middot; Design Document</span>
+    <span>Manila, 2002</span>
+  </footer>
 
-<footer>
-  <div class="footer-inner">
-    <span>ProjectBopis</span>
-    <span>Unreal Engine 5.8</span>
-    <span>Philippines · 2098</span>
-    <span>Updated 2026-08-31</span>
-  </div>
-</footer>
+</div>
 
 <script>
   (function () {

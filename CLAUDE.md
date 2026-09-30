@@ -1,12 +1,27 @@
 # ProjectBopis
 
-Sci-fi cyberpunk FPS, set in the Philippines, 2098. Unreal Engine 5.8,
-scaffolded from Epic's FPS template. The `Variant_Shooter` and
-`Variant_Horror` template variants have been removed (2026-08-09) — all
-gameplay systems (weapons, enemies, etc.) are being built from scratch
-against the design doc, not adapted from template code. Only the base
-`FirstPerson` scaffolding remains. Primary gameplay reference: Bungie-era
-Halo.
+Gritty, noir first-person action shooter set in the Philippines, **2002**.
+Heavy noir narrative, John Woo / heroic-bloodshed action, Filipino
+crime/action cinema as the identity. Authored protagonist (male, late 30s–
+early 40s, cynical and tired — the opposite of Hard Boiled's Tequila).
+
+**Setting changed 2026-09-13.** The previous 2098 sci-fi/cyberpunk premise,
+synthetic enemies, and personality-neutral protagonist are all discarded —
+see the DISCARDED section of `Design Document/Lore_And_Design_Notes.md` and
+do not reintroduce any of it. The old *gameplay* ideas (bloom, hip-fire,
+linear arenas, 10+ missions) are neither canon nor obsolete: each is to be
+reconsidered individually against the new game. Primary action references:
+John Woo (Hard Boiled, The Killer, A Better Tomorrow), Max Payne (as a
+translation reference, not a template), and Filipino action cinema. The
+old Bungie-era Halo reference is superseded.
+
+Unreal Engine 5.8, scaffolded from Epic's FPS template. The
+`Variant_Shooter` and `Variant_Horror` template variants have been removed
+(2026-08-09) — all gameplay systems are built from scratch against the
+design doc, not adapted from template code. Only the base `FirstPerson`
+scaffolding remains. The weapon/ammo/reticle systems built under the old
+premise are **implementation state**, not canon; they're the test bed the
+new direction gets evaluated against.
 
 ## Division of labor
 - **Design & lore**: owned by the user + their design partner (ChatGPT).

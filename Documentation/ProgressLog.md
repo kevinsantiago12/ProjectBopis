@@ -12,6 +12,102 @@
 
 ---
 
+## 2026-09-21
+**Summary:** Weapon pack swapped to conventional firearms. Stale references
+cleaned. No C++ changed.
+
+**Pack swap.** User added `Content/MilitaryWeapSilver/` and re-pointed all
+three weapon Blueprints: `BP_Pistol` → `Pistols_A` + `Fire_Pistol_W` +
+`PistolA_Fire02`; `BP_CloseRangeRifle` → `Assault_Rifle_A` +
+`P_AssaultRifle_MuzzleFlash` + `RifleA_Fire_Cue`; `BP_BattleRifle` →
+`Sniper_Rifle_A` + `Fire_SniperRifle_W` + `P_SniperRifle_MuzzleFlash_01` +
+`SniperRifleA_Fire_Cue`. `BP_FirstPersonCharacter` also modified (not yet
+inspected). `SciFiWeapDark` to be deleted by the user from the Content
+Browser.
+
+**Reference audit** (grep of `.uasset`/`.umap`/source/config for
+`SciFiWeapDark`) found two leftovers outside the pack itself:
+- `BP_Pistol` — `WeaponMesh` component template's
+  `AnimationData.AnimToPlay` still pointed at the old `Fire_Pistol_W`. Inert
+  at runtime, but a hard reference. **Cleared via the bridge, compiled,
+  saved**; asset registry now reports zero referencers on the old animation.
+- `SK_Mannequin` (skeleton) — editor-only preview attachment of
+  `Darkness_AssaultRifle` (from eyeballing the hand socket in Persona).
+  Predates today. The bridge can't reach `PreviewAttachedAssetContainer`;
+  **cleared by hand in the skeleton editor.**
+Everything else clean: other Blueprints, all C++, all `Config/`. Docs
+mention the old pack only historically.
+
+**Docs:** `TechnicalDesignSpec.md` (implications section, lightmap-UV
+gotcha, vendor list, changelog), `ProjectPlan.md` (setting-change note,
+new Gotcha about hidden component-template references, changelog).
+
+**Next:** unchanged — `WBP_Ammo` verification, then pickups, then weapon
+switching. Grip offsets, muzzle socket names and the "faces north" bug all
+need a re-look against the new meshes, since every socket and animation
+notify is now a different asset.
+
+---
+
+## 2026-09-13
+**Summary:** Setting change. Docs propagated. No code changed.
+
+**The change.** User supplied `Project_Bopis_2002_Noir_Setting_Change.txt`
+from the design side. The 2098 sci-fi/cyberpunk premise — synthetic enemies,
+energy weapons, the AI-antagonist storyline, High/Low City, the neutral
+player-projection protagonist — is discarded in full. The game is now a
+**gritty noir first-person action shooter set in the Philippines, 2002**:
+heavy noir narrative, John Woo / heroic-bloodshed action, Filipino crime
+cinema as the identity source, and a **defined, authored protagonist** (male,
+35+, cynical, tired, deliberately not Tequila). Human enemies. The explicit
+goal is *not* "Max Payne in the Philippines." Old gameplay ideas (bloom,
+hip-fire, linear structure, arenas, 10+ missions) are neither canon nor
+obsolete — to be reconsidered individually. The story is the design side's
+current task; not to be invented here. Protagonist name/history/profession/
+motivation are `[UNDECIDED]`.
+
+**Docs updated:**
+- `Design Document/Lore_And_Design_Notes.md` — rewritten. New doc verbatim as
+  PART 1 (canon). Old §2–5 gameplay sections + the readability principle
+  preserved as PART 2, each tagged *under reconsideration*. Old world/lore
+  sections dropped (they're in the discard list).
+- `Design Document/GameDesignDocument.md` + `.html` — full rewrite for the
+  new premise, still pitch-facing/non-technical. Three pillars derived
+  strictly from the doc. Every `[UNDECIDED]` item is an **Open** callout; every
+  carried-forward mechanic is an **Under reconsideration** callout. Fidelity
+  target (Halo 1–2 era, baked lighting) kept — it fits 2002. HTML redesigned:
+  newsprint ground, ink, tabloid-red accent, Oswald/Spectral/Courier Prime;
+  tab JS unchanged.
+- `Documentation/TechnicalDesignSpec.md` — new "Setting change — implications"
+  section at the top (carried / superseded / new candidates / under
+  reconsideration). Coilgun-fragmentation rationale removed from the
+  projectile section (system kept, purpose open). Enemies human. Narrative
+  "no conversation system" rule reopened. `SciFiWeapDark` marked placeholder.
+- `Documentation/ProjectPlan.md` — dated note at top; Phase 5/6 reworded.
+- `Documentation/Research.md` — Halo 2 AI notes annotated as still applicable.
+- `CLAUDE.md` — opening paragraph rewritten.
+
+**Code:** untouched. One comment (`ProjectBopisCharacter.cpp` "Halo-style
+zoom") describes the mechanic accurately and was left alone.
+
+**Flagged, not decided:**
+- The three weapons' *roles* and *art* were designed for the old premise.
+  Roles are open; art is placeholder. The 2002 arsenal is a design call.
+- Pickups (next per the agreed Phase 4 order) — the "dropped weapons vs
+  ammo pickups vs both" question should be answered against the new
+  direction before building. John Woo gunfights suggest picking guns off
+  the floor is on-theme, but that's an observation, not a decision.
+- Dual-wield, slow-mo, dive/slide, destructibility are named in the action
+  direction and unscheduled. Engineering notes for each in the tech spec.
+
+**Next:** unchanged — HUD verification (`WBP_Ammo` binding, needs the
+editor bridge back), then pickups, then weapon switching. Then Phase 5.
+
+**Editor bridge:** disconnected this session (`unreal-mcp` connection
+refused). None of this work needed it.
+
+---
+
 ## 2026-08-31 (6)
 **Summary:** Remaining Phase 4 order agreed, HUD C++ written (awaiting
 review), and a fidelity target locked in.
