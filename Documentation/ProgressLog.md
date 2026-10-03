@@ -12,6 +12,120 @@
 
 ---
 
+## 2026-10-03
+**Summary:** Editor bridge made restart-proof (stdio proxy). Conversion out of C++ entirely — Steps 1–6 done. Crouch brought
+forward. Shotgun work started. A week-old bridge-reconnect belief corrected.
+
+### ▶ RESUME HERE — next session, in this order
+
+1. **First thing: confirm the new bridge proxy is live.** The stdio proxy
+   (`.claude/unreal-mcp-proxy.mjs`) was set up 2026-10-03, but the session
+   that built it stayed on the old direct-HTTP connection by choice, so it
+   has **not yet run inside a real Claude Code session**. A fresh session
+   picks it up automatically. **Ask the user before running any check**
+   (standing rule — no MCP checks or changes without a yes). Checks to
+   propose: `mcp__unreal-mcp__list_toolsets`
+   responds; `claude mcp get unreal-mcp` shows `Type: stdio`, Connected.
+   Then, at the next editor restart, confirm a call afterwards reconnects
+   without `/mcp`. Evidence so far: in the 2026-10-03 session the bridge
+   kept working across **two real editor restarts** with no `/mcp` — but that
+   session may have been on the old direct-HTTP connection (Claude Code
+   recovering it), so it is not proof the proxy path works.
+   If anything fails, the old config is in the bridge Gotcha in
+   [ProjectPlan.md](ProjectPlan.md). **Also: commit `.claude/` files** — the
+   proxy script and `unreal-mcp-tools.json`, not `settings.local.json`.
+2. ~~**Compatible Skeletons**~~ **Done** — verified in the saved
+   `SK_Mannequin.uasset` (`CompatibleSkeletons` lists the pack's skeleton).
+3. ~~**Rebuild.**~~ **Done** 19:20 — `EWeaponAnimType::Shotgun` compiled.
+4. **Step 7 — animation.** Plan rewritten in
+   [TPSConversion_WorkOrder.md](TPSConversion_WorkOrder.md).
+
+### State of the conversion (branch `tps-conversion`)
+
+Steps 1–6 complete and PIE-confirmed. Step 7 (animation) and Step 8 (docs +
+merge) remain. **No C++ work left in the conversion.**
+
+- **Step 4 — crouch, brought off the backlog and done.** Hold/toggle switch
+  via `bCrouchIsToggle` (`BlueprintReadWrite`, so a future options menu can
+  drive it). Both input edges bound to one action. `Crouch()`/`UnCrouch()` set
+  `bWantsToCrouch` rather than changing height, so the component retries each
+  frame — releasing under a low ceiling is safe.
+- **Step 5 — muzzle obstruction added and confirmed.**
+  `bBlockShotWhenMuzzleObstructed` traces actor-centre→muzzle and returns the
+  new `EFireResult::Blocked`. **Planned refinement: lower the weapon instead of
+  silently suppressing** — that moves the check from on-demand to per-frame
+  state. See *Muzzle obstruction* in
+  [TechnicalDesignSpec.md](TechnicalDesignSpec.md).
+- **Step 6 — grip re-tune done** by hand for the three existing weapons.
+  `BP_Shotgun` will need its own.
+
+### Shotgun — started, not finished
+
+- **`EWeaponAnimType::Shotgun` added** (code only, not compiled). Reverses an
+  earlier call to skip it, which was made when Lyra had only three shotgun
+  idle poses and no locomotion.
+- **Shotgun Locomotion Pack added** at `Content/ShotgunLocomotionPack/`. Its
+  bundled skeleton is a *copy of the stock UE5 mannequin* — bone sets verified
+  identical including the full IK rig — so **no retargeting**, just Compatible
+  Skeletons. 175 clips: authored 45° diagonals (true 8-way), sprint, 3×3 aim
+  offset, turn-in-place in both stances, crouch, and stance transitions. Its
+  aim/non-aim split maps **directly onto `EMovementStance`'s FreeRun/Aiming
+  pair** already in code.
+- **Open: can this pack serve the rifle too?** A shotgun and an assault rifle
+  are held almost identically. If the pose reads with `Assault_Rifle_A`, one
+  pack covers both with a better set than Lyra. Costs nothing to look.
+- **Shotgun logic applied** (Claude wrote it, user-approved after review;
+  **not yet compiled**): pellets (`PelletsPerShot`, `PelletSpreadAngle`),
+  range falloff (`FalloffStartRange`/`EndRange`/`MinDamageMultiplier`,
+  hitscan only), and `EReloadStyle::PerRound` — round-by-round loading that
+  firing interrupts. Shotgun is SPAS-style semi-auto, no pump. Details in
+  [TechnicalDesignSpec.md](TechnicalDesignSpec.md) under *Reload* and
+  *Pellets and damage falloff*. All defaults leave existing weapons unchanged.
+- **`BP_Shotgun` created** (via the bridge, user-approved) — duplicated from
+  `BP_BattleRifle`, then re-pointed: `Shotgun_A`, `Fire_Shotgun_W`,
+  `ShotgunA_Fire_Cue`, `P_Shotgun_MuzzleFlash_01` (socket `MuzzleFlash`,
+  verified on the mesh). `AnimType Shotgun`, Semi, no zoom. **Placeholder
+  stats:** 12 dmg (meant per pellet), 2500 range, `TimeBetweenShots 0.8` /
+  `Intended 0.9`, spread 0→3°, `BloomPerShot 0.35`, mag 6 / reserve 24 (max
+  48), reload 2.5s, reticle radius 0.16–0.30. **Grip offsets zeroed** — needs
+  its own tune. **Not in the loadout** (`StartingWeaponClass` untouched). No
+  Shotgun entries in `FireMontages`/`ReloadMontages` yet, so it fires with no
+  body animation. The ABP's anim-type Blend Poses has no Shotgun pin either.
+- **Caveat:** the shotgun cannot be *tuned* yet. Damage is still inert
+  (nothing has `Health`) and there is no range falloff for any weapon, so it
+  would be a sniper rifle that fires eight pellets.
+
+### Corrected this session
+
+- **The bridge does not need a fresh session.** `/mcp` reconnects it. The
+  2026-09-28 note claiming otherwise was wrong and has been struck. Verified
+  the editor was serving correctly the whole time — twice, on different PIDs.
+- Earlier advice to skip `EWeaponAnimType::Shotgun` is reversed, per the pack.
+
+### Working tree at session end (uncommitted)
+
+`SciFiWeapDark` deleted (484 files). Modified: `SK_Mannequin`, the four weapon
+BPs, `BP_FirstPersonCharacter`, `IMC_Default`, five source files, four docs.
+New and untracked: `IA_Crouch`, `Content/ShotgunLocomotionPack/`, and the
+`__ExternalActors__`/`__ExternalObjects__` folders the pack's demo maps
+brought with them (`Demo/`, `ThirdPerson/`, `ShotgunLocomotionPack/`) — World
+Partition data for maps we do not use, harmless but worth pruning if the pack
+is ever trimmed.
+
+### Still open from before
+
+- `WBP_Ammo` text binding never verified in PIE — predates the conversion.
+- ~~`SciFiWeapDark` still present.~~ **Deleted 2026-10-03** — all 484 files
+  removed. `IA_Crouch` created and mapped in `IMC_Default` the same day.
+- The branch carries the setting-change docs, the weapon pack swap and both
+  lore imports alongside the conversion. Fine if it merges; worth deciding at
+  Step 8 whether that happens then or sooner.
+- Story rewrite is design-side and outstanding; PART 2 of the lore notes is
+  `[PROVISIONAL]`. **The climax is the open question** — the coup was the
+  event that ended the story, and a revelation is not an ending.
+
+---
+
 ## 2026-09-30
 **Summary:** Third-person conversion: four of six active steps landed and
 tested. Two lore imports. Enemy and combat-ability specs written. One
@@ -334,7 +448,12 @@ MaterialParameterCollection or by-ref-Brush variant instead.
 and never re-probes, so once the editor closes mid-session the bridge stays
 dead for that session even after the editor returns. Confirmed repeatedly by
 curling the endpoint (HTTP 405 = listening) while the tools stayed
-unavailable. Only a fresh session clears it.
+unavailable. ~~Only a fresh session clears it.~~ **Corrected 2026-10-03: type
+`/mcp` in the session and reconnect it there.** No new session needed. The
+in-app `reconnect_session_connector` tool does *not* work on it — that only
+handles claude.ai connectors, and `unreal-mcp` is a project-scoped
+`.mcp.json` server (kind `project`), which is the user's to reconnect via
+`/mcp`.
 
 ---
 

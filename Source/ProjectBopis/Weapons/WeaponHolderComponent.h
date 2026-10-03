@@ -68,6 +68,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	float MinConvergenceDistance = 200.0f;
 
+	/** Blocks the shot when the muzzle has clipped through geometry — stops the player
+	    firing through a wall they're pressed against. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	bool bBlockShotWhenMuzzleObstructed = true;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

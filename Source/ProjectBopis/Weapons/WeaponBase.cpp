@@ -30,10 +30,26 @@ bool AWeaponBase::CanFire() const
 	return TimeSinceLastShot >= TimeBetweenShots;
 }
 
+float AWeaponBase::GetDamageAtDistance(float Distance) const
+{
+	if (FalloffEndRange <= FalloffStartRange)
+	{
+		return BaseDamage;
+	}
+
+	const float Alpha = FMath::GetMappedRangeValueClamped(
+		FVector2D(FalloffStartRange, FalloffEndRange), FVector2D(0.0f, 1.0f), Distance);
+	return BaseDamage * FMath::Lerp(1.0f, MinDamageMultiplier, Alpha);
+}
+
 bool AWeaponBase::CanReload() const
 {
-	return !bIsReloading
-		&& CurrentAmmoInMagazine < MagazineSize
+	return !bIsReloading && CanAcceptRound();
+}
+
+bool AWeaponBase::CanAcceptRound() const
+{
+	return CurrentAmmoInMagazine < MagazineSize
 		&& (bInfiniteReserve || CurrentReserveAmmo > 0);
 }
 
@@ -46,10 +62,39 @@ bool AWeaponBase::Reload()
 
 	bIsReloading = true;
 
-	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
-		&AWeaponBase::FinishReload, ReloadDuration, false);
+	if (ReloadStyle == EReloadStyle::PerRound)
+	{
+		// First round lands after the wind-up; LoadRound re-arms itself for the rest.
+		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
+			&AWeaponBase::LoadRound, ReloadStartDelay + TimePerRound, false);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
+			&AWeaponBase::FinishReload, ReloadDuration, false);
+	}
 
 	return true;
+}
+
+void AWeaponBase::LoadRound()
+{
+	++CurrentAmmoInMagazine;
+
+	if (!bInfiniteReserve)
+	{
+		--CurrentReserveAmmo;
+	}
+
+	if (CanAcceptRound())
+	{
+		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
+			&AWeaponBase::LoadRound, TimePerRound, false);
+	}
+	else
+	{
+		bIsReloading = false;
+	}
 }
 
 void AWeaponBase::FinishReload()
@@ -91,7 +136,16 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	// the more specific reason.
 	if (bIsReloading)
 	{
-		return EFireResult::Reloading;
+		// A tube-fed weapon fires whatever is already loaded. Rounds are committed
+		// as they go in, so breaking off costs only the one in the shooter's hand.
+		if (ReloadStyle == EReloadStyle::PerRound && CurrentAmmoInMagazine > 0)
+		{
+			CancelReload();
+		}
+		else
+		{
+			return EFireResult::Reloading;
+		}
 	}
 
 	if (CurrentAmmoInMagazine <= 0)
@@ -129,13 +183,23 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, CurrentBloom);
 	const FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
 
-	if (bIsProjectileWeapon && ProjectileClass)
+	// Bloom displaces the pattern centre; the pellets fan out around it. One pellet
+	// at zero pellet spread skips the second random draw entirely, so every existing
+	// weapon behaves exactly as before.
+	for (int32 Pellet = 0; Pellet < PelletsPerShot; ++Pellet)
 	{
-		FireProjectile(TraceStart, SpreadDirection);
-	}
-	else
-	{
-		FireHitscan(TraceStart, SpreadDirection);
+		const FVector PelletDirection = PelletSpreadAngle > 0.0f
+			? FMath::VRandCone(SpreadDirection, FMath::DegreesToRadians(PelletSpreadAngle))
+			: SpreadDirection;
+
+		if (bIsProjectileWeapon && ProjectileClass)
+		{
+			FireProjectile(TraceStart, PelletDirection);
+		}
+		else
+		{
+			FireHitscan(TraceStart, PelletDirection);
+		}
 	}
 
 	float BloomToAdd = BloomPerShot;
@@ -184,8 +248,8 @@ void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDi
 
 		if (HitResult.GetActor())
 		{
-			UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), BaseDamage, SpreadDirection,
-				HitResult, GetInstigatorController(), this, nullptr);
+			UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), GetDamageAtDistance(HitResult.Distance),
+				SpreadDirection, HitResult, GetInstigatorController(), this, nullptr);
 		}
 	}
 }

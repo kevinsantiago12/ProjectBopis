@@ -97,6 +97,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ReloadAction;
 
+	/** Crouch Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* CrouchAction;
+
+	/** True: tap to toggle crouch. False: hold to stay crouched.
+	    Eventually belongs in player settings — BlueprintReadWrite so an options
+	    menu can drive it later without a C++ change. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	bool bCrouchIsToggle = true;
+
 	/** Max walk speed when not aiming. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunSpeed = 500.0f;
@@ -108,6 +118,10 @@ protected:
 	/** How quickly the character turns to face travel in FreeRun. Yaw only. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunRotationRate = 360.0f;
+
+	/** Max walk speed while crouched. Applies in both aim and free-run. */
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float CrouchedSpeed = 170.0f;
 
 	/** Boom length when not aiming. */
 	UPROPERTY(EditAnywhere, Category = "Camera")
@@ -175,6 +189,14 @@ protected:
 	/** Handles reload inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoReload();
+
+	/** Crouch key pressed. Toggles or engages, depending on bCrouchIsToggle. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoCrouchStart();
+
+	/** Crouch key released. Only meaningful in hold mode. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoCrouchEnd();
 
 	/** Handles aim-start inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")

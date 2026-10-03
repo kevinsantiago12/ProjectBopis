@@ -128,30 +128,41 @@ battle rifle additionally magnifies.
 
 ---
 
-## Step 4 — Crouch ⏸ BACKLOG (deferred 2026-09-30)
+## Step 4 — Crouch ✅ DONE (2026-10-03)
 
-> **Moved off the conversion sequence.** Crouch is still *in* as a design
-> decision (2026-09-25) — it is not reversed, just not being built as part of
-> this conversion. It is purely additive: a new stance that changes nothing
-> existing, so it can land any time without disturbing Steps 5–8.
+> **Came off the backlog.** Deferred 2026-09-30 on the grounds that crouch
+> dragged a second full strafe blendspace behind it — **that was wrong**. The
+> 2026-09-30 library inventory found complete crouch sets for both Rifle and
+> Pistol (entry, exit, idle, four-way walk with starts/stops/pivots, crouch
+> turn-in-place) and `BS_MM_Rifle_Crouch_Walk` already assembled. Animation
+> cost is near zero.
 >
-> The real reason to defer is cost shape: the C++ below is an afternoon, but
-> crouch drags a **crouched forward-only set plus a crouched 8-way strafe
-> blendspace** behind it, which roughly doubles the Step 7 strafe authoring.
-> Better to know what standing locomotion costs before signing up for twice
-> it.
+> Brought forward because it was the **last C++ block** in the conversion, and
+> because Step 7 builds the AnimGraph — adding crouch states afterwards means
+> reworking a graph that wasn't planned for them.
 >
-> Items kept below as the ready-made plan for whenever it comes off the
-> backlog.
+> **Outcome (confirmed in PIE 2026-10-03):** crouch works.
+>
+> **Built with a hold/toggle switch** beyond the original plan:
+> `bCrouchIsToggle` (`EditAnywhere`, `BlueprintReadWrite`) picks the mode, with
+> both `Started` and `Completed` bound on one action. Marked
+> `BlueprintReadWrite` so a future options menu can drive it without a C++
+> change — it belongs in player settings eventually.
+>
+> Note `Crouch()`/`UnCrouch()` set `bWantsToCrouch` rather than changing height
+> directly, so the movement component retries each frame. Releasing under a low
+> ceiling in hold mode is safe: the character stands up on its own once clear.
+>
+> Crouch animations are not wired — clips exist, Step 7 wires them.
 
 Files: `ProjectBopisCharacter.h/.cpp`, new `IA_Crouch` asset
 
-- [ ] **`GetCharacterMovement()->NavAgentProps.bCanCrouch = true`** in the constructor. It is `false` by default and without it `Crouch()` silently does nothing — check this first if crouch appears broken.
-- [ ] Create `IA_Crouch`, bind in `SetupPlayerInputComponent`. **Toggle**, not hold.
-- [ ] `DoCrouchStart`/`DoCrouchEnd` calling `ACharacter::Crouch()`/`UnCrouch()`.
-- [ ] Set `MaxWalkSpeedCrouched`; decide whether crouch+aim takes the lower of the two speeds or its own value.
-- [ ] Leave `ApplyMovementMode` unaware of crouch — stance and aim are orthogonal, all four combinations legal.
-- [ ] Check for a camera pop on stance change. The capsule half-height snaps while the mesh interpolates; the spring arm's own lag may absorb it. **Look before fixing.**
+- [x] **`GetCharacterMovement()->NavAgentProps.bCanCrouch = true`** in the constructor. It is `false` by default and without it `Crouch()` silently does nothing — check this first if crouch appears broken.
+- [x] Create `IA_Crouch`, bind in `SetupPlayerInputComponent`. **Toggle**, not hold.
+- [x] `DoCrouchStart`/`DoCrouchEnd` calling `ACharacter::Crouch()`/`UnCrouch()`.
+- [x] Set `MaxWalkSpeedCrouched`; decide whether crouch+aim takes the lower of the two speeds or its own value.
+- [x] Leave `ApplyMovementMode` unaware of crouch — stance and aim are orthogonal, all four combinations legal.
+- [x] Check for a camera pop on stance change. The capsule half-height snaps while the mesh interpolates; the spring arm's own lag may absorb it. **Look before fixing.**
 
 **Playable state:** crouch works in all four stance/aim combinations. Poses
 will be wrong until Step 7.
@@ -189,15 +200,15 @@ you can no longer shoot through the cover you're standing behind.
 
 ---
 
-## Step 6 — Grip re-tune (mostly data)
+## Step 6 — Grip re-tune ✅ DONE (2026-10-03)
 
 > Offsets are Blueprint data and need no rebuild. Deleting the TEMP timer
 > removes a member variable, which changes class layout — **that part needs a
 > full rebuild**, not Live Coding. Do the tuning first, then the deletion.
 
-- [ ] Re-tune `GripLocationOffset`/`GripRotationOffset` per weapon from scratch. Old values were fitted to the arms rig at first-person scale and are meaningless now. **Supersedes** the existing rifle-grip backlog item.
+- [x] Re-tune `GripLocationOffset`/`GripRotationOffset` per weapon from scratch. Old values were fitted to the arms rig at first-person scale and are meaningless now. **Supersedes** the existing rifle-grip backlog item.
 - [x] **Delete the TEMP 5s re-snap timer** — **done 2026-09-30, and it answered the question.** Removed the `FTimerHandle`, the `SetTimer` call and the dead `TimerManager.h` include. Verified in PIE: **the weapon position is identical for the whole session, with no change at the five-second mark.** The timer was doing nothing. `ProjectPlan.md`'s claim that it was "what makes the weapon position correct" was stale and has been corrected. (`WeaponHolderComponent.cpp:36-38`, handle `.h:51`). It was a first-person attach-timing band-aid. Verify the attach is correct without it before removing — if it's still needed, the underlying timing bug is real and separate.
-- [ ] Confirm `hand_r` is still the right socket on the body mesh.
+- [x] Confirm `hand_r` is still the right socket on the body mesh.
 
 ---
 
@@ -212,6 +223,44 @@ Asset and AnimGraph work. Weeks, not days. Nothing here needs C++.
 - [ ] **Aim offset** for pitch. Mandatory now, wasn't in first person.
 - [ ] **Turn-in-place** for the aim state, or the character skates when the camera swings while stationary.
 - [ ] Upper/lower body layering so firing and reloading play over locomotion.
+### ⚠ Animation source changed 2026-10-03 — Shotgun Locomotion Pack
+
+A **Shotgun Locomotion Pack** was added at `Content/ShotgunLocomotionPack/`.
+It supersedes the Lyra-based plan below **for two-handed weapons**.
+
+**Its skeleton is a non-issue.** The pack bundles its own
+`Demo/Characters/Mannequins/Meshes/SK_Mannequin`, but that is a *copy of the
+stock UE5 mannequin* — bone sets verified identical, including the 5-segment
+spine and the full IK rig (`ik_hand_gun`, `ik_hand_l/r`, `ik_foot_root`).
+**No retargeting.** Add the pack's `SK_Mannequin` to **Compatible Skeletons**
+on `Content/Characters/Mannequins/Meshes/SK_Mannequin`. The property is
+one-directional: it goes on *ours*, listing *theirs*. Leave the pack's
+skeleton in place — its animations stay bound to it.
+
+**What it contains (175 clips):** Jog and Walk at 27 each with **authored 45°
+diagonals** (true 8-way, not blended), Aim 39 (aim variants of everything
+including fire), AimOffset 9 (full 3×3 grid), TurnInPlace 8 (both stances),
+Crouch 11, Sprint 13, Idle 9 including **stance transitions**
+(aim↔stand, aim↔crouch), Jump 3, Loop_Root 29 (root-motion variants).
+
+**Why it is better than the Lyra rifle set:** real diagonal clips rather than
+blended ones, a sprint set Lyra's rifle locomotion lacks, and an aim/non-aim
+split that maps **directly onto `EMovementStance`'s FreeRun/Aiming pair** —
+`anim_shotgun_walk_*` for FreeRun, `anim_shotgun_aim_walk_*` for Aiming. The
+stance system is already in code; this is that split pre-animated.
+
+**`EWeaponAnimType::Shotgun` added 2026-10-03** (code only, not yet rebuilt).
+Reversed an earlier call to skip it — that was made when only three shotgun
+idle poses existed in Lyra and no locomotion.
+
+- [ ] **Evaluate using this pack for the rifle too.** A shotgun and an assault
+      rifle are held almost identically. If the pose reads acceptably with
+      `Assault_Rifle_A`, one pack covers both weapon types with a better set
+      than Lyra, and halves the remaining assembly. Costs nothing to look.
+- [ ] Pistol stays on the Lyra pistol set regardless — one-handed pose.
+
+### Lyra library inventory (2026-09-30) — still the source for pistol
+
 - [x] **Library inventory done 2026-09-30.** Far better stocked than assumed — see below. Step 7 is **assembly and AnimGraph wiring, not authoring**; revised from weeks to days.
 
 **What exists (`Content/Characters/Heroes/Mannequin/Animations/`):**

@@ -36,6 +36,13 @@ new direction gets evaluated against.
   non-technical** as of 2026-08-31. Keep it that way: no code, no parameter
   names, no jargon. New technical detail belongs in `TechnicalDesignSpec.md`.
 
+## Standing rules
+The user's collaboration rules (C++ review flow, editor-bridge permissions,
+checklist habits, git limits) live in `Claude-Rules.md` and are imported here.
+They override default behaviour. Add new standing rules there, dated.
+
+@Claude-Rules.md
+
 ## Session start
 - Read [Documentation/ProgressLog.md](Documentation/ProgressLog.md) for
   current project state and open items before starting work.

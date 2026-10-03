@@ -153,18 +153,64 @@ feel good in play; the other two are untested against real combat.
 authoritative, so a shorter duration refills ammo before the hands finish and
 a longer one leaves the weapon idle at the end of the animation.
 
-### Trace source
+### Trace source — two-stage (rewritten 2026-10-03)
 
-The weapon's trace source is **not** camera-forward. Per a deliberate
-Halo-accuracy request, `WeaponHolderComponent` deprojects a specific
-screen-space point via `APlayerController::DeprojectScreenPositionToWorld`.
+**The camera decides WHAT you hit; the muzzle decides WHERE the shot comes
+from.** Single-stage camera firing is correct in first person, where the camera
+*is* the eye. In third person the camera sits behind and beside the character,
+so firing along its ray sends shots through cover the character is standing
+behind.
 
-`CrosshairViewportPositionY` was originally `0.667` (horizontal centre, 2/3
-down the viewport, matching Halo's actual reticle position), but that
-permanently disagreed with zoom about where "centre" was — FOV always narrows
-around the camera's true optical centre. Simplified back to `0.5` (true
-centre) for both hip-fire and zoom rather than building dynamic per-state
-repositioning. A deliberate scope call.
+`UWeaponHolderComponent::FireEquippedWeapon`:
+
+1. Deprojects screen centre via
+   `APlayerController::DeprojectScreenPositionToWorld`.
+2. Traces that ray to `AWeaponBase::GetMaxRange()` to find the aim point.
+3. Clamps the converge distance to **`MinConvergenceDistance`** (200). Against
+   a near wall the muzzle can sit *past* the hit point, and converging on it
+   would aim the shot backwards. The point is taken along the ray rather than
+   from `ImpactPoint` precisely so it can be clamped.
+4. Checks the muzzle is where it looks — see below.
+5. Fires `Fire(MuzzleLocation, (AimPoint - MuzzleLocation).Normalized)`.
+
+Bloom applies to the handed-in direction, so spread now works off the
+muzzle→aim line for free. Projectiles spawn at `TraceStart`, which is now the
+muzzle, so they leave the barrel.
+
+**This does not reintroduce the August muzzle-socket problem.** That revert was
+because the weapon mesh's local axes are not reliably the barrel axis. Here
+only the socket's *location* is used; direction comes from the aim point, and
+nothing reads the weapon's rotation.
+
+`CrosshairViewportPositionY` stays `0.5`. It was originally `0.667` (Halo's
+reticle position) but that permanently disagreed with zoom about where "centre"
+was, since FOV narrows around the camera's true optical centre.
+
+### Muzzle obstruction
+
+`bBlockShotWhenMuzzleObstructed` (default on) traces from the **actor centre**
+to the muzzle and returns `EFireResult::Blocked` if that short path is
+obstructed — stopping the player firing through a wall they are pressed
+against. Traced from the actor rather than the camera deliberately: the camera
+sits behind the character and would cross its own body and any cover, giving
+constant false positives.
+
+No consumer switches exhaustively on `EFireResult`, so `Blocked` falls through
+silently wherever it is not explicitly handled.
+
+**Planned refinement — lower the weapon instead of blocking (noted
+2026-10-03).** Suppressing the shot is correct but gives the player no visible
+reason. The better answer is the one most shooters use: lower or angle the
+weapon when the muzzle is obstructed, so the block is *shown* rather than
+merely felt.
+
+That changes where the check lives. It currently runs **on demand, inside
+`FireEquippedWeapon`**. A weapon-lower needs the obstruction known
+**continuously**, so it would move to a per-frame (or throttled) check exposing
+`bIsMuzzleObstructed` as state for the AnimGraph to blend a lowered pose from.
+Keep the fire-time check as the authority regardless — the animation is
+feedback, not the gate. Needs a lowered-weapon pose, so it is Step 7 territory
+or later.
 
 ---
 
@@ -297,6 +343,39 @@ reserve.
 
 The ammo gate lives in `Fire()`, so future AI inherits it. `bInfiniteReserve`
 is the opt-out.
+
+**Reload styles (2026-10-03).** `EReloadStyle` on the weapon: `Magazine`
+(default — the timer above) or `PerRound` for tube-fed shotguns.
+`PerRound` waits `ReloadStartDelay`, then loads one round every
+`TimePerRound` via a self-re-arming `LoadRound()` timer until full or the
+reserve is dry. Each round is committed as it goes in. **Firing interrupts a
+`PerRound` reload** when at least one round is loaded — `Fire()` cancels the
+reload and shoots; with nothing loaded it still returns `Reloading`.
+Animation sync is not wired: a per-round montage needs Start/Loop/End sections
+driven by weapon state, which wants weapon delegates (`OnRoundLoaded`,
+`OnReloadEnded`) — deferred to TPS Step 7. Not modelled: chambering after a
+reload from empty.
+
+### Pellets and damage falloff (2026-10-03)
+
+`PelletsPerShot` (default 1) and `PelletSpreadAngle` (default 0). Bloom
+displaces the **pattern centre**; the pellet cone spreads around it at a fixed
+width — width is a property of the gun, bloom stays the measure of
+discipline. One pellet at zero spread skips the second random draw, so
+single-shot weapons are unchanged. Ammo, bloom, sound and animation are
+per shot, not per pellet. `BaseDamage` is per pellet.
+
+Range falloff: `FalloffStartRange` → `FalloffEndRange` lerps damage from
+100% to `MinDamageMultiplier`, measured from the muzzle (`TraceStart`).
+Off unless End > Start. **Hitscan only** — projectile damage lives in
+`AProjectileBase`. Open: each pellet is a separate `ApplyPointDamage`, so a
+shot can produce up to N damage events on one target; aggregate per actor once
+`Health` and hit reactions exist. The pattern is random (`VRandCone`); a
+fixed authored pattern is a design question.
+
+The shotgun is SPAS-style: **semi-auto, no pump between shots** — just
+`FireMode Semi` with a short `TimeBetweenShots`. A pump-action variant needs
+no code (longer cadence, pump in the fire animation).
 
 ---
 
@@ -702,6 +781,9 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-03 — Added reload styles (`PerRound`, fire-interruptible) and the
+  pellets/falloff section, for `BP_Shotgun`.
 
 - 2026-08-31 — Created, by splitting the technical half out of
   `Design Document/GameDesignDocument.md` so that document could be rewritten

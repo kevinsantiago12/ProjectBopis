@@ -174,6 +174,24 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 	// Stage 2 — the muzzle decides WHERE the shot comes from.
 	const FVector MuzzleLocation = EquippedWeapon->GetMuzzleLocation();
 
+	// The muzzle can poke through a wall the character is pressed against, which would
+	// let the shot originate on the far side. Trace from the character's centre out to
+	// the muzzle; if that short path is blocked, the barrel isn't really where it looks.
+	// Traced from the actor rather than the camera, which sits behind the character and
+	// would cross its own body and any cover, giving constant false positives.
+	if (bBlockShotWhenMuzzleObstructed)
+	{
+		FHitResult MuzzleBlockHit;
+		const bool bMuzzleBlocked = GetWorld()->LineTraceSingleByChannel(
+			MuzzleBlockHit, OwningCharacter->GetActorLocation(), MuzzleLocation,
+			ECC_Visibility, QueryParams);
+
+		if (bMuzzleBlocked)
+		{
+			return EFireResult::Blocked;
+		}
+	}
+
 	FVector FireDirection = (AimPoint - MuzzleLocation).GetSafeNormal();
 	if (FireDirection.IsNearlyZero())
 	{

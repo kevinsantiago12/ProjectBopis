@@ -56,6 +56,11 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+
+	// Crouch does nothing at all without this, and fails silently — CanCrouch()
+	// just returns false with no warning. It is false by default.
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchedSpeed;
 }
 
 void AProjectBopisCharacter::BeginPlay()
@@ -106,6 +111,13 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		// Reloading
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this,
 			&AProjectBopisCharacter::DoReload);
+
+		// Crouching — both edges bound; bCrouchIsToggle decides what they mean.
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this,
+			&AProjectBopisCharacter::DoCrouchStart);
+
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this,
+			&AProjectBopisCharacter::DoCrouchEnd);
 
 	}
 	else
@@ -316,6 +328,37 @@ void AProjectBopisCharacter::DoReload()
 		{
 			AnimInstance->Montage_Play(*FoundMontage);
 		}
+	}
+}
+
+void AProjectBopisCharacter::DoCrouchStart()
+{
+	// Crouch is orthogonal to the aim/free-run pair — all four combinations are
+	// legal, so stance is deliberately left alone here. The movement component
+	// owns height and crouched speed; ApplyMovementStance owns rotation.
+	if (bCrouchIsToggle)
+	{
+		if (bIsCrouched)
+		{
+			UnCrouch();
+		}
+		else
+		{
+			Crouch();
+		}
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
+void AProjectBopisCharacter::DoCrouchEnd()
+{
+	// In toggle mode the release carries no meaning; the press already did the work.
+	if (!bCrouchIsToggle)
+	{
+		UnCrouch();
 	}
 }
 

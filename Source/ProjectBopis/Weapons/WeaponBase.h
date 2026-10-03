@@ -19,13 +19,28 @@ enum class EWeaponFireMode : uint8
 	Auto
 };
 
+/** How a weapon refills. */
+UENUM(BlueprintType)
+enum class EReloadStyle : uint8
+{
+	/** Whole magazine at once, after ReloadDuration. */
+	Magazine,
+	/** One round at a time — tube-fed shotguns. Each round is committed as it goes
+	    in, and firing with anything loaded interrupts the reload. */
+	PerRound
+};
+
 /** How a weapon is held/animated. The weapon states only which it is — each animator
     (player, and later each enemy archetype) owns its own clips for that type. */
 UENUM(BlueprintType)
 enum class EWeaponAnimType : uint8
 {
 	Pistol,
-	Rifle
+	Rifle,
+	/** Two-handed long gun. Added 2026-10-03 once the Shotgun Locomotion Pack
+	    supplied a complete set — 8-way diagonals, sprint, turn-in-place, and
+	    aim variants that map onto EMovementStance's FreeRun/Aiming pair. */
+	Shotgun
 };
 
 /** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited
@@ -37,7 +52,10 @@ enum class EFireResult : uint8
 	RateLimited,
 	Empty,
 	Reloading,
-	NoWeapon
+	NoWeapon,
+	/** The muzzle is inside or behind geometry — the shot would originate on the
+	    far side of whatever the character is pressed against. */
+	Blocked
 };
 
 /** Per-weapon reticle appearance. Radii are in UV space, where 0.5 is the widget's
@@ -96,6 +114,8 @@ public:
 	FVector GetMuzzleLocation() const;
 
 	float GetMaxRange() const { return MaxRange; }
+
+	float GetDamageAtDistance(float Distance) const;
 
 	EWeaponFireMode GetFireMode() const { return FireMode; }
 
@@ -169,6 +189,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float BaseDamage = 10.0f;
+
+	/** Distance from the muzzle at which damage starts to drop. Falloff is off
+	    unless FalloffEndRange is greater than this. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Damage", meta = (ClampMin = "0.0"))
+	float FalloffStartRange = 0.0f;
+
+	/** Distance at which damage bottoms out at MinDamageMultiplier. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Damage", meta = (ClampMin = "0.0"))
+	float FalloffEndRange = 0.0f;
+
+	/** Fraction of BaseDamage dealt at and beyond FalloffEndRange. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Damage", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MinDamageMultiplier = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float MaxRange = 5000.0f;
@@ -244,6 +277,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
 	float IntendedTimeBetweenShots = 0.167f;
 
+	/** Traces fired per shot. 1 for every single-shot weapon; a shotgun's pellet
+	    count. BaseDamage applies per pellet. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pellets", meta = (ClampMin = "1"))
+	int32 PelletsPerShot = 1;
+
+	/** Fixed cone, in degrees, the pellets spread across around the shot's aim point.
+	    Independent of bloom: bloom moves where the pattern lands, this sets how wide it is. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pellets", meta = (ClampMin = "0.0"))
+	float PelletSpreadAngle = 0.0f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	int32 MagazineSize = 12;
 
@@ -261,16 +304,37 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	TObjectPtr<USoundBase> DryFireSound;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	EReloadStyle ReloadStyle = EReloadStyle::Magazine;
+
 	/** Seconds a reload takes. Tune to match the holder's reload montage; the timer
 	    is authoritative, not the animation. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo",
+		meta = (EditCondition = "ReloadStyle == EReloadStyle::Magazine", EditConditionHides))
 	float ReloadDuration = 2.0f;
+
+	/** Seconds from starting the reload to the first round going in — bringing the
+	    weapon into the loading position. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo",
+		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides, ClampMin = "0.0"))
+	float ReloadStartDelay = 0.4f;
+
+	/** Seconds per round loaded. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo",
+		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides, ClampMin = "0.05"))
+	float TimePerRound = 0.5f;
 
 	/** Whether firing on an empty magazine should start a reload by itself. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	bool bAutoReloadWhenEmpty = false;
 
 	void FinishReload();
+
+	/** PerRound reloads: moves one round in, then re-arms itself until full or dry. */
+	void LoadRound();
+
+	/** Room in the magazine and something to fill it with. */
+	bool CanAcceptRound() const;
 
 	int32 CurrentAmmoInMagazine = 0;
 	int32 CurrentReserveAmmo = 0;
