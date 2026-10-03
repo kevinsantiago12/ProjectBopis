@@ -12,6 +12,36 @@
 
 ---
 
+## 2026-10-04
+**Summary:** Weapon lowered/raised system (hip-fire) — code applied by Claude
+at user's request, **not yet compiled**.
+
+- **Design (user):** not aiming → weapon lowered, jog locomotion. Firing
+  without aiming → character faces the camera, strafes, weapon raised; lowers
+  after `LowerWeaponDelay` (1.5s) without a trigger pull. Hip-fire moves at
+  free-run speed. Raised-and-moving uses walk strafe clips, lowered uses jog;
+  play rate adjusted to speed.
+- **Code (applied, not compiled):** `ProjectBopisCharacter` — `IsAiming()`
+  and new `IsWeaponRaised()` exposed `BlueprintPure`; `TimeUntilWeaponLowered`
+  countdown; stance now pull-style via `UpdateMovementStance()` in `Tick`;
+  `MaxWalkSpeed` moved out of `ApplyMovementStance` and derived per frame from
+  `bIsAiming`; `DoFire` snaps yaw to camera before a shot from lowered.
+  Spec: *Weapon raised vs lowered* in [TechnicalDesignSpec.md](TechnicalDesignSpec.md).
+- **Answered:** shotgun upper body over Lyra lower body works (Layered blend
+  per bone). Recommended for hip-fire, since the pack has no aim-jog loops.
+- **ABP fix done by user:** Shotgun pins added to the anim-type Blend Poses —
+  the A-pose was the unconnected Default Pose pin. Shotgun poses now working.
+
+### ▶ RESUME HERE
+1. Rebuild → Claude reads the files back + post-rebuild bridge check.
+2. PIE-test hip-fire: snap, strafe, lower after 1.5s, speeds.
+3. AnimBP: `bIsWeaponRaised` variable from `IsWeaponRaised`; lowered/raised
+   Blend Poses by bool per locomotion state.
+4. Everything from the 2026-10-03 RESUME list still open (proxy check first,
+   with the user's OK).
+
+---
+
 ## 2026-10-03
 **Summary:** Editor bridge made restart-proof (stdio proxy). Conversion out of C++ entirely — Steps 1–6 done. Crouch brought
 forward. Shotgun work started. A week-old bridge-reconnect belief corrected.
@@ -74,13 +104,18 @@ merge) remain. **No C++ work left in the conversion.**
 - **Open: can this pack serve the rifle too?** A shotgun and an assault rifle
   are held almost identically. If the pose reads with `Assault_Rifle_A`, one
   pack covers both with a better set than Lyra. Costs nothing to look.
-- **Shotgun logic applied** (Claude wrote it, user-approved after review;
-  **not yet compiled**): pellets (`PelletsPerShot`, `PelletSpreadAngle`),
+- **Shotgun logic applied and compiled** (Claude wrote it, user-approved after
+  review; rebuilt 19:46): pellets (`PelletsPerShot`, `PelletSpreadAngle`),
   range falloff (`FalloffStartRange`/`EndRange`/`MinDamageMultiplier`,
   hitscan only), and `EReloadStyle::PerRound` — round-by-round loading that
   firing interrupts. Shotgun is SPAS-style semi-auto, no pump. Details in
   [TechnicalDesignSpec.md](TechnicalDesignSpec.md) under *Reload* and
   *Pellets and damage falloff*. All defaults leave existing weapons unchanged.
+- **`BP_Shotgun` tuned and made the starting weapon** (bridge, user-approved):
+  Semi, `TimeBetweenShots 0.3` / `Intended 0.45`, 8 pellets × 12 dmg at 4°,
+  falloff 600→1800 to 0.2×, `PerRound` reload 0.4s + 0.5s/round.
+  `BP_FirstPersonCharacter`'s `StartingWeaponClass` was `BP_BattleRifle`,
+  now `BP_Shotgun`. **Not yet PIE-tested.**
 - **`BP_Shotgun` created** (via the bridge, user-approved) — duplicated from
   `BP_BattleRifle`, then re-pointed: `Shotgun_A`, `Fire_Shotgun_W`,
   `ShotgunA_Fire_Cue`, `P_Shotgun_MuzzleFlash_01` (socket `MuzzleFlash`,

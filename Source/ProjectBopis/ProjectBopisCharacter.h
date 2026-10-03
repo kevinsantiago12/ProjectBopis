@@ -111,7 +111,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunSpeed = 500.0f;
 
-	/** Max walk speed while aiming — the strafe is deliberately slower. */
+	/** Max walk speed while the aim button is held. Hip-fire strafing uses FreeRunSpeed. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float AimingSpeed = 250.0f;
 
@@ -143,11 +143,20 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float CameraTransitionSpeed = 12.0f;
 
+	/** Seconds after the last trigger pull before the weapon lowers and the
+	    character returns to free-run. Firing from the hip raises the weapon and
+	    switches to the strafe stance for this long. */
+	UPROPERTY(EditAnywhere, Category = "Combat", meta = (ClampMin = "0.0"))
+	float LowerWeaponDelay = 1.5f;
+
 	/** Pulls boom length, offset and FOV toward whatever the current state implies. */
 	void UpdateCameraTransition(float DeltaSeconds);
 
 	/** Applies the rotation/speed rules for a stance. Single place the flag pair is set. */
 	void ApplyMovementStance(EMovementStance NewStance);
+
+	/** Picks the stance the current state implies and applies it on change. */
+	void UpdateMovementStance();
 
 	EMovementStance CurrentStance = EMovementStance::FreeRun;
 	
@@ -217,6 +226,11 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	
 	bool bIsAiming = false;
+
+	/** Counts down from LowerWeaponDelay after each trigger pull. Above zero, the
+	    weapon stays raised even when not aiming. */
+	float TimeUntilWeaponLowered = 0.0f;
+
 	float DefaultFOV = 0.0f;
 
 public:
@@ -230,7 +244,14 @@ public:
 	/**  Returns the weapon holder component **/
 	UWeaponHolderComponent* GetWeaponHolder() const { return WeaponHolder; }
 
-	bool IsAiming() const { return bIsAiming;  }
+	/** Whether the aim stance is held. Drives the camera move and zoom. */
+	UFUNCTION(BlueprintPure, Category = "Aim")
+	bool IsAiming() const { return bIsAiming; }
+
+	/** Whether the weapon is up — aiming, or recently fired from the hip. The
+	    AnimBP blends between lowered and raised poses on this. */
+	UFUNCTION(BlueprintPure, Category = "Aim")
+	bool IsWeaponRaised() const { return bIsAiming || TimeUntilWeaponLowered > 0.0f; }
 
 };
 

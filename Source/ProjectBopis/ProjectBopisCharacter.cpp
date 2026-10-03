@@ -179,6 +179,9 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
+
+	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
 }
 
@@ -234,14 +237,12 @@ void AProjectBopisCharacter::ApplyMovementStance(EMovementStance NewStance)
 		bUseControllerRotationYaw = false;
 		Movement->bOrientRotationToMovement = true;
 		Movement->RotationRate = FRotator(0.0f, FreeRunRotationRate, 0.0f);
-		Movement->MaxWalkSpeed = FreeRunSpeed;
 		break;
 
 	case EMovementStance::Aiming:
 		// Yaw locked to camera, so movement reads as strafing.
 		bUseControllerRotationYaw = true;
 		Movement->bOrientRotationToMovement = false;
-		Movement->MaxWalkSpeed = AimingSpeed;
 		break;
 
 	case EMovementStance::AnimationDriven:
@@ -249,6 +250,32 @@ void AProjectBopisCharacter::ApplyMovementStance(EMovementStance NewStance)
 		bUseControllerRotationYaw = false;
 		Movement->bOrientRotationToMovement = false;
 		break;
+	}
+}
+
+void AProjectBopisCharacter::UpdateMovementStance()
+{
+	// Animation-owned rotation is entered and left explicitly; aiming or firing must
+	// not pull the character out of a shootdodge mid-dive.
+	if (CurrentStance == EMovementStance::AnimationDriven)
+	{
+		return;
+	}
+
+	const EMovementStance DesiredStance = IsWeaponRaised()
+		? EMovementStance::Aiming
+		: EMovementStance::FreeRun;
+
+	if (DesiredStance != CurrentStance)
+	{
+		ApplyMovementStance(DesiredStance);
+	}
+
+	// Speed follows the aim button, not the stance — hip-fire strafes at full
+	// free-run speed. Per frame, since aiming can start while already strafing.
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->MaxWalkSpeed = bIsAiming ? AimingSpeed : FreeRunSpeed;
 	}
 }
 
@@ -269,6 +296,20 @@ void AProjectBopisCharacter::DoFire()
 	if (!WeaponHolder)
 	{
 		return;
+	}
+
+	// A trigger pull from the lowered stance turns the character to the camera
+	// before the shot leaves, so it never fires sideways out of a free-run pose.
+	// Snapped rather than interpolated: the shot is this frame.
+	if (WeaponHolder->GetEquippedWeapon())
+	{
+		if (!IsWeaponRaised())
+		{
+			SetActorRotation(FRotator(0.0f, GetControlRotation().Yaw, 0.0f));
+		}
+
+		TimeUntilWeaponLowered = LowerWeaponDelay;
+		UpdateMovementStance();
 	}
 
 	// Only a real shot animates. RateLimited and Reloading must stay silent, and
@@ -381,15 +422,11 @@ void AProjectBopisCharacter::DoFireHeld()
 
 void AProjectBopisCharacter::DoAimStart()
 {
-	// State only — UpdateCameraTransition derives the camera from this every frame.
+	// State only — Tick derives the stance and camera from this every frame.
 	bIsAiming = true;
-
-	ApplyMovementStance(EMovementStance::Aiming);
 }
 
 void AProjectBopisCharacter::DoAimEnd()
 {
 	bIsAiming = false;
-
-	ApplyMovementStance(EMovementStance::FreeRun);
 }

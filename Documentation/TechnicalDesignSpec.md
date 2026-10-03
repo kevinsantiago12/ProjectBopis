@@ -186,6 +186,44 @@ nothing reads the weapon's rotation.
 reticle position) but that permanently disagreed with zoom about where "centre"
 was, since FOV narrows around the camera's true optical centre.
 
+### Weapon raised vs lowered — hip-fire (2026-10-04)
+
+**Behaviour.** Not aiming and not firing: weapon **lowered**, character in
+`FreeRun` (faces travel, jog locomotion). A trigger pull **raises** the
+weapon: the character snaps its yaw to the camera *before* the shot leaves
+(`SetActorRotation` in `DoFire` — snapped, not interpolated, because the
+shot is that frame; rotating the actor moves the muzzle socket with it), and
+switches to the `Aiming` stance (strafe). After `LowerWeaponDelay` seconds
+(default 1.5) without a trigger pull, it lowers and returns to `FreeRun`.
+
+**State.** `TimeUntilWeaponLowered` counts down in `Tick`; every trigger
+pull with a weapon equipped resets it — including dry clicks, rate-limited
+presses and pulls mid-reload (intent, not outcome). `IsWeaponRaised()` =
+`bIsAiming || TimeUntilWeaponLowered > 0`, `BlueprintPure` alongside
+`IsAiming()`. **The AnimBP's lowered/raised blend reads `IsWeaponRaised`;**
+`IsAiming` is for camera/ADS-specific things.
+
+**Stance is now pull-style**, like the camera: `UpdateMovementStance()` runs
+every `Tick` and derives the stance from `IsWeaponRaised()`, applying it only
+on change. `DoAimStart`/`DoAimEnd` just set `bIsAiming`. `AnimationDriven`
+is never overridden by this — it's entered and left explicitly.
+
+**Speed follows the aim button, not the stance.** `ApplyMovementStance` owns
+rotation rules only; `MaxWalkSpeed` is set every frame from `bIsAiming`
+(`AimingSpeed` 250 vs `FreeRunSpeed` 500). Hip-fire strafes at full speed.
+Per-frame because aiming can start while already in the strafe stance, which
+is no stance change.
+
+**Camera:** unchanged by hip-fire — only `bIsAiming` moves/zooms it.
+
+**Animation plan (Step 7).** Lowered + moving: pack **jog** forward-only.
+Aiming (250): pack **aim walk** 8-way strafe. Hip-fire (500): the pack has no
+aim-jog loops, and walk clips at ~3× play rate scurry — plan is Lyra rifle
+jog strafe **legs** (`MM_Rifle_Jog_Fwd/Bwd/Left/Right`) under the shotgun aim
+**upper body** via Layered blend per bone (`spine_01`, mesh-space rotation
+blend on). Play rate clamped ~0.8–1.4× to match speed; Animation Warping's
+stride warping (plugin not enabled) as later polish.
+
 ### Muzzle obstruction
 
 `bBlockShotWhenMuzzleObstructed` (default on) traces from the **actor centre**
@@ -781,6 +819,9 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-04 — Added weapon raised/lowered (hip-fire) section; stance now
+  pull-style, speed decoupled from stance.
 
 - 2026-10-03 — Added reload styles (`PerRound`, fire-interruptible) and the
   pellets/falloff section, for `BP_Shotgun`.
