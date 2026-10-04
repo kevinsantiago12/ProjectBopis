@@ -223,6 +223,30 @@ Asset and AnimGraph work. Weeks, not days. Nothing here needs C++.
 - [ ] **Aim offset** for pitch. Mandatory now, wasn't in first person.
 - [ ] **Turn-in-place** for the aim state, or the character skates when the camera swings while stationary.
 - [ ] Upper/lower body layering so firing and reloading play over locomotion.
+- [ ] **Shotgun per-round reload montage with a looping section** (2026-10-04). Montage from the reload clip (pack `anim_shotgun_aim_reload`, user may tweak) split into sections `Start` → `Loop` ↺ → `End`; link Loop→Loop in Montage Sections so it repeats one shell-insert cycle. Code (present for review): character jumps the montage to `End` (`Montage_JumpToSection`) when the weapon stops reloading — simplest as a check in `Tick` (reload montage in `Loop` + `!IsReloading()`) — and stops it on weapon swap. Firing already cuts it (same slot). Sync: start by matching `TimePerRound`/`ReloadStartDelay` on `BP_Shotgun` to the section lengths (data only); optional later: drive montage play rate from `TimePerRound`. Waiting on the user making the montage (section names + lengths).
+### ⚠ Animation source changed again 2026-10-04 — back to Lyra
+
+**User decision:** the Shotgun Locomotion Pack's quality is below Lyra's. **Lyra
+is the animation source for all weapons, shotgun included.** From the pack,
+only **`anim_shotgun_stand_idle`** (the lowered idle) is used, and probably
+**`anim_shotgun_aim_reload`** (single clip — must be split into montage
+sections Start / looping Insert / End for the per-round reload). The 2026-10-03
+section below is **superseded** except for those two clips.
+
+- Shotgun locomotion pins reuse the Lyra rifle clips. Keep `EWeaponAnimType::Shotgun`:
+  it selects the shotgun fire montage, the per-round reload, and the lowered idle.
+- Aim offset: Lyra `AO_MM_Rifle_Idle_Hipfire` (3×3).
+- **Known issue:** lowered idle (gun down) vs Lyra jog (gun up) will lift the gun on
+  every idle↔move transition while lowered. Fix: lowered-idle upper body over Lyra
+  jog legs (Layered blend per bone) in the Move state.
+- Fire: user may duplicate `MM_Rifle_Fire` and add a pump. **Open:** pump on every
+  shot (pump-action, longer cadence) vs only chambering after a reload from empty
+  (SPAS, matches the current semi-auto design).
+- The pack (473 MB) is now mostly unused — trim via the editor (migrate/move the two
+  clips first) when convenient.
+- **Bridge limit found:** it can read anim *state* graphs but cannot create nodes in
+  them (`Cannot cast type AnimStateNode to Blueprint`). In-state AnimBP work is manual.
+
 ### ⚠ Animation source changed 2026-10-03 — Shotgun Locomotion Pack
 
 A **Shotgun Locomotion Pack** was added at `Content/ShotgunLocomotionPack/`.
