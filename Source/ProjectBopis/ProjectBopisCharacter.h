@@ -63,6 +63,11 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> FireMontages;
 
+	/** Fire montages for the off hand of a dual-wield weapon, keyed like FireMontages.
+	    Falls back to FireMontages when a type has no entry here. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandFireMontages;
+
 	/** Reload montages played on the character mesh, keyed by the equipped weapon's anim type. */
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> ReloadMontages;

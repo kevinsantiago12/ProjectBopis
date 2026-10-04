@@ -328,7 +328,18 @@ void AProjectBopisCharacter::DoFire()
 		// where the *weapon's* sound and muzzle flash come from. The arms animation
 		// is the character animating itself, and plays either way. Looked up by the
 		// weapon's anim type, so each weapon gets its own without owning the asset.
-		TObjectPtr<UAnimMontage>* FoundMontage = FireMontages.Find(EquippedWeapon->GetAnimType());
+		const EWeaponAnimType AnimType = EquippedWeapon->GetAnimType();
+		TObjectPtr<UAnimMontage>* FoundMontage = nullptr;
+
+		if (EquippedWeapon->WasLastShotOffhand())
+		{
+			FoundMontage = OffhandFireMontages.Find(AnimType);
+		}
+
+		if (!FoundMontage || !*FoundMontage)
+		{
+			FoundMontage = FireMontages.Find(AnimType);
+		}
 
 		if (FoundMontage && *FoundMontage)
 		{

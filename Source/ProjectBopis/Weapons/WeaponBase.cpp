@@ -20,6 +20,11 @@ AWeaponBase::AWeaponBase()
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
 
+	// Exists on every weapon so Blueprints can opt in with a checkbox; without a mesh
+	// assigned it renders nothing and costs next to nothing.
+	OffhandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("OffhandMesh"));
+	OffhandMesh->SetupAttachment(WeaponMesh);
+
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -163,21 +168,23 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	--CurrentAmmoInMagazine;
 
+	USkeletalMeshComponent* FiringMesh = GetFiringMesh();
+
 	if (!bUseAnimationDrivenFeedback)
 	{
 		if (FireSound)
 		{
-			UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
+			UGameplayStatics::SpawnSoundAttached(FireSound, FiringMesh, MuzzleSocketName);
 		}
 
 		if (MuzzleFlash)
 		{
-			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, WeaponMesh, MuzzleSocketName);
+			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName);
 		}
 	}
 	else if (FireAnimation)
 	{
-		WeaponMesh->PlayAnimation(FireAnimation, false);
+		FiringMesh->PlayAnimation(FireAnimation, false);
 	}
 
 	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, CurrentBloom);
@@ -212,6 +219,13 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	CurrentBloom = FMath::Min(1.0f, CurrentBloom + BloomToAdd);
 	TimeSinceLastShot = 0.0f;
+
+	// Record which hand this was before flipping, so the holder can animate the right arm.
+	bLastShotWasOffhand = IsOffhandNext();
+	if (bDualWield)
+	{
+		bOffhandFiresNext = !bOffhandFiresNext;
+	}
 
 	return EFireResult::Fired;
 }
@@ -313,11 +327,17 @@ void AWeaponBase::Tick(float DeltaTime)
 }
 
 
+USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
+{
+	return IsOffhandNext() ? OffhandMesh.Get() : WeaponMesh.Get();
+}
+
 FVector AWeaponBase::GetMuzzleLocation() const
 {
-	if (WeaponMesh && WeaponMesh->DoesSocketExist(MuzzleSocketName))
+	const USkeletalMeshComponent* FiringMesh = GetFiringMesh();
+	if (FiringMesh && FiringMesh->DoesSocketExist(MuzzleSocketName))
 	{
-		return WeaponMesh->GetSocketLocation(MuzzleSocketName);
+		return FiringMesh->GetSocketLocation(MuzzleSocketName);
 	}
 
 	// Fall back to the actor origin. Returning zero would put every shot at world

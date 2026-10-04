@@ -73,6 +73,14 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 		// Or the timer fires on a weapon we're no longer holding.
 		EquippedWeapon->CancelReload();
 
+		// The off-hand mesh is attached to our skeleton, not the weapon — bring it home
+		// first, or it stays in the left hand after the weapon is put away.
+		if (USkeletalMeshComponent* Offhand = EquippedWeapon->GetOffhandMesh())
+		{
+			Offhand->AttachToComponent(EquippedWeapon->GetWeaponMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		}
+
 		EquippedWeapon->SetActorHiddenInGame(true);
 		EquippedWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
 	}
@@ -108,6 +116,17 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 
 	EquippedWeapon->SetActorRelativeLocation(EquippedWeapon->GetGripLocationOffset());
 	EquippedWeapon->SetActorRelativeRotation(EquippedWeapon->GetGripRotationOffset());
+
+	if (EquippedWeapon->IsDualWield())
+	{
+		if (USkeletalMeshComponent* Offhand = EquippedWeapon->GetOffhandMesh())
+		{
+			Offhand->AttachToComponent(CharacterMesh,
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale, OffhandAttachSocketName);
+			Offhand->SetRelativeLocation(EquippedWeapon->GetOffhandGripLocationOffset());
+			Offhand->SetRelativeRotation(EquippedWeapon->GetOffhandGripRotationOffset());
+		}
+	}
 
 	EquippedWeapon->SetInstigator(OwningCharacter);
 	EquippedWeapon->SetOwner(OwningCharacter);

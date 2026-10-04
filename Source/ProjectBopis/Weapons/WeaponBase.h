@@ -113,6 +113,19 @@ public:
 	/** World location of the muzzle socket — where shots actually leave from. */
 	FVector GetMuzzleLocation() const;
 
+	/** Dual-wield weapons carry a second mesh in the other hand and alternate shots between them. */
+	bool IsDualWield() const { return bDualWield; }
+
+	/** Whether the next shot leaves from the off-hand weapon. GetMuzzleLocation follows this. */
+	bool IsOffhandNext() const { return bDualWield && bOffhandFiresNext; }
+
+	/** Which hand fired the most recent shot — the holder picks the matching arm animation. */
+	bool WasLastShotOffhand() const { return bLastShotWasOffhand; }
+
+	USkeletalMeshComponent* GetOffhandMesh() const { return OffhandMesh; }
+	FVector GetOffhandGripLocationOffset() const { return OffhandGripLocationOffset; }
+	FRotator GetOffhandGripRotationOffset() const { return OffhandGripRotationOffset; }
+
 	float GetMaxRange() const { return MaxRange; }
 
 	float GetDamageAtDistance(float Distance) const;
@@ -174,6 +187,25 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<USkeletalMeshComponent> WeaponMesh;
+
+	/** The second weapon of a dual-wield pair. Unused unless bDualWield is set; the holder
+	    attaches it to the off hand. Shares this weapon's ammo, bloom and fire rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Dual Wield")
+	TObjectPtr<USkeletalMeshComponent> OffhandMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Dual Wield")
+	bool bDualWield = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Dual Wield",
+		meta = (EditCondition = "bDualWield"))
+	FVector OffhandGripLocationOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Dual Wield",
+		meta = (EditCondition = "bDualWield"))
+	FRotator OffhandGripRotationOffset = FRotator::ZeroRotator;
+
+	/** The mesh the next (or, after firing, the current) shot belongs to. */
+	USkeletalMeshComponent* GetFiringMesh() const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponFireMode FireMode = EWeaponFireMode::Semi;
@@ -341,6 +373,9 @@ protected:
 
 	bool bIsReloading = false;
 	FTimerHandle ReloadTimerHandle;
+
+	bool bOffhandFiresNext = false;
+	bool bLastShotWasOffhand = false;
 
 	float CurrentBloom = 0.0f;
 	float TimeSinceLastShot = 0.0f;

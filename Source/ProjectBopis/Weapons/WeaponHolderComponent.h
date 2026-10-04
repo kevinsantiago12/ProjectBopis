@@ -57,6 +57,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	FName WeaponAttachSocketName = TEXT("hand_r");
 
+	/** Socket the off-hand weapon of a dual-wield pair attaches to. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	FName OffhandAttachSocketName = TEXT("hand_l");
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	TSubclassOf<AWeaponBase> StartingWeaponClass;
 
