@@ -561,11 +561,20 @@ editor preview spams "Accessed None" (no pawn).
 | `WarpAngle` | `NormalizeAxis(Direction − CardinalDirection)` |
 | `AimPitch` | normalized control pitch |
 | `bIsWeaponRaised` | `IsWeaponRaised()` (C++) |
-| `UpperBodyAlpha` | FInterpTo(→ 1 if raised OR any montage playing, else 0), speed 12 |
+| `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. **Eases up** (FInterpTo 12), **snaps down** — except while `bEaseLowering` (2026-10-05) |
+| `bEaseLowering` | latch: `IsSlotActive(DefaultSlot) OR (bEaseLowering AND Target < Current)`. Makes the drop after a montage ends ease instead of snap; releasing aim still snaps |
 | `CurrentAnimType` | equipped weapon `AnimType` |
 | `LeftArmAlpha` | dual-wield ? `UpperBodyAlpha` : 0 |
 | `DualLoweredAlpha` | dual-wield ? 1 − `UpperBodyAlpha` : 0 |
+| `LeftHandIKAlpha` | target = `UpperBodyAlpha` if two-handed and not reloading, else 0; eases up (FInterpTo 10), snaps down |
+| `RootYawOffset`, `LastActorYaw`, `PrevTurnYawCurve`, `bWasWeaponRaised`, `TurnScale` | turn-in-place — see below |
 | `bUseLoweredUpperBody` | **unused** — leftover from the rolled-back shotgun layering; safe to delete |
+
+**Why snap down:** easing the raised layer out moved the left arm through the
+torso on aim release (both the layer blend and the IK). Snapping hands over to
+the lowered pose at once; easing up is kept because raising looked right.
+`IsSlotActive("DefaultSlot")` replaced `IsAnyMontagePlaying` so turn montages
+don't count as "a montage is playing".
 
 ### AnimGraph (top level, in evaluation order)
 1. **Locomotion state machine** (Idle/Move). Move: per-weapon Blend Poses →
@@ -574,7 +583,8 @@ editor preview spams "Accessed None" (no pawn).
    (500) / idle (0). Idle: per-weapon clips; shotgun lowered idle from the pack.
 2. **Orientation warping:** Local→Component → `OrientationWarping` (Manual, angle
    ← `WarpAngle`, spine_01–05 distribute 0.5, IK foot root/feet) →
-   Component→Local → **Save Cached Pose `Loco`**. Plays the cardinal clip and
+   Component→Local → **`TurnSlot`** (turn-in-place montages) → **Save Cached
+   Pose `Loco`**. Plays the cardinal clip and
    rotates the legs by the remainder — fixes the forward-left/back-right
    scissoring that Lyra's side clips produce when blended (each side clip only
    matches one diagonal pair).
@@ -583,19 +593,56 @@ editor preview spams "Accessed None" (no pawn).
    `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight `UpperBodyAlpha`.
    Montages are therefore upper-body only (legs keep stride), and the raised
    pose holds between shots.
-4. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
-   → Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
-5. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
+4. **Aim offsets, chained** (2026-10-05): `AO_MM_Rifle_Idle_Hipfire` →
+   `AO_MM_Pistol_Idle_ADS`. Both X (yaw) ← −`RootYawOffset`, Y ← `AimPitch`.
+   Alphas are exclusive: rifle = `UpperBodyAlpha` unless `CurrentAnimType ==
+   Pistol`, pistol = `UpperBodyAlpha` only for pistols. Chaining two players
+   avoids needing a second Use Cached Pose. The rifle AO on pistol poses
+   twisted the wrists.
+5. **Left-hand IK** (Lyra style): Local→Component → CopyBone `hand_r` →
+   `ik_hand_gun` → TwoBoneIK `hand_l` → effector `ik_hand_l` (bone space, take
+   rotation), joint target `lowerarm_l`, alpha `LeftHandIKAlpha` →
+   Component→Local. Raised only — always-on twisted the arm in lowered clips.
+6. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
+   → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
+   Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
+7. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
    blend space (play rate **0.7**) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
    → finger layers (thumb + metacarpals: `_r` from pistol idle, `_l` from
    mirrored pistol idle — closed grips); weight `DualLoweredAlpha`.
-6. **Aim offset** `AO_MM_Rifle_Idle_Hipfire` (Y ← `AimPitch`, alpha
-   `UpperBodyAlpha`) → Output.
+8. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) → Output.
+
+### Turn-in-place (2026-10-05)
+Lyra approach, AnimBP only, no C++. The capsule still follows the camera
+(`bUseControllerRotationYaw`), so gameplay and aim are untouched; only the
+visible mesh lags.
+
+- **Can turn** = raised AND raised last frame (`bWasWeaponRaised` — the raise
+  frame keeps the hip-fire yaw snap) AND `Speed < 5` AND NOT crouched.
+- **Planted feet:** if can turn, `RootYawOffset = Clamp(NormalizeAxis(Offset −
+  capsule yaw delta), ±120)`; otherwise FInterpTo → 0 (speed 10). Rotate Root
+  Bone counter-rotates the body; the aim offsets twist the torso back to the
+  camera.
+- **Trigger:** `|Offset| > 90` and `TurnSlot` inactive → `Montage_Play`
+  (`AM_Rifle_TurnRight_90` if Offset < 0, else `AM_Rifle_TurnLeft_90`) with
+  **`bStopAllMontages = false`** (the default would cancel fire/reload).
+  `TurnScale = |Offset| / 90` is stored at trigger.
+- **Wind-down:** `C = RemainingTurnYaw / TurnYawWeight` (when weight > 0.01);
+  `Offset −= (C − PrevTurnYawCurve) × TurnScale` once a previous value exists.
+  `TurnScale` makes a turn close exactly the gap that triggered it (≈1 at 90°;
+  tried 45° — rolled back by user choice).
+- **Cancel:** when turning isn't allowed → `Montage_StopGroupByName(TurnGroup,
+  0.2)`. **Not** `StopSlotAnimation` — that only stops dynamic montages.
+- **Clips:** `MM_Rifle_TurnLeft/Right_90` with **Enable Root Motion off** —
+  with it on, the montage locked movement input until the turn ended. Rifle
+  clips serve every weapon: when raised, the upper body comes from the
+  hip-fire layer, so only legs/pelvis show the turn.
 
 ### Slots
-`DefaultSlot` (DefaultGroup) and **`OffhandSlot` in its own `OffhandGroup`** —
-separate groups so the off-hand reload montage can play at the same time as the
-main one (playing a montage stops others in its group).
+`DefaultSlot` (DefaultGroup), **`OffhandSlot` in its own `OffhandGroup`**, and
+**`TurnSlot` in its own `TurnGroup`** — separate groups so off-hand reloads and
+turns can play alongside fire/reload montages (playing a montage stops others
+in its group).
 
 ### Sync groups
 Leg blend spaces in the Move state carry group `Locomotion` (CanBeLeader) from an
@@ -610,10 +657,12 @@ unreliable.
   worse) — single pistols keep the two-handed grip.
 
 ### Open
-- Turn-in-place for the raised/aim stance.
+- Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),
+  per-weapon turn sets.
 - Crouched strafe (`BS_MM_Rifle_Crouch_Walk` exists).
 - Strafe jog play rate / stride warping if feet slide at 500.
-- Per-weapon aim offset (pistol AOs likely have the same missing-base-pose fault).
+- Shotgun aim offset: uses the rifle AO (fine so far); unarmed AO samples
+  probably have the same missing-base-pose fault if ever used.
 
 ## Combat abilities — dual-wield, shootdodge, bullet-time
 
@@ -644,9 +693,10 @@ single-weapon.
   locomotion with finger grips when lowered.
 - `BP_DualPistols`: mag 24, reserve 120 (max 240), `AnimType Pistol`.
 
-**Known issue:** the reload montage leans/twists the torso (authored for a
-two-handed reload). Fix agreed, deferred: a no-spine copy of the clip and a
-`DualReloadMontages` map used instead of `ReloadMontages` for dual weapons.
+**Accepted quirk (2026-10-05, won't fix):** the reload montage leans/twists the
+torso (authored for a two-handed reload). User judged it minor. If it's ever
+revisited: a no-spine copy of the clip plus a `DualReloadMontages` map used
+instead of `ReloadMontages` for dual weapons.
 
 **Later:** dual-capable SMGs would want a weapon flag (e.g. `bOneHanded`) rather
 than keying anything off `AnimType == Pistol`.
@@ -890,6 +940,8 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-05 — Animation architecture updated: snap-down alphas + `bEaseLowering` latch, left-hand IK, chained rifle/pistol aim offsets, new *Turn-in-place* subsection, `TurnSlot`/`TurnGroup`. Dual reload torso motion marked won't-fix.
 
 - 2026-10-04 (2) — Added *Animation architecture* (AnimBP layers, Event Graph variables, slots, sync-group caveat, rejected approaches). Dual pistols section rewritten as built; "reload normally" supersedes "throw away when dry". Hip-fire animation paragraph updated.
 

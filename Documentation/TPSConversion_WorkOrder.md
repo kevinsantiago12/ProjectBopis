@@ -221,13 +221,13 @@ Asset and AnimGraph work. Weeks, not days. Nothing here needs C++.
 - [x] Aim locomotion: **8-way strafe blendspace**. The expensive half. *(2026-10-04: 4-way Lyra `BS_Rifle_Strafe`/`BS_Pistol_Strafe` + orientation warping for the diagonals.)*
 - [ ] Crouched sets for both of the above. This roughly doubles the strafe authoring — it's the real cost of crouch.
 - [x] **Aim offset** for pitch. *(2026-10-04: `AO_MM_Rifle_Idle_Hipfire`, sample base poses repaired.)* Mandatory now, wasn't in first person.
-- [ ] **Turn-in-place** for the aim state, or the character skates when the camera swings while stationary.
+- [x] **Turn-in-place** for the aim state, or the character skates when the camera swings while stationary. *(2026-10-05: Lyra-style, AnimBP only — `RootYawOffset` + Rotate Root Bone + 90° turn montages in `TurnSlot`. See the spec.)*
 - [x] Upper/lower body layering so firing and reloading play over locomotion. *(2026-10-04: `spine_01` montage layer + raised hip-fire pose.)*
 - [ ] **Shotgun per-round reload montage with a looping section** (2026-10-04). Montage from the reload clip (pack `anim_shotgun_aim_reload`, user may tweak) split into sections `Start` → `Loop` ↺ → `End`; link Loop→Loop in Montage Sections so it repeats one shell-insert cycle. Code (present for review): character jumps the montage to `End` (`Montage_JumpToSection`) when the weapon stops reloading — simplest as a check in `Tick` (reload montage in `Loop` + `!IsReloading()`) — and stops it on weapon swap. Firing already cuts it (same slot). Sync: start by matching `TimePerRound`/`ReloadStartDelay` on `BP_Shotgun` to the section lengths (data only); optional later: drive montage play rate from `TimePerRound`. Waiting on the user making the montage (section names + lengths).
 - [x] **Dual pistols** (demo, 2026-10-04) — code, `BP_DualPistols`, mirrored left arm, off-hand recoil and reload (`OffhandSlot` in `OffhandGroup`), lowered whole-body unarmed with finger grips. See the spec.
-- [ ] **Dual reload torso motion** — `AM_Pistol_Reload` leans/twists the spine. Deferred fix: user-made no-spine clip + a `DualReloadMontages` map (small C++).
+- [x] ~~**Dual reload torso motion**~~ — `AM_Pistol_Reload` leans/twists the spine. **Won't fix (user, 2026-10-05): accepted as minor.** (If ever revisited: no-spine clip + a `DualReloadMontages` map.)
 - [ ] **Clean-up:** delete the unused `bUseLoweredUpperBody`; the leg blend spaces' `Locomotion` sync-group settings are leftovers (harmless); restart the editor to clear the asset-registry dropout.
-- [ ] **Per-weapon aim offset** — pistol AO samples likely need the same base-pose repair as the rifle ones.
+- [x] **Per-weapon aim offset** — pistol AO samples likely need the same base-pose repair as the rifle ones. *(2026-10-05: repaired by user; rifle → pistol AOs chained with exclusive alphas; fixed the dual wrist twist.)*
 ### ⚠ Animation source changed again 2026-10-04 — back to Lyra
 
 **User decision:** the Shotgun Locomotion Pack's quality is below Lyra's. **Lyra

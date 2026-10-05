@@ -13,7 +13,11 @@
 ---
 
 ## 2026-10-05
-**Summary:** Left-hand IK built and raised↔lowered transitions tuned.
+**Summary:** Left-hand IK built, raised↔lowered transitions tuned, reload-end
+ease, **turn-in-place built and working**, **pistol wrist twist fixed** with
+the pistol aim offset. All user-confirmed in PIE. Dual reload torso motion
+dropped as won't-fix. Full detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md)
+→ *Animation architecture*.
 **The aim → lowered "arm slides through the body" issue is FIXED** (user-confirmed).
 
 - **Left-hand IK (Lyra style):** after the aim offset, CopyBone `hand_r` →
@@ -28,15 +32,43 @@
   the end of a reload popped. Added a `bEaseLowering` latch:
   `bEaseLowering = IsAnyMontagePlaying OR (bEaseLowering AND Target<Current)`;
   snap only when `Target<Current AND NOT bEaseLowering`. Releasing aim still
-  snaps; a montage finishing eases down. **Wired, compiled and saved via the
-  bridge; not yet PIE-tested.**
+  snaps; a montage finishing eases down. **PIE-confirmed.** (Later the
+  montage check became `IsSlotActive("DefaultSlot")` so turns don't trip it.)
+
+**Dropped (user, 2026-10-05):** the dual reload spine/torso motion is accepted
+as is — not a big issue, no fix planned.
+
+### Turn-in-place (built via the bridge, PIE-confirmed)
+Lyra approach in the AnimBP, no C++. Capsule still follows the camera; the mesh
+lags via `RootYawOffset` → **Rotate Root Bone**, the aim offsets twist the torso
+back to the camera, and past **90°** a 90° turn montage (`AM_Rifle_TurnLeft/Right_90`
+in `TurnSlot`/`TurnGroup`, made by the user) plays while its `RemainingTurnYaw`
+curve winds the offset back to 0. Only when raised, standing still, not
+crouched. Three bugs found in testing:
+- **Couldn't move during a turn** — the Lyra turn clips had *Enable Root Motion*
+  on; user turned it off on both.
+- **Turn didn't stop when moving** — `StopSlotAnimation` only stops dynamic
+  montages; replaced with `Montage_StopGroupByName(TurnGroup, 0.2)`.
+- **Would have cancelled fire/reload** — `Montage_Play` defaults
+  `bStopAllMontages` to true; set false (caught before testing).
+Threshold tried at 45° (with `TurnScale` so a turn closes exactly the gap) —
+user rolled back to 90°; `TurnScale` stays (≈1 at 90°).
+
+### Pistol wrist twist — fixed
+Duals twisted their wrists when the aim offset yawed: everything used the
+rifle AO. `AO_MM_Pistol_Idle_ADS` samples had the same missing base pose as the
+rifle ones; user set base pose = `MM_Pistol_Idle_ADS_AO_CC` on all 15. AnimGraph
+now chains rifle → pistol aim offsets with exclusive alphas by `AnimType`, and
+the dual left arm uses the pistol AO (yaw sign flipped for the mirror).
 
 ### ▶ RESUME HERE
-1. **PIE-test the reload-end ease** (lowered → reload → watch the end).
-2. Commit: dual reload code, `AM_Pistol_Reload_Offhand`, `SK_Mannequin`,
-   `BP_FirstPersonCharacter`, `ABP_FirstPersonArms`, docs.
-3. The rest of the 2026-10-04 RESUME HERE list still stands (dual reload spine
-   deferred, turn-in-place next, registry housekeeping).
+1. **Commit** today's AnimBP/clip/skeleton/docs changes (not yet committed —
+   the user commits).
+2. Next candidates: **crouched strafe** (`BS_MM_Rifle_Crouch_Walk` exists),
+   turn-in-place extras (180°, crouched turns), or move on from Step 7 —
+   user's call.
+3. Housekeeping: delete unused `bUseLoweredUpperBody`; asset-registry dropout
+   (restart re-scans).
 
 ---
 
