@@ -124,15 +124,25 @@ From here, anim logic changes are C++ edits the user can review in git.
   refreshed *Current state*; `ProjectPlan` Phase 4.5 marked complete and
   synced; lore notes record the conversion as finished.
 
+### Merged to main — third-person conversion closed
+Work order deleted (in git history). `main` fast-forwarded to
+`tps-conversion` locally (`git fetch . tps-conversion:main`, no checkout —
+the user's attempt errored, likely from switching branches with the editor
+open); the user pushed. **Phase 4 backlog swept** in `ProjectPlan`: left-hand
+IK, TEMP timer and rifle grip ticked as done/superseded; muzzle-flash-north
+left open pending a PIE look.
+
 ### ▶ RESUME HERE
-1. **Commit** the Step 8 changes (the user commits).
-2. **Finish Step 8:** `TPSConversion_WorkOrder.md` deleted (in git history);
-   merge `tps-conversion` → `main` — the user merges and pushes.
-3. **Carried forward (optional polish):** shotgun per-round reload loop
-   (waits on the user's montage), 180° and crouched turn-in-place; design
-   calls: reticle hiding in non-aim, camera shoulder swap.
-4. **Next phase:** Phase 5 — enemy archetype foundation (human enemies).
-   Ammo HUD/pickups (Phase 4) also still open.
+1. **Commit** the backlog sweep + this log update on `main` (working copy is
+   already on `main`). `tps-conversion` is merged and can be deleted.
+2. **Muzzle flash faces north** — user checks in PIE; close the item if the
+   flash points down the barrel, else the notify Attached/socket check.
+3. **Ammo HUD + pickups (Phase 4 C–D)** — on hold by user choice; ask before
+   starting.
+4. **Phase 5 — enemy archetype foundation** is the next phase.
+5. Optional polish carried forward: shotgun per-round reload loop (waits on
+   the user's montage), 180°/crouched turn-in-place; design calls: reticle
+   hiding in non-aim, shoulder swap.
 
 ---
 
