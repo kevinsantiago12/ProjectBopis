@@ -126,8 +126,8 @@ From here, anim logic changes are C++ edits the user can review in git.
 
 ### ▶ RESUME HERE
 1. **Commit** the Step 8 changes (the user commits).
-2. **Finish Step 8:** delete `TPSConversion_WorkOrder.md` (it stays in git
-   history) and merge `tps-conversion` → `main` — the user runs the push.
+2. **Finish Step 8:** `TPSConversion_WorkOrder.md` deleted (in git history);
+   merge `tps-conversion` → `main` — the user merges and pushes.
 3. **Carried forward (optional polish):** shotgun per-round reload loop
    (waits on the user's montage), 180° and crouched turn-in-place; design
    calls: reticle hiding in non-aim, camera shoulder swap.

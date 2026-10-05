@@ -214,7 +214,7 @@ pickups are what make a second carried weapon possible in the first place —
 - [ ] **Tune `GripLocationOffset` on the rifle.** The rifle renders far too close to the camera and fills the screen — the weapon origin sits only ~31cm out. Separate knob from `GripRotationOffset`, which is correctly left at zero (see Gotchas — do not "correct" the 72° yaw). The hand pose also still doesn't grip the weapon properly, which is an animation problem offsets won't solve. ~~`UWeaponHolderComponent::BeginPlay` sets a 5-second timer that re-runs `AttachWeaponToHand()`, which is what makes the weapon position correct.~~ **Disproven and removed 2026-09-30.** The timer was deleted and the weapon position measured identical for a whole session, with no change at the five-second mark — it was doing nothing. Grip offsets still need re-tuning from scratch for the third-person body (the old values were fitted to first-person arms at 0.6 scale), but that is a data pass, not a timing bug.
 
 ## Phase 4.5 — Third-person conversion ✅ COMPLETE (2026-10-05)
-> Executed step by step via `TPSConversion_WorkOrder.md` (deleted at merge —
+> Executed step by step via `TPSConversion_WorkOrder.md` (deleted 2026-10-05 —
 > it's in git history) on branch `tps-conversion`. Checkboxes below synced from
 > it on 2026-10-05; items resolved differently from how they were written carry
 > a note. Open: two design calls (reticle hiding, shoulder swap). Optional
@@ -335,7 +335,7 @@ systems.
 - [x] `TechnicalDesignSpec.md` trace-source section documents deprojection-from-camera as the permanent approach; that's now half the story.
 
 ### Decided 2026-09-25
-- **Crouch: in. Prone: out.** One extra stance, not two. Crouch work is itemised under Movement and Animation above. **Deferred to backlog 2026-09-30, then built 2026-10-03 and redesigned as a stationary stance 2026-10-05** — still in as a decision, but not part of the third-person conversion sequence; it is purely additive and drags a second full strafe blendspace behind it. See Step 4 in [TPSConversion_WorkOrder.md](TPSConversion_WorkOrder.md).
+- **Crouch: in. Prone: out.** One extra stance, not two. Crouch work is itemised under Movement and Animation above. **Deferred to backlog 2026-09-30, then built 2026-10-03 and redesigned as a stationary stance 2026-10-05** — still in as a decision, but not part of the third-person conversion sequence; it is purely additive and drags a second full strafe blendspace behind it. See Step 4 in `TPSConversion_WorkOrder.md` (deleted 2026-10-05 — in git history).
 - **No stick-to-wall cover system.** No cover snapping, no cover-to-cover moves, no lean-from-cover. This follows the action direction's *strong choreography and movement rather than static cover shooting* — the player takes cover by standing behind things, not by entering a cover state.
   - **This is a statement about the player, not about level geometry.** Arenas still want cover to stand behind — sightlines, corners, waist-high obstacles — and Phase 5 enemies may still *use* cover as AI positioning. None of that is blocked by this decision; only a player cover-state mechanic is.
   - Practical consequence: no cover volumes/splines to author, no cover-entry animation set, and the aim-state strafe blendspace stays the whole of the aiming movement vocabulary.
