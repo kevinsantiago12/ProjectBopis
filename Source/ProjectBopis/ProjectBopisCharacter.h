@@ -118,6 +118,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	bool bCrouchIsToggle = true;
 
+	/** True: moving clears the crouch request, so stopping leaves the character standing.
+	    False: the request survives movement, and the character drops back into the crouch
+	    whenever they stop. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	bool bMovementCancelsCrouch = false;
+
 	/** Max walk speed when not aiming. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunSpeed = 500.0f;
@@ -130,7 +136,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunRotationRate = 360.0f;
 
-	/** Max walk speed while crouched. Applies in both aim and free-run. */
+	/** Max walk speed while crouched. Normally unused — moving stands the character up —
+	    but applies if a low ceiling blocks the uncrouch. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float CrouchedSpeed = 170.0f;
 
@@ -154,6 +161,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float CameraTransitionSpeed = 12.0f;
 
+	/** Extra camera height while crouched, eased in and out. 0 keeps the camera exactly
+	    where it is when standing; negative lowers it with the crouch. */
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CrouchCameraOffset = 0.0f;
+
 	/** Seconds after the last trigger pull before the weapon lowers and the
 	    character returns to free-run. Firing from the hip raises the weapon and
 	    switches to the strafe stance for this long. */
@@ -168,6 +180,9 @@ protected:
 
 	/** Picks the stance the current state implies and applies it on change. */
 	void UpdateMovementStance();
+
+	/** Crouches while stationary and the request holds; stands up the moment input moves the character. */
+	void UpdateCrouch();
 
 	EMovementStance CurrentStance = EMovementStance::FreeRun;
 	
@@ -238,11 +253,23 @@ protected:
 	
 	bool bIsAiming = false;
 
+	/** The player's crouch request. The actual crouch only happens while standing still —
+	    crouch is momentary cover, not a way of moving. */
+	bool bCrouchRequested = false;
+
 	/** Counts down from LowerWeaponDelay after each trigger pull. Above zero, the
 	    weapon stays raised even when not aiming. */
 	float TimeUntilWeaponLowered = 0.0f;
 
 	float DefaultFOV = 0.0f;
+
+	/** Boom height and capsule half-height at spawn. The boom is re-derived from the
+	    capsule's current size every frame, so crouching never moves the camera. */
+	float BoomBaseHeight = 0.0f;
+	float DefaultCapsuleHalfHeight = 0.0f;
+
+	/** Current eased value of CrouchCameraOffset — 0 standing, CrouchCameraOffset crouched. */
+	float CurrentCrouchCameraOffset = 0.0f;
 
 public:
 

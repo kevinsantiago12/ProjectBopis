@@ -281,11 +281,9 @@ stance system is already in code; this is that split pre-animated.
 Reversed an earlier call to skip it — that was made when only three shotgun
 idle poses existed in Lyra and no locomotion.
 
-- [ ] **Evaluate using this pack for the rifle too.** A shotgun and an assault
-      rifle are held almost identically. If the pose reads acceptably with
-      `Assault_Rifle_A`, one pack covers both weapon types with a better set
-      than Lyra, and halves the remaining assembly. Costs nothing to look.
-- [ ] Pistol stays on the Lyra pistol set regardless — one-handed pose.
+- [x] ~~**Evaluate using this pack for the rifle too.**~~ **Obsolete (2026-10-04):**
+      pack rejected on quality; Lyra is the source for all weapons.
+- [x] ~~Pistol stays on the Lyra pistol set regardless~~ — moot, same reason.
 
 ### Lyra library inventory (2026-09-30) — still the source for pistol
 

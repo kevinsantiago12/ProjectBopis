@@ -69,6 +69,9 @@ void AProjectBopisCharacter::BeginPlay()
 
 	DefaultFOV = FollowCamera->FieldOfView;
 
+	BoomBaseHeight = CameraBoom->GetRelativeLocation().Z;
+	DefaultCapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
 	// Explicit rather than relying on constructor defaults, so the runtime path
 	// is exercised from frame one instead of only after the first aim.
 	ApplyMovementStance(EMovementStance::FreeRun);
@@ -181,6 +184,7 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 
 	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
 
+	UpdateCrouch();
 	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
 }
@@ -218,6 +222,22 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 
 	FollowCamera->SetFieldOfView(FMath::FInterpTo(
 		FollowCamera->FieldOfView, TargetFOV, DeltaSeconds, CameraTransitionSpeed));
+
+	// Eased part: the optional crouch offset, moving at the same speed as the hip/aim move.
+	const float TargetCrouchOffset = bIsCrouched ? CrouchCameraOffset : 0.0f;
+	CurrentCrouchCameraOffset = FMath::FInterpTo(
+		CurrentCrouchCameraOffset, TargetCrouchOffset, DeltaSeconds, CameraTransitionSpeed);
+
+	// Instant part: crouching shrinks the capsule and lowers its centre by the lost
+	// half-height in a single frame, and the boom rides on the capsule — so lift it by
+	// the same amount, also in a single frame, or the camera dips and floats back.
+	// Derived from the capsule's actual size rather than from crouch callbacks, whose
+	// reported adjustments don't always pair up (accumulating them drifted the camera).
+	const float CapsuleDrop = DefaultCapsuleHalfHeight - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	FVector BoomLocation = CameraBoom->GetRelativeLocation();
+	BoomLocation.Z = BoomBaseHeight + CapsuleDrop + CurrentCrouchCameraOffset;
+	CameraBoom->SetRelativeLocation(BoomLocation);
 }
 
 void AProjectBopisCharacter::ApplyMovementStance(EMovementStance NewStance)
@@ -398,24 +418,9 @@ void AProjectBopisCharacter::DoReload()
 
 void AProjectBopisCharacter::DoCrouchStart()
 {
-	// Crouch is orthogonal to the aim/free-run pair — all four combinations are
-	// legal, so stance is deliberately left alone here. The movement component
-	// owns height and crouched speed; ApplyMovementStance owns rotation.
-	if (bCrouchIsToggle)
-	{
-		if (bIsCrouched)
-		{
-			UnCrouch();
-		}
-		else
-		{
-			Crouch();
-		}
-	}
-	else
-	{
-		Crouch();
-	}
+	// Only records the request — UpdateCrouch decides whether the character is
+	// actually down, since crouch only applies while standing still.
+	bCrouchRequested = bCrouchIsToggle ? !bCrouchRequested : true;
 }
 
 void AProjectBopisCharacter::DoCrouchEnd()
@@ -423,6 +428,37 @@ void AProjectBopisCharacter::DoCrouchEnd()
 	// In toggle mode the release carries no meaning; the press already did the work.
 	if (!bCrouchIsToggle)
 	{
+		bCrouchRequested = false;
+	}
+}
+
+void AProjectBopisCharacter::UpdateCrouch()
+{
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement)
+	{
+		return;
+	}
+
+	// Acceleration comes from input, not velocity: releasing the stick crouches
+	// immediately rather than waiting for braking to finish, and any input stands
+	// the character up on the same frame.
+	const bool bWantsToMove = !Movement->GetCurrentAcceleration().IsNearlyZero();
+
+	if (bWantsToMove && bMovementCancelsCrouch)
+	{
+		bCrouchRequested = false;
+	}
+
+	const bool bShouldCrouch = bCrouchRequested && !bWantsToMove && Movement->IsMovingOnGround();
+
+	if (bShouldCrouch && !bIsCrouched)
+	{
+		Crouch();
+	}
+	else if (!bShouldCrouch && bIsCrouched)
+	{
+		// Fails quietly under a low ceiling; the movement component keeps retrying.
 		UnCrouch();
 	}
 }
