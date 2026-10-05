@@ -34,7 +34,7 @@ enum class EMovementStance : uint8
 };
 
 /**
- *  A basic first person character
+ *  The player character: third-person movement, aim/hip-fire stances, crouch and weapon handling.
  */
 UCLASS(abstract)
 class AProjectBopisCharacter : public ACharacter
@@ -225,7 +225,8 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoReload();
 
-	/** Crouch key pressed. Toggles or engages, depending on bCrouchIsToggle. */
+	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
+	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoCrouchStart();
 

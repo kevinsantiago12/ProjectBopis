@@ -227,7 +227,7 @@ Asset and AnimGraph work. Weeks, not days. Nothing here needs C++.
 - [ ] **Shotgun per-round reload montage with a looping section** (2026-10-04). Montage from the reload clip (pack `anim_shotgun_aim_reload`, user may tweak) split into sections `Start` → `Loop` ↺ → `End`; link Loop→Loop in Montage Sections so it repeats one shell-insert cycle. Code (present for review): character jumps the montage to `End` (`Montage_JumpToSection`) when the weapon stops reloading — simplest as a check in `Tick` (reload montage in `Loop` + `!IsReloading()`) — and stops it on weapon swap. Firing already cuts it (same slot). Sync: start by matching `TimePerRound`/`ReloadStartDelay` on `BP_Shotgun` to the section lengths (data only); optional later: drive montage play rate from `TimePerRound`. Waiting on the user making the montage (section names + lengths).
 - [x] **Dual pistols** (demo, 2026-10-04) — code, `BP_DualPistols`, mirrored left arm, off-hand recoil and reload (`OffhandSlot` in `OffhandGroup`), lowered whole-body unarmed with finger grips. See the spec.
 - [x] ~~**Dual reload torso motion**~~ — `AM_Pistol_Reload` leans/twists the spine. **Won't fix (user, 2026-10-05): accepted as minor.** (If ever revisited: no-spine clip + a `DualReloadMontages` map.)
-- [ ] **Clean-up:** ~~delete the unused `bUseLoweredUpperBody`~~ (gone with the C++ move); the leg blend spaces' `Locomotion` sync-group settings are leftovers (harmless); delete the empty `Blueprint Update Animation` event node; fix the stale `DoCrouchStart` header comment ("Toggles or engages" — it now only records the request).
+- [x] **Clean-up:** ~~delete the unused `bUseLoweredUpperBody`~~ (gone with the C++ move); the leg blend spaces' `Locomotion` sync-group settings are leftovers (harmless, left); empty `Blueprint Update Animation` event node deleted; stale `DoCrouchStart` header comment fixed; leftover `ABP_FP_Copy` + `CtrlRig_FPWarp` deleted. *(2026-10-05)*
 - [x] **Per-weapon aim offset** — pistol AO samples likely need the same base-pose repair as the rifle ones. *(2026-10-05: repaired by user; rifle → pistol AOs chained with exclusive alphas; fixed the dual wrist twist.)*
 ### ⚠ Animation source changed again 2026-10-04 — back to Lyra
 
@@ -315,11 +315,12 @@ body mesh. Both trees are mannequin-based so almost certainly yes.
 
 ## Step 8 — Docs and merge
 
-- [ ] `CLAUDE.md` — opening line says "first-person action shooter".
-- [ ] `GameDesignDocument.md` + `.html` — first-person framing throughout Overview, Combat, Scope.
-- [ ] `TechnicalDesignSpec.md` — rewrite the **First-person rig** section and the **first-person projection** architecture principle as third-person, keeping the old text as a dated note (it explains a lot of past decisions). Update the trace-source section for the two-stage model.
-- [ ] `ProjectPlan.md` — tick Phase 4.5, fold in anything learned.
-- [ ] `ProgressLog.md` — dated entry.
+- [x] **Rename "FirstPerson" out of the project** *(done 2026-10-05; folder name kept, `MI_Colorway`)* (added 2026-10-05, user request). Content folder `Content/FirstPerson/` and the assets named after it (`BP_FirstPersonCharacter`, `BP_FirstPersonGameMode`, `BP_FirstPersonPlayerController`, `ABP_FirstPersonArms`, `MI_FirstPersonColorway`, `Lvl_FirstPerson` + its `__ExternalActors__`); proposed names in the 2026-10-05 session (`Content/Game/`, `BP_PlayerCharacter`, `BP_GameMode`, `BP_PlayerController`, `ABP_Player`, `MI_PlayerColorway`, `Lvl_Sandbox`) — confirm with the user. Renames done **in the editor** (handles references and external actors), then *Fix Up Redirectors*. Then: `DefaultEngine.ini` (startup map, default map, default game mode) and `DefaultEditor.ini` (stale `FirstPersonExampleMap`); four stale "first person" header comments (C++, present for review); every doc naming these assets. Reference-check and probably delete `Anims/ABP_FP_Copy`, `Anims/CtrlRig_FPWarp`. Leave the legacy `TP_FirstPerson` redirects in `DefaultEngine.ini`.
+- [x] `CLAUDE.md` — opening line says "first-person action shooter".
+- [x] `GameDesignDocument.md` + `.html` — first-person framing throughout Overview, Combat, Scope.
+- [x] `TechnicalDesignSpec.md` — rewrite the **First-person rig** section and the **first-person projection** architecture principle as third-person, keeping the old text as a dated note (it explains a lot of past decisions). Update the trace-source section for the two-stage model.
+- [x] `ProjectPlan.md` — tick Phase 4.5, fold in anything learned.
+- [x] `ProgressLog.md` — dated entry.
 - [ ] Delete this file.
 - [ ] Merge to `main`.
 

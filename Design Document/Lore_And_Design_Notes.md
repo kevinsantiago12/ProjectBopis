@@ -622,7 +622,8 @@ concurrency limits and attenuation.
 
 ## Camera perspective
 Third-person conversion decided 2026-09-25, scoped as Phase 4.5 in
-`Documentation/ProjectPlan.md`, branch `tps-conversion`. **Unaffected by
+`Documentation/ProjectPlan.md`, branch `tps-conversion`; built and finished
+2026-10-05. **Unaffected by
 either 2026-09-28 lore import** — both sources say "first-person", but both
 say it in their gameplay sections, which were excluded by instruction.
 

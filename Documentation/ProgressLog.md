@@ -98,15 +98,41 @@ rehearsal showed Blueprint/C++ variables only merge on exact type match, so the
 AnimGraph-facing reals became `double`. Tuning values are now class defaults.
 From here, anim logic changes are C++ edits the user can review in git.
 
+*(Committed and pushed by the user.)*
+
+### Clean-up and Step 8 (third-person conversion wrap-up)
+- **Clean-up:** empty `Blueprint Update Animation` node deleted (the AnimBP's
+  Event Graph is now completely empty). Leftover template assets
+  `ABP_FP_Copy` + `CtrlRig_FPWarp` reference-checked by grep (used only by each
+  other) and deleted via the bridge — the first delete of `ABP_FP_Copy` got
+  reloaded by the editor, but it was gone from disk shortly after.
+- **"FirstPerson" renamed out** (user did the editor renames + Fix Up
+  Redirectors; `Content/FirstPerson/` folder name kept by choice):
+  `ABP_Player`, `BP_PlayerCharacter`, `BP_GameMode`, `BP_PlayerController`,
+  `MI_Colorway`, `Lvl_Sandbox` (external actors moved with it). A content-wide
+  grep found no references to the old names — only stale compiled function
+  names inside `ABP_Player`/`BP_PlayerCharacter`, cleared by compile + save
+  (needed a node nudge to dirty them; compile alone didn't).
+- **Config:** `DefaultEngine.ini` startup/default map → `Lvl_Sandbox`, default
+  game mode → `BP_GameMode`; stale `[UnrealEd.SimpleMap]` removed from
+  `DefaultEditor.ini`. Editor restart confirmed map and game mode work.
+- **C++ comments** (applied by Claude on request, comment-only): four
+  "first person" class comments and the stale `DoCrouchStart` comment.
+- **Docs:** `CLAUDE.md` and the GDD (+ html) now say third-person; GDD "Where
+  the build is" refreshed; spec gains *Character rig (third person)* with the
+  first-person rig and projection principle kept as dated history, plus a
+  refreshed *Current state*; `ProjectPlan` Phase 4.5 marked complete and
+  synced; lore notes record the conversion as finished.
+
 ### ▶ RESUME HERE
-1. **Commit** the crouch, snap and C++ anim work plus docs (the user commits).
-2. **Clean-up** (work order): delete the empty `Blueprint Update Animation`
-   node; fix the stale `DoCrouchStart` comment (C++ — present for review);
-   restart the editor for the asset-registry dropout.
-3. **Remaining Step 7:** shotgun per-round reload loop (waits on the user's
-   montage); turn-in-place extras (180°, crouched turns) are optional.
-4. Then **Step 8 — docs and merge** `tps-conversion` → `main`, which closes the
-   third-person conversion.
+1. **Commit** the Step 8 changes (the user commits).
+2. **Finish Step 8:** delete `TPSConversion_WorkOrder.md` (it stays in git
+   history) and merge `tps-conversion` → `main` — the user runs the push.
+3. **Carried forward (optional polish):** shotgun per-round reload loop
+   (waits on the user's montage), 180° and crouched turn-in-place; design
+   calls: reticle hiding in non-aim, camera shoulder swap.
+4. **Next phase:** Phase 5 — enemy archetype foundation (human enemies).
+   Ammo HUD/pickups (Phase 4) also still open.
 
 ---
 

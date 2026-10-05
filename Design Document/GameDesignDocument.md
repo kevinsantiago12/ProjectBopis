@@ -21,7 +21,7 @@
 
 ## Overview
 
-**A gritty, noir first-person action shooter set in the Philippines, 2002.**
+**A gritty, noir third-person action shooter set in the Philippines, 2002.**
 
 The narrative is heavy noir: dark, brooding, cynical, crime-focused, built
 on morally compromised institutions and a protagonist who is rarely sure
@@ -320,11 +320,17 @@ against what a noir story and John Woo action actually need.
 
 ### Where the build is
 
-The combat foundation is real and playable. Working today:
+The combat foundation is real and playable, now in third person — an
+over-the-shoulder camera that moves in closer when aiming, and a fully animated
+character. Working today:
 
+- A character who carries his weapon lowered and raises it to fire, strafes
+  while shooting, turns on the spot to follow the aim, and crouches into cover
+  when standing still
 - Weapons that fire, with an accuracy model driving both the shot and the
   reticle from one number
-- Three configured test-bed weapons with distinct handling
+- Configured test-bed weapons with distinct handling, plus a shotgun and dual
+  pistols
 - A working projectile weapon with fragmenting impact
 - Fire rate limits, full-automatic fire, per-weapon fire animation
 - Scoped zoom
@@ -371,3 +377,6 @@ a shooting range.
   gameplay ideas are marked *under reconsideration* rather than removed, per
   the new direction. Fidelity target retained — it sits naturally with a
   2002 setting.
+- 2026-10-05 — **Now a third-person game.** Overview and "Where the build is"
+  updated: over-the-shoulder camera, animated character, crouch as momentary
+  cover.

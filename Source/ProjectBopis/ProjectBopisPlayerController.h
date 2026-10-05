@@ -10,7 +10,7 @@ class UInputMappingContext;
 class UUserWidget;
 
 /**
- *  Simple first person Player Controller
+ *  Simple Player Controller
  *  Manages the input mapping context.
  *  Overrides the Player Camera Manager class.
  */

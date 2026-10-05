@@ -25,7 +25,8 @@ narrative, John Woo action, authored protagonist**. Full canon is in
 work and stays: `AWeaponBase` + data-driven weapons, the bloom model and its
 parameters, fire-rate cap, full-auto, per-weapon anim selection, ammo
 (magazine/reserve/timer reload), `AProjectileBase`, the composable HUD, the
-first-person rig, the rendering target, and every gotcha below. None of it is
+first-person rig (since replaced by the third-person one, 2026-09-30), the
+rendering target, and every gotcha below. None of it is
 *canon* any more — it's the test bed the new direction gets evaluated against
 — but none of it needs to be torn out either.
 
@@ -572,7 +573,7 @@ where readability comes from. So it layers:
 
 ## Animation architecture (AnimBP) — 2026-10-04, logic moved to C++ 2026-10-05
 
-`ABP_FirstPersonArms` drives the third-person body. **Lyra is the animation
+`ABP_Player` (named `ABP_FirstPersonArms` until 2026-10-05) drives the third-person body. **Lyra is the animation
 source** for all weapons (Shotgun Locomotion Pack rejected on quality; only its
 lowered shotgun idle is used). The AnimGraph was built mostly through the editor
 bridge — see the ProjectPlan Gotchas for what the bridge can and can't do in
@@ -905,7 +906,12 @@ external views. The transform data was correct the whole time;
 This matters most at runtime; construction-time assignment is harmless, since
 there's no proxy yet.
 
-### First-person projection is a separate rendering path
+### First-person projection is a separate rendering path — *historical*
+
+> **No longer applies (third person since 2026-09-30).** `FirstPersonMesh`,
+> `FirstPersonPrimitiveType` tagging and the first-person FOV/scale are gone;
+> every mesh renders through the normal projection. Kept because it explains
+> several earlier bugs and decisions in the progress log.
 
 Anything tagged `FirstPersonPrimitiveType::FirstPerson` renders through a
 different projection (`FirstPersonFieldOfView`, `FirstPersonScale`) from
@@ -922,7 +928,32 @@ normal world-space primitives. Consequences:
 
 ---
 
-## First-person rig
+## Character rig (third person, 2026-09-30 →)
+
+- **One mesh.** `ACharacter::GetMesh()` — the full-body mannequin — is the only
+  character mesh, visible to everyone including its owner. Animation:
+  `ABP_Player` (parent class `UProjectBopisAnimInstance`; see *Animation
+  architecture*), Lyra's library on the same skeleton.
+- **Camera.** `CameraBoom` (`USpringArmComponent`) on the capsule owns control
+  rotation (`bUsePawnControlRotation`) and wall collision; `FollowCamera` rides
+  its end. `UpdateCameraTransition` pulls arm length, socket offset and FOV
+  toward hip or aim values every frame (`HipArmLength`/`AimArmLength`,
+  `HipSocketOffset`/`AimSocketOffset`, `CameraTransitionSpeed`; zoom FOV only
+  for weapons with `HasZoom`), and sets the boom height from the capsule so
+  crouching doesn't move the camera (see *Crouch*). Pitch limits −70/+80 in
+  `AProjectBopisCameraManager`.
+- **Rotation.** Stance-driven (`ApplyMovementStance`): free-run faces travel,
+  aiming or a recent hip-fire faces the camera and strafes. Turn-in-place hides
+  the capsule snapping when standing still.
+- **Weapons.** Attached to `GetMesh()` at `WeaponAttachSocketName` (`hand_r`);
+  dual-wield off-hand at `OffhandAttachSocketName` (`hand_l`).
+  `GripLocationOffset`/`GripRotationOffset` are per-weapon corrections on
+  equip, **in socket space** (hand-bone axes, so X/Y/Z are not
+  forward/right/up); re-tuned for the body mesh 2026-10-03.
+- **Shots** come from the camera trace and leave from the muzzle — see *Trace
+  source — two-stage*.
+
+### Historical: the first-person rig (2026-08-30 → 2026-09-30)
 
 The camera and arms attach the opposite way round from the FPS template: the
 camera hangs off the capsule, and `FirstPersonMesh` hangs off the *camera*, so
@@ -946,15 +977,19 @@ whose axes come from the hand bone — so X/Y/Z are not forward/right/up.
 
 See [ProgressLog.md](ProgressLog.md) for dated detail and
 [ProjectPlan.md](ProjectPlan.md) for the phase breakdown. Summary as of
-2026-08-31:
+2026-10-05:
 
 - **Phases 0–3 complete**: project cleanup, weapon foundation, bloom accuracy,
   reticle/aim/zoom.
 - **Phase 4 (weapon content & feel)** nearly complete: fire feedback, hit
-  decals, projectile system, all three weapons configured, fire-rate cap,
-  full-auto, per-weapon animation selection, scoped zoom, ammo phases A–B.
-  Outstanding: ABP graph work for per-weapon locomotion clips, grip position
-  tuning, ammo HUD and pickups, left-hand IK.
+  decals, projectile system, weapons configured (plus shotgun and dual
+  pistols, 2026-10-03/04), fire-rate cap, full-auto, per-weapon animation,
+  scoped zoom, ammo phases A–B. Outstanding: ammo HUD and pickups.
+- **Phase 4.5 (third-person conversion) complete** 2026-10-05: spring-arm
+  camera, stance-based movement, two-stage firing, hip-fire raise/lower, Lyra
+  animation with strafing, aim offsets, left-hand IK, turn-in-place, dual
+  pistols, stationary crouch, anim logic in C++. Optional polish left: shotgun
+  per-round reload loop, 180°/crouched turns.
 - **Phase 5 (enemies)** not started. This is when the damage code — dispatching
   correctly but inert since Phase 1, because nothing has `Health` or overrides
   `TakeDamage` — finally does something. Enemies will be human, per the
@@ -1000,6 +1035,8 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-05 (3) — Third-person conversion wrap-up: new *Character rig (third person)* section, old first-person rig kept as a dated note; first-person projection principle marked historical; asset rename (`ABP_FirstPersonArms` → `ABP_Player` etc.); *Current state* refreshed.
 
 - 2026-10-05 (2) — AnimBP logic moved to C++ (`UProjectBopisAnimInstance`; Event Graph empty); *Animation architecture* rewritten around it. New *Crouch — a stationary stance* section (request vs state, `bMovementCancelsCrouch`, capsule-derived boom height). Crouch branch added to the AnimGraph description. Snap narrowed to two-handed + upright + stationary. Inertialization noted as the parked fallback.
 

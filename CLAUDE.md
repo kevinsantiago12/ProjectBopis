@@ -1,6 +1,6 @@
 # ProjectBopis
 
-Gritty, noir first-person action shooter set in the Philippines, **2002**.
+Gritty, noir third-person action shooter set in the Philippines, **2002**.
 Heavy noir narrative, John Woo / heroic-bloodshed action, Filipino
 crime/action cinema as the identity. Authored protagonist (male, late 30s–
 early 40s, cynical and tired — the opposite of Hard Boiled's Tequila).
@@ -15,13 +15,17 @@ John Woo (Hard Boiled, The Killer, A Better Tomorrow), Max Payne (as a
 translation reference, not a template), and Filipino action cinema. The
 old Bungie-era Halo reference is superseded.
 
-Unreal Engine 5.8, scaffolded from Epic's FPS template. The
-`Variant_Shooter` and `Variant_Horror` template variants have been removed
-(2026-08-09) — all gameplay systems are built from scratch against the
-design doc, not adapted from template code. Only the base `FirstPerson`
-scaffolding remains. The weapon/ammo/reticle systems built under the old
-premise are **implementation state**, not canon; they're the test bed the
-new direction gets evaluated against.
+Unreal Engine 5.8, scaffolded from Epic's FPS template and converted to
+third person (decided 2026-09-25, built on `tps-conversion`, finished
+2026-10-05). The `Variant_Shooter` and `Variant_Horror` template variants were
+removed (2026-08-09) — all gameplay systems are built from scratch against
+the design doc, not adapted from template code. The `Content/FirstPerson/`
+folder name is a template leftover kept on purpose; the assets in it were
+renamed (`BP_PlayerCharacter`, `BP_GameMode`, `BP_PlayerController`,
+`ABP_Player`, level `Lvl_Sandbox`). Animation is Lyra's library on the same
+skeleton. The weapon/ammo/reticle systems built under the old premise are
+**implementation state**, not canon; they're the test bed the new direction
+gets evaluated against.
 
 ## Division of labor
 - **Design & lore**: owned by the user + their design partner (ChatGPT).

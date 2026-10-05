@@ -7,7 +7,7 @@
 #include "ProjectBopisCameraManager.generated.h"
 
 /**
- *  Basic First Person camera manager.
+ *  Player camera manager.
  *  Limits min/max look pitch.
  */
 UCLASS()

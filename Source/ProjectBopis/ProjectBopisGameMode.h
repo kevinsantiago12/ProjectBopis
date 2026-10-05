@@ -7,7 +7,7 @@
 #include "ProjectBopisGameMode.generated.h"
 
 /**
- *  Simple GameMode for a first person game
+ *  Simple GameMode for the game
  */
 UCLASS(abstract)
 class AProjectBopisGameMode : public AGameModeBase
