@@ -216,13 +216,7 @@ is no stance change.
 
 **Camera:** unchanged by hip-fire — only `bIsAiming` moves/zooms it.
 
-**Animation plan (Step 7).** Lowered + moving: pack **jog** forward-only.
-Aiming (250): pack **aim walk** 8-way strafe. Hip-fire (500): the pack has no
-aim-jog loops, and walk clips at ~3× play rate scurry — plan is Lyra rifle
-jog strafe **legs** (`MM_Rifle_Jog_Fwd/Bwd/Left/Right`) under the shotgun aim
-**upper body** via Layered blend per bone (`spine_01`, mesh-space rotation
-blend on). Play rate clamped ~0.8–1.4× to match speed; Animation Warping's
-stride warping (plugin not enabled) as later polish.
+**Animation (built 2026-10-04).** Lowered: per-weapon locomotion facing travel. Raised (hip-fire or aim): strafe blend spaces with orientation warping, plus the hip-fire idle upper body under the montage slot (`UpperBodyAlpha`). Lyra 4-way jog clips at 500 for hip-fire strafing — the earlier plan to layer shotgun-pack upper bodies over Lyra legs was dropped with the move back to Lyra. Full graph in *Animation architecture*.
 
 ### Muzzle obstruction
 
@@ -548,37 +542,114 @@ where readability comes from. So it layers:
 
 ---
 
+## Animation architecture (AnimBP) — 2026-10-04
+
+`ABP_FirstPersonArms` drives the third-person body. **Lyra is the animation
+source** for all weapons (Shotgun Locomotion Pack rejected on quality; only its
+lowered shotgun idle is used). Built mostly through the editor bridge — see the
+ProjectPlan Gotchas for what the bridge can and can't do in AnimBPs.
+
+### Event Graph (Blueprint Update Animation)
+Everything runs inside an **`IsValid(TryGetPawnOwner)`** guard — without it the
+editor preview spams "Accessed None" (no pawn).
+
+| Variable | Value |
+|---|---|
+| `Speed` | velocity length |
+| `Direction` | `CalculateDirection(velocity, actor rotation)`, −180..180 |
+| `CardinalDirection` | nearest of 0/−90/90/180; only switches when `Direction` is >55° from the current one (10° dead zone past each 45° boundary) |
+| `WarpAngle` | `NormalizeAxis(Direction − CardinalDirection)` |
+| `AimPitch` | normalized control pitch |
+| `bIsWeaponRaised` | `IsWeaponRaised()` (C++) |
+| `UpperBodyAlpha` | FInterpTo(→ 1 if raised OR any montage playing, else 0), speed 12 |
+| `CurrentAnimType` | equipped weapon `AnimType` |
+| `LeftArmAlpha` | dual-wield ? `UpperBodyAlpha` : 0 |
+| `DualLoweredAlpha` | dual-wield ? 1 − `UpperBodyAlpha` : 0 |
+| `bUseLoweredUpperBody` | **unused** — leftover from the rolled-back shotgun layering; safe to delete |
+
+### AnimGraph (top level, in evaluation order)
+1. **Locomotion state machine** (Idle/Move). Move: per-weapon Blend Poses →
+   `BS_Rifle_Strafe` (rifle, shotgun) / `BS_Pistol_Strafe` (pistol), both
+   Direction (X ← `CardinalDirection`) × Speed (Y). 4-way Lyra walk (250) / jog
+   (500) / idle (0). Idle: per-weapon clips; shotgun lowered idle from the pack.
+2. **Orientation warping:** Local→Component → `OrientationWarping` (Manual, angle
+   ← `WarpAngle`, spine_01–05 distribute 0.5, IK foot root/feet) →
+   Component→Local → **Save Cached Pose `Loco`**. Plays the cardinal clip and
+   rotates the legs by the remainder — fixes the forward-left/back-right
+   scissoring that Lyra's side clips produce when blended (each side clip only
+   matches one diagonal pair).
+3. **Upper-body layer** (`spine_01`, mesh-space rotation): Base ← Use `Loco`;
+   Blend ← **`DefaultSlot`** whose source is the hip-fire idle (bool: pistol ?
+   `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight `UpperBodyAlpha`.
+   Montages are therefore upper-body only (legs keep stride), and the raised
+   pose holds between shots.
+4. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
+   → Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
+5. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
+   blend space (play rate **0.7**) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
+   → finger layers (thumb + metacarpals: `_r` from pistol idle, `_l` from
+   mirrored pistol idle — closed grips); weight `DualLoweredAlpha`.
+6. **Aim offset** `AO_MM_Rifle_Idle_Hipfire` (Y ← `AimPitch`, alpha
+   `UpperBodyAlpha`) → Output.
+
+### Slots
+`DefaultSlot` (DefaultGroup) and **`OffhandSlot` in its own `OffhandGroup`** —
+separate groups so the off-hand reload montage can play at the same time as the
+main one (playing a montage stops others in its group).
+
+### Sync groups
+Leg blend spaces in the Move state carry group `Locomotion` (CanBeLeader) from an
+experiment; **sync to top-level arm players never demonstrably worked**. The
+lowered-dual branch avoids the need by taking the whole body from one clip. The
+settings are harmless; treat sync between in-state and top-level players as
+unreliable.
+
+### Decided against
+- Shotgun upper body layered over Lyra legs (looked bad).
+- One-handed single pistols with an unarmed free arm (every variant looked
+  worse) — single pistols keep the two-handed grip.
+
+### Open
+- Turn-in-place for the raised/aim stance.
+- Crouched strafe (`BS_MM_Rifle_Crouch_Walk` exists).
+- Strafe jog play rate / stride warping if feet slide at 500.
+- Per-weapon aim offset (pistol AOs likely have the same missing-base-pose fault).
+
 ## Combat abilities — dual-wield, shootdodge, bullet-time
 
-Designed 2026-09-30, **none built**. Recorded because the animation
+Designed 2026-09-30. **Dual pistols built 2026-10-04**; shootdodge and bullet-time not built. Recorded because the animation
 constraints shape the code, and the approaches below were worked out against
 what the project actually owns.
 
-### Dual pistols
+### Dual pistols — built 2026-10-04 (demo)
 
-No dual-wield animation exists. It is not needed — the existing single-pistol
-pose applied twice covers it.
+**One weapon, two meshes.** `AWeaponBase` has an `OffhandMesh` component
+(present on every weapon, unused unless `bDualWield`), plus
+`OffhandGripLocationOffset`/`RotationOffset`. The holder attaches it to
+`OffhandAttachSocketName` (`hand_l`) on equip and re-attaches it to the weapon on
+unequip (while equipped it lives on the character's skeleton). Ammo, bloom and
+fire rate are one shared pool; the holder, fire input and HUD stay
+single-weapon.
 
-- A `UMirrorDataTable` auto-populates from the `_l`/`_r` bone naming the
-  mannequin already uses. The AnimGraph `Mirror` node produces a mirrored
-  pistol pose; `Layered blend per bone` rooted at `clavicle_l` takes the left
-  arm from it. Two nodes, no new assets.
-- **Alternate fire** (left, right, left, right). Only one arm recoils at a
-  time, which halves the animation problem and matches the source films. Fits
-  the existing cadence cap directly — same `TimeBetweenShots`, alternating
-  which weapon consumes it.
-- **Check whether Lyra's pistol fire animations are additive.** If they are,
-  per-arm recoil is nearly free. If they're full-body, converting them to
-  additive against the idle pose is an asset setting, not new animation.
-- **Reload is the real gap** and cannot be faked from a single-pistol reload.
-  The answer is the films': **don't reload dual pistols — throw them away when
-  dry** and fall back to the primary. Dual-wield becomes a state you *spend*
-  rather than sustain, the animation problem disappears, and the mechanic gets
-  a natural duration limit.
+- **Alternate fire** (L/R): `GetFiringMesh()` picks the hand; `GetMuzzleLocation()`
+  follows it, so the two-stage trace needs no change; sound/flash/weapon fire
+  anim play on the firing mesh; `WasLastShotOffhand()` tells the character which
+  arm to animate (`OffhandFireMontages`, falling back to `FireMontages`).
+- **Reload normally** (user decision 2026-10-04) — **supersedes the earlier
+  "throw them away when dry" design.** One reload timer refills the shared pool;
+  the character plays `ReloadMontages[type]` plus, for dual weapons,
+  `OffhandReloadMontages[type]` in `OffhandSlot` (own slot group).
+- **Animation:** see *Animation architecture* — mirrored pistol idle on the left
+  arm when raised, off-hand montages mirrored onto it, whole-body unarmed
+  locomotion with finger grips when lowered.
+- `BP_DualPistols`: mag 24, reserve 120 (max 240), `AnimType Pistol`.
 
-Code surface: `UWeaponHolderComponent` holds one `EquippedWeapon` today, fire
-input maps one action to one weapon, and the HUD shows one ammo count. All
-three widen.
+**Known issue:** the reload montage leans/twists the torso (authored for a
+two-handed reload). Fix agreed, deferred: a no-spine copy of the clip and a
+`DualReloadMontages` map used instead of `ReloadMontages` for dual weapons.
+
+**Later:** dual-capable SMGs would want a weapon flag (e.g. `bOneHanded`) rather
+than keying anything off `AnimType == Pistol`.
 
 ### Shootdodge
 
@@ -819,6 +890,8 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-04 (2) — Added *Animation architecture* (AnimBP layers, Event Graph variables, slots, sync-group caveat, rejected approaches). Dual pistols section rewritten as built; "reload normally" supersedes "throw away when dry". Hip-fire animation paragraph updated.
 
 - 2026-10-04 — Added weapon raised/lowered (hip-fire) section; stance now
   pull-style, speed decoupled from stance.

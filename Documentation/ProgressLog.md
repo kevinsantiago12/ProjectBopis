@@ -12,33 +12,123 @@
 
 ---
 
-## 2026-10-04
-**Summary:** Weapon lowered/raised system (hip-fire) — code applied by Claude
-at user's request, **not yet compiled**.
+## 2026-10-05
+**Summary:** Left-hand IK built and raised↔lowered transitions tuned.
+**The aim → lowered "arm slides through the body" issue is FIXED** (user-confirmed).
 
-- **Design (user):** not aiming → weapon lowered, jog locomotion. Firing
-  without aiming → character faces the camera, strafes, weapon raised; lowers
-  after `LowerWeaponDelay` (1.5s) without a trigger pull. Hip-fire moves at
-  free-run speed. Raised-and-moving uses walk strafe clips, lowered uses jog;
-  play rate adjusted to speed.
-- **Code (applied, not compiled):** `ProjectBopisCharacter` — `IsAiming()`
-  and new `IsWeaponRaised()` exposed `BlueprintPure`; `TimeUntilWeaponLowered`
-  countdown; stance now pull-style via `UpdateMovementStance()` in `Tick`;
-  `MaxWalkSpeed` moved out of `ApplyMovementStance` and derived per frame from
-  `bIsAiming`; `DoFire` snaps yaw to camera before a shot from lowered.
-  Spec: *Weapon raised vs lowered* in [TechnicalDesignSpec.md](TechnicalDesignSpec.md).
-- **Answered:** shotgun upper body over Lyra lower body works (Layered blend
-  per bone). Recommended for hip-fire, since the pack has no aim-jog loops.
-- **ABP fix done by user:** Shotgun pins added to the anim-type Blend Poses —
-  the A-pose was the unconnected Default Pose pin. Shotgun poses now working.
+- **Left-hand IK (Lyra style):** after the aim offset, CopyBone `hand_r` →
+  `ik_hand_gun`, then TwoBoneIK on `hand_l` to `ik_hand_l` (joint target
+  `lowerarm_l`). Alpha `LeftHandIKAlpha` = `UpperBodyAlpha` when two-handed
+  and not reloading, otherwise 0. Raised only: always-on twisted the arm in
+  the lowered clips. Shaped-IK and local-space variants were tried and rolled back.
+- **Transitions:** `UpperBodyAlpha` / `LeftHandIKAlpha` **ease up** (FInterpTo
+  12 / 10) and **snap down** (`Target < Current ? Target : FInterpTo`), so the
+  lowered pose takes over at once instead of the arm sliding through the torso.
+- **Reload-end fix:** the snap also fired when a montage ended while lowered, so
+  the end of a reload popped. Added a `bEaseLowering` latch:
+  `bEaseLowering = IsAnyMontagePlaying OR (bEaseLowering AND Target<Current)`;
+  snap only when `Target<Current AND NOT bEaseLowering`. Releasing aim still
+  snaps; a montage finishing eases down. **Wired, compiled and saved via the
+  bridge; not yet PIE-tested.**
 
 ### ▶ RESUME HERE
-1. Rebuild → Claude reads the files back + post-rebuild bridge check.
-2. PIE-test hip-fire: snap, strafe, lower after 1.5s, speeds.
-3. AnimBP: `bIsWeaponRaised` variable from `IsWeaponRaised`; lowered/raised
-   Blend Poses by bool per locomotion state.
-4. Everything from the 2026-10-03 RESUME list still open (proxy check first,
-   with the user's OK).
+1. **PIE-test the reload-end ease** (lowered → reload → watch the end).
+2. Commit: dual reload code, `AM_Pistol_Reload_Offhand`, `SK_Mannequin`,
+   `BP_FirstPersonCharacter`, `ABP_FirstPersonArms`, docs.
+3. The rest of the 2026-10-04 RESUME HERE list still stands (dual reload spine
+   deferred, turn-in-place next, registry housekeeping).
+
+---
+
+## 2026-10-04
+**Summary:** Big animation session. Hip-fire (weapon raised/lowered) compiled
+and tested. Animation source moved **back to Lyra**. The AnimBP was rebuilt
+into a layered architecture: strafe blend spaces, orientation warping,
+upper-body montage layer, raised hip-fire pose, aim offset. **Dual pistols
+built end to end for the demo.** Bridge proxy proven across six real editor
+restarts (one of them a crash). Many bridge limits mapped.
+
+### ▶ RESUME HERE
+1. **Dual reload spine motion** (left as is by user choice). `AM_Pistol_Reload`
+   leans/twists the torso for a two-handed reload; in the dual setup the right
+   arm plays it from `spine_01` up, so the spine moves. Fix agreed but deferred:
+   user makes a no-spine copy (`MM_Pistol_Reload_Dual` + `AM_Pistol_Reload_Dual`,
+   offhand montage repointed to it), then option (B) — a `DualReloadMontages` map
+   used instead of `ReloadMontages` when dual-wield (small C++, present for review).
+2. **Next feature (Claude's suggestion): turn-in-place** for the raised/aim stance.
+3. Remaining Step 7 items — see the work order.
+4. Housekeeping: the editor's asset registry lost track of `BP_DualPistols` and
+   (briefly) `ABP_FirstPersonArms` — bridge saves failed with "Asset does not
+   exist" while the assets were loaded and working. An editor restart re-scans.
+
+### Hip-fire (code compiled 2026-10-04 00:07, PIE-tested)
+As designed in the 2026-10-04 spec section *Weapon raised vs lowered*: trigger
+pull snaps yaw to camera, strafe stance, lowers after `LowerWeaponDelay`.
+**Change during testing:** hip-fire strafes at **free-run speed (500)**, not
+aiming speed — `MaxWalkSpeed` now follows the aim button only, set per frame.
+
+### Animation direction — back to Lyra (user decision)
+Shotgun Locomotion Pack quality judged below Lyra. Lyra is the source for all
+weapons; from the pack only `anim_shotgun_stand_idle` (lowered shotgun idle) and
+probably `anim_shotgun_aim_reload`. User authored `MF_Rifle_Idle_Lowered`,
+`MM_Rifle_Jog_Fwd_Lowered`, and `MM_Unarmed_Idle_Ready_Rested` (unused now).
+
+### AnimBP (`ABP_FirstPersonArms`) — built this session, mostly via the bridge
+Full architecture in [TechnicalDesignSpec.md](TechnicalDesignSpec.md) →
+*Animation architecture*. Highlights:
+- **Event Graph:** pawn `IsValid` guard (killed the editor-preview "Accessed
+  None" spam); `Speed`, `Direction`, `CardinalDirection` + `WarpAngle`,
+  `AimPitch`, `bIsWeaponRaised`, `UpperBodyAlpha`, `LeftArmAlpha`,
+  `DualLoweredAlpha`, `CurrentAnimType`.
+- **Strafe:** user-built `BS_Rifle_Strafe` / `BS_Pistol_Strafe` (Direction ×
+  Speed, Lyra 4-way walk/jog) in the Move state.
+- **Diagonals:** forward-left / back-right scissored (Lyra side clips match only
+  one diagonal pair). Fixed with **orientation warping** — Animation Warping
+  plugin enabled; cardinal clip + leg rotation by `WarpAngle`.
+- **Montages upper-body only:** fire/reload over a `spine_01` layer, legs keep
+  full stride.
+- **Raised hip-fire upper body:** hip-fire idle under the montage slot, weight
+  `UpperBodyAlpha` (raised OR montage playing).
+- **Aim offset** `AO_MM_Rifle_Idle_Hipfire`. Its 15 samples had **no base pose**
+  (made the character giant); user set base = `MM_Rifle_Idle_Hipfire_AO_CC`.
+- **Lowered shotgun idle** in the Idle state (user, by hand).
+
+### Dual pistols (demo feature) — built end to end
+- **Code (applied by Claude on request, compiled 15:15 + 18:11):** `AWeaponBase`
+  gains an `OffhandMesh` component, `bDualWield`, off-hand grip offsets,
+  alternating fire (muzzle/feedback per hand, `WasLastShotOffhand()`);
+  `UWeaponHolderComponent` attaches it to `hand_l` and recovers it on unequip;
+  character gains `OffhandFireMontages` and `OffhandReloadMontages`.
+- **Design decisions (user):** alternate L/R fire; **reload normally**
+  (supersedes the spec's "throw away when dry"); starting weapon for now.
+- **`BP_DualPistols`:** mag 24 / reserve 120 (max 240), `AnimType Pistol`,
+  off-hand grip tuned by user.
+- **Raised:** mirrored pistol idle on the left arm (`MDT_Mannequin`, user-made;
+  Mirror node; `clavicle_l` layer).
+- **Left recoil + reload:** `OffhandSlot` (own slot group `OffhandGroup`, so it
+  plays alongside the default slot) inside the mirrored branch;
+  `AM_Pistol_Fire_Offhand`, `AM_Pistol_Reload_Offhand`.
+- **Lowered:** whole body (pelvis-rooted layer) from the unarmed walk/jog with
+  pistol finger grips; unarmed blend space play rate **0.7** (its cadence is
+  naturally quicker than the pistol jog).
+
+### Tried and rolled back
+- **Shotgun upper-body layering via cached poses** — first attempt broken
+  (byte-typed enum compare), second built with user-placed Use Cached Pose nodes,
+  then judged "looks bad" and removed.
+- **Sync groups** between in-state leg blend spaces and top-level arm players —
+  never demonstrably worked (arms kept their own cadence). Whole-body unarmed for
+  lowered duals made sync unnecessary.
+- **One-handed single pistol** (free arm unarmed: swinging, still, reduced swing,
+  rested pose over the midriff, synced swing) — all judged worse. **Single
+  pistols stay two-handed.** Fully removed.
+
+### Bridge findings (details in ProjectPlan Gotchas)
+Can't create nodes in anim states (can set properties there); can't create Use
+Cached Pose nodes; anim compile errors invisible; graph DSL read-back lossy;
+array properties can't change size and contents in one write; blend space sample
+writes crashed the editor on save; derived data unreadable; asset registry can
+drop assets. **The stdio proxy reconnected after every restart, including a crash.**
 
 ---
 
@@ -48,7 +138,7 @@ forward. Shotgun work started. A week-old bridge-reconnect belief corrected.
 
 ### ▶ RESUME HERE — next session, in this order
 
-1. **First thing: confirm the new bridge proxy is live.** The stdio proxy
+1. ~~**First thing: confirm the new bridge proxy is live.**~~ **Done 2026-10-04 — proxy confirmed live and restart-proof (six restarts, one a crash).** The stdio proxy
    (`.claude/unreal-mcp-proxy.mjs`) was set up 2026-10-03, but the session
    that built it stayed on the old direct-HTTP connection by choice, so it
    has **not yet run inside a real Claude Code session**. A fresh session

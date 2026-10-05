@@ -111,8 +111,9 @@ is a decision for design to make, not an assumption to carry forward.
 
 ### Open
 
-- Which of dual-wielding, dive/slide gunfire and slow motion actually make
-  it in, and in what form.
+- Dual-wielding is in (dual pistols, firing alternately — see Weapons). Which
+  of dive/slide gunfire and slow motion make it in, and in what form, is still
+  open.
 - How "destructible-feeling" is delivered — cosmetic chaos versus mechanical
   destruction.
 - Whether the existing accuracy model stays, changes, or goes.
@@ -136,6 +137,13 @@ distinct handling, ammunition, reloading, and per-weapon crosshairs. Their
 current art is placeholder sci-fi and will be replaced. Their *roles* were
 designed for the previous premise and are open to revision.
 
+Two more now exist alongside them: a **shotgun** — fast follow-up shots,
+loaded one shell at a time, and devastating up close but weak at range — and
+**dual pistols**. Dual pistols fire left, right, left, right with each trigger
+pull, and both guns reload together. The character carries them very
+differently from a single gun: arms down and loose at the sides when not
+fighting, both guns up and pointed when shooting.
+
 The previous version also had one weapon fire a visible, dodgeable
 projectile, justified by future-tech physics. That justification is gone
 with the setting. The projectile system itself is built and working and is
@@ -152,7 +160,10 @@ general-purpose weapon staying viable across most of the game; ammo as a
 
 - The actual weapon roster.
 - How many weapons are carried at once.
-- Whether and how dual-wielding works mechanically.
+- ~~Whether and how dual-wielding works mechanically.~~ Decided: dual pistols
+  fire alternately and reload like any weapon (rather than being thrown away
+  when empty). Whether other weapons, such as small submachine guns, can also
+  be dual-wielded is open.
 - What, if anything, uses the projectile system.
 
 ---

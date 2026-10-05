@@ -372,13 +372,26 @@ void AProjectBopisCharacter::DoReload()
 		return;
 	}
 
-	TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(EquippedWeapon->GetAnimType());
-
-	if (FoundMontage && *FoundMontage)
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
 	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		return;
+	}
+
+	const EWeaponAnimType AnimType = EquippedWeapon->GetAnimType();
+
+	if (TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(AnimType); FoundMontage && *FoundMontage)
+	{
+		AnimInstance->Montage_Play(*FoundMontage);
+	}
+
+	// Dual wield reloads both guns in one beat: the off hand plays its own montage in its
+	// own slot group, mirrored onto the left arm by the AnimBP.
+	if (EquippedWeapon->IsDualWield())
+	{
+		if (TObjectPtr<UAnimMontage>* FoundOffhand = OffhandReloadMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
 		{
-			AnimInstance->Montage_Play(*FoundMontage);
+			AnimInstance->Montage_Play(*FoundOffhand);
 		}
 	}
 }

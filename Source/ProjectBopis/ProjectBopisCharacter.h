@@ -68,6 +68,12 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandFireMontages;
 
+	/** Reload montages for the off hand of a dual-wield weapon, played alongside the main
+	    reload montage. Their slot must sit in a different slot group from the main one,
+	    or starting one stops the other. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandReloadMontages;
+
 	/** Reload montages played on the character mesh, keyed by the equipped weapon's anim type. */
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> ReloadMontages;
