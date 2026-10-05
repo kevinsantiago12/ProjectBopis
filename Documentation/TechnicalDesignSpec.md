@@ -218,6 +218,34 @@ is no stance change.
 
 **Animation (built 2026-10-04).** Lowered: per-weapon locomotion facing travel. Raised (hip-fire or aim): strafe blend spaces with orientation warping, plus the hip-fire idle upper body under the montage slot (`UpperBodyAlpha`). Lyra 4-way jog clips at 500 for hip-fire strafing — the earlier plan to layer shotgun-pack upper bodies over Lyra legs was dropped with the move back to Lyra. Full graph in *Animation architecture*.
 
+### Crouch — a stationary stance (2026-10-05)
+
+Design (Lore notes, 2026-10-05): constant motion in fights; crouch is momentary
+cover or reload cover. So crouch only applies while standing still.
+
+- **Request vs state.** `DoCrouchStart`/`DoCrouchEnd` only set
+  `bCrouchRequested` (toggle or hold per `bCrouchIsToggle`). `UpdateCrouch()`
+  (Tick, before `UpdateMovementStance`) calls `Crouch()` when requested AND no
+  movement input (`GetCurrentAcceleration()` ≈ 0 — input, not velocity, so it
+  reacts the same frame) AND on the ground; otherwise `UnCrouch()`. Moving
+  therefore always stands the character up and moves exactly as standing
+  (free-run, or strafe while aiming); stopping re-crouches.
+- **`bMovementCancelsCrouch`** (default false, `BlueprintReadWrite`): true makes
+  moving clear the request, so stopping leaves the character standing — and a
+  crouch press while moving does nothing, which is where a slide-to-prone would
+  hook in if it's ever confirmed (`DoCrouchStart` with movement input).
+- **Camera stays put.** Crouching shrinks the capsule and drops its centre; the
+  boom rides the capsule. `UpdateCameraTransition` sets the boom Z every frame
+  to `BoomBaseHeight + (DefaultCapsuleHalfHeight − current half-height) +
+  CurrentCrouchCameraOffset` — the capsule part instant (else the camera dips
+  and floats back), `CrouchCameraOffset` (default 0) eased at
+  `CameraTransitionSpeed` for an optional deliberate lowering.
+  **Not** via `OnStartCrouch`/`OnEndCrouch` deltas: the engine's early-out paths
+  report 0 adjustments, so start/end don't always pair and accumulating them
+  drifted the camera out of the map.
+- `CrouchedSpeed` is now only used if a ceiling blocks the uncrouch (the
+  movement component keeps retrying it).
+
 ### Muzzle obstruction
 
 `bBlockShotWhenMuzzleObstructed` (default on) traces from the **actor centre**
@@ -542,45 +570,73 @@ where readability comes from. So it layers:
 
 ---
 
-## Animation architecture (AnimBP) — 2026-10-04
+## Animation architecture (AnimBP) — 2026-10-04, logic moved to C++ 2026-10-05
 
 `ABP_FirstPersonArms` drives the third-person body. **Lyra is the animation
 source** for all weapons (Shotgun Locomotion Pack rejected on quality; only its
-lowered shotgun idle is used). Built mostly through the editor bridge — see the
-ProjectPlan Gotchas for what the bridge can and can't do in AnimBPs.
+lowered shotgun idle is used). The AnimGraph was built mostly through the editor
+bridge — see the ProjectPlan Gotchas for what the bridge can and can't do in
+AnimBPs.
 
-### Event Graph (Blueprint Update Animation)
-Everything runs inside an **`IsValid(TryGetPawnOwner)`** guard — without it the
-editor preview spams "Accessed None" (no pawn).
+### Logic — `UProjectBopisAnimInstance` (C++, 2026-10-05)
+The AnimBP's parent class. `NativeUpdateAnimation` computes every value the
+AnimGraph reads; **the AnimBP's Event Graph is empty** and it has no variables of
+its own. Previously ~140 Blueprint nodes, unreadable and undiffable; moved so
+logic changes are code edits instead of bridge wiring.
 
-| Variable | Value |
+Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
+`UpdateLocomotion` → weapon state → `UpdateUpperBody` → `UpdateArmAlphas` →
+`UpdateTurnInPlace`. With no pawn (AnimBP preview) everything stays at defaults.
+
+| Property (AnimGraph reads) | Value |
 |---|---|
 | `Speed` | velocity length |
-| `Direction` | `CalculateDirection(velocity, actor rotation)`, −180..180 |
+| `Direction` | travel yaw relative to actor yaw, −180..180 |
 | `CardinalDirection` | nearest of 0/−90/90/180; only switches when `Direction` is >55° from the current one (10° dead zone past each 45° boundary) |
 | `WarpAngle` | `NormalizeAxis(Direction − CardinalDirection)` |
 | `AimPitch` | normalized control pitch |
-| `bIsWeaponRaised` | `IsWeaponRaised()` (C++) |
-| `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. **Eases up** (FInterpTo 12), **snaps down** — except while `bEaseLowering` (2026-10-05) |
-| `bEaseLowering` | latch: `IsSlotActive(DefaultSlot) OR (bEaseLowering AND Target < Current)`. Makes the drop after a montage ends ease instead of snap; releasing aim still snaps |
+| `bIsCrouched` | character `bIsCrouched` |
+| `bIsWeaponRaised` | character `IsWeaponRaised()` |
 | `CurrentAnimType` | equipped weapon `AnimType` |
-| `LeftArmAlpha` | dual-wield ? `UpperBodyAlpha` : 0 |
-| `DualLoweredAlpha` | dual-wield ? 1 − `UpperBodyAlpha` : 0 |
-| `LeftHandIKAlpha` | target = `UpperBodyAlpha` if two-handed and not reloading, else 0; eases up (FInterpTo 10), snaps down |
-| `RootYawOffset`, `LastActorYaw`, `PrevTurnYawCurve`, `bWasWeaponRaised`, `TurnScale` | turn-in-place — see below |
-| `bUseLoweredUpperBody` | **unused** — leftover from the rolled-back shotgun layering; safe to delete |
+| `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only when two-handed AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
+| `LeftArmAlpha` | duals only: `Lerp(UpperBodyAlpha, 1, DualCrouchBlend)` |
+| `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
+| `LeftHandIKAlpha` | target = `UpperBodyAlpha` if two-handed and not reloading, else 0; eases up (10), snaps down (the target itself eases whenever the layer does) |
+| `RootYawOffset` | turn-in-place — see below |
 
-**Why snap down:** easing the raised layer out moved the left arm through the
-torso on aim release (both the layer blend and the IK). Snapping hands over to
-the lowered pose at once; easing up is kept because raising looked right.
-`IsSlotActive("DefaultSlot")` replaced `IsAnyMontagePlaying` so turn montages
-don't count as "a montage is playing".
+Private state (no `UPROPERTY`): `bEaseLowering` (latch: `IsSlotActive(DefaultSlot)
+OR (latch AND lowering)` — the drop after a montage ends eases), `bIsDualWield`,
+`DualCrouchBlend` (eased `bIsCrouched` — crouched duals hold both guns up, since
+the lowered-dual layer is a standing pose; easing it means standing up lowers
+the guns smoothly), and the turn-in-place bookkeeping.
+
+Tuning on the AnimBP class defaults: `UpperBodyInterpSpeed`,
+`LeftHandIKInterpSpeed`, `RootYawRecoverySpeed`, `StationarySpeed`,
+`TurnThreshold`, `MaxRootYawOffset`, `TurnLeftMontage`, `TurnRightMontage`.
+
+**AnimGraph-facing reals are `double`.** Blueprint "Float" is double in UE5, and
+on reparenting a Blueprint variable only merges into a same-named native
+property of exactly the same type. Declared as `float`, the editor renamed the
+Blueprint copies (`Speed_0`…) and the getters kept reading them.
+
+**Why the snap, and why so narrow:** easing the raised layer out on a two-handed
+grip moved the left arm through the torso. A snap hides that, but read as a pop
+everywhere except standing still upright — so moving, crouched, duals and
+post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
+`IsAnyMontagePlaying`) so turn montages don't count as a fire/reload.
 
 ### AnimGraph (top level, in evaluation order)
 1. **Locomotion state machine** (Idle/Move). Move: per-weapon Blend Poses →
    `BS_Rifle_Strafe` (rifle, shotgun) / `BS_Pistol_Strafe` (pistol), both
    Direction (X ← `CardinalDirection`) × Speed (Y). 4-way Lyra walk (250) / jog
    (500) / idle (0). Idle: per-weapon clips; shotgun lowered idle from the pack.
+   **Crouch branch** (2026-10-05, top level — the bridge can't add nodes inside
+   states): Blend by bool `bIsCrouched` (0.25 s; True ← crouch, False ← state
+   machine) where crouch = Blend by bool `Speed > 10` (0.2 s) between crouch idle
+   (`MM_Rifle/Pistol_Crouch_Idle`) and crouch walk (`BS_MM_Rifle_Crouch_Walk` /
+   `BS_MM_Pistol_Crouch_Walk`, 1D, X ← `CardinalDirection`), each picked by
+   `CurrentAnimType == Pistol`. Since crouch is stationary-only, the walk is a
+   fallback for a ceiling blocking the uncrouch.
 2. **Orientation warping:** Local→Component → `OrientationWarping` (Manual, angle
    ← `WarpAngle`, spine_01–05 distribute 0.5, IK foot root/feet) →
    Component→Local → **`TurnSlot`** (turn-in-place montages) → **Save Cached
@@ -613,7 +669,7 @@ don't count as "a montage is playing".
 8. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) → Output.
 
 ### Turn-in-place (2026-10-05)
-Lyra approach, AnimBP only, no C++. The capsule still follows the camera
+Lyra approach; built in the AnimBP, now in `UpdateTurnInPlace` (C++). The capsule still follows the camera
 (`bUseControllerRotationYaw`), so gameplay and aim are untouched; only the
 visible mesh lags.
 
@@ -659,7 +715,10 @@ unreliable.
 ### Open
 - Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),
   per-weapon turn sets.
-- Crouched strafe (`BS_MM_Rifle_Crouch_Walk` exists).
+- Inertialization for the remaining two-handed snap, if it ever reads badly:
+  Inertialization node before the Output plus `RequestSlotGroupInertialization
+  ("TurnGroup", 0.3)` on the snap frame (TurnSlot is always evaluated; a slot
+  forwards requests even with nothing playing — checked in engine source).
 - Strafe jog play rate / stride warping if feet slide at 500.
 - Shotgun aim offset: uses the rifle AO (fine so far); unarmed AO samples
   probably have the same missing-base-pose fault if ever used.
@@ -750,7 +809,8 @@ The dive lands prone, but this does **not** reverse the no-prone decision of
   diving, exited by getting up. No crawl, no prone-walk, no manual entry. A
   fraction of the cost, and the animations came with the pack.
 
-Stance model: **standing, crouched (toggle), prone (transient, dive-only).**
+Stance model: **standing, crouched (toggle — stationary only since 2026-10-05,
+see *Crouch*), prone (transient, dive-only).**
 
 Landing prone is also what makes the dive *cost* something. A dive that only
 evades is free; one that puts you on the floor for a second is a trade. That
@@ -940,6 +1000,8 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-05 (2) — AnimBP logic moved to C++ (`UProjectBopisAnimInstance`; Event Graph empty); *Animation architecture* rewritten around it. New *Crouch — a stationary stance* section (request vs state, `bMovementCancelsCrouch`, capsule-derived boom height). Crouch branch added to the AnimGraph description. Snap narrowed to two-handed + upright + stationary. Inertialization noted as the parked fallback.
 
 - 2026-10-05 — Animation architecture updated: snap-down alphas + `bEaseLowering` latch, left-hand IK, chained rifle/pistol aim offsets, new *Turn-in-place* subsection, `TurnSlot`/`TurnGroup`. Dual reload torso motion marked won't-fix.
 

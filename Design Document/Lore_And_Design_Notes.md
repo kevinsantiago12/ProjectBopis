@@ -485,6 +485,14 @@ Desired action language can include:
 
 The narrative can remain grim while the combat is deliberately extravagant.
 
+**Movement and crouch (user decision, 2026-10-05).** By design the player is
+in constant motion during fights. Crouching is for momentary cover or cover
+while reloading — not a way of moving. Crouch is a stationary stance: the
+player only crouches while standing still, and moving stands them up (moving
+while aiming is the normal standing strafe). Whether stopping again returns to
+the crouch or stays standing is an open toggle. *Idea, not confirmed:* pressing
+crouch while moving could become a slide to prone.
+
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively
 on Hong Kong or American references.

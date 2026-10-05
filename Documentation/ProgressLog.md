@@ -15,8 +15,9 @@
 ## 2026-10-05
 **Summary:** Left-hand IK built, raised↔lowered transitions tuned, reload-end
 ease, **turn-in-place built and working**, **pistol wrist twist fixed** with
-the pistol aim offset. All user-confirmed in PIE. Dual reload torso motion
-dropped as won't-fix. Full detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md)
+the pistol aim offset. Later: **crouch redesigned as a stationary stance**,
+lowering snap narrowed, **AnimBP logic moved to C++**. All user-confirmed in
+PIE. Dual reload torso motion dropped as won't-fix. Full detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md)
 → *Animation architecture*.
 **The aim → lowered "arm slides through the body" issue is FIXED** (user-confirmed).
 
@@ -61,14 +62,51 @@ rifle ones; user set base pose = `MM_Pistol_Idle_ADS_AO_CC` on all 15. AnimGraph
 now chains rifle → pistol aim offsets with exclusive alphas by `AnimType`, and
 the dual left arm uses the pistol AO (yaw sign flipped for the mirror).
 
+*(Committed and pushed by the user mid-session.)*
+
+### Crouch — redesigned as a stationary stance (PIE-confirmed)
+**New design canon from the user** (imported into `Lore_And_Design_Notes.md`):
+constant motion in fights; crouch is momentary cover or reload cover. So: no
+crouch-walking, the camera doesn't move, crouch only applies standing still,
+moving stands up and moves as standing (strafe if aiming), stopping
+re-crouches. Slide-to-prone on crouch-while-moving is an **unconfirmed idea**.
+- **C++ (applied by Claude on request):** `bCrouchRequested` + `UpdateCrouch()`;
+  `bMovementCancelsCrouch` flag (default false = retain the request).
+- **Camera bug:** the first version adjusted the boom in `OnStartCrouch`/
+  `OnEndCrouch`; the engine's callbacks don't always pair, and the camera drifted
+  out of the map. Now the boom Z is derived from the capsule's current size every
+  frame, plus an optional eased `CrouchCameraOffset` (default 0).
+- **AnimGraph:** top-level crouch branch (crouch idle / crouch walk per weapon);
+  user built `BS_MM_Pistol_Crouch_Walk`. The walk is only a low-ceiling fallback now.
+- Crouch blend times were silently 0.1 s — pin edits never reached the node
+  settings; fixed via the `Node` struct (new gotcha).
+
+### Lowering snap narrowed (PIE-confirmed)
+User felt the raised→lowered snap everywhere. It now applies only to
+**two-handed weapons, standing upright and still**; moving, crouched, duals and
+post-montage drops ease. Crouched duals blend their arm layers via an eased
+`DualCrouchBlend`, so standing up no longer snaps. Inertialization was
+designed (spec → *Open*) and parked — not needed so far.
+
+### AnimBP logic moved to C++ (PIE-confirmed: "roughly the same as before")
+User was concerned the Event Graph had become a mess (~140 bridge-built
+nodes). Option B, done by Claude on request: `UProjectBopisAnimInstance`
+computes everything in `NativeUpdateAnimation`; `ABP_FirstPersonArms`
+reparented, Event Graph emptied, no Blueprint variables left (including the
+dead `bUseLoweredUpperBody`). Rehearsed on throwaway copies first — the first
+rehearsal showed Blueprint/C++ variables only merge on exact type match, so the
+AnimGraph-facing reals became `double`. Tuning values are now class defaults.
+From here, anim logic changes are C++ edits the user can review in git.
+
 ### ▶ RESUME HERE
-1. **Commit** today's AnimBP/clip/skeleton/docs changes (not yet committed —
-   the user commits).
-2. Next candidates: **crouched strafe** (`BS_MM_Rifle_Crouch_Walk` exists),
-   turn-in-place extras (180°, crouched turns), or move on from Step 7 —
-   user's call.
-3. Housekeeping: delete unused `bUseLoweredUpperBody`; asset-registry dropout
-   (restart re-scans).
+1. **Commit** the crouch, snap and C++ anim work plus docs (the user commits).
+2. **Clean-up** (work order): delete the empty `Blueprint Update Animation`
+   node; fix the stale `DoCrouchStart` comment (C++ — present for review);
+   restart the editor for the asset-registry dropout.
+3. **Remaining Step 7:** shotgun per-round reload loop (waits on the user's
+   montage); turn-in-place extras (180°, crouched turns) are optional.
+4. Then **Step 8 — docs and merge** `tps-conversion` → `main`, which closes the
+   third-person conversion.
 
 ---
 

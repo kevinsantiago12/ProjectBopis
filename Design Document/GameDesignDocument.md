@@ -96,6 +96,11 @@ The Killer, A Better Tomorrow. The action language the game is reaching for:
 That last point is the organising principle. The player is meant to be
 moving through a fight, not hiding from it.
 
+Crouching follows from that. It's a momentary stance for ducking behind
+something or reloading under cover — the character only crouches while
+standing still, and the moment the player moves they're up and moving again.
+There's no crouch-walking.
+
 ### Under reconsideration
 
 The previous version of the game built its combat on a specific accuracy
