@@ -47,13 +47,19 @@ rounds. **Rebuild script** added. All user-confirmed in PIE. Detail in
   90 → 45.
 - **`Tools/RebuildEditor.bat`:** close editor → UBT build → reopen. Rule added to
   `Claude-Rules.md` (run only when asked).
+- **Crouch tweaks (PIE-confirmed):** guns looked raised and the crouch read as
+  "sitting" — both from Lyra's weapon-up crouch idle. User swapped the long-gun
+  crouch idle to the pack's `anim_shotgun_crouch_idle` (kneeling, gun neutral).
+  Crouched duals no longer force the mirrored left arm up — the left hand comes
+  from the crouch clip until raised (C++, applied on request).
 
 ### ▶ RESUME HERE
-1. **Commit** today's code, assets and docs (the user commits and pushes).
+1. **Commit** today's code, assets and docs (the user is pushing).
 2. **User's own work:** left-hand FK edits on the lowered/hip-fire clips;
    shotgun range/reload tuning.
 3. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun-specific
-   hip-fire idle (`MM_Shotgun_Idle_Hipfire`).
+   hip-fire idle (`MM_Shotgun_Idle_Hipfire`); pistol kneeling crouch (still
+   Lyra's sitting `MM_Pistol_Crouch_Idle`).
 4. **Next:** ammo HUD + pickups (Phase 4 C–D, on hold until the user says), or
    **Phase 5 — enemy archetype foundation**.
 

@@ -130,15 +130,14 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		return;
 	}
 
-	// Duals: the mirrored left arm follows the raised layer. Crouched duals hold both
-	// guns up, since the lowered-dual layer is a standing pose — blended by the eased
-	// crouch so standing up lowers the guns smoothly.
+	// Duals: the mirrored left arm follows the raised layer. Crouched, the
+	// lowered-dual layer (a standing whole-body pose) is faded out — eased with the
+	// crouch so standing up blends it back in — and the left arm comes from the
+	// crouch clip until raised.
 	DualCrouchBlend = FMath::FInterpTo(
 		DualCrouchBlend, bIsCrouched ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
-	LeftArmAlpha = bIsDualWield
-		? FMath::Lerp(UpperBodyAlpha, 1.0, DualCrouchBlend)
-		: 0.0;
+	LeftArmAlpha = bIsDualWield ? UpperBodyAlpha : 0.0;
 
 	DualLoweredAlpha = bIsDualWield
 		? (1.0 - UpperBodyAlpha) * (1.0 - DualCrouchBlend)

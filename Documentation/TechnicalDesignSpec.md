@@ -627,7 +627,7 @@ Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
 | `bIsWeaponRaised` | character `IsWeaponRaised()` |
 | `CurrentAnimType` | equipped weapon `AnimType` |
 | `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only when two-handed AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
-| `LeftArmAlpha` | duals only: `Lerp(UpperBodyAlpha, 1, DualCrouchBlend)` |
+| `LeftArmAlpha` | duals only: `UpperBodyAlpha` (2026-10-06: crouched duals no longer force the arm up — lowered and crouched, the left hand comes from the crouch clip) |
 | `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
 | `LeftHandIKAlpha` | target = 1 **only while aiming (ADS) a long gun** (not Pistol, not dual) and not reload-animating, else 0; eases up (10), snaps down. Every other pose — lowered, hip-fire raised, moving, pistols — keeps the clip's hand-authored left hand (2026-10-06) |
 | `LeftHandGripLocation`, `LeftHandGripAlpha` | the weapon's `LeftHandGrip` socket position relative to `hand_r` (from world transforms); alpha 1 if the weapon has the socket, else 0 (falls back to the clip's `ik_hand_l`) |
@@ -635,9 +635,9 @@ Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
 
 Private state (no `UPROPERTY`): `bEaseLowering` (latch: `IsSlotActive(DefaultSlot)
 OR (latch AND lowering)` — the drop after a montage ends eases), `bIsDualWield`,
-`DualCrouchBlend` (eased `bIsCrouched` — crouched duals hold both guns up, since
-the lowered-dual layer is a standing pose; easing it means standing up lowers
-the guns smoothly), and the turn-in-place bookkeeping.
+`DualCrouchBlend` (eased `bIsCrouched` — fades the standing lowered-dual layer
+out while crouched, since it would stand the character back up; easing it
+means standing up blends it back in), and the turn-in-place bookkeeping.
 
 Tuning on the AnimBP class defaults: `UpperBodyInterpSpeed`,
 `LeftHandIKInterpSpeed`, `RootYawRecoverySpeed`, `StationarySpeed`,
@@ -662,7 +662,10 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    **Crouch branch** (2026-10-05, top level — the bridge can't add nodes inside
    states): Blend by bool `bIsCrouched` (0.25 s; True ← crouch, False ← state
    machine) where crouch = Blend by bool `Speed > 10` (0.2 s) between crouch idle
-   (`MM_Rifle/Pistol_Crouch_Idle`) and crouch walk (`BS_MM_Rifle_Crouch_Walk` /
+   (long guns: **`anim_shotgun_crouch_idle`** from the Shotgun Locomotion Pack —
+   a kneeling crouch with the gun at neutral, swapped in by the user 2026-10-06;
+   Lyra's own crouch is weapon-up and sitting. Pistols: `MM_Pistol_Crouch_Idle`)
+   and crouch walk (`BS_MM_Rifle_Crouch_Walk` /
    `BS_MM_Pistol_Crouch_Walk`, 1D, X ← `CardinalDirection`), each picked by
    `CurrentAnimType == Pistol`. Since crouch is stationary-only, the walk is a
    fallback for a ceiling blocking the uncrouch.
@@ -1110,6 +1113,7 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-06 (2) — Crouch: long-gun crouch idle is the pack's kneeling neutral clip; crouched duals take the left arm from the crouch clip (`LeftArmAlpha` no longer forced up).
 - 2026-10-06 — Shotgun polish: `RoundsPerLoad`, `PumpShotgun` anim type + `BP_PumpShotgun`, per-round reload montage (Start/Loop/End, crossfaded Loop restart, End via SetNextSection), IK off through the rack. Left-hand IK reworked to the `LeftHandGrip` socket, aim-only on long guns (history recorded). `TurnThreshold` 45. Inertialization node added. `bStopAllMontages` note corrected (slot-group scoped). Build script noted.
 
 - 2026-10-05 (3) — Third-person conversion wrap-up: new *Character rig (third person)* section, old first-person rig kept as a dated note; first-person projection principle marked historical; asset rename (`ABP_FirstPersonArms` → `ABP_Player` etc.); *Current state* refreshed.

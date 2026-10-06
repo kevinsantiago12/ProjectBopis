@@ -154,7 +154,7 @@ private:
 	/** Fraction of a 90-degree turn clip the current turn should cover. */
 	float TurnScale = 1.0f;
 
-	/** Eased 0..1 version of bIsCrouched for the dual-pistol arm layers, so standing up
-	    blends the guns down instead of snapping them. */
+	/** Eased 0..1 version of bIsCrouched that fades the standing lowered-dual layer out
+	    while crouched, so standing up blends it back in instead of snapping. */
 	float DualCrouchBlend = 0.0f;
 };
