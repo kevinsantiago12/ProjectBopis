@@ -407,15 +407,34 @@ is the opt-out.
 
 **Reload styles (2026-10-03).** `EReloadStyle` on the weapon: `Magazine`
 (default — the timer above) or `PerRound` for tube-fed shotguns.
-`PerRound` waits `ReloadStartDelay`, then loads one round every
-`TimePerRound` via a self-re-arming `LoadRound()` timer until full or the
-reserve is dry. Each round is committed as it goes in. **Firing interrupts a
-`PerRound` reload** when at least one round is loaded — `Fire()` cancels the
-reload and shoots; with nothing loaded it still returns `Reloading`.
-Animation sync is not wired: a per-round montage needs Start/Loop/End sections
-driven by weapon state, which wants weapon delegates (`OnRoundLoaded`,
-`OnReloadEnded`) — deferred to TPS Step 7. Not modelled: chambering after a
-reload from empty.
+`PerRound` waits `ReloadStartDelay`, then loads **`RoundsPerLoad`** rounds
+(default 1; 2 on both shotguns, 2026-10-06) every `TimePerRound` via a
+self-re-arming `LoadRound()` timer until full or the reserve is dry — a batch
+stops short if the magazine fills or the reserve runs out mid-batch. Each
+round is committed as it goes in. **Firing interrupts a `PerRound` reload**
+when at least one round is loaded — `Fire()` cancels the reload and shoots;
+with nothing loaded it still returns `Reloading`. Not modelled: chambering
+after a reload from empty.
+
+**Per-round reload animation (2026-10-06).** `AM_Shotgun_Reload` has sections
+`Start` → `Loop` (one load cycle; linked `Loop → Loop` in the asset) and `End`
+(the rack, unlinked). Timings match the sections: `ReloadStartDelay` = Start
+length, `TimePerRound` = Loop length (user-set). The character drives it in
+`UpdateReloadMontage()` (Tick), polling weapon state — no delegates needed:
+- **Loop wrap:** section jumps inside a montage never blend, and the clip has no
+  matching pose at the wrap, so it snapped. A blend-time (`ReloadLoopBlendTime`,
+  0.15) before Loop's end, it re-plays the same montage from Loop's start via
+  `Montage_PlayWithBlendIn(..., bStopAllMontages = true)` — the old copy fades
+  out as the new one fades in. (`false` left the old copy looping underneath
+  forever.)
+- **End:** once the weapon stops reloading (full, dry, or swapped), Loop's next
+  section is re-pointed to `End` (`Montage_SetNextSection`, this playthrough
+  only) — the current insert finishes, then the rack plays.
+- `ActiveReloadMontage` tracks the montage from `DoReload` until it stops;
+  `IsReloadAnimating()` exposes that so the AnimBP keeps the left-hand IK off
+  through the whole montage, rack included (the weapon's `IsReloading()` goes
+  false before the rack).
+- Montages without a `Loop` section (magazine reloads) are untouched.
 
 ### Pellets and damage falloff (2026-10-03)
 
@@ -434,9 +453,17 @@ shot can produce up to N damage events on one target; aggregate per actor once
 `Health` and hit reactions exist. The pattern is random (`VRandCone`); a
 fixed authored pattern is a design question.
 
-The shotgun is SPAS-style: **semi-auto, no pump between shots** — just
-`FireMode Semi` with a short `TimeBetweenShots`. A pump-action variant needs
-no code (longer cadence, pump in the fire animation).
+**Two shotguns (2026-10-06, design in the lore notes):** `BP_Shotgun`
+(SPAS-style, semi-auto, no pump — standard `AM_Shotgun_Fire`) and
+`BP_PumpShotgun` (`AnimType = PumpShotgun`, `AM_Shotgun_Fire_Pump` with the pump
+at the end). Same mesh (`Shotgun_A`), same reload montage. Intent: DOOM-style
+**range** (tighter `PelletSpreadAngle`, far falloff distances) with a **very
+slow reload** as the main drawback — tuning is the user's, later. At the
+current 0.3 s `TimeBetweenShots`, a quick follow-up cuts the pump animation
+short; raise it to the pump length if the pump should always finish.
+`PumpShotgun` exists only so the fire montage can differ — the AnimGraph's
+per-weapon Blend Poses by Enum nodes got matching pins (user, by hand), and the
+character's montage maps need an entry for it like any anim type.
 
 ---
 
@@ -602,7 +629,8 @@ Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
 | `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only when two-handed AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
 | `LeftArmAlpha` | duals only: `Lerp(UpperBodyAlpha, 1, DualCrouchBlend)` |
 | `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
-| `LeftHandIKAlpha` | target = `UpperBodyAlpha` if two-handed and not reloading, else 0; eases up (10), snaps down (the target itself eases whenever the layer does) |
+| `LeftHandIKAlpha` | target = 1 **only while aiming (ADS) a long gun** (not Pistol, not dual) and not reload-animating, else 0; eases up (10), snaps down. Every other pose — lowered, hip-fire raised, moving, pistols — keeps the clip's hand-authored left hand (2026-10-06) |
+| `LeftHandGripLocation`, `LeftHandGripAlpha` | the weapon's `LeftHandGrip` socket position relative to `hand_r` (from world transforms); alpha 1 if the weapon has the socket, else 0 (falls back to the clip's `ik_hand_l`) |
 | `RootYawOffset` | turn-in-place — see below |
 
 Private state (no `UPROPERTY`): `bEaseLowering` (latch: `IsSlotActive(DefaultSlot)
@@ -656,10 +684,16 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    Pistol`, pistol = `UpperBodyAlpha` only for pistols. Chaining two players
    avoids needing a second Use Cached Pose. The rifle AO on pistol poses
    twisted the wrists.
-5. **Left-hand IK** (Lyra style): Local→Component → CopyBone `hand_r` →
-   `ik_hand_gun` → TwoBoneIK `hand_l` → effector `ik_hand_l` (bone space, take
-   rotation), joint target `lowerarm_l`, alpha `LeftHandIKAlpha` →
-   Component→Local. Raised only — always-on twisted the arm in lowered clips.
+5. **Left-hand IK**: Local→Component → CopyBone `hand_r` → `ik_hand_gun` →
+   **Transform (Modify) Bone `ik_hand_l`** (translation Replace, Parent Bone
+   Space — the parent is `ik_hand_gun`, i.e. the hand; ← `LeftHandGripLocation`,
+   alpha ← `LeftHandGripAlpha`; rotation Ignore) → TwoBoneIK `hand_l` → effector
+   `ik_hand_l` (bone space, take rotation), joint target `lowerarm_l`, alpha
+   `LeftHandIKAlpha` → Component→Local. The Modify Bone replaces the clip's
+   `ik_hand_l` (which assumes Lyra's rifle) with the weapon's `LeftHandGrip`
+   socket, so the hand lands on *our* foregrip/pump. Sockets on
+   `Assault_Rifle_A`, `Shotgun_A`, `Pistols_A` skeletons; none yet on
+   `Sniper_Rifle_A`. See *Left-hand IK history* below.
 6. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
    → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
    Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
@@ -667,7 +701,25 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    blend space (play rate **0.7**) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
    → finger layers (thumb + metacarpals: `_r` from pistol idle, `_l` from
    mirrored pistol idle — closed grips); weight `DualLoweredAlpha`.
-8. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) → Output.
+8. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) →
+   **Inertialization** (2026-10-06; idle unless something requests a blend —
+   kept for future use) → Output.
+
+### Left-hand IK history (2026-10-06)
+The clip-driven IK misaligned on our guns in every pose. What was tried:
+1. Socket position, IK in **every** pose → hand on the grip, but wrist wrong at
+   idle and slight drift moving/aiming.
+2. + socket **rotation** and an **attachment-chain** offset (to remove the
+   one-frame world-transform lag) → "all messed up"; rolled back.
+3. Socket position, IK raised only → issues on the aim offset; the
+   attachment-chain offset alone, retried → "bunch of issues"; rolled back.
+4. **Final:** socket position (world-transform offset), IK **only while aiming a
+   long gun**. Lowered/hip-fire hands are left to the animation (user edits the
+   FK). The shotgun's pump went out of arm reach when the torso twisted left →
+   **`TurnThreshold` 90 → 45** so the twist never gets that far.
+Open: the rotation route needs socket orientation tuned against `hand_l` axes;
+the attachment-chain offset is mathematically sound but misbehaved here — the
+cause wasn't isolated.
 
 ### Turn-in-place (2026-10-05)
 Lyra approach; built in the AnimBP, now in `UpdateTurnInPlace` (C++). The capsule still follows the camera
@@ -680,14 +732,17 @@ visible mesh lags.
   capsule yaw delta), ±120)`; otherwise FInterpTo → 0 (speed 10). Rotate Root
   Bone counter-rotates the body; the aim offsets twist the torso back to the
   camera.
-- **Trigger:** `|Offset| > 90` and `TurnSlot` inactive → `Montage_Play`
-  (`AM_Rifle_TurnRight_90` if Offset < 0, else `AM_Rifle_TurnLeft_90`) with
-  **`bStopAllMontages = false`** (the default would cancel fire/reload).
+- **Trigger:** `|Offset| > TurnThreshold` (**45** since 2026-10-06, was 90) and
+  `TurnSlot` inactive → `Montage_Play` (`AM_Rifle_TurnRight_90` if Offset < 0,
+  else `AM_Rifle_TurnLeft_90`) with `bStopAllMontages = false`. *(Correction
+  2026-10-06: that flag only stops montages in the same slot group — here
+  `TurnGroup` — not fire/reload, so `true` would also have been safe.)*
   `TurnScale = |Offset| / 90` is stored at trigger.
 - **Wind-down:** `C = RemainingTurnYaw / TurnYawWeight` (when weight > 0.01);
   `Offset −= (C − PrevTurnYawCurve) × TurnScale` once a previous value exists.
-  `TurnScale` makes a turn close exactly the gap that triggered it (≈1 at 90°;
-  tried 45° — rolled back by user choice).
+  `TurnScale` makes a turn close exactly the gap that triggered it (≈0.5 at
+  45°). 45° caps how far the aim offset twists the torso — the shotgun's pump
+  went out of left-arm reach beyond that.
 - **Cancel:** when turning isn't allowed → `Montage_StopGroupByName(TurnGroup,
   0.2)`. **Not** `StopSlotAnimation` — that only stops dynamic montages.
 - **Clips:** `MM_Rifle_TurnLeft/Right_90` with **Enable Root Motion off** —
@@ -717,9 +772,14 @@ unreliable.
 - Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),
   per-weapon turn sets.
 - Inertialization for the remaining two-handed snap, if it ever reads badly:
-  Inertialization node before the Output plus `RequestSlotGroupInertialization
+  the node is now in place; request `RequestSlotGroupInertialization
   ("TurnGroup", 0.3)` on the snap frame (TurnSlot is always evaluated; a slot
   forwards requests even with nothing playing — checked in engine source).
+  **Request from inside the anim update** (e.g. `NativeUpdateAnimation`) — from
+  the character's Tick it lands a frame after the discontinuity and smooths
+  nothing.
+- Shotgun-specific idle: `MM_Shotgun_Idle_Hipfire` exists in the Lyra set and
+  could replace the borrowed rifle hip-fire pose.
 - Strafe jog play rate / stride warping if feet slide at 500.
 - Shotgun aim offset: uses the rifle AO (fine so far); unarmed AO samples
   probably have the same missing-base-pose fault if ever used.
@@ -1010,6 +1070,20 @@ treat them as read-only and reference them from our own Blueprints and data.
 
 ---
 
+## Build tooling
+
+**`Tools/RebuildEditor.bat`** (wrapper for `RebuildEditor.ps1`, 2026-10-06):
+closes the editor that has `ProjectBopis.uproject` open (gracefully — save
+prompts still appear; waits for exit), builds `ProjectBopisEditor Win64
+Development` through UnrealBuildTool (the same build VS runs; picks up new
+files without regenerating project files), and reopens the editor only if the
+build succeeded. Flags: `-Clean` (full rebuild), `-NoLaunch`, `-Force` (kill
+after `-TimeoutSeconds`, default 300). Engine path hard-coded to
+`C:\Program Files\Epic Games\UE_5.8`. Kept pure ASCII — Windows PowerShell 5.1
+misreads BOM-less UTF-8 (an em dash decodes into a curly quote that breaks
+string parsing). Visual Studio still needs *Generate Visual Studio project
+files* to *show* new source files.
+
 ## Engineering gotchas
 
 Full list with reproduction detail lives in
@@ -1035,6 +1109,8 @@ ones most likely to bite:
 ---
 
 ## Changelog
+
+- 2026-10-06 — Shotgun polish: `RoundsPerLoad`, `PumpShotgun` anim type + `BP_PumpShotgun`, per-round reload montage (Start/Loop/End, crossfaded Loop restart, End via SetNextSection), IK off through the rack. Left-hand IK reworked to the `LeftHandGrip` socket, aim-only on long guns (history recorded). `TurnThreshold` 45. Inertialization node added. `bStopAllMontages` note corrected (slot-group scoped). Build script noted.
 
 - 2026-10-05 (3) — Third-person conversion wrap-up: new *Character rig (third person)* section, old first-person rig kept as a dated note; first-person projection principle marked historical; asset rename (`ABP_FirstPersonArms` → `ABP_Player` etc.); *Current state* refreshed.
 

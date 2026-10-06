@@ -184,6 +184,10 @@ protected:
 	/** Crouches while stationary and the request holds; stands up the moment input moves the character. */
 	void UpdateCrouch();
 
+	/** Drives a looping (per-round) reload montage: crossfades each Loop restart, and
+	    sends it to End once the weapon stops loading. */
+	void UpdateReloadMontage();
+
 	EMovementStance CurrentStance = EMovementStance::FreeRun;
 	
 public:
@@ -264,6 +268,14 @@ protected:
 
 	float DefaultFOV = 0.0f;
 
+	/** The reload montage DoReload started, tracked until it finishes or is cut off. */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveReloadMontage;
+
+	/** Crossfade time when a reload Loop section restarts (its first and last poses don't match). */
+	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.0"))
+	float ReloadLoopBlendTime = 0.15f;
+
 	/** Boom height and capsule half-height at spawn. The boom is re-derived from the
 	    capsule's current size every frame, so crouching never moves the camera. */
 	float BoomBaseHeight = 0.0f;
@@ -291,6 +303,11 @@ public:
 	    AnimBP blends between lowered and raised poses on this. */
 	UFUNCTION(BlueprintPure, Category = "Aim")
 	bool IsWeaponRaised() const { return bIsAiming || TimeUntilWeaponLowered > 0.0f; }
+
+	/** True while a reload montage plays — including its End section, after the weapon
+	    has already finished loading. The AnimBP keeps the left-hand IK off for all of it. */
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool IsReloadAnimating() const { return ActiveReloadMontage != nullptr; }
 
 };
 

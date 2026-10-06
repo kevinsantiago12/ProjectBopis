@@ -493,6 +493,12 @@ while aiming is the normal standing strafe). Whether stopping again returns to
 the crouch or stays standing is an open toggle. *Idea, not confirmed:* pressing
 crouch while moving could become a slide to prone.
 
+**Shotguns (user decision, 2026-10-06).** Two variants: a semi-auto (SPAS-style,
+no pump between shots) and a pump-action (pumps after each shot). Both load
+shells two at a time. The shotgun should behave like DOOM's: it **has range**
+rather than being useless past close quarters, and its **main drawback is a
+very slow reload**. Exact tuning is open.
+
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively
 on Hong Kong or American references.

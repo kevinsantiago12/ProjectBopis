@@ -84,11 +84,16 @@ bool AWeaponBase::Reload()
 
 void AWeaponBase::LoadRound()
 {
-	++CurrentAmmoInMagazine;
-
-	if (!bInfiniteReserve)
+	// One cycle loads a batch, but stops short if the magazine fills or the
+	// reserve runs dry partway through.
+	for (int32 Loaded = 0; Loaded < RoundsPerLoad && CanAcceptRound(); ++Loaded)
 	{
-		--CurrentReserveAmmo;
+		++CurrentAmmoInMagazine;
+
+		if (!bInfiniteReserve)
+		{
+			--CurrentReserveAmmo;
+		}
 	}
 
 	if (CanAcceptRound())

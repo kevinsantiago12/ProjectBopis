@@ -78,6 +78,18 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double LeftHandIKAlpha = 0.0;
 
+	/** Where the left hand grips the weapon, relative to hand_r — from the weapon's
+	    LeftHandGrip socket. The AnimGraph moves ik_hand_l here (in ik_hand_gun's space,
+	    which is copied from hand_r) before the two-bone IK, replacing the clip's own
+	    ik_hand_l, which assumes Lyra's rifle rather than our meshes. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	FVector LeftHandGripLocation = FVector::ZeroVector;
+
+	/** 1 when the equipped weapon has a LeftHandGrip socket, else 0 — weapons without
+	    one keep the clip's ik_hand_l. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	double LeftHandGripAlpha = 0.0;
+
 	// ---- Turn-in-place ----
 
 	/** How far the mesh lags behind the capsule's yaw. Rotate Root Bone applies it;
@@ -121,6 +133,7 @@ private:
 	void UpdateLocomotion(const AProjectBopisCharacter& Character);
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
+	void UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon);
 	void UpdateTurnInPlace(float ActorYaw, float DeltaSeconds);
 
 	/** Latched while a fire/reload montage plays and until the drop it causes has
@@ -128,6 +141,12 @@ private:
 	bool bEaseLowering = false;
 
 	bool bIsDualWield = false;
+
+	/** A reload montage is playing (End included) — the left-hand IK stays off. */
+	bool bReloadAnimating = false;
+
+	/** Aim button held (ADS) — not hip-fire raises. The left-hand IK only runs while aiming. */
+	bool bIsAiming = false;
 	bool bWasWeaponRaised = false;
 	float LastActorYaw = 0.0f;
 	float PrevTurnYawCurve = 0.0f;

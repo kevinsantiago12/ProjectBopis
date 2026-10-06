@@ -4,6 +4,7 @@
 #include "ProjectBopisCharacter.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
+#include "Components/SkeletalMeshComponent.h"
 
 namespace
 {
@@ -14,6 +15,9 @@ namespace
 	// Curves authored on the Lyra turn clips.
 	const FName TurnYawWeightCurve(TEXT("TurnYawWeight"));
 	const FName RemainingTurnYawCurve(TEXT("RemainingTurnYaw"));
+
+	const FName LeftHandGripSocket(TEXT("LeftHandGrip"));
+	const FName RightHandBone(TEXT("hand_r"));
 
 	/** Direction has to move this far from the current cardinal before the cardinal
 	    changes — a 10-degree dead zone past each 45-degree boundary. */
@@ -56,6 +60,8 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	bIsWeaponRaised = Character->IsWeaponRaised();
 	bIsCrouched = Character->bIsCrouched;
+	bReloadAnimating = Character->IsReloadAnimating();
+	bIsAiming = Character->IsAiming();
 
 	if (Weapon)
 	{
@@ -64,6 +70,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	UpdateUpperBody(DeltaSeconds);
+	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 }
@@ -137,14 +144,36 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		? (1.0 - UpperBodyAlpha) * (1.0 - DualCrouchBlend)
 		: 0.0;
 
-	// Two-handed grip IK: only while raised and not reloading (the reload clip moves
-	// the left hand off the weapon on purpose). Eases on, snaps off — the IK is what
-	// pulled the arm through the body when it eased off.
-	const double IKTarget =(!bIsDualWield && !Weapon->IsReloading()) ? UpperBodyAlpha : 0.0f;
+	// Left-hand IK: long guns only, and only while aiming (ADS). Every other pose —
+	// lowered, hip-fire raised, moving, pistols — keeps its hand-authored left hand.
+	// Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l. Off while
+	// reload-animating. Eases on, snaps off.
+	const bool bLongGun = CurrentAnimType != EWeaponAnimType::Pistol;
+	const double IKTarget = (bIsAiming && bLongGun && !bIsDualWield && !bReloadAnimating) ? 1.0 : 0.0;
 
 	LeftHandIKAlpha = IKTarget < LeftHandIKAlpha
 		? IKTarget
 		: FMath::FInterpTo(LeftHandIKAlpha, IKTarget, DeltaSeconds, LeftHandIKInterpSpeed);
+}
+
+void UProjectBopisAnimInstance::UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon)
+{
+	const USkeletalMeshComponent* WeaponMesh = Weapon ? Weapon->GetWeaponMesh() : nullptr;
+	const USkeletalMeshComponent* BodyMesh = Character.GetMesh();
+
+	if (!WeaponMesh || !BodyMesh || !WeaponMesh->DoesSocketExist(LeftHandGripSocket))
+	{
+		LeftHandGripAlpha = 0.0;
+		return;
+	}
+
+	// The weapon rides hand_r rigidly, so the socket's offset from hand_r is constant;
+	// re-applied relative to this frame's hand in the AnimGraph.
+	const FTransform GripWorld = WeaponMesh->GetSocketTransform(LeftHandGripSocket);
+	const FTransform HandWorld = BodyMesh->GetSocketTransform(RightHandBone);
+
+	LeftHandGripLocation = GripWorld.GetRelativeTransform(HandWorld).GetLocation();
+	LeftHandGripAlpha = 1.0;
 }
 
 void UProjectBopisAnimInstance::UpdateTurnInPlace(float ActorYaw, float DeltaSeconds)

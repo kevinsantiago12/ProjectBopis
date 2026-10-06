@@ -37,10 +37,12 @@ enum class EWeaponAnimType : uint8
 {
 	Pistol,
 	Rifle,
-	/** Two-handed long gun. Added 2026-10-03 once the Shotgun Locomotion Pack
-	    supplied a complete set — 8-way diagonals, sprint, turn-in-place, and
-	    aim variants that map onto EMovementStance's FreeRun/Aiming pair. */
-	Shotgun
+	/** Two-handed long gun. Poses come from Lyra (the Shotgun Locomotion Pack was
+	    rejected 2026-10-04); the montages are Lyra's shotgun clips. */
+	Shotgun,
+	/** Pump-action shotgun (added 2026-10-06). Same poses and reload as Shotgun, but
+	    its own fire montage with a pump at the end. Map the same reload montage for both. */
+	PumpShotgun
 };
 
 /** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited
@@ -356,13 +358,20 @@ protected:
 		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides, ClampMin = "0.05"))
 	float TimePerRound = 0.5f;
 
+	/** Rounds loaded per load cycle — one TimePerRound tick, and one pass of the
+	    reload montage's Loop section. A cycle stops short if the magazine fills or
+	    the reserve runs out partway through. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo",
+		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides, ClampMin = "1"))
+	int32 RoundsPerLoad = 1;
+
 	/** Whether firing on an empty magazine should start a reload by itself. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	bool bAutoReloadWhenEmpty = false;
 
 	void FinishReload();
 
-	/** PerRound reloads: moves one round in, then re-arms itself until full or dry. */
+	/** PerRound reloads: moves up to RoundsPerLoad rounds in, then re-arms itself until full or dry. */
 	void LoadRound();
 
 	/** Room in the magazine and something to fill it with. */

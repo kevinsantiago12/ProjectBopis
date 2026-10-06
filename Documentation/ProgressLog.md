@@ -12,6 +12,53 @@
 
 ---
 
+## 2026-10-06
+**Summary:** Phase 4 backlog swept. **Shotgun polish** done: shells-per-load,
+a pump-action variant, a looping per-round reload montage. **Left-hand IK
+reworked** onto a weapon socket, ending up aim-only on long guns after several
+rounds. **Rebuild script** added. All user-confirmed in PIE. Detail in
+[TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*Reload*, *Pellets*,
+*Animation architecture* → *Left-hand IK history*, *Build tooling*).
+
+- **Backlog sweep:** left-hand IK, TEMP timer, rifle grip ticked as
+  done/superseded; muzzle-flash-north closed after the user's PIE check.
+- **Shotgun design** (user, imported into the lore notes + GDD): two variants
+  (semi-auto SPAS-style, pump-action), DOOM-style range, slow reload as the
+  drawback. Tuning is the user's, later.
+- **Code** (applied by Claude on request, each compiled via the script):
+  - `RoundsPerLoad` on `AWeaponBase` (2 on both shotguns).
+  - `EWeaponAnimType::PumpShotgun`; `BP_PumpShotgun` made via the bridge. The
+    user added the enum pins in the AnimGraph (kept convention over a C++ remap).
+  - Character `UpdateReloadMontage()`: crossfaded Loop restart, `End` via
+    `Montage_SetNextSection`, `IsReloadAnimating()` keeps the IK off through
+    the rack. Took three rounds: an inertialization request from Tick was a frame
+    late; then `bStopAllMontages = false` left old copies looping forever.
+  - Left-hand grip: `LeftHandGripLocation/Alpha` from the `LeftHandGrip` socket;
+    IK only while aiming a long gun.
+- **Assets:** user built `AM_Shotgun_Fire`, `AM_Shotgun_Fire_Pump`,
+  `AM_Shotgun_Reload` (Start/Loop/End), the `LeftHandGrip` sockets (assault
+  rifle, shotgun, pistol skeletons). Bridge: montage map entries, Inertialization
+  node, Transform (Modify) Bone on `ik_hand_l`, `TurnThreshold` 45.
+- **Left-hand IK rounds:** IK everywhere with socket position → wrist/drift
+  issues; + rotation and attachment-chain offset → broke, rolled back; raised
+  only → aim-offset issues; attachment offset alone → broke again; **final:
+  aim-only, long guns, world-transform offset**, user edits lowered FK
+  themselves. The shotgun pump left arm reach on left twists → `TurnThreshold`
+  90 → 45.
+- **`Tools/RebuildEditor.bat`:** close editor → UBT build → reopen. Rule added to
+  `Claude-Rules.md` (run only when asked).
+
+### ▶ RESUME HERE
+1. **Commit** today's code, assets and docs (the user commits and pushes).
+2. **User's own work:** left-hand FK edits on the lowered/hip-fire clips;
+   shotgun range/reload tuning.
+3. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun-specific
+   hip-fire idle (`MM_Shotgun_Idle_Hipfire`).
+4. **Next:** ammo HUD + pickups (Phase 4 C–D, on hold until the user says), or
+   **Phase 5 — enemy archetype foundation**.
+
+---
+
 ## 2026-10-05
 **Summary:** Left-hand IK built, raised↔lowered transitions tuned, reload-end
 ease, **turn-in-place built and working**, **pistol wrist twist fixed** with
@@ -133,10 +180,8 @@ IK, TEMP timer and rifle grip ticked as done/superseded; muzzle-flash-north
 left open pending a PIE look.
 
 ### ▶ RESUME HERE
-1. **Commit** the backlog sweep + this log update on `main` (working copy is
-   already on `main`). `tps-conversion` is merged and can be deleted.
-2. **Muzzle flash faces north** — user checks in PIE; close the item if the
-   flash points down the barrel, else the notify Attached/socket check.
+1. ~~Commit the sweep~~ — done (user, 2026-10-06).
+2. ~~Muzzle flash faces north~~ — checked in PIE 2026-10-06, fixed; closed.
 3. **Ammo HUD + pickups (Phase 4 C–D)** — on hold by user choice; ask before
    starting.
 4. **Phase 5 — enemy archetype foundation** is the next phase.

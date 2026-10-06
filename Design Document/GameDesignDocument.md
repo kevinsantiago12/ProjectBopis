@@ -142,9 +142,10 @@ distinct handling, ammunition, reloading, and per-weapon crosshairs. Their
 current art is placeholder sci-fi and will be replaced. Their *roles* were
 designed for the previous premise and are open to revision.
 
-Two more now exist alongside them: a **shotgun** — fast follow-up shots,
-loaded one shell at a time, and devastating up close but weak at range — and
-**dual pistols**. Dual pistols fire left, right, left, right with each trigger
+Two more now exist alongside them: **shotguns** — a semi-automatic one with
+fast follow-up shots and a pump-action one, both loaded a couple of shells at a
+time. In the spirit of DOOM's shotgun, they still hit at a distance; the price
+is a very slow reload — and **dual pistols**. Dual pistols fire left, right, left, right with each trigger
 pull, and both guns reload together. The character carries them very
 differently from a single gun: arms down and loose at the sides when not
 fighting, both guns up and pointed when shooting.
@@ -380,3 +381,5 @@ a shooting range.
 - 2026-10-05 — **Now a third-person game.** Overview and "Where the build is"
   updated: over-the-shoulder camera, animated character, crouch as momentary
   cover.
+- 2026-10-06 — Shotguns: semi-auto and pump-action variants, range with a slow
+  reload as the drawback.

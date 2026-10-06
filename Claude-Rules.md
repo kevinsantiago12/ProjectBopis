@@ -34,6 +34,10 @@ hands-on practice.
   first, log it as "code given, not yet compiled". *(2026-08-11)*
 - Docs, config and project files are **not** covered by these rules: write
   them directly.
+- **Rebuilds:** `Tools/RebuildEditor.bat` closes the editor, builds and reopens
+  it. Run it only when the user asks ("run the script") — it closes their
+  editor. After it, the usual post-rebuild check (§3) applies: wait for the
+  bridge port, one `list_toolsets`, DLL timestamp. *(2026-10-06)*
 
 ## 2. Explaining things
 

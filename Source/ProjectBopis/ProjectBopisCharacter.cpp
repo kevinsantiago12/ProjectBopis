@@ -3,6 +3,8 @@
 #include "ProjectBopisCharacter.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
+#include "AlphaBlend.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -185,6 +187,7 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
 
 	UpdateCrouch();
+	UpdateReloadMontage();
 	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
 }
@@ -403,6 +406,7 @@ void AProjectBopisCharacter::DoReload()
 	if (TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(AnimType); FoundMontage && *FoundMontage)
 	{
 		AnimInstance->Montage_Play(*FoundMontage);
+		ActiveReloadMontage = *FoundMontage;
 	}
 
 	// Dual wield reloads both guns in one beat: the off hand plays its own montage in its
@@ -413,6 +417,56 @@ void AProjectBopisCharacter::DoReload()
 		{
 			AnimInstance->Montage_Play(*FoundOffhand);
 		}
+	}
+}
+
+void AProjectBopisCharacter::UpdateReloadMontage()
+{
+	if (!ActiveReloadMontage)
+	{
+		return;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance || !AnimInstance->Montage_IsPlaying(ActiveReloadMontage))
+	{
+		// Finished, or cut off — firing plays a montage in the same slot group.
+		ActiveReloadMontage = nullptr;
+		return;
+	}
+
+	static const FName LoopSection(TEXT("Loop"));
+	static const FName EndSection(TEXT("End"));
+
+	if (AnimInstance->Montage_GetCurrentSection(ActiveReloadMontage) != LoopSection)
+	{
+		return; // Start, End, or a magazine-style reload with no Loop at all.
+	}
+
+	// Loading stops when the magazine fills, the reserve runs dry, or the weapon is
+	// swapped: let the current insert finish, then play End (the rack).
+	const AWeaponBase* EquippedWeapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
+	if (!EquippedWeapon || !EquippedWeapon->IsReloading())
+	{
+		AnimInstance->Montage_SetNextSection(LoopSection, EndSection, ActiveReloadMontage);
+		return;
+	}
+
+	// Section jumps inside a montage don't blend, and Loop's first and last poses don't
+	// match, so letting it wrap snaps. Instead, a blend-time before Loop ends, start a
+	// fresh copy at Loop's start: it crossfades in while the old one fades out.
+	float LoopStart = 0.0f;
+	float LoopEnd = 0.0f;
+	ActiveReloadMontage->GetSectionStartAndEndTime(
+		ActiveReloadMontage->GetSectionIndex(LoopSection), LoopStart, LoopEnd);
+
+	if (AnimInstance->Montage_GetPosition(ActiveReloadMontage) >= LoopEnd - ReloadLoopBlendTime)
+	{
+		// bStopAllMontages = true stops the montages already in this slot group — here,
+		// the copy we're replacing — blending it out over the new copy's blend-in. That
+		// is the crossfade. (False would leave the old copy looping underneath.)
+		AnimInstance->Montage_PlayWithBlendIn(ActiveReloadMontage, FAlphaBlendArgs(ReloadLoopBlendTime),
+			1.0f, EMontagePlayReturnType::MontageLength, LoopStart, true);
 	}
 }
 
