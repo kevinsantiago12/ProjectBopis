@@ -101,6 +101,10 @@ something or reloading under cover — the character only crouches while
 standing still, and the moment the player moves they're up and moving again.
 There's no crouch-walking.
 
+The character moves with weight. Movement is deliberately paced slower than
+stock animation, with longer strides — closer to Max Payne than to an arcade
+shooter — so constant motion reads as purposeful rather than frantic.
+
 ### Under reconsideration
 
 The previous version of the game built its combat on a specific accuracy
@@ -149,6 +153,11 @@ is a very slow reload — and **dual pistols**. Dual pistols fire left, right, l
 pull, and both guns reload together. The character carries them very
 differently from a single gun: arms down and loose at the sides when not
 fighting, both guns up and pointed when shooting.
+
+A single pistol is fired **one-handed**, the free hand hanging at the side;
+the two-handed grip is saved for the heavier, high-powered pistol. Every shot
+kicks visibly through the arm and shoulders, and rapid fire stacks the kick
+rather than smoothing it away.
 
 The previous version also had one weapon fire a visible, dodgeable
 projectile, justified by future-tech physics. That justification is gone
@@ -332,6 +341,8 @@ character. Working today:
   reticle from one number
 - Configured test-bed weapons with distinct handling, plus a shotgun and dual
   pistols
+- A one-handed pistol stance, a heavier walking gait, and a visible kick on
+  every shot
 - A working projectile weapon with fragmenting impact
 - Fire rate limits, full-automatic fire, per-weapon fire animation
 - Scoped zoom
@@ -383,3 +394,5 @@ a shooting range.
   cover.
 - 2026-10-06 — Shotguns: semi-auto and pump-action variants, range with a slow
   reload as the drawback.
+- 2026-10-07 — Single pistol fired one-handed (two-handed kept for the
+  high-powered pistol); heavier, slower gait; visible recoil on every shot.

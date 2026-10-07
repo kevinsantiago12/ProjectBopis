@@ -628,8 +628,10 @@ its own. Previously ~140 Blueprint nodes, unreadable and undiffable; moved so
 logic changes are code edits instead of bridge wiring.
 
 Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
-`UpdateLocomotion` → weapon state → `UpdateUpperBody` → `UpdateArmAlphas` →
-`UpdateTurnInPlace`. With no pawn (AnimBP preview) everything stays at defaults.
+`UpdateLocomotion` → weapon state → `UpdateUpperBody` → `UpdateLeftHandGrip` →
+`UpdateArmAlphas` → `UpdateRecoil` → `UpdateTurnInPlace`. With no pawn (AnimBP
+preview) everything stays at defaults. The character calls the public
+`AddRecoil(bool bOffhand)` on every shot that fires.
 
 | Property (AnimGraph reads) | Value |
 |---|---|
@@ -641,7 +643,13 @@ Source: `Source/ProjectBopis/ProjectBopisAnimInstance.h/.cpp`. Steps per frame:
 | `bIsCrouched` | character `bIsCrouched` |
 | `bIsWeaponRaised` | character `IsWeaponRaised()` |
 | `CurrentAnimType` | equipped weapon `AnimType` |
-| `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only when two-handed AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
+| `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only with a shared grip (not dual, not `PistolOneHanded`) AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
+| `bIsPistolHold` | `IsPistolAnimType(CurrentAnimType)` — Pistol or PistolOneHanded. Every pistol-vs-long-gun switch in the graph (aim offsets, hip-fire idle, crouch idle) reads this, not `== Pistol` (2026-10-07) |
+| `FreeArmAlpha` | `PistolOneHanded` only: `UpperBodyAlpha × FreeArmReloadBlend` — the free-arm layer's weight. `FreeArmReloadBlend` eases 1 → 0 while reload-animating and back after (speed 12), so the two-handed reload blends in instead of snapping |
+| `SpineRecoilAlpha` | `max(MainRecoil, OffhandRecoil)` — see *Procedural recoil* |
+| `ArmRecoilAlpha` | `MainRecoil` on pistol holds, else 0 (two-handed guns kick through the torso so the grip doesn't split) |
+| `OffhandArmRecoilAlpha` | `OffhandRecoil` on duals, else 0 |
+| `FreeArmRecoilAlpha` | `PistolOneHanded` only: `MainRecoil × FreeArmAlpha` |
 | `LeftArmAlpha` | duals only: `UpperBodyAlpha` (2026-10-06: crouched duals no longer force the arm up — lowered and crouched, the left hand comes from the crouch clip) |
 | `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
 | `LeftHandIKAlpha` | target = 1 **only while aiming (ADS) a long gun** (not Pistol, not dual) and not reload-animating, else 0; eases up (10), snaps down. Every other pose — lowered, hip-fire raised, moving, pistols — keeps the clip's hand-authored left hand (2026-10-06) |
@@ -656,7 +664,10 @@ means standing up blends it back in), and the turn-in-place bookkeeping.
 
 Tuning on the AnimBP class defaults: `UpperBodyInterpSpeed`,
 `LeftHandIKInterpSpeed`, `RootYawRecoverySpeed`, `StationarySpeed`,
-`TurnThreshold`, `MaxRootYawOffset`, `TurnLeftMontage`, `TurnRightMontage`.
+`TurnThreshold`, `MaxRootYawOffset`, `TurnLeftMontage`, `TurnRightMontage`,
+**`LocomotionPlayRate`** (C++ default 0.8, **0.75 on `ABP_Player`**; clamp
+0.5–1), **`RecoilImpulse`** (15), **`RecoilStiffness`** (150),
+**`RecoilDamping`** (0.7).
 
 **AnimGraph-facing reals are `double`.** Blueprint "Float" is double in UE5, and
 on reparenting a Blueprint variable only merges into a same-named native
@@ -665,8 +676,8 @@ Blueprint copies (`Speed_0`…) and the getters kept reading them.
 
 **Why the snap, and why so narrow:** easing the raised layer out on a two-handed
 grip moved the left arm through the torso. A snap hides that, but read as a pop
-everywhere except standing still upright — so moving, crouched, duals and
-post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
+everywhere except standing still upright — so moving, crouched, duals, the
+one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
 `IsAnyMontagePlaying`) so turn montages don't count as a fire/reload.
 
 ### AnimGraph (top level, in evaluation order)
@@ -682,15 +693,19 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    Lyra's own crouch is weapon-up and sitting. Pistols: `MM_Pistol_Crouch_Idle`)
    and crouch walk (`BS_MM_Rifle_Crouch_Walk` /
    `BS_MM_Pistol_Crouch_Walk`, 1D, X ← `CardinalDirection`), each picked by
-   `CurrentAnimType == Pistol`. Since crouch is stationary-only, the walk is a
-   fallback for a ceiling blocking the uncrouch.
-2. **Orientation warping:** Local→Component → `OrientationWarping` (Manual, angle
-   ← `WarpAngle`, spine_01–05 distribute 0.5, IK foot root/feet) →
-   Component→Local → **`TurnSlot`** (turn-in-place montages) → **Save Cached
-   Pose `Loco`**. Plays the cardinal clip and
-   rotates the legs by the remainder — fixes the forward-left/back-right
-   scissoring that Lyra's side clips produce when blended (each side clip only
-   matches one diagonal pair).
+   `bIsPistolHold`. Since crouch is stationary-only, the walk is a
+   fallback for a ceiling blocking the uncrouch. Each Blend Poses by Enum has
+   `PumpShotgun` and `PistolOneHanded` pins (user-added). **Every clip player**
+   — 20 inside the Idle/Move states, 12 at the top level — has its Play Rate
+   pin wired to **`LocomotionPlayRate`** (2026-10-07, see *Gait*).
+2. **Orientation + stride warping:** Local→Component → `OrientationWarping`
+   (Manual, angle ← `WarpAngle`, spine_01–05 distribute 0.5, IK foot root/feet)
+   → **`StrideWarping`** → **`LegIK`** → Component→Local → **`TurnSlot`**
+   (turn-in-place montages) → **Save Cached Pose `Loco`**. Orientation warping
+   plays the cardinal clip and rotates the legs by the remainder — fixes the
+   forward-left/back-right scissoring that Lyra's side clips produce when
+   blended (each side clip only matches one diagonal pair). Stride warping and
+   Leg IK: see *Gait*.
 3. **Upper-body layer** (`spine_01`, mesh-space rotation): Base ← Use `Loco`;
    Blend ← **`DefaultSlot`** whose source is the hip-fire idle (bool: pistol ?
    `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight `UpperBodyAlpha`.
@@ -698,11 +713,13 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    pose holds between shots.
 4. **Aim offsets, chained** (2026-10-05): `AO_MM_Rifle_Idle_Hipfire` →
    `AO_MM_Pistol_Idle_ADS`. Both X (yaw) ← −`RootYawOffset`, Y ← `AimPitch`.
-   Alphas are exclusive: rifle = `UpperBodyAlpha` unless `CurrentAnimType ==
-   Pistol`, pistol = `UpperBodyAlpha` only for pistols. Chaining two players
+   Alphas are exclusive: rifle = `UpperBodyAlpha` unless `bIsPistolHold`,
+   pistol = `UpperBodyAlpha` only for pistol holds. Chaining two players
    avoids needing a second Use Cached Pose. The rifle AO on pistol poses
    twisted the wrists.
-5. **Left-hand IK**: Local→Component → CopyBone `hand_r` → `ik_hand_gun` →
+5. **Recoil + left-hand IK**: Local→Component → **three recoil Transform
+   (Modify) Bones** (`spine_05` / `lowerarm_r` / `lowerarm_l`, see *Procedural
+   recoil*) → CopyBone `hand_r` → `ik_hand_gun` →
    **Transform (Modify) Bone `ik_hand_l`** (translation Replace, Parent Bone
    Space — the parent is `ik_hand_gun`, i.e. the hand; ← `LeftHandGripLocation`,
    alpha ← `LeftHandGripAlpha`; rotation Ignore) → TwoBoneIK `hand_l` → effector
@@ -711,15 +728,22 @@ post-montage drops all ease. `IsSlotActive("DefaultSlot")` (not
    `ik_hand_l` (which assumes Lyra's rifle) with the weapon's `LeftHandGrip`
    socket, so the hand lands on *our* foregrip/pump. Sockets on
    `Assault_Rifle_A`, `Shotgun_A`, `Pistols_A` skeletons; none yet on
-   `Sniper_Rifle_A`. See *Left-hand IK history* below.
-6. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
+   `Sniper_Rifle_A`. See *Left-hand IK history* below. Because the recoil nodes
+   run before the CopyBone, the IK target follows the kicked hand.
+6. **One-handed free arm** (2026-10-07): layered blend from **`clavicle_l`,
+   local-space rotation**; Blend ← `MM_Pistol_Idle_OneHanded` (the user's copy
+   of the hip-fire idle with the left arm at the side); weight `FreeArmAlpha`.
+   → Local→Component → Transform (Modify) Bone `lowerarm_l` (yaw +15°, additive,
+   bone space; alpha `FreeArmRecoilAlpha`) → Component→Local. See *One-handed
+   pistol*.
+7. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
    → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
    Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
-7. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
+8. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
    blend space (play rate **0.7**) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
    → finger layers (thumb + metacarpals: `_r` from pistol idle, `_l` from
    mirrored pistol idle — closed grips); weight `DualLoweredAlpha`.
-8. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) →
+9. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) →
    **Inertialization** (2026-10-06; idle unless something requests a blend —
    kept for future use) → Output.
 
@@ -738,6 +762,79 @@ The clip-driven IK misaligned on our guns in every pose. What was tried:
 Open: the rotation route needs socket orientation tuned against `hand_l` axes;
 the attachment-chain offset is mathematically sound but misbehaved here — the
 cause wasn't isolated.
+
+### One-handed pistol (2026-10-07)
+`EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay
+`Pistol`). `IsPistolAnimType()` in `WeaponBase.h` covers both pistol types.
+The two-handed `Pistol` type is kept for the planned high-powered pistol.
+Lowered locomotion is shared with `Pistol` (user's call). Raised, the pistol
+clips are two-handed, so the **free-arm layer** replaces the left arm from
+`clavicle_l` with `MM_Pistol_Idle_OneHanded`. Montage maps on
+`BP_PlayerCharacter`: fire → `AM_Pistol_Fire`, reload → `AM_Pistol_Reload`
+(two-handed; the free arm fades out for it).
+
+How the layer settled:
+- **Branch at `clavicle_l`, local-space rotation.** Mesh-space rotation pinned
+  the arm to the mesh (feet) direction, so the aim-offset torso twist left it
+  behind. With local space it rides the spine: it follows the twist and moves
+  with the fire montage's torso motion.
+- **Branching at `upperarm_l` was tried.** The clavicle then came from the
+  two-handed clips and pulled the arm forward while strafing. Reverted.
+- **Free-arm jog swing was tried** (a synced `MM_Unarmed_Jog_Fwd` arm blended in
+  by speed). The user removed it; the arm hangs, plus its recoil node.
+- **Reload:** `FreeArmReloadBlend` eases the layer out and back in, instead of
+  switching off.
+- **Lowering:** the one-handed pistol is exempt from the raised-to-lowered snap.
+
+### Gait — slower cadence with stride warping (2026-10-07)
+Lyra's locomotion was accurate but read as cartoonish; Max Payne 1–2 is the
+reference. Every locomotion/idle clip player runs at `LocomotionPlayRate`
+(0.75 on `ABP_Player`). Movement speeds are unchanged, so the feet would slide.
+**Stride Warping** (Graph mode) lengthens each step to match the capsule speed:
+- `LocomotionSpeed` ← `Speed`; it compares that against the clips' root-motion
+  speed (Lyra clips carry root motion), so it compensates for the slower rate
+  by itself.
+- Stride-scale clamp 0.5–1.5. Pelvis `pelvis`, IK foot root `ik_foot_root`,
+  feet `ik_foot_l/r` / `foot_l/r` / `thigh_l/r`.
+- **Leg IK** (`ik_foot_*` → `foot_*`, 2 bones) then solves the legs onto the
+  warped IK feet.
+
+Graph mode was chosen over Manual: Manual needs a stride-direction vector in
+component space from C++. A C++ `StrideScale` added for Manual mode was
+removed unused. Keep `LocomotionPlayRate` ≥ 0.75; below that the stretched
+strides show.
+
+### Procedural recoil (2026-10-07)
+**Why:** the fire montage restarts from frame 0 on every shot (`Montage_Play`,
+0.25 s blend-in), so spam fire never reaches the kick — invisible while
+strafing. Setting the fire montages' blend-in to 0 looked worse and was
+reverted.
+
+**How:**
+- Two springs in `UProjectBopisAnimInstance`, main hand and off hand
+  (`UKismetMathLibrary::FloatSpringInterp`, target 0, clamped 0..1).
+- `AddRecoil` adds `RecoilImpulse` to the matching spring's **velocity**. Rapid
+  shots stack up to 1 instead of restarting.
+- Hitting a clamp zeroes the velocity, so the spring saturates at 1 and stops
+  dead at 0 with no undershoot.
+- One shot peaks at about 0.56 with the defaults.
+- The fire montage still plays on top.
+
+**AnimGraph** (step 5 above):
+- Three Transform (Modify) Bones — rotation **Additive, bone space**,
+  translation and scale Ignore.
+- **Yaw is the bend axis** on these mannequin bones (found by testing).
+- Full-kick angles, tuned on each node's Details:
+
+| Bone | Yaw (full kick) | Alpha |
+|---|---|---|
+| `spine_05` | −6° (lean back) | `SpineRecoilAlpha` |
+| `lowerarm_r` | +20° (forearm up) | `ArmRecoilAlpha` |
+| `lowerarm_l` | +20° | `OffhandArmRecoilAlpha` |
+| `lowerarm_l`, after the free-arm layer | +15° | `FreeArmRecoilAlpha` |
+
+**Pins:** the Translation/Rotation/Scale pins are hidden on all four nodes —
+see *Engineering gotchas*.
 
 ### Turn-in-place (2026-10-05)
 Lyra approach; built in the AnimBP, now in `UpdateTurnInPlace` (C++). The capsule still follows the camera
@@ -783,8 +880,12 @@ unreliable.
 
 ### Decided against
 - Shotgun upper body layered over Lyra legs (looked bad).
-- One-handed single pistols with an unarmed free arm (every variant looked
-  worse) — single pistols keep the two-handed grip.
+- ~~One-handed single pistols with an unarmed free arm (every variant looked
+  worse) — single pistols keep the two-handed grip.~~ **Reversed 2026-10-07** —
+  built with a dedicated at-side pose; see *One-handed pistol*.
+- Fire montage blend-in 0 (tried 2026-10-07 for rapid-fire recoil) — looked
+  worse; procedural recoil instead.
+- Free-arm jog swing on the one-handed pistol (2026-10-07) — removed by the user.
 
 ### Open
 - Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),
@@ -798,7 +899,13 @@ unreliable.
   nothing.
 - Shotgun-specific idle: `MM_Shotgun_Idle_Hipfire` exists in the Lyra set and
   could replace the borrowed rifle hip-fire pose.
-- Strafe jog play rate / stride warping if feet slide at 500.
+- ~~Strafe jog play rate / stride warping if feet slide at 500.~~ Done
+  2026-10-07 (*Gait*).
+- Recoil per weapon: angles and impulse are global today. They could move
+  onto the weapon as data, as `AnimType` does, if pistols and shotguns need
+  different kicks.
+- Dual left-arm recoil sign (`lowerarm_l` +20°) is set by symmetry, not yet
+  checked on duals.
 - Shotgun aim offset: uses the rifle AO (fine so far); unarmed AO samples
   probably have the same missing-base-pose fault if ever used.
 
@@ -1123,11 +1230,18 @@ ones most likely to bite:
   for anything placed *on* a surface (decals, impact FX).
 - **IntelliSense false-positives on delegate macros** (`AddDynamic`). Trust the
   actual build over the editor squiggle.
+- **A new Transform (Modify) Bone exposes Translation/Rotation/Scale as pins,
+  and pin defaults override the node's own settings at compile** (2026-10-07).
+  Writing `Node.rotation` did nothing — every recoil node applied (0,0,0), and
+  the compile then copied the zeros back into `Node`. Hide the pins
+  (`ShowPinForProperties`) **before** setting values, or wire/set the pin
+  itself. Applies to any anim node with optional pins.
 
 ---
 
 ## Changelog
 
+- 2026-10-07 — One-handed pistol (`PistolOneHanded`, `IsPistolAnimType`, `bIsPistolHold`, free-arm layer at `clavicle_l` local space, reload fade, snap exemption); gait (`LocomotionPlayRate` 0.75 on all 32 players, Stride Warping Graph mode + Leg IK); procedural recoil (springs, `AddRecoil`, four Modify Bone nodes, yaw = bend axis). AnimGraph steps renumbered. "One-handed pistols" rejection reversed. New gotcha: Modify Bone pins override node settings.
 - 2026-10-06 (3) — Ammo: Phase C marked done (debug lines removed); `EAmmoType` + per-weapon `AmmoType`; pickup design recorded.
 - 2026-10-06 (2) — Crouch: long-gun crouch idle is the pack's kneeling neutral clip; crouched duals take the left arm from the crouch clip (`LeftArmAlpha` no longer forced up).
 - 2026-10-06 — Shotgun polish: `RoundsPerLoad`, `PumpShotgun` anim type + `BP_PumpShotgun`, per-round reload montage (Start/Loop/End, crossfaded Loop restart, End via SetNextSection), IK off through the rack. Left-hand IK reworked to the `LeftHandGrip` socket, aim-only on long guns (history recorded). `TurnThreshold` 45. Inertialization node added. `bStopAllMontages` note corrected (slot-group scoped). Build script noted.

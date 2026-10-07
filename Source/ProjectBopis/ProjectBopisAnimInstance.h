@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Weapons/WeaponBase.h"
 #include "ProjectBopisAnimInstance.generated.h"
 
@@ -29,6 +30,9 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
+	/** Kicks the recoil spring. Called by the character for every shot that fires. */
+	void AddRecoil(bool bOffhand);
+
 protected:
 
 	// ---- Locomotion ----
@@ -50,11 +54,6 @@ protected:
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	double AimPitch = 0.0;
-
-	/** How much stride warping lengthens each step: the inverse of LocomotionPlayRate, so
-	    slower clips still cover the ground the capsule moves. */
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
-	double StrideScale = 1.0;
 
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	bool bIsCrouched = false;
@@ -105,6 +104,39 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double FreeArmAlpha = 0.0;
 
+	// ---- Recoil ----
+
+	/** Torso recoil, 0..1, every weapon. Weights a Transform (Modify) Bone on spine_05
+	    whose own rotation is the full kick. Shots stack; the spring settles it. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Recoil")
+	double SpineRecoilAlpha = 0.0;
+
+	/** Gun-arm recoil, 0..1, pistol holds only. On a two-handed gun the torso carries
+	    both arms instead, so the grip doesn't pull apart. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Recoil")
+	double ArmRecoilAlpha = 0.0;
+
+	/** Dual wield: left-arm recoil from off-hand shots. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Recoil")
+	double OffhandArmRecoilAlpha = 0.0;
+
+	/** One-handed pistol: recoil weight for the free arm, so it jolts with each shot.
+	    Follows FreeArmAlpha, so it's off whenever the at-side pose is. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Recoil")
+	double FreeArmRecoilAlpha = 0.0;
+
+	/** Spring velocity one shot adds. Higher kicks harder; rapid shots stack up to full. */
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	float RecoilImpulse = 15.0f;
+
+	/** How hard the spring pulls back to rest. Higher recovers faster. */
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	float RecoilStiffness = 150.0f;
+
+	/** 1 eases back to rest; lower snaps back quicker. */
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil", meta = (ClampMin = "0.1", ClampMax = "1.0"))
+	float RecoilDamping = 0.7f;
+
 	// ---- Turn-in-place ----
 
 	/** How far the mesh lags behind the capsule's yaw. Rotate Root Bone applies it;
@@ -144,8 +176,8 @@ protected:
 	float StationarySpeed = 10.0f;
 
 	/** Play rate of every locomotion clip (free run, raised, aiming, crouch). Below 1 slows
-	    the cadence for a heavier gait; stride warping makes up the distance. Much below
-	    0.75 and the stretched strides start to show. */
+	    the cadence for a heavier gait; stride warping (Graph mode) lengthens the steps to
+	    match the capsule speed. Much below 0.75 and the stretched strides start to show. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.5", ClampMax = "1.0"))
 	double LocomotionPlayRate = 0.8;
 
@@ -156,6 +188,7 @@ private:
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
 	void UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon);
 	void UpdateTurnInPlace(float ActorYaw, float DeltaSeconds);
+	void UpdateRecoil(float DeltaSeconds);
 
 	/** Latched while a fire/reload montage plays and until the drop it causes has
 	    finished easing — so a montage ending eases the arms down instead of snapping. */
@@ -182,4 +215,10 @@ private:
 	/** Eased 0..1 that fades the one-handed free-arm pose out while a reload montage plays
 	    and back in after, so the left arm doesn't snap between the pose and the reload. */
 	float FreeArmReloadBlend = 1.0f;
+
+	/** Raw spring values behind the recoil alphas: main hand and off hand. */
+	float MainRecoil = 0.0f;
+	float OffhandRecoil = 0.0f;
+	FFloatSpringState MainRecoilSpring;
+	FFloatSpringState OffhandRecoilSpring;
 };

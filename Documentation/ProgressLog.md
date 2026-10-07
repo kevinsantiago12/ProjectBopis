@@ -12,6 +12,72 @@
 
 ---
 
+## 2026-10-07
+**Summary:** Animation feel pass. **One-handed single pistol**, **heavier gait**
+(slower clips + stride warping), and **procedural recoil** that stacks under
+rapid fire. All user-confirmed in PIE. Detail in
+[TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*Animation architecture* →
+*One-handed pistol*, *Gait*, *Procedural recoil*). Design changes imported into
+the lore notes and GDD (+ `.html`).
+
+- **One-handed pistol** (user design: the free hand at the side; two-handed kept
+  for the high-powered pistol):
+  - **C++:** `PistolOneHanded` + `IsPistolAnimType`, `bIsPistolHold`,
+    `FreeArmAlpha`.
+  - **Assets:** user made `MM_Pistol_Idle_OneHanded` and added the enum pins.
+  - **Bridge:** free-arm layer.
+  - **Fix rounds:**
+    - Arm stiff when shooting → tried branching at `upperarm_l`.
+    - Arm followed the feet, not the aim → switched to local-space rotation.
+    - Arm raised while strafing → back to `clavicle_l`.
+    - Reload snapped the arm → `FreeArmReloadBlend` fade.
+    - Lowering snapped → exempted from the two-handed snap rule.
+  - **Free-arm jog swing:** tried, then removed at the user's request.
+- **Gait** (Max Payne 1–2 reference):
+  - `LocomotionPlayRate` (user set 0.75) wired into all 32 clip players. The
+    bridge can't create nodes in states, so the user dropped one getter per
+    state and the bridge wired the pins.
+  - Stride Warping (Graph mode) + Leg IK added after Orientation Warping.
+- **Recoil:**
+  - **Diagnosis:** spam fire restarts the fire montage at frame 0, so the kick
+    never shows.
+  - **Ruled out:** fire-montage blend-in 0 — tried, looked worse, reverted.
+  - **Built:** spring-driven recoil (`AddRecoil` from the fire code) into
+    Transform (Modify) Bones on `spine_05` / `lowerarm_r` / `lowerarm_l`, plus
+    the free arm.
+  - **Debugging:** it "didn't work" for several rounds. The new nodes' Rotation
+    pins (0,0,0) were overriding the settings. Found with a constant-alpha test;
+    fixed by hiding the pins. Yaw turned out to be the bend axis.
+- **Cleanup:** unused `StrideScale` and free-arm swing properties removed.
+- **Process note:** I made one bridge edit (the `upperarm_l` filter) before
+  asking. The user approved it after the fact.
+- **Compiles:** all C++ was applied by Claude on request and built with the
+  rebuild script.
+
+### ▶ RESUME HERE
+1. **Commit** — everything since the "one-handed pistol, slower gait" commit:
+   recoil, the free-arm fixes, the cleanup, and these docs.
+2. **Quick checks (user):** dual left-forearm recoil direction (`lowerarm_l`
+   +20° is set by symmetry; flip if it dips); recoil feel per weapon (tuning is
+   on the nodes and class defaults).
+3. **Ammo pickups, continuing the checklist:**
+   - [x] 1. Debug lines removed (C done)
+   - [x] 2. `EAmmoType` + `AmmoType` on the weapon (compiled 2026-10-06 20:07)
+   - [ ] 3. Set `AmmoType` on the 6 weapon BPs (Pistol/Duals → Pistol,
+     CloseRangeRifle → Rifle, BattleRifle → Sniper, Shotgun → AutoShotgun,
+     PumpShotgun → PumpShotgun) — user or 6 bridge writes. `BP_Pistol` is now
+     anim type `PistolOneHanded`, but its ammo stays `Pistol`
+   - [ ] 4. `AAmmoPickup` C++ (walk-over, type + amount + mesh, take what fits,
+     remainder stays) + a weapon-side `AddReserveAmmo` — present for review
+   - [ ] 5. Pickup BPs per type with AmmoSet meshes; place in `Lvl_Sandbox`; test
+4. **User's own work:** left-hand FK edits on lowered/hip-fire clips; shotgun
+   tuning; magazine sizes; recoil angles.
+5. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun hip-fire
+   idle; pistol kneeling crouch; per-weapon recoil data.
+6. **Then:** Phase 5 — enemy archetype foundation.
+
+---
+
 ## 2026-10-06
 **Summary:** Phase 4 backlog swept. **Shotgun polish** done: shells-per-load,
 a pump-action variant, a looping per-round reload montage. **Left-hand IK

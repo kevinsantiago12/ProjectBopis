@@ -73,6 +73,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateUpperBody(DeltaSeconds);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
+	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 }
 
@@ -96,10 +97,6 @@ void UProjectBopisAnimInstance::UpdateLocomotion(const AProjectBopisCharacter& C
 	WarpAngle = FRotator::NormalizeAxis(Direction - CardinalDirection);
 
 	AimPitch = FRotator::NormalizeAxis(Character.GetControlRotation().Pitch);
-
-	// Clips play slower than authored; stride warping lengthens the steps to make up the
-	// distance, so the feet don't slide.
-	StrideScale = 1.0 / LocomotionPlayRate;
 }
 
 void UProjectBopisAnimInstance::UpdateUpperBody(float DeltaSeconds)
@@ -115,11 +112,13 @@ void UProjectBopisAnimInstance::UpdateUpperBody(float DeltaSeconds)
 
 	// Easing the layer out drags a two-handed grip's left arm through the torso, so
 	// that one case snaps — only standing still and upright. Moving, the legs carry the
-	// change; crouched, the snap reads as a pop. Duals have no shared grip and always
-	// ease; so does the drop after a montage.
+	// change; crouched, the snap reads as a pop. Duals and the one-handed pistol have no
+	// shared grip and always ease; so does the drop after a montage.
+	const bool bSharedGrip = !bIsDualWield && CurrentAnimType != EWeaponAnimType::PistolOneHanded;
+
 	const bool bSnap = bLowering
 		&& !bEaseLowering
-		&& !bIsDualWield
+		&& bSharedGrip
 		&& !bIsCrouched
 		&& Speed < StationarySpeed;
 
@@ -167,6 +166,30 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 
 	const bool bOneHanded = CurrentAnimType == EWeaponAnimType::PistolOneHanded;
 	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;
+}
+
+void UProjectBopisAnimInstance::AddRecoil(bool bOffhand)
+{
+	FFloatSpringState& Spring = bOffhand ? OffhandRecoilSpring : MainRecoilSpring;
+	Spring.Velocity += RecoilImpulse;
+}
+
+void UProjectBopisAnimInstance::UpdateRecoil(float DeltaSeconds)
+{
+	// A shot only adds spring velocity, so rapid fire stacks instead of restarting the way
+	// a fire montage does. Clamped 0..1 (hitting either end zeroes the velocity): the
+	// AnimGraph nodes hold the full-kick rotation, these just weight it.
+	MainRecoil = UKismetMathLibrary::FloatSpringInterp(MainRecoil, 0.0f, MainRecoilSpring,
+		RecoilStiffness, RecoilDamping, DeltaSeconds, 1.0f, 1.0f, true, 0.0f, 1.0f);
+	OffhandRecoil = UKismetMathLibrary::FloatSpringInterp(OffhandRecoil, 0.0f, OffhandRecoilSpring,
+		RecoilStiffness, RecoilDamping, DeltaSeconds, 1.0f, 1.0f, true, 0.0f, 1.0f);
+
+	SpineRecoilAlpha = FMath::Max(MainRecoil, OffhandRecoil);
+	ArmRecoilAlpha = bIsPistolHold ? MainRecoil : 0.0;
+	OffhandArmRecoilAlpha = bIsDualWield ? OffhandRecoil : 0.0;
+	FreeArmRecoilAlpha = CurrentAnimType == EWeaponAnimType::PistolOneHanded
+		? MainRecoil * FreeArmAlpha
+		: 0.0;
 }
 
 void UProjectBopisAnimInstance::UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon)

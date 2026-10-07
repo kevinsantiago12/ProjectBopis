@@ -505,6 +505,16 @@ pump shotgun shells (the battle rifle becomes a sniper; a high-powered pistol
 and an SMG are planned weapons). Ammo is picked up by walking over it; a pickup
 gives what fits and leaves the rest. Pickups don't respawn.
 
+**Pistol handling and movement feel (user decisions, 2026-10-07).**
+- A **single pistol is fired one-handed**, the free hand hanging at the side.
+  The two-handed grip is kept for the **high-powered pistol**. Lowered
+  movement and idle look the same for both.
+- **Heavier gait.** The stock locomotion was accurate but read as cartoonish
+  in play, so all movement animation (free run, strafing, aiming, crouch) plays
+  slower, with longer strides, for a heavier, more deliberate walk. Max Payne 1
+  and 2 are the reference.
+- **Every shot should visibly kick**, including rapid fire while moving.
+
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively
 on Hong Kong or American references.

@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectBopisCharacter.h"
+#include "ProjectBopisAnimInstance.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -370,6 +371,13 @@ void AProjectBopisCharacter::DoFire()
 			{
 				AnimInstance->Montage_Play(*FoundMontage);
 			}
+		}
+
+		// Procedural kick on top of the montage. It stacks across rapid shots, where the
+		// montage just restarts.
+		if (UProjectBopisAnimInstance* BopisAnim = Cast<UProjectBopisAnimInstance>(GetMesh()->GetAnimInstance()))
+		{
+			BopisAnim->AddRecoil(EquippedWeapon->WasLastShotOffhand());
 		}
 	}
 	else if (FireResult == EFireResult::Empty && EquippedWeapon->ShouldAutoReloadWhenEmpty())
