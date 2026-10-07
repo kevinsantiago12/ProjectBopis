@@ -514,6 +514,10 @@ gives what fits and leaves the rest. Pickups don't respawn.
   slower, with longer strides, for a heavier, more deliberate walk. Max Payne 1
   and 2 are the reference.
 - **Every shot should visibly kick**, including rapid fire while moving.
+- **Dual wield:** when firing from the hip or running and gunning, the two guns
+  are held **spread apart** on either side, with visible arm movement between
+  shots. When aiming, they come back to the narrower grip. **Dual SMGs** are
+  planned and will share these dual animations.
 
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively

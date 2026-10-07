@@ -70,6 +70,8 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsDualWield = Weapon->IsDualWield();
 	}
 
+	bDualSpread = bIsDualWield && !bIsAiming;
+
 	UpdateUpperBody(DeltaSeconds);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);

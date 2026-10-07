@@ -645,6 +645,8 @@ preview) everything stays at defaults. The character calls the public
 | `CurrentAnimType` | equipped weapon `AnimType` |
 | `UpperBodyAlpha` | target = 1 if raised OR `IsSlotActive("DefaultSlot")` (fire/reload), else 0. Eases up (`UpperBodyInterpSpeed` 12). **Snaps down only with a shared grip (not dual, not `PistolOneHanded`) AND standing upright AND `Speed < StationarySpeed` (10) AND not latched** — every other drop eases |
 | `bIsPistolHold` | `IsPistolAnimType(CurrentAnimType)` — Pistol or PistolOneHanded. Every pistol-vs-long-gun switch in the graph (aim offsets, hip-fire idle, crouch idle) reads this, not `== Pistol` (2026-10-07) |
+| `bIsDualWield` | the weapon's `IsDualWield()` (exposed 2026-10-07; was private) |
+| `bDualSpread` | `bIsDualWield AND NOT bIsAiming` — picks the spread dual idle (see *Dual spread*) |
 | `FreeArmAlpha` | `PistolOneHanded` only: `UpperBodyAlpha × FreeArmReloadBlend` — the free-arm layer's weight. `FreeArmReloadBlend` eases 1 → 0 while reload-animating and back after (speed 12), so the two-handed reload blends in instead of snapping |
 | `SpineRecoilAlpha` | `max(MainRecoil, OffhandRecoil)` — see *Procedural recoil* |
 | `ArmRecoilAlpha` | `MainRecoil` on pistol holds, else 0 (two-handed guns kick through the torso so the grip doesn't split) |
@@ -707,8 +709,10 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    blended (each side clip only matches one diagonal pair). Stride warping and
    Leg IK: see *Gait*.
 3. **Upper-body layer** (`spine_01`, mesh-space rotation): Base ← Use `Loco`;
-   Blend ← **`DefaultSlot`** whose source is the hip-fire idle (bool: pistol ?
-   `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight `UpperBodyAlpha`.
+   Blend ← **`DefaultSlot`** whose source is the hip-fire idle — Blend by bool
+   `bDualSpread` (0.2 s): True ← `MM_Pistol_Idle_Hipfire_Dual` (spread), False ←
+   (bool: pistol ? `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight
+   `UpperBodyAlpha`.
    Montages are therefore upper-body only (legs keep stride), and the raised
    pose holds between shots.
 4. **Aim offsets, chained** (2026-10-05): `AO_MM_Rifle_Idle_Hipfire` →
@@ -736,7 +740,9 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    → Local→Component → Transform (Modify) Bone `lowerarm_l` (yaw +15°, additive,
    bone space; alpha `FreeArmRecoilAlpha`) → Component→Local. See *One-handed
    pistol*.
-7. **Dual left-arm layer** (`clavicle_l`): Blend ← pistol idle → **`OffhandSlot`**
+7. **Dual left-arm layer** (`clavicle_l`): Blend ← Blend by bool `bDualSpread`
+   (0.2 s; True ← `MM_Pistol_Idle_Hipfire_Dual`, False ← `MM_Pistol_Idle_Hipfire`)
+   → **`OffhandSlot`**
    → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
    Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
 8. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
@@ -886,6 +892,8 @@ unreliable.
 - Fire montage blend-in 0 (tried 2026-10-07 for rapid-fire recoil) — looked
   worse; procedural recoil instead.
 - Free-arm jog swing on the one-handed pistol (2026-10-07) — removed by the user.
+- Procedural dual arm spread, and a runtime run-and-gun spread alpha
+  (2026-10-07) — see *Dual spread*.
 
 ### Open
 - Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),
@@ -936,15 +944,60 @@ single-weapon.
 - **Animation:** see *Animation architecture* — mirrored pistol idle on the left
   arm when raised, off-hand montages mirrored onto it, whole-body unarmed
   locomotion with finger grips when lowered.
-- `BP_DualPistols`: mag 24, reserve 120 (max 240), `AnimType Pistol`.
+- `BP_DualPistols`: mag 24, reserve 120 (max 240), **`AnimType Dual`** (was
+  `Pistol` until 2026-10-07).
+
+### Dual spread (2026-10-07)
+**Problem:** from the right-shoulder camera, the mirrored left gun sat behind the
+head while running and gunning.
+
+**Final design — authored, keyed by anim type:**
+- **`EWeaponAnimType::Dual`**, shared by dual pistols and the planned **dual
+  SMGs**. `IsPistolAnimType` includes it, so every pistol-vs-long-gun switch
+  treats duals as a pistol hold. Ammo stays per weapon (`AmmoType`).
+- **Hip-fire and run-and-gun:** spread poses.
+  - Idle: `MM_Pistol_Idle_Hipfire_Dual` (the user's copy with the right arm
+    spread out; the Mirror makes the left arm match).
+  - Fire: `AM_Dual_Fire` / `AM_Dual_Fire_Offhand`, on `MM_Pistol_Fire_Dual`.
+    Its upper arm sits 5° off the idle's on purpose, so the arms visibly move
+    between shots. Additive base: **Local Animation Frame, frame 0** (pure kick;
+    see below).
+- **Aiming:** the original narrow poses.
+  - Idle: `bDualSpread` is false, so the graph's bools pick `MM_Pistol_Idle_Hipfire`.
+  - Fire: the character's new **`AimFireMontages` / `AimOffhandFireMontages`**
+    maps (`dual` → `AM_Pistol_Fire` / `AM_Pistol_Fire_Offhand`).
+- **Montage lookup order** in the character's fire code: aimed off-hand →
+  off-hand → aimed → plain (a `TryMap` lambda; the first entry found wins).
+  Other anim types have no aim entries, so they're unchanged.
+- **Asset locations:** the recreated `AM_Pistol_Fire_Offhand` lives in
+  `Characters/Mannequins/Anims/Pistol/` and uses that folder's template
+  `MM_Pistol_Fire` (Local Animation Frame base). The main-hand `AM_Pistol_Fire`
+  uses Lyra's clip in `Characters/Heroes/.../Actions/`. The user is happy with
+  the mix.
+
+**Why the fire clip's base pose mattered:**
+- Lyra's `MM_Pistol_Fire` is a mesh-space additive with base type *Selected
+  animation frame*, but **no base animation set**. Engine source: that mode
+  needs one. The delta was baked against some other pose.
+- Layered over the spread idle, each shot dragged the arms back toward the
+  narrow grip; they spread again once the montage ended.
+- A base of the clip's own frame 0 makes the delta pure kick, so it rides on
+  whatever pose is underneath.
+
+**Tried and dropped:**
+- Procedural `upperarm_l` spread (Modify Bone, pitch +20°) — deformed the
+  shoulder.
+- Camera pull-in for duals — not pursued.
+- A runtime run-and-gun alpha blending the spread clip under, then over, the
+  slots — never held through shots (the base-pose problem above). Reverted.
+
+The old note about dual SMGs needing a `bOneHanded` flag is superseded:
+`AnimType Dual` covers them.
 
 **Accepted quirk (2026-10-05, won't fix):** the reload montage leans/twists the
 torso (authored for a two-handed reload). User judged it minor. If it's ever
 revisited: a no-spine copy of the clip plus a `DualReloadMontages` map used
 instead of `ReloadMontages` for dual weapons.
-
-**Later:** dual-capable SMGs would want a weapon flag (e.g. `bOneHanded`) rather
-than keying anything off `AnimType == Pistol`.
 
 ### Shootdodge
 
@@ -1069,8 +1122,10 @@ may state its own *identity* (`AnimType`), but never *what* to play. Each
 animator — the player character now, each enemy archetype later — owns its own
 skeleton-appropriate lookup.
 
-Applied as: `EWeaponAnimType` on the weapon; `FireMontages` and
-`ReloadMontages` maps keyed by that enum on the character.
+Applied as: `EWeaponAnimType` on the weapon; `FireMontages`,
+`OffhandFireMontages`, `AimFireMontages`, `AimOffhandFireMontages`,
+`ReloadMontages` and `OffhandReloadMontages` maps keyed by that enum on the
+character.
 
 **Exception that proves the rule:** `FireAnimation` (the weapon's *own* mesh
 animation — slide racking, bolt cycling) lives on the weapon, because it's
@@ -1236,11 +1291,18 @@ ones most likely to bite:
   the compile then copied the zeros back into `Node`. Hide the pins
   (`ShowPinForProperties`) **before** setting values, or wire/set the pin
   itself. Applies to any anim node with optional pins.
+- **An additive clip's base pose decides what it carries** (2026-10-07). A
+  fire clip measured against its own frame adds pure kick to whatever pose is
+  underneath. One measured against a *different* pose also carries "the
+  difference from that pose", and pulls a re-authored idle back toward the
+  original every shot. Check *Additive Settings → Base Pose* before layering a
+  stock additive over a custom pose.
 
 ---
 
 ## Changelog
 
+- 2026-10-07 (2) — Dual spread: `EWeaponAnimType::Dual` (dual pistols + planned dual SMGs), `bIsDualWield` exposed, `bDualSpread`; spread idle/fire for hip-fire, original for aiming via `AimFireMontages`/`AimOffhandFireMontages`; AnimGraph steps 3 and 7 updated. New gotcha: additive base pose.
 - 2026-10-07 — One-handed pistol (`PistolOneHanded`, `IsPistolAnimType`, `bIsPistolHold`, free-arm layer at `clavicle_l` local space, reload fade, snap exemption); gait (`LocomotionPlayRate` 0.75 on all 32 players, Stride Warping Graph mode + Leg IK); procedural recoil (springs, `AddRecoil`, four Modify Bone nodes, yaw = bend axis). AnimGraph steps renumbered. "One-handed pistols" rejection reversed. New gotcha: Modify Bone pins override node settings.
 - 2026-10-06 (3) — Ammo: Phase C marked done (debug lines removed); `EAmmoType` + per-weapon `AmmoType`; pickup design recorded.
 - 2026-10-06 (2) — Crouch: long-gun crouch idle is the pack's kneeling neutral clip; crouched duals take the left arm from the crouch clip (`LeftArmAlpha` no longer forced up).

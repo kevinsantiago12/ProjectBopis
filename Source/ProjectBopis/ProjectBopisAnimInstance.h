@@ -106,6 +106,11 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	bool bIsDualWield = false;
 
+	/** Duals use the spread raised idle, except while aiming (ADS), where the original
+	    narrower pose reads better. The AnimGraph's dual idle switches read this. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	bool bDualSpread = false;
+
 	/** Weight of the one-handed pistol's free-arm pose (left hand at the side): only while
 	    raised, eased out while reload-animating. Lowered, the one-handed clips own the arm. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")

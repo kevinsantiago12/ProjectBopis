@@ -152,7 +152,9 @@ time. In the spirit of DOOM's shotgun, they still hit at a distance; the price
 is a very slow reload — and **dual pistols**. Dual pistols fire left, right, left, right with each trigger
 pull, and both guns reload together. The character carries them very
 differently from a single gun: arms down and loose at the sides when not
-fighting, both guns up and pointed when shooting.
+fighting, both guns up and pointed when shooting — spread wide apart when
+firing on the move, drawn in tighter when taking careful aim. Dual submachine
+guns are planned to be carried the same way.
 
 A single pistol is fired **one-handed**, the free hand hanging at the side;
 the two-handed grip is saved for the heavier, high-powered pistol. Every shot
@@ -396,3 +398,5 @@ a shooting range.
   reload as the drawback.
 - 2026-10-07 — Single pistol fired one-handed (two-handed kept for the
   high-powered pistol); heavier, slower gait; visible recoil on every shot.
+  Dual pistols spread apart when firing on the move, tighter when aiming; dual
+  SMGs planned the same way.

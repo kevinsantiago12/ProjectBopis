@@ -68,6 +68,15 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandFireMontages;
 
+	/** Fire montages used instead while aiming (ADS), keyed like FireMontages. Types with no
+	    entry use FireMontages. Duals use it to keep the original, narrower kick when aimed. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> AimFireMontages;
+
+	/** Off-hand counterpart of AimFireMontages. Falls back to OffhandFireMontages. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> AimOffhandFireMontages;
+
 	/** Reload montages for the off hand of a dual-wield weapon, played alongside the main
 	    reload montage. Their slot must sit in a different slot group from the main one,
 	    or starting one stops the other. */

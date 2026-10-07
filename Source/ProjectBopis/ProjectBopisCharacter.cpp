@@ -353,23 +353,38 @@ void AProjectBopisCharacter::DoFire()
 		// is the character animating itself, and plays either way. Looked up by the
 		// weapon's anim type, so each weapon gets its own without owning the asset.
 		const EWeaponAnimType AnimType = EquippedWeapon->GetAnimType();
-		TObjectPtr<UAnimMontage>* FoundMontage = nullptr;
+		UAnimMontage* FoundMontage = nullptr;
+
+		// Most specific map first; each lookup only runs while nothing usable is found yet.
+		auto TryMap = [&FoundMontage, AnimType](const TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>>& Map)
+		{
+			if (!FoundMontage)
+			{
+				const TObjectPtr<UAnimMontage>* Entry = Map.Find(AnimType);
+				FoundMontage = Entry ? Entry->Get() : nullptr;
+			}
+		};
 
 		if (EquippedWeapon->WasLastShotOffhand())
 		{
-			FoundMontage = OffhandFireMontages.Find(AnimType);
+			if (bIsAiming)
+			{
+				TryMap(AimOffhandFireMontages);
+			}
+			TryMap(OffhandFireMontages);
 		}
 
-		if (!FoundMontage || !*FoundMontage)
+		if (bIsAiming)
 		{
-			FoundMontage = FireMontages.Find(AnimType);
+			TryMap(AimFireMontages);
 		}
+		TryMap(FireMontages);
 
-		if (FoundMontage && *FoundMontage)
+		if (FoundMontage)
 		{
 			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 			{
-				AnimInstance->Montage_Play(*FoundMontage);
+				AnimInstance->Montage_Play(FoundMontage);
 			}
 		}
 

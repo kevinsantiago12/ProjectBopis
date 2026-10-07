@@ -12,6 +12,64 @@
 
 ---
 
+## 2026-10-07 (2)
+**Summary:** **Dual spread.** The left gun of a dual pair was hidden behind the
+head when running and gunning. Duals now get their own anim type: spread when
+firing on the move, the original narrow grip when aiming. User-confirmed in
+PIE. Detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*Dual spread*);
+design imported into the lore notes and GDD (+ `.html`).
+
+- **Rounds:**
+  - **Procedural arm spread** (Modify Bone on `upperarm_l`): wrong sign first,
+    then it deformed the shoulder. Removed.
+  - **Runtime spread** (`DualRunGunAlpha` + the user's spread idle blended in):
+    under the slots the shot montage pinched the arms in; after the slots it
+    never showed. User reverted to the last push.
+  - **Authored, by anim type (kept):**
+    - `EWeaponAnimType::Dual` (dual pistols + planned dual SMGs).
+    - Assets by the user: `MM_Pistol_Idle_Hipfire_Dual`; `MM_Pistol_Fire_Dual`
+      (Local Animation Frame base; its upper arm is 5° off the idle, for
+      movement between shots); `AM_Dual_Fire` / `_Offhand`.
+    - Bridge: weapon type, montage maps, spread switches.
+  - **Aiming back to the original** (user request):
+    - `AimFireMontages` / `AimOffhandFireMontages` on the character.
+    - `bDualSpread` (dual AND not aiming) drives both idle switches (0.2 s
+      blend).
+    - User recreated `AM_Pistol_Fire_Offhand` (in `Mannequins/Anims/Pistol`,
+      on that folder's template `MM_Pistol_Fire`).
+- **Finding:** Lyra's `MM_Pistol_Fire` has no additive base animation set, so
+  its delta carries more than the kick and dragged the spread idle back each
+  shot — likely what sank the runtime approach. Recorded as a gotcha.
+- **Code** (applied by Claude on request, each built with the script):
+  `Dual` enum value, `bIsDualWield` exposed, `bDualSpread`, the aim montage maps
+  with a `TryMap` lookup.
+- **Commits:** the spread itself was committed by the user; the aiming change
+  and these docs are not.
+
+### ▶ RESUME HERE
+1. **Commit** — aimed-dual montages/idle (`AimFireMontages`, `bDualSpread`,
+   `AM_Pistol_Fire_Offhand`) and these docs.
+2. **Quick checks (user):** dual left-forearm recoil direction (`lowerarm_l`
+   +20°, set by symmetry); recoil feel per weapon.
+3. **Ammo pickups, continuing the checklist:**
+   - [x] 1. Debug lines removed (C done)
+   - [x] 2. `EAmmoType` + `AmmoType` on the weapon (compiled 2026-10-06 20:07)
+   - [ ] 3. Set `AmmoType` on the 6 weapon BPs (Pistol/Duals → Pistol,
+     CloseRangeRifle → Rifle, BattleRifle → Sniper, Shotgun → AutoShotgun,
+     PumpShotgun → PumpShotgun) — user or 6 bridge writes. Anim types differ
+     from ammo types now (`BP_Pistol` → `PistolOneHanded`, duals → `Dual`)
+   - [ ] 4. `AAmmoPickup` C++ (walk-over, type + amount + mesh, take what fits,
+     remainder stays) + a weapon-side `AddReserveAmmo` — present for review
+   - [ ] 5. Pickup BPs per type with AmmoSet meshes; place in `Lvl_Sandbox`; test
+4. **User's own work:** left-hand FK edits on lowered/hip-fire clips; shotgun
+   tuning; magazine sizes; recoil angles.
+5. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun hip-fire
+   idle; pistol kneeling crouch; per-weapon recoil data; dual SMG weapon BP
+   (`AnimType Dual`, `bDualWield`, SMG ammo).
+6. **Then:** Phase 5 — enemy archetype foundation.
+
+---
+
 ## 2026-10-07
 **Summary:** Animation feel pass. **One-handed single pistol**, **heavier gait**
 (slower clips + stride warping), and **procedural recoil** that stacks under
