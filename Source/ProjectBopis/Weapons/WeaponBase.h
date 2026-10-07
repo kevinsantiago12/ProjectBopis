@@ -45,6 +45,20 @@ enum class EWeaponAnimType : uint8
 	PumpShotgun
 };
 
+/** Which ammo a weapon takes. Each weapon keeps its own reserve; an ammo pickup of a
+    type tops up the carried weapon(s) that use that type. */
+UENUM(BlueprintType)
+enum class EAmmoType : uint8
+{
+	Pistol,
+	HighPowerPistol,
+	SMG,
+	Rifle,
+	Sniper,
+	AutoShotgun,
+	PumpShotgun
+};
+
 /** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited
     click must be silent, an empty one must not be. */
 UENUM(BlueprintType)
@@ -137,6 +151,9 @@ public:
 	/** Which animation set the holder should use for this weapon. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponAnimType GetAnimType() const { return AnimType; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	EAmmoType GetAmmoType() const { return AmmoType; }
 
 	bool HasZoom() const { return bHasZoom; }
 	float GetZoomedFOV() const { return ZoomedFOV; }
@@ -323,6 +340,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	int32 MagazineSize = 12;
+
+	/** The ammo this weapon takes. Pickups of this type refill its reserve. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	EAmmoType AmmoType = EAmmoType::Pistol;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	int32 StartingReserveAmmo = 60;

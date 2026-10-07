@@ -316,13 +316,6 @@ void AWeaponBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Yellow, FString::Printf(TEXT("Bloom: %.2f"), CurrentBloom));
-		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Cyan, FString::Printf(TEXT("Ammo: %d / %d%s"),
-			CurrentAmmoInMagazine, CurrentReserveAmmo, bIsReloading ? TEXT("  [RELOADING]") : TEXT("")));
-	}
-
 	TimeSinceLastShot += DeltaTime;
 
 	if (TimeSinceLastShot >= BloomDecayDelay && CurrentBloom > 0.0f)

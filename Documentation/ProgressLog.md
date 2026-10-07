@@ -53,15 +53,31 @@ rounds. **Rebuild script** added. All user-confirmed in PIE. Detail in
   Crouched duals no longer force the mirrored left arm up — the left hand comes
   from the crouch clip until raised (C++, applied on request).
 
+- **Ammo (Phase 4 C–D) started.** C was already built (`WBP_Ammo` in the HUD,
+  user confirmed) — only the per-frame `Bloom:`/`Ammo:` debug lines remained;
+  deleted. User added the **AmmoSet** pack (calibre boxes: 12 ga, 9mm, .45,
+  .500 S&W, .22, 5.45, 7.62, 20mm). Design agreed (imported into the lore notes):
+  ammo **types** (pickup feeds the matching weapon), walk-over, take what fits,
+  no respawn; separate ammo for auto/pump shotgun and rifle/sniper; hi-power
+  pistol and SMG planned. `EAmmoType` + `AWeaponBase::AmmoType` compiled
+  (applied by Claude on request). Mag sizes: user tunes later.
+
 ### ▶ RESUME HERE
-1. **Commit** today's code, assets and docs (the user is pushing).
-2. **User's own work:** left-hand FK edits on the lowered/hip-fire clips;
-   shotgun range/reload tuning.
-3. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun-specific
-   hip-fire idle (`MM_Shotgun_Idle_Hipfire`); pistol kneeling crouch (still
-   Lyra's sitting `MM_Pistol_Crouch_Idle`).
-4. **Next:** ammo HUD + pickups (Phase 4 C–D, on hold until the user says), or
-   **Phase 5 — enemy archetype foundation**.
+1. **Ammo pickups, continuing the checklist:**
+   - [x] 1. Debug lines removed (C done)
+   - [x] 2. `EAmmoType` + `AmmoType` on the weapon (compiled 2026-10-06 20:07)
+   - [ ] 3. Set `AmmoType` on the 6 weapon BPs (Pistol/Duals → Pistol,
+     CloseRangeRifle → Rifle, BattleRifle → Sniper, Shotgun → AutoShotgun,
+     PumpShotgun → PumpShotgun) — user or 6 bridge writes
+   - [ ] 4. `AAmmoPickup` C++ (walk-over, type + amount + mesh, take what fits,
+     remainder stays) + a weapon-side `AddReserveAmmo` — present for review
+   - [ ] 5. Pickup BPs per type with AmmoSet meshes; place in `Lvl_Sandbox`; test
+2. **Commit** — today's later work (crouch docs onward) isn't committed yet.
+3. **User's own work:** left-hand FK edits on lowered/hip-fire clips; shotgun
+   tuning; magazine sizes.
+4. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun hip-fire
+   idle; pistol kneeling crouch.
+5. **Then:** Phase 5 — enemy archetype foundation.
 
 ---
 

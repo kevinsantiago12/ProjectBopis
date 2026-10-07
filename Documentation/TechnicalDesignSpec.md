@@ -372,11 +372,26 @@ so a stray self-hit doesn't consume the round.
 
 ## Ammo
 
-Four phases: **A** state + gating + dry fire (done), **B** reload (done, needs
-editor setup), **C** HUD readout, **D** pickups.
+Four phases: **A** state + gating + dry fire (done), **B** reload (done),
+**C** HUD readout (done — `WBP_Ammo` on `UAmmoWidget` inside `WBP_PlayerHUD`;
+the on-screen `Bloom:`/`Ammo:` debug lines were deleted 2026-10-06), **D**
+pickups (in progress).
 
 Design decisions: **separate reserves per weapon** rather than a shared pool,
 **auto-reload off** by default, **reload cancels on weapon swap**.
+
+**Ammo types (2026-10-06).** `EAmmoType { Pistol, HighPowerPistol, SMG, Rifle,
+Sniper, AutoShotgun, PumpShotgun }`; each weapon sets `AmmoType` (default
+Pistol, `GetAmmoType()`). Mapping: `BP_Pistol`/`BP_DualPistols` → Pistol,
+`BP_CloseRangeRifle` → Rifle, `BP_BattleRifle` → Sniper (it becomes a sniper),
+`BP_Shotgun` → AutoShotgun, `BP_PumpShotgun` → PumpShotgun. HighPowerPistol and
+SMG are for weapons not built yet. **Not yet set on the Blueprints.**
+
+**Pickups (design agreed 2026-10-06, not built):** `AAmmoPickup` with an ammo
+type, an amount and a mesh (AmmoSet pack meshes per calibre). **Walk-over**
+collection. Feeds the carried weapon(s) of that type; **takes what fits, the
+remainder stays on the ground; if nothing fits it stays whole.** No respawn —
+levels place them deliberately. Magazine sizes per weapon: user tunes later.
 
 ### Fire result
 
@@ -1113,6 +1128,7 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-06 (3) — Ammo: Phase C marked done (debug lines removed); `EAmmoType` + per-weapon `AmmoType`; pickup design recorded.
 - 2026-10-06 (2) — Crouch: long-gun crouch idle is the pack's kneeling neutral clip; crouched duals take the left arm from the crouch clip (`LeftArmAlpha` no longer forced up).
 - 2026-10-06 — Shotgun polish: `RoundsPerLoad`, `PumpShotgun` anim type + `BP_PumpShotgun`, per-round reload montage (Start/Loop/End, crossfaded Loop restart, End via SetNextSection), IK off through the rack. Left-hand IK reworked to the `LeftHandGrip` socket, aim-only on long guns (history recorded). `TurnThreshold` 45. Inertialization node added. `bStopAllMontages` note corrected (slot-group scoped). Build script noted.
 

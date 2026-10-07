@@ -499,6 +499,12 @@ shells two at a time. The shotgun should behave like DOOM's: it **has range**
 rather than being useless past close quarters, and its **main drawback is a
 very slow reload**. Exact tuning is open.
 
+**Ammo and pickups (user decisions, 2026-10-06).** Each gun family has its own
+ammo: pistol, high-powered pistol, SMG, rifle, sniper rifle, auto shotgun and
+pump shotgun shells (the battle rifle becomes a sniper; a high-powered pistol
+and an SMG are planned weapons). Ammo is picked up by walking over it; a pickup
+gives what fits and leaves the rest. Pickups don't respawn.
+
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively
 on Hong Kong or American references.
