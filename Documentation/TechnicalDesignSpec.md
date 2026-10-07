@@ -88,6 +88,22 @@ driven entirely by a bloom value.
 - Zoom is a separate per-weapon flag from generic aim, so giving a weapon a
   scope can't accidentally grant it better accuracy.
 
+**Reticle is now a static dot (user decision, 2026-10-07).** `WBP_Reticle`
+draws a fixed 6 px white circle at screen centre, the same for every weapon. The
+bullet above about the reticle's visual expansion is **suspended**: bloom still
+resolves every shot, but nothing shows it. Implementation:
+- `Image_192`'s brush: no material, *Rounded Box*, 6×6, rounding
+  `HalfHeightRadius` (corner radii 3).
+- Canvas slot: 6×6, centre-anchored.
+- Event Tick chain and `LastCrosshairMaterial` deleted.
+
+Left in place, now unused, until the accuracy model is settled:
+- `FCrosshairSettings` on the weapons;
+- `UReticleWidget::GetCurrentBloom` / `GetCrosshairSettings`;
+- `M_Reticle` / `M_Reticle_Corners`.
+
+If bloom feedback comes back, those are the pieces to re-wire.
+
 ### Bloom parameters
 
 | Parameter | What it controls |
@@ -335,9 +351,37 @@ logic.
 
 ### Projectile vs hitscan
 
-`AProjectileBase` (real movement + collision + on-hit damage) is currently
-assigned to the **close-range rifle** as a test bed. Pistol and battle rifle
-are hitscan.
+**Direction change (user decision, 2026-10-08): every weapon becomes a
+projectile weapon.** Bullets are hidden at normal speed and shown in slow
+motion. Started: `BP_Cal45Bullet` (`Content/ThirdPerson/Blueprints/`, `cal45_Full`
+mesh, decal `MI_Generic`) on `BP_DualPistols`. The other weapons are still
+hitscan until the user converts them.
+
+**Backlog before converting the rest** — `AProjectileBase` defaults predate
+this decision:
+1. **Fragmentation is on for every round.** The C++ default is 150 cm radius,
+   10 damage, swept on every hit with no skip. Make it opt-in: defaults 0, skip
+   when 0. `BP_RifleProjectile` relies on the defaults today.
+2. **Speed default 3000 cm/s (30 m/s).** Bullets want realistic per-BP speeds:
+   .45 ≈ 25,000 cm/s; rifles 70,000–90,000.
+3. **Collision sphere radius 5.** Bullets want ≈1. The visual mesh should be
+   *NoCollision*.
+4. **Damage falloff exists only on the hitscan path.** Projectile pellets deal
+   flat damage. The weapon should pass `FalloffStartRange`/`EndRange`/min
+   fraction to the projectile at spawn, measured from the spawn point.
+5. **Visibility rule.** `bShowOnlyInSlowMotion` + `SlowMotionThreshold`
+   on the projectile:
+   - visual components hidden while `GetActorTimeDilation()` ≥ threshold;
+   - collision is never touched;
+   - needs no link to the future bullet-time code, which slows the world and
+     keeps the player at normal speed via `CustomTimeDilation`;
+   - testable now with `slomo`.
+
+   Open: whether tracers also hide at normal speed.
+
+Previously: `AProjectileBase` (real movement + collision + on-hit damage) was
+assigned to the **close-range rifle** as a test bed; pistol and battle rifle
+were hitscan.
 
 **Setting change note:** the original reason for a projectile here — a
 coilgun firing fragmenting rounds — is discarded with the 2098 premise. The
@@ -1302,6 +1346,8 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-08 — All weapons to become projectile weapons, bullets hidden at normal speed and shown in slow motion (user decision); projectile backlog recorded (fragmentation opt-in, speed, radius, falloff, visibility rule). Content folder renamed `FirstPerson` → `ThirdPerson`.
+- 2026-10-07 (3) — Reticle simplified to a static centre dot; the "bloom drives the reticle" rule suspended; crosshair settings/materials kept unused.
 - 2026-10-07 (2) — Dual spread: `EWeaponAnimType::Dual` (dual pistols + planned dual SMGs), `bIsDualWield` exposed, `bDualSpread`; spread idle/fire for hip-fire, original for aiming via `AimFireMontages`/`AimOffhandFireMontages`; AnimGraph steps 3 and 7 updated. New gotcha: additive base pose.
 - 2026-10-07 — One-handed pistol (`PistolOneHanded`, `IsPistolAnimType`, `bIsPistolHold`, free-arm layer at `clavicle_l` local space, reload fade, snap exemption); gait (`LocomotionPlayRate` 0.75 on all 32 players, Stride Warping Graph mode + Leg IK); procedural recoil (springs, `AddRecoil`, four Modify Bone nodes, yaw = bend axis). AnimGraph steps renumbered. "One-handed pistols" rejection reversed. New gotcha: Modify Bone pins override node settings.
 - 2026-10-06 (3) — Ammo: Phase C marked done (debug lines removed); `EAmmoType` + per-weapon `AmmoType`; pickup design recorded.

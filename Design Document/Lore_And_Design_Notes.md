@@ -518,6 +518,14 @@ gives what fits and leaves the rest. Pickups don't respawn.
   are held **spread apart** on either side, with visible arm movement between
   shots. When aiming, they come back to the narrower grip. **Dual SMGs** are
   planned and will share these dual animations.
+- **Crosshair:** a simple static **dot**, the same for every weapon. The
+  crosshair no longer widens with sustained fire. Whether the underlying
+  accuracy model stays is still open.
+
+**Bullets (user decision, 2026-10-08).** Every gun fires real bullets that
+travel, not instant hits. At normal speed the bullets are **not shown**. When
+slow motion arrives, they become visible, so bullet time is where you see the
+rounds in the air.
 
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively

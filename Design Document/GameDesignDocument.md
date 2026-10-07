@@ -111,7 +111,8 @@ The previous version of the game built its combat on a specific accuracy
 model — no bonus for aiming down sights, hip-fire fully effective, accuracy
 governed by how you pace your trigger rather than by a recoil pattern, with
 the crosshair widening as you fire and tightening as you stop. That model is
-built and working today.
+built and working today — though the crosshair itself is now a simple dot,
+so the widening is no longer shown on screen.
 
 It is neither confirmed nor dropped for the new game. It's being reconsidered
 against the John Woo direction — and it's worth noting that "hip-fire is the
@@ -142,7 +143,7 @@ of the arsenal rather than one option among many.
 
 Three weapons are built and working as a test bed — a semi-automatic pistol,
 a full-automatic close-range rifle, and a semi-automatic scoped rifle — with
-distinct handling, ammunition, reloading, and per-weapon crosshairs. Their
+distinct handling, ammunition and reloading. Their
 current art is placeholder sci-fi and will be replaced. Their *roles* were
 designed for the previous premise and are open to revision.
 
@@ -155,6 +156,9 @@ differently from a single gun: arms down and loose at the sides when not
 fighting, both guns up and pointed when shooting — spread wide apart when
 firing on the move, drawn in tighter when taking careful aim. Dual submachine
 guns are planned to be carried the same way.
+
+Every gun fires real bullets that travel through the world. At normal speed
+you don't see them; slow motion is where the rounds become visible in the air.
 
 A single pistol is fired **one-handed**, the free hand hanging at the side;
 the two-handed grip is saved for the heavier, high-powered pistol. Every shot
@@ -339,8 +343,7 @@ character. Working today:
 - A character who carries his weapon lowered and raises it to fire, strafes
   while shooting, turns on the spot to follow the aim, and crouches into cover
   when standing still
-- Weapons that fire, with an accuracy model driving both the shot and the
-  reticle from one number
+- Weapons that fire, with an accuracy model that loosens under sustained fire
 - Configured test-bed weapons with distinct handling, plus a shotgun and dual
   pistols
 - A one-handed pistol stance, a heavier walking gait, and a visible kick on
@@ -351,7 +354,7 @@ character. Working today:
 - Ammunition with magazines, reserves and reloading
 - A composable HUD — reticle and ammo readout as separate, mix-and-match
   elements
-- Per-weapon procedural crosshairs
+- A minimal dot crosshair
 - Hit decals, muzzle flash, weapon sound
 
 All of it was built under the old premise, and all of it is **implementation
@@ -399,4 +402,6 @@ a shooting range.
 - 2026-10-07 — Single pistol fired one-handed (two-handed kept for the
   high-powered pistol); heavier, slower gait; visible recoil on every shot.
   Dual pistols spread apart when firing on the move, tighter when aiming; dual
-  SMGs planned the same way.
+  SMGs planned the same way. Crosshair simplified to a dot.
+- 2026-10-08 — All guns to fire real, travelling bullets, visible only in slow
+  motion.

@@ -19,9 +19,10 @@ Unreal Engine 5.8, scaffolded from Epic's FPS template and converted to
 third person (decided 2026-09-25, built on `tps-conversion`, finished
 2026-10-05). The `Variant_Shooter` and `Variant_Horror` template variants were
 removed (2026-08-09) — all gameplay systems are built from scratch against
-the design doc, not adapted from template code. The `Content/FirstPerson/`
-folder name is a template leftover kept on purpose; the assets in it were
-renamed (`BP_PlayerCharacter`, `BP_GameMode`, `BP_PlayerController`,
+the design doc, not adapted from template code. The template's
+`Content/FirstPerson/` folder was renamed to **`Content/ThirdPerson/`** by the
+user (2026-10-08); older docs still say `FirstPerson`. Its assets were renamed
+earlier (`BP_PlayerCharacter`, `BP_GameMode`, `BP_PlayerController`,
 `ABP_Player`, level `Lvl_Sandbox`). Animation is Lyra's library on the same
 skeleton. The weapon/ammo/reticle systems built under the old premise are
 **implementation state**, not canon; they're the test bed the new direction

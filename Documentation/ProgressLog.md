@@ -12,6 +12,105 @@
 
 ---
 
+## 2026-10-08
+**Summary:** Short session. User decided **every weapon becomes a projectile
+weapon**, with bullets **hidden at normal speed and shown in slow motion**
+(for the future bullet time). First round built by the user. The engineering
+follow-up is **on the backlog**; next session is ammo pickups.
+
+- **`BP_Cal45Bullet`** (user): .45 projectile on `BP_DualPistols`, `cal45_Full`
+  mesh. It left no decals because `HitDecalMaterial` lives on the projectile and
+  defaults to none. User set it to `MI_Generic`; decals work.
+- **Backlog** (ProjectPlan + spec *Projectile vs hitscan*): `AProjectileBase`
+  defaults predate the decision:
+  - every hit does a 150 cm / 10-damage fragment splash;
+  - 30 m/s speed;
+  - 5 cm collision radius;
+  - no damage falloff on the projectile path (shotguns).
+
+  Plus the planned visibility rule: `bShowOnlyInSlowMotion` driven by the
+  projectile's time dilation, so bullet time needs no hook. Open: hide tracers
+  too?
+- **Folder rename (user):** `Content/FirstPerson/` → `Content/ThirdPerson/`.
+  `CLAUDE.md` updated; older doc entries keep the old path.
+- **Docs:** design decision imported into the lore notes + GDD (+ `.html`).
+
+### ▶ RESUME HERE
+1. **Commit**:
+   - the dot crosshair (`WBP_Reticle`) and its docs;
+   - the `FirstPerson` → `ThirdPerson` folder move (check `git status` shows
+     the new folder fully added before committing);
+   - `BP_Cal45Bullet`;
+   - today's docs.
+2. **Ammo pickups (next session), continuing the checklist:**
+   - [x] 1. Debug lines removed (C done)
+   - [x] 2. `EAmmoType` + `AmmoType` on the weapon (compiled 2026-10-06 20:07)
+   - [ ] 3. Set `AmmoType` on the weapon BPs (Pistol/Duals → Pistol,
+     CloseRangeRifle → Rifle, BattleRifle → Sniper, Shotgun → AutoShotgun,
+     PumpShotgun → PumpShotgun) — user or bridge writes. Anim types differ
+     from ammo types now (`BP_Pistol` → `PistolOneHanded`, duals → `Dual`).
+     Blueprints now live in `Content/ThirdPerson/Blueprints/`
+   - [ ] 4. `AAmmoPickup` C++ (walk-over, type + amount + mesh, take what fits,
+     remainder stays) + a weapon-side `AddReserveAmmo` — present for review
+   - [ ] 5. Pickup BPs per type with AmmoSet meshes; place in `Lvl_Sandbox`; test
+3. **Backlog — projectile bullets** (when the user picks it up): fragmentation
+   opt-in, per-bullet speed/radius, falloff on projectiles, slow-motion-only
+   visibility; then convert the remaining weapons.
+4. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+   weapon; dot readability on bright backgrounds.
+5. **User's own work:** left-hand FK edits on lowered/hip-fire clips; shotgun
+   tuning; magazine sizes; recoil angles.
+6. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun hip-fire
+   idle; pistol kneeling crouch; per-weapon recoil data; dual SMG weapon BP;
+   remove the unused crosshair C++/materials once the accuracy model is decided.
+7. **Then:** Phase 5 — enemy archetype foundation.
+
+---
+
+## 2026-10-07 (3)
+**Summary:** **Crosshair simplified to a static dot** (user decision: same dot
+for every weapon, no bloom feedback). Built through the bridge and
+user-confirmed in PIE. Detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md)
+(*Combat: bloom accuracy model*); design noted in the lore notes and GDD
+(+ `.html`).
+
+- **`WBP_Reticle`** (bridge):
+  - Brush: material removed, now a 6×6 fully rounded box (a solid white circle).
+  - Canvas slot: 6×6, centred.
+  - Event Tick chain (crosshair settings, material swap, bloom → radius) and
+    `LastCrosshairMaterial` deleted.
+- **Kept, unused:**
+  - `FCrosshairSettings` and the reticle widget's bloom getters (C++);
+  - `M_Reticle` / `M_Reticle_Corners`.
+
+  The accuracy model is still open, so they wait for that decision.
+- The spec's rule that bloom must visibly drive the reticle is marked
+  suspended.
+
+### ▶ RESUME HERE
+1. **Commit** — the dot crosshair (`WBP_Reticle`) and these docs.
+2. **Quick checks (user):** dual left-forearm recoil direction (`lowerarm_l`
+   +20°, set by symmetry); recoil feel per weapon; dot readability on bright
+   backgrounds (a 1 px dark outline is a one-field change if needed).
+3. **Ammo pickups, continuing the checklist:**
+   - [x] 1. Debug lines removed (C done)
+   - [x] 2. `EAmmoType` + `AmmoType` on the weapon (compiled 2026-10-06 20:07)
+   - [ ] 3. Set `AmmoType` on the 6 weapon BPs (Pistol/Duals → Pistol,
+     CloseRangeRifle → Rifle, BattleRifle → Sniper, Shotgun → AutoShotgun,
+     PumpShotgun → PumpShotgun) — user or 6 bridge writes. Anim types differ
+     from ammo types now (`BP_Pistol` → `PistolOneHanded`, duals → `Dual`)
+   - [ ] 4. `AAmmoPickup` C++ (walk-over, type + amount + mesh, take what fits,
+     remainder stays) + a weapon-side `AddReserveAmmo` — present for review
+   - [ ] 5. Pickup BPs per type with AmmoSet meshes; place in `Lvl_Sandbox`; test
+4. **User's own work:** left-hand FK edits on lowered/hip-fire clips; shotgun
+   tuning; magazine sizes; recoil angles.
+5. **Optional:** `LeftHandGrip` socket on `Sniper_Rifle_A`; shotgun hip-fire
+   idle; pistol kneeling crouch; per-weapon recoil data; dual SMG weapon BP;
+   remove the unused crosshair C++/materials once the accuracy model is decided.
+6. **Then:** Phase 5 — enemy archetype foundation.
+
+---
+
 ## 2026-10-07 (2)
 **Summary:** **Dual spread.** The left gun of a dual pair was hidden behind the
 head when running and gunning. Duals now get their own anim type: spread when
