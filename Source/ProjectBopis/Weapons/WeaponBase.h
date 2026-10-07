@@ -44,14 +44,21 @@ enum class EWeaponAnimType : uint8
 	    its own fire montage with a pump at the end. Map the same reload montage for both. */
 	PumpShotgun,
 	/** Single pistol held one-handed — free left hand at the side (2026-10-07). Pistol is
-	    the two-handed hold, used by the hi-power pistol and the duals. */
-	PistolOneHanded
+	    the two-handed hold, used by the hi-power pistol. */
+	PistolOneHanded,
+	/** Dual wield, one gun in each hand: dual pistols and dual SMGs (2026-10-07).
+	    Pistol-style poses with the arms spread apart, so the mirrored left gun clears
+	    the head from the right-shoulder camera. Its own raised idle and fire montages. */
+	Dual
 };
 
-/** Any pistol hold, one- or two-handed — for code that means "pistol vs long gun". */
+/** Pistol-style hold (one-handed, two-handed or dual, including dual SMGs), for code that
+    means "pistol poses vs long-gun poses". */
 inline bool IsPistolAnimType(EWeaponAnimType Type)
 {
-	return Type == EWeaponAnimType::Pistol || Type == EWeaponAnimType::PistolOneHanded;
+	return Type == EWeaponAnimType::Pistol
+		|| Type == EWeaponAnimType::PistolOneHanded
+		|| Type == EWeaponAnimType::Dual;
 }
 
 /** Which ammo a weapon takes. Each weapon keeps its own reserve; an ammo pickup of a

@@ -94,10 +94,17 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double LeftHandGripAlpha = 0.0;
 
-	/** Any pistol hold (Pistol or PistolOneHanded) — the AnimGraph's pistol-vs-long-gun
-	    switches (aim offset, hip-fire idle, crouch idle) read this instead of == Pistol. */
+	/** Any pistol-style hold (Pistol, PistolOneHanded or Dual) — the AnimGraph's
+	    pistol-vs-long-gun switches (aim offset, hip-fire idle, crouch idle) read this
+	    instead of == Pistol. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	bool bIsPistolHold = false;
+
+	/** Dual wield, pistols or SMGs (the weapon's IsDualWield). Picks the spread raised idle
+	    for the right arm; the dual left-arm and lowered-dual layers already key off it
+	    through their alphas. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	bool bIsDualWield = false;
 
 	/** Weight of the one-handed pistol's free-arm pose (left hand at the side): only while
 	    raised, eased out while reload-animating. Lowered, the one-handed clips own the arm. */
@@ -193,8 +200,6 @@ private:
 	/** Latched while a fire/reload montage plays and until the drop it causes has
 	    finished easing — so a montage ending eases the arms down instead of snapping. */
 	bool bEaseLowering = false;
-
-	bool bIsDualWield = false;
 
 	/** A reload montage is playing (End included) — the left-hand IK stays off. */
 	bool bReloadAnimating = false;
