@@ -42,8 +42,17 @@ enum class EWeaponAnimType : uint8
 	Shotgun,
 	/** Pump-action shotgun (added 2026-10-06). Same poses and reload as Shotgun, but
 	    its own fire montage with a pump at the end. Map the same reload montage for both. */
-	PumpShotgun
+	PumpShotgun,
+	/** Single pistol held one-handed — free left hand at the side (2026-10-07). Pistol is
+	    the two-handed hold, used by the hi-power pistol and the duals. */
+	PistolOneHanded
 };
+
+/** Any pistol hold, one- or two-handed — for code that means "pistol vs long gun". */
+inline bool IsPistolAnimType(EWeaponAnimType Type)
+{
+	return Type == EWeaponAnimType::Pistol || Type == EWeaponAnimType::PistolOneHanded;
+}
 
 /** Which ammo a weapon takes. Each weapon keeps its own reserve; an ammo pickup of a
     type tops up the carried weapon(s) that use that type. */

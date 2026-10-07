@@ -51,6 +51,11 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	double AimPitch = 0.0;
 
+	/** How much stride warping lengthens each step: the inverse of LocomotionPlayRate, so
+	    slower clips still cover the ground the capsule moves. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
+	double StrideScale = 1.0;
+
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	bool bIsCrouched = false;
 
@@ -90,6 +95,16 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double LeftHandGripAlpha = 0.0;
 
+	/** Any pistol hold (Pistol or PistolOneHanded) — the AnimGraph's pistol-vs-long-gun
+	    switches (aim offset, hip-fire idle, crouch idle) read this instead of == Pistol. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	bool bIsPistolHold = false;
+
+	/** Weight of the one-handed pistol's free-arm pose (left hand at the side): only while
+	    raised, eased out while reload-animating. Lowered, the one-handed clips own the arm. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	double FreeArmAlpha = 0.0;
+
 	// ---- Turn-in-place ----
 
 	/** How far the mesh lags behind the capsule's yaw. Rotate Root Bone applies it;
@@ -128,6 +143,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
 	float StationarySpeed = 10.0f;
 
+	/** Play rate of every locomotion clip (free run, raised, aiming, crouch). Below 1 slows
+	    the cadence for a heavier gait; stride warping makes up the distance. Much below
+	    0.75 and the stretched strides start to show. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.5", ClampMax = "1.0"))
+	double LocomotionPlayRate = 0.8;
+
 private:
 
 	void UpdateLocomotion(const AProjectBopisCharacter& Character);
@@ -157,4 +178,8 @@ private:
 	/** Eased 0..1 version of bIsCrouched that fades the standing lowered-dual layer out
 	    while crouched, so standing up blends it back in instead of snapping. */
 	float DualCrouchBlend = 0.0f;
+
+	/** Eased 0..1 that fades the one-handed free-arm pose out while a reload montage plays
+	    and back in after, so the left arm doesn't snap between the pose and the reload. */
+	float FreeArmReloadBlend = 1.0f;
 };

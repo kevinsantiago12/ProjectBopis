@@ -66,6 +66,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (Weapon)
 	{
 		CurrentAnimType = Weapon->GetAnimType();
+		bIsPistolHold = IsPistolAnimType(CurrentAnimType);
 		bIsDualWield = Weapon->IsDualWield();
 	}
 
@@ -95,6 +96,10 @@ void UProjectBopisAnimInstance::UpdateLocomotion(const AProjectBopisCharacter& C
 	WarpAngle = FRotator::NormalizeAxis(Direction - CardinalDirection);
 
 	AimPitch = FRotator::NormalizeAxis(Character.GetControlRotation().Pitch);
+
+	// Clips play slower than authored; stride warping lengthens the steps to make up the
+	// distance, so the feet don't slide.
+	StrideScale = 1.0 / LocomotionPlayRate;
 }
 
 void UProjectBopisAnimInstance::UpdateUpperBody(float DeltaSeconds)
@@ -147,12 +152,21 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 	// lowered, hip-fire raised, moving, pistols — keeps its hand-authored left hand.
 	// Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l. Off while
 	// reload-animating. Eases on, snaps off.
-	const bool bLongGun = CurrentAnimType != EWeaponAnimType::Pistol;
+	const bool bLongGun = !IsPistolAnimType(CurrentAnimType);
 	const double IKTarget = (bIsAiming && bLongGun && !bIsDualWield && !bReloadAnimating) ? 1.0 : 0.0;
 
 	LeftHandIKAlpha = IKTarget < LeftHandIKAlpha
 		? IKTarget
 		: FMath::FInterpTo(LeftHandIKAlpha, IKTarget, DeltaSeconds, LeftHandIKInterpSpeed);
+
+	// One-handed pistol: the raised pistol poses are two-handed, so while raised the free
+	// left arm is overridden with the at-side pose. It follows the raised layer, and eases
+	// out for reload montages (and back in after) so the two-handed reload blends in.
+	FreeArmReloadBlend = FMath::FInterpTo(
+		FreeArmReloadBlend, bReloadAnimating ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
+
+	const bool bOneHanded = CurrentAnimType == EWeaponAnimType::PistolOneHanded;
+	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;
 }
 
 void UProjectBopisAnimInstance::UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon)
