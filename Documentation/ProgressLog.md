@@ -12,6 +12,89 @@
 
 ---
 
+## 2026-10-08 (2)
+**Summary:** **Pickups done.** All user-confirmed in PIE ("works now"):
+- shared ammo pool per type;
+- ammo pickups;
+- unlimited weapon carry;
+- number-key weapon selection by category;
+- weapon pickups, with dual unlock.
+
+Detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*Ammo* → *Shared ammo
+pool*, *Pickups and the backpack*). Design imported into the lore notes and GDD
+(+ `.html`).
+
+- **Design (user):**
+  - weapon drops: ammo if owned, weapon + rounds if not;
+  - drop rounds fixed, or random from half a magazine to a full one;
+  - no carry limit;
+  - single and dual as separate selections (Max Payne 1);
+  - number keys only, by category;
+  - auto-equip on pickup as an option, default on;
+  - shared ammo per type;
+  - caps Pistol 180 / SMG 300 / Rifle 300.
+- **Code** (applied by Claude on request, each built with the script):
+  - shared pool on `UWeaponHolderComponent` (per-weapon reserve removed);
+  - `AAmmoPickup`;
+  - `WeaponSlot` + `SelectSlot` + `IA_WeaponSlot` bindings (`MaxCarriedWeapons`
+    removed);
+  - `AWeaponPickup` + `GiveWeapon` / `FindCarriedWeapon` / `bAutoEquipOnPickup`;
+  - `DualWieldClass` / `SingleWieldClass`. Starting with duals also gives the
+    single.
+- **Bridge:**
+  - `AmmoType` on 6 weapons;
+  - caps on the holder;
+  - `IA_WeaponSlot1–5` and keys 1–5 in `IMC_Default`;
+  - slots on 6 weapons;
+  - `DualWieldClass` / `SingleWieldClass` on the pistols;
+  - `BP_AmmoPickup_Pistol` (open .45 box), `BP_WeaponPickup`, test pickups in
+    `Lvl_Sandbox`. New level actors can't be saved through the bridge, so the
+    user saved the level.
+
+### ▶ RESUME HERE
+1. **Dual lowered jog cadence — fixed and confirmed** (`DualLoweredRateScale`
+   set to **0.8** on `ABP_Player`; 0.7 made the duals slightly slower than the
+   one-handed jog):
+   - **Cause:** the lowered-dual blend space's 0.7 was replaced by the global
+     `LocomotionPlayRate` on 2026-10-07.
+   - **Fix:** `DualLoweredPlayRate` = `LocomotionPlayRate` × `DualLoweredRateScale`
+     (0.8 set, tunable on the AnimBP class defaults), wired to that player.
+   - **Diagnosis:** a temporary on-screen readout (added, then removed) showed
+     the layer active while jogging lowered. The user's 0.2 test had been on a
+     state-machine player, which only shows while raised.
+   - **Restored:** two test-edited state players (`MM_Unarmed_Jog_Fwd` in Move,
+     `MM_Unarmed_Idle_Ready` in Idle) wired back to `LocomotionPlayRate`.
+   - **Lesson:** AnimGraph pin watches show nothing, because getters there use
+     the fast path and never execute. For live values, use an on-screen readout
+     or the Rewind Debugger.
+2. **Commit** — pickups, pool, slots, input assets, test pickups, jog fix, equip
+   animation (code, montages, maps), docs.
+3. **Equip animation — done, user-confirmed:**
+   - **Decisions (user):** fire blocked during equip; gun swaps instantly for
+     now; pickups animate too.
+   - **C++:** `EquipMontages` / `OffhandEquipMontages`, `PlayEquipAnimation`
+     called from `EquipWeapon`, `IsEquipAnimating` gate in `DoFire`.
+   - **Assets:** the user made `AM_Pistol_Equip`, `AM_Rifle_Equip` and
+     `AM_Pistol_Equip_Offhand`; the bridge filled the maps.
+   - **Left for later:** the clip ends with the gun pointed straight, then eases
+     to lowered, which looks odd. Options are in the spec's *Equip animation*.
+4. **Backlog — projectile bullets:** fragmentation opt-in, per-bullet
+   speed/radius, falloff on projectiles, slow-motion-only visibility; then convert
+   the remaining weapons.
+5. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+   weapon; dot readability.
+6. **Optional / later:**
+   - pickup BPs per ammo type with AmmoSet meshes and sounds;
+   - Player Mappable Key Settings on the slot actions;
+   - starting loadout list;
+   - high-powered pistol BP (`Pistol` anim type, HighPowerPistol ammo);
+   - dual SMG BP;
+   - remove the unused crosshair code.
+7. **Then:** Phase 5 — enemy archetype foundation (enemy weapon drops will use
+   `AWeaponPickup`).
+
+---
+
 ## 2026-10-08
 **Summary:** Short session. User decided **every weapon becomes a projectile
 weapon**, with bullets **hidden at normal speed and shown in slow motion**

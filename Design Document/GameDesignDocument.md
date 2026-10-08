@@ -157,6 +157,14 @@ fighting, both guns up and pointed when shooting — spread wide apart when
 firing on the move, drawn in tighter when taking careful aim. Dual submachine
 guns are planned to be carried the same way.
 
+You keep every gun you find. Ammunition is shared by calibre, so the guns that
+use the same rounds draw on one supply. Number keys pick a category: pistols,
+shotguns, rifles, sniper rifle. Press the same key again to cycle within it.
+Weapons found on the ground give their ammunition if you already have that gun.
+A second pistol puts a dual pair in your hands as its own selection, alongside
+the single one. Drawing a gun takes a moment — you can't fire until it's up —
+so switching weapons is a small commitment in a fight.
+
 Every gun fires real bullets that travel through the world. At normal speed
 you don't see them; slow motion is where the rounds become visible in the air.
 
@@ -351,7 +359,9 @@ character. Working today:
 - A working projectile weapon with fragmenting impact
 - Fire rate limits, full-automatic fire, per-weapon fire animation
 - Scoped zoom
-- Ammunition with magazines, reserves and reloading
+- Ammunition with magazines, a shared supply per calibre, and reloading
+- Weapon and ammunition pickups, an unlimited weapon backpack, number-key weapon
+  selection
 - A composable HUD — reticle and ammo readout as separate, mix-and-match
   elements
 - A minimal dot crosshair
@@ -404,4 +414,6 @@ a shooting range.
   Dual pistols spread apart when firing on the move, tighter when aiming; dual
   SMGs planned the same way. Crosshair simplified to a dot.
 - 2026-10-08 — All guns to fire real, travelling bullets, visible only in slow
-  motion.
+  motion. Weapon and ammo pickups: carry everything, shared ammo per calibre,
+  number keys by category, a second pistol unlocks duals. Drawing a gun
+  animates and briefly blocks firing.

@@ -505,6 +505,29 @@ pump shotgun shells (the battle rifle becomes a sniper; a high-powered pistol
 and an SMG are planned weapons). Ammo is picked up by walking over it; a pickup
 gives what fits and leaves the rest. Pickups don't respawn.
 
+**Weapons and carrying (user decisions, 2026-10-08).**
+- **No carry limit ("magic backpack").** Every weapon picked up is kept.
+- **Ammo is shared per type**, Max Payne style: all weapons that take the same
+  ammo draw on one supply. Each type has a carry maximum (pistol 180, SMG 300,
+  rifle 300; the rest provisional).
+- **Weapon drops:**
+  - if you already have the weapon, it gives its ammo;
+  - if not, you get the weapon with the rounds it was dropped with.
+  - A drop's rounds are either a set amount or random, between half a magazine
+    and a full one.
+- **Duals as their own selection (Max Payne 1):** picking up a second copy of a
+  weapon that can be dual-wielded adds the dual version **alongside** the
+  single, and you can switch between them. Having the duals always means
+  having the single too.
+- **Weapon selection is by number key, grouped by category:** pressing a key
+  again cycles within the category. 2 pistols, 3 shotguns, 4 SMGs and rifles,
+  5 sniper; 1 kept for melee. Number keys only, to start.
+- **Switching to a newly picked-up weapon** is an option the player can turn
+  off; it's on by default.
+- **Drawing a weapon** plays an equip animation, and you **can't fire until it
+  finishes**. Picking up a weapon plays it too. For now the new gun appears in
+  the hand at once.
+
 **Pistol handling and movement feel (user decisions, 2026-10-07).**
 - A **single pistol is fired one-handed**, the free hand hanging at the side.
   The two-handed grip is kept for the **high-powered pistol**. Lowered

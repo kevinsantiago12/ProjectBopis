@@ -19,13 +19,30 @@ public:
 	UWeaponHolderComponent();
 
 	/** Adds a weapon to the carried list; auto-equips it if nothing is currently equipped.
-	Returns false if at capacity. */
+	    No carry limit (magic backpack). bAddStartingReserve puts the weapon's
+	    StartingReserveAmmo into the pool (pickups pass false: they bring their own rounds).
+	    Returns false if it's null or already carried. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
-	bool AddWeapon(AWeaponBase* NewWeapon);
+	bool AddWeapon(AWeaponBase* NewWeapon, bool bAddStartingReserve = true);
 
 	/** Equips an already-carried weapon. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
 	void EquipWeapon(AWeaponBase* WeaponToEquip);
+
+	/** Equips the next carried weapon in Slot: the first one if another slot is equipped,
+	    otherwise the one after the equipped weapon, wrapping round. Returns false if
+	    nothing is carried in that slot. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
+	bool SelectSlot(int32 Slot);
+
+	/** The carried weapon of exactly this class, or null. */
+	UFUNCTION(BlueprintPure, Category = "Weapon Holder")
+	AWeaponBase* FindCarriedWeapon(TSubclassOf<AWeaponBase> WeaponClass) const;
+
+	/** Spawns a weapon of this class with RoundsInMagazine loaded, adds it to the backpack,
+	    and equips it if bAutoEquipOnPickup is on. Returns the new weapon. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
+	AWeaponBase* GiveWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 RoundsInMagazine);
 
 	/** Fires the equipped weapon. See EFireResult for why a shot may not have happened. */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
@@ -34,6 +51,19 @@ public:
 	/** Reloads the equipped weapon. Returns false if it couldn't start. */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
 	bool ReloadEquippedWeapon();
+
+	/** Rounds of Type in the shared reserve. Every carried weapon that takes Type reloads
+	    from this one pool, so single and dual pistols share their rounds (Max Payne style). */
+	UFUNCTION(BlueprintPure, Category = "Weapon Holder|Ammo")
+	int32 GetReserveAmmo(EAmmoType Type) const;
+
+	/** Adds up to Amount rounds of Type, capped at that type's maximum. Returns how many
+	    were taken, so a pickup can keep the rest. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon Holder|Ammo")
+	int32 AddAmmo(EAmmoType Type, int32 Amount);
+
+	/** Removes up to Wanted rounds of Type, for a reload. Returns how many it got. */
+	int32 TakeAmmo(EAmmoType Type, int32 Wanted);
 
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }
@@ -45,8 +75,6 @@ protected:
 	/** Attaches the equipped weapon to the owner's hand socket and applies its grip offsets. */
 	void AttachWeaponToHand();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
-	int32 MaxCarriedWeapons = 2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Holder")
 	TArray<TObjectPtr<AWeaponBase>> CarriedWeapons;
@@ -64,6 +92,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	TSubclassOf<AWeaponBase> StartingWeaponClass;
 
+	/** Switch to a weapon as soon as it's picked up. A player option; on by default. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Holder")
+	bool bAutoEquipOnPickup = true;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	float CrosshairViewportPositionY = 0.5f;
 
@@ -76,6 +108,19 @@ protected:
 	    firing through a wall they're pressed against. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	bool bBlockShotWhenMuzzleObstructed = true;
+
+	/** Most rounds carried per ammo type. Types with no entry use DefaultMaxAmmo. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder|Ammo")
+	TMap<EAmmoType, int32> MaxAmmoByType;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder|Ammo", meta = (ClampMin = "0"))
+	int32 DefaultMaxAmmo = 240;
+
+	/** The shared reserve, per ammo type. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Holder|Ammo")
+	TMap<EAmmoType, int32> ReserveAmmo;
+
+	int32 GetMaxAmmo(EAmmoType Type) const;
 
 public:	
 	// Called every frame

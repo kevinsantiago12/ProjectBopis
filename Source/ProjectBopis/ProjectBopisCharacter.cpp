@@ -125,6 +125,16 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this,
 			&AProjectBopisCharacter::DoCrouchEnd);
 
+		// Weapon slots — each key passes its own slot number along with the event.
+		for (int32 Index = 0; Index < WeaponSlotActions.Num(); ++Index)
+		{
+			if (WeaponSlotActions[Index])
+			{
+				EnhancedInputComponent->BindAction(WeaponSlotActions[Index], ETriggerEvent::Started, this,
+					&AProjectBopisCharacter::DoSelectWeaponSlot, Index + 1);
+			}
+		}
+
 	}
 	else
 	{
@@ -322,6 +332,12 @@ void AProjectBopisCharacter::DoFire()
 		return;
 	}
 
+	// Mid-equip the gun isn't up yet; the trigger waits for the animation.
+	if (IsEquipAnimating())
+	{
+		return;
+	}
+
 	// A trigger pull from the lowered stance turns the character to the camera
 	// before the shot leaves, so it never fires sideways out of a free-run pose.
 	// Snapped rather than interpolated: the shot is this frame.
@@ -403,6 +419,14 @@ void AProjectBopisCharacter::DoFire()
 	}
 }
 
+void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
+{
+	if (WeaponHolder)
+	{
+		WeaponHolder->SelectSlot(Slot);
+	}
+}
+
 void AProjectBopisCharacter::DoReload()
 {
 	// The montage only plays if a reload actually started, so mashing the key on a
@@ -441,6 +465,41 @@ void AProjectBopisCharacter::DoReload()
 			AnimInstance->Montage_Play(*FoundOffhand);
 		}
 	}
+}
+
+void AProjectBopisCharacter::PlayEquipAnimation(const AWeaponBase* Weapon)
+{
+	ActiveEquipMontage = nullptr;
+
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!Weapon || !AnimInstance)
+	{
+		return;
+	}
+
+	const EWeaponAnimType AnimType = Weapon->GetAnimType();
+
+	if (const TObjectPtr<UAnimMontage>* Found = EquipMontages.Find(AnimType); Found && *Found)
+	{
+		// Same slot group as fire/reload, so this also cuts off whatever the previous
+		// weapon was still playing.
+		ActiveEquipMontage = *Found;
+		AnimInstance->Montage_Play(ActiveEquipMontage);
+	}
+
+	if (Weapon->IsDualWield())
+	{
+		if (const TObjectPtr<UAnimMontage>* FoundOffhand = OffhandEquipMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
+		{
+			AnimInstance->Montage_Play(*FoundOffhand);
+		}
+	}
+}
+
+bool AProjectBopisCharacter::IsEquipAnimating() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	return ActiveEquipMontage && AnimInstance && AnimInstance->Montage_IsPlaying(ActiveEquipMontage);
 }
 
 void AProjectBopisCharacter::UpdateReloadMontage()

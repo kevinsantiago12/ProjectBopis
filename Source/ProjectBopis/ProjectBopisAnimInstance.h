@@ -55,6 +55,12 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	double AimPitch = 0.0;
 
+	/** Play rate of the lowered-dual whole-body walk/jog: LocomotionPlayRate scaled by
+	    DualLoweredRateScale, since that unarmed clip has a quicker stride than the pistol
+	    jog it has to match. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
+	double DualLoweredPlayRate = 0.7;
+
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	bool bIsCrouched = false;
 
@@ -192,6 +198,11 @@ protected:
 	    match the capsule speed. Much below 0.75 and the stretched strides start to show. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.5", ClampMax = "1.0"))
 	double LocomotionPlayRate = 0.8;
+
+	/** How much slower the lowered-dual unarmed walk/jog plays than the other locomotion
+	    clips, so its cadence matches the one-handed pistol jog. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.1", ClampMax = "1.0"))
+	double DualLoweredRateScale = 0.7;
 
 private:
 

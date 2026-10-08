@@ -419,23 +419,127 @@ so a stray self-hit doesn't consume the round.
 Four phases: **A** state + gating + dry fire (done), **B** reload (done),
 **C** HUD readout (done — `WBP_Ammo` on `UAmmoWidget` inside `WBP_PlayerHUD`;
 the on-screen `Bloom:`/`Ammo:` debug lines were deleted 2026-10-06), **D**
-pickups (in progress).
+pickups (**done 2026-10-08**, see *Pickups and the backpack*).
 
-Design decisions: **separate reserves per weapon** rather than a shared pool,
-**auto-reload off** by default, **reload cancels on weapon swap**.
+Design decisions: **auto-reload off** by default, **reload cancels on weapon
+swap**. **Superseded 2026-10-08:** "separate reserves per weapon" — the reserve
+is now **one shared pool per ammo type**, held by the weapon holder (below).
+
+### Shared ammo pool (2026-10-08)
+Max Payne style: every carried weapon that takes a type reloads from the same
+pool, so the single and dual pistols share their rounds.
+
+- **`UWeaponHolderComponent`:**
+  - `ReserveAmmo` (`TMap<EAmmoType,int32>`);
+  - `AddAmmo(Type, Amount)` caps at the type's max and returns what was taken;
+  - `TakeAmmo(Type, Wanted)` and `GetReserveAmmo(Type)`;
+  - caps in `MaxAmmoByType` on `BP_PlayerCharacter` (Pistol **180**, SMG **300**,
+    Rifle **300**, HighPowerPistol 60, Sniper 40, AutoShotgun 40,
+    PumpShotgun 40), fallback `DefaultMaxAmmo` 240.
+- **`AWeaponBase`:**
+  - keeps its own **magazine**;
+  - its reserve calls go through `ReserveSource` (set by the holder in
+    `AddWeapon`);
+  - `TakeReserve` returns everything asked for when `bInfiniteReserve` is on;
+  - `MaxReserveAmmo` and the per-weapon `CurrentReserveAmmo` were removed;
+  - `StartingReserveAmmo` is what a loadout weapon adds to the pool;
+  - a weapon not carried has a reserve of 0.
+- The HUD is unchanged: `GetReserveAmmo()` on the weapon now reports the pool.
 
 **Ammo types (2026-10-06).** `EAmmoType { Pistol, HighPowerPistol, SMG, Rifle,
 Sniper, AutoShotgun, PumpShotgun }`; each weapon sets `AmmoType` (default
 Pistol, `GetAmmoType()`). Mapping: `BP_Pistol`/`BP_DualPistols` → Pistol,
 `BP_CloseRangeRifle` → Rifle, `BP_BattleRifle` → Sniper (it becomes a sniper),
 `BP_Shotgun` → AutoShotgun, `BP_PumpShotgun` → PumpShotgun. HighPowerPistol and
-SMG are for weapons not built yet. **Not yet set on the Blueprints.**
+SMG are for weapons not built yet. Set on the Blueprints 2026-10-08. Anim type
+and ammo type are independent (`BP_Pistol` is `PistolOneHanded`, duals `Dual`,
+both Pistol ammo).
 
-**Pickups (design agreed 2026-10-06, not built):** `AAmmoPickup` with an ammo
-type, an amount and a mesh (AmmoSet pack meshes per calibre). **Walk-over**
-collection. Feeds the carried weapon(s) of that type; **takes what fits, the
-remainder stays on the ground; if nothing fits it stays whole.** No respawn —
-levels place them deliberately. Magazine sizes per weapon: user tunes later.
+### Pickups and the backpack (2026-10-08)
+**No carry limit ("magic backpack").** `MaxCarriedWeapons` was removed;
+`AddWeapon` refuses only null or already-carried weapons. Its
+`bAddStartingReserve` parameter is false for pickups, which bring their own
+rounds.
+
+**Weapon selection — number keys by category (Max Payne 1):**
+- Each weapon has a `WeaponSlot`: 2 pistols (single and duals), 3 shotguns,
+  4 SMGs/rifles (close-range rifle), 5 sniper (battle rifle); 1 is kept free
+  for melee.
+- `SelectSlot(Slot)` equips the first carried weapon in that slot, or the next
+  one if that slot is already equipped, wrapping in pickup order.
+  (`InSlot.Find(Equipped)` returns −1 when not found, so +1 lands on index 0.)
+- Input: `IA_WeaponSlot1`–`5` (copies of `IA_Reload`) on keys 1–5 in
+  `IMC_Default`, listed in the character's `WeaponSlotActions`. Bound in a loop
+  with the slot number as a delegate payload.
+- Not set yet: *Player Mappable Key Settings* on the actions (an instanced
+  object the bridge can't write). Add them in the editor when a rebinding
+  screen exists.
+
+**`AAmmoPickup`** (`Source/ProjectBopis/Pickups/`):
+- Trigger sphere (60) + a static mesh with no collision; `AmmoType`, `Amount`
+  (per placed instance), optional `PickupSound`.
+- Walk-over → `Holder->AddAmmo`; what doesn't fit stays; destroyed when
+  empty; never respawns.
+- Works even with no weapon of that type carried (Max Payne style).
+- Triggers once on entry: standing on a box with a full pool needs a step off
+  and back on.
+- `BP_AmmoPickup_Pistol` (`ThirdPerson/Blueprints/Pickups/`): the
+  `cal45_PaperBoxOpen` mesh, offset −60 so it sits on the floor.
+
+**`AWeaponPickup`:**
+- Its own `WeaponClass`; the mesh is taken from the class's default object in
+  `OnConstruction`, so no per-pickup mesh setup.
+- `AmmoMode`: **Fixed** (`FixedRounds`) or **Random**, rolled in `BeginPlay`
+  from half a magazine to a full one.
+- On walk-over, in order:
+  1. **Not carried:** `Holder->GiveWeapon(Class, Rounds)` spawns it hidden, loads
+     the magazine with the rounds, adds it and equips it if `bAutoEquipOnPickup`
+     (a player option, on by default). Consumed.
+  2. **Carried, and its `DualWieldClass` isn't:** the dual version is unlocked
+     the same way, and the single stays (separate selections, Max Payne 1).
+     Consumed.
+  3. **Otherwise:** rounds go to the pool; the remainder stays.
+- `BP_WeaponPickup`: its mesh sits 50 units below the trigger centre.
+
+**Single ↔ dual links on the weapon:**
+- `DualWieldClass` (`BP_Pistol` → `BP_DualPistols`).
+- `SingleWieldClass` (`BP_DualPistols` → `BP_Pistol`): adding a dual weapon also
+  adds its single if missing. It's loaded from the pool, inserted ahead of the
+  duals so slot 2 cycles single → duals, and doesn't take the equip. So starting
+  with duals gives both.
+- `FindCarriedWeapon` matches the **exact** class.
+
+**Later:** enemy drops can spawn `AWeaponPickup`s, filling the rounds from the
+enemy's magazine instead of Random.
+
+### Equip animation (2026-10-08)
+- **Trigger:** `UWeaponHolderComponent::EquipWeapon` ends by calling
+  `AProjectBopisCharacter::PlayEquipAnimation(Weapon)`. That covers every
+  equip: number keys, pickup auto-equip, the starting weapon. The holder still
+  swaps the gun **instantly**; the animation plays over it (user decision for
+  now — a mid-animation swap on a notify is the later upgrade).
+- **Montages:**
+  - `EquipMontages` / `OffhandEquipMontages`, keyed by anim type like fire and
+    reload.
+  - `AM_Pistol_Equip` (pistol, pistolOneHanded, dual) and `AM_Rifle_Equip`
+    (rifle, shotgun, pumpShotgun) in `DefaultSlot`.
+  - `AM_Pistol_Equip_Offhand` (dual) in `OffhandSlot`.
+  - All in `Characters/Heroes/.../Actions/`, from Lyra's full-pose
+    `MM_Pistol_Equip` / `MM_Rifle_Equip` (the `_Additive` variants are
+    unused).
+- **Fire is blocked during equip** (user decision): `DoFire` returns while
+  `IsEquipAnimating()` (`ActiveEquipMontage` still playing). That covers
+  full-auto, since `DoFireHeld` goes through `DoFire`. Aim, move and further
+  switching aren't blocked.
+- **Slot effects:** the equip montage, in `DefaultSlot`, cuts off the previous
+  weapon's fire/reload montage. `ActiveReloadMontage` then clears itself in
+  `UpdateReloadMontage`. While it plays it raises the upper body, then the drop
+  eases back to lowered.
+- **Known look issue (left for later):** Lyra's equip ends with the gun pointed
+  straight ahead, then eases down to lowered, which reads oddly. Options:
+  - blend the montage out early (`BlendOut` / `BlendOutTriggerTime`);
+  - trim or re-author the clip to end near the lowered pose;
+  - keep the weapon raised for a moment after equipping.
 
 ### Fire result
 
@@ -712,7 +816,7 @@ Tuning on the AnimBP class defaults: `UpperBodyInterpSpeed`,
 `LeftHandIKInterpSpeed`, `RootYawRecoverySpeed`, `StationarySpeed`,
 `TurnThreshold`, `MaxRootYawOffset`, `TurnLeftMontage`, `TurnRightMontage`,
 **`LocomotionPlayRate`** (C++ default 0.8, **0.75 on `ABP_Player`**; clamp
-0.5–1), **`RecoilImpulse`** (15), **`RecoilStiffness`** (150),
+0.5–1), **`DualLoweredRateScale`** (0.7 default, **0.8** set), **`RecoilImpulse`** (15), **`RecoilStiffness`** (150),
 **`RecoilDamping`** (0.7).
 
 **AnimGraph-facing reals are `double`.** Blueprint "Float" is double in UE5, and
@@ -790,7 +894,12 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
    Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
 8. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
-   blend space (play rate **0.7**) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
+   blend space (play rate **`DualLoweredPlayRate`** = `LocomotionPlayRate` ×
+   `DualLoweredRateScale` — C++ default 0.7, **0.8 on `ABP_Player`** (matched to
+   the one-handed jog by eye, 2026-10-08) — since its stride is quicker than the
+   pistol jog's;
+   restored 2026-10-08 after the gait wiring had replaced the old fixed 0.7 with
+   the global rate) / `MM_Unarmed_Idle_Ready` (bool Speed > 10)
    → finger layers (thumb + metacarpals: `_r` from pistol idle, `_l` from
    mirrored pistol idle — closed grips); weight `DualLoweredAlpha`.
 9. **Rotate Root Bone** (Yaw ← `RootYawOffset`; a local-space node) →
@@ -1346,6 +1455,8 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-08 (3) — Equip animation on weapon change (`EquipMontages` / `OffhandEquipMontages`, holder → `PlayEquipAnimation`, fire blocked while equipping); dual lowered jog rate scale (`DualLoweredPlayRate`, scale 0.8).
+- 2026-10-08 (2) — Ammo phase D done: shared per-type ammo pool on the holder (per-weapon reserve removed, caps per type), `AAmmoPickup`, unlimited carry, number-key slot selection (`WeaponSlot`, `IA_WeaponSlot1–5`), `AWeaponPickup` (fixed/random rounds, acquire / unlock duals / ammo), auto-equip option, `DualWieldClass` / `SingleWieldClass`.
 - 2026-10-08 — All weapons to become projectile weapons, bullets hidden at normal speed and shown in slow motion (user decision); projectile backlog recorded (fragmentation opt-in, speed, radius, falloff, visibility rule). Content folder renamed `FirstPerson` → `ThirdPerson`.
 - 2026-10-07 (3) — Reticle simplified to a static centre dot; the "bloom drives the reticle" rule suspended; crosshair settings/materials kept unused.
 - 2026-10-07 (2) — Dual spread: `EWeaponAnimType::Dual` (dual pistols + planned dual SMGs), `bIsDualWield` exposed, `bDualSpread`; spread idle/fire for hip-fire, original for aiming via `AimFireMontages`/`AimOffhandFireMontages`; AnimGraph steps 3 and 7 updated. New gotcha: additive base pose.

@@ -83,6 +83,15 @@ class AProjectBopisCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandReloadMontages;
 
+	/** Equip montages, keyed by anim type like FireMontages. Played whenever the holder
+	    equips a weapon (number keys, pickups). Firing waits until it ends. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> EquipMontages;
+
+	/** Off-hand equip montages for dual weapons, played alongside in OffhandSlot. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> OffhandEquipMontages;
+
 	/** Reload montages played on the character mesh, keyed by the equipped weapon's anim type. */
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> ReloadMontages;
@@ -120,6 +129,10 @@ protected:
 	/** Crouch Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* CrouchAction;
+
+	/** Weapon slot keys: element 0 selects slot 1 (key 1), element 1 slot 2, and so on. */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TArray<UInputAction*> WeaponSlotActions;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -238,6 +251,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoReload();
 
+	/** Selects a weapon slot (1-based) from a number key. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoSelectWeaponSlot(int32 Slot);
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -281,6 +298,10 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveReloadMontage;
 
+	/** The equip montage started by the last weapon change, while it plays. */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveEquipMontage;
+
 	/** Crossfade time when a reload Loop section restarts (its first and last poses don't match). */
 	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.0"))
 	float ReloadLoopBlendTime = 0.15f;
@@ -317,6 +338,13 @@ public:
 	    has already finished loading. The AnimBP keeps the left-hand IK off for all of it. */
 	UFUNCTION(BlueprintPure, Category = "Animation")
 	bool IsReloadAnimating() const { return ActiveReloadMontage != nullptr; }
+
+	/** Plays the equip montage(s) for a weapon that was just equipped. Called by the holder. */
+	void PlayEquipAnimation(const AWeaponBase* Weapon);
+
+	/** An equip montage is playing. Firing waits for it. */
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	bool IsEquipAnimating() const;
 
 };
 

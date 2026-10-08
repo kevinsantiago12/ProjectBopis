@@ -11,6 +11,7 @@ class UParticleSystem;
 class UMaterialInterface;
 class UAnimSequence;
 class AProjectileBase;
+class UWeaponHolderComponent;
 
 UENUM(BlueprintType)
 enum class EWeaponFireMode : uint8
@@ -168,6 +169,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponAnimType GetAnimType() const { return AnimType; }
 
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	int32 GetWeaponSlot() const { return WeaponSlot; }
+
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	EAmmoType GetAmmoType() const { return AmmoType; }
 
@@ -188,8 +192,29 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	int32 GetAmmoInMagazine() const { return CurrentAmmoInMagazine; }
 
+	/** Rounds left in the holder's shared pool for this weapon's ammo type. 0 when not
+	    carried (no pool to draw from). */
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
-	int32 GetReserveAmmo() const { return CurrentReserveAmmo; }
+	int32 GetReserveAmmo() const;
+
+	/** Rounds this weapon brings into the pool when it's picked up. */
+	int32 GetStartingReserveAmmo() const { return StartingReserveAmmo; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
+	int32 GetMagazineSize() const { return MagazineSize; }
+
+	/** Loads the magazine directly (clamped to its size) — for a weapon picked up with a
+	    given number of rounds rather than a full magazine. */
+	void SetAmmoInMagazine(int32 Rounds) { CurrentAmmoInMagazine = FMath::Clamp(Rounds, 0, MagazineSize); }
+
+	/** The dual-wield version of this weapon, if it has one. */
+	TSubclassOf<AWeaponBase> GetDualWieldClass() const { return DualWieldClass; }
+
+	/** For a dual-wield weapon, its single version, if it has one. */
+	TSubclassOf<AWeaponBase> GetSingleWieldClass() const { return SingleWieldClass; }
+
+	/** The pool this weapon reloads from. Set by the holder when the weapon is added. */
+	void SetReserveSource(UWeaponHolderComponent* Source) { ReserveSource = Source; }
 
 	/** Starts a reload. Returns false if one is already running, the magazine is
 	    full, or there's nothing in reserve. */
@@ -247,6 +272,24 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
+
+	/** Number key that selects this weapon (Max Payne style categories). Weapons that share
+	    a slot are cycled by pressing the key again, in pickup order. 2 pistols, 3 shotguns,
+	    4 SMGs and rifles, 5 sniper; 1 is kept free for melee. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "1", ClampMax = "9"))
+	int32 WeaponSlot = 2;
+
+	/** The dual-wield version of this weapon (e.g. BP_Pistol → BP_DualPistols). Picking up
+	    this weapon again while carrying it unlocks the dual version as a separate selection.
+	    Leave empty for weapons that can't be dual-wielded. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<AWeaponBase> DualWieldClass;
+
+	/** For a dual-wield weapon: its single version (e.g. BP_DualPistols → BP_Pistol).
+	    Carrying the pair always includes one, so adding this weapon also adds the single
+	    if it's missing. Leave empty on single weapons. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	TSubclassOf<AWeaponBase> SingleWieldClass;
 
 	/** Minimum seconds between shots — a hard mechanical cap; tapping faster than this does nothing.
 	    Should be shorter than IntendedTimeBetweenShots, which is the softer accuracy-based limit.
@@ -361,11 +404,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	EAmmoType AmmoType = EAmmoType::Pistol;
 
+	/** Rounds added to the holder's shared pool when this weapon is picked up. The cap
+	    lives on the holder, per ammo type. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	int32 StartingReserveAmmo = 60;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
-	int32 MaxReserveAmmo = 120;
 
 	/** Reserve never depletes — for AI and debugging. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
@@ -415,7 +457,12 @@ protected:
 	bool CanAcceptRound() const;
 
 	int32 CurrentAmmoInMagazine = 0;
-	int32 CurrentReserveAmmo = 0;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWeaponHolderComponent> ReserveSource;
+
+	/** Takes up to Wanted rounds from the pool (all of them with an infinite reserve). */
+	int32 TakeReserve(int32 Wanted);
 
 	bool bIsReloading = false;
 	FTimerHandle ReloadTimerHandle;

@@ -99,6 +99,8 @@ void UProjectBopisAnimInstance::UpdateLocomotion(const AProjectBopisCharacter& C
 	WarpAngle = FRotator::NormalizeAxis(Direction - CardinalDirection);
 
 	AimPitch = FRotator::NormalizeAxis(Character.GetControlRotation().Pitch);
+
+	DualLoweredPlayRate = LocomotionPlayRate * DualLoweredRateScale;
 }
 
 void UProjectBopisAnimInstance::UpdateUpperBody(float DeltaSeconds)

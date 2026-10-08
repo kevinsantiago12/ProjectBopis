@@ -44,14 +44,37 @@ void UWeaponHolderComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	// ...
 }
 
-bool UWeaponHolderComponent::AddWeapon(AWeaponBase* NewWeapon)
+bool UWeaponHolderComponent::AddWeapon(AWeaponBase* NewWeapon, bool bAddStartingReserve)
 {
-	if (!NewWeapon || CarriedWeapons.Num() >= MaxCarriedWeapons)
+	if (!NewWeapon || CarriedWeapons.Contains(NewWeapon))
 	{
 		return false;
 	}
 
 	CarriedWeapons.Add(NewWeapon);
+
+	// The weapon reloads from our pool. A weapon from the start loadout brings its
+	// starting reserve; a picked-up one brings only the rounds in its magazine.
+	NewWeapon->SetReserveSource(this);
+	if (bAddStartingReserve)
+	{
+		AddAmmo(NewWeapon->GetAmmoType(), NewWeapon->GetStartingReserveAmmo());
+	}
+
+	// Duals imply the single (Max Payne style): carrying the pair always includes one.
+	// Inserted ahead of the duals, so the slot key cycles single → dual; loaded from the
+	// shared pool, so no rounds appear from nowhere.
+	const TSubclassOf<AWeaponBase> SingleClass = NewWeapon->GetSingleWieldClass();
+	if (SingleClass && !FindCarriedWeapon(SingleClass))
+	{
+		if (AWeaponBase* Single = GetWorld()->SpawnActor<AWeaponBase>(SingleClass))
+		{
+			Single->SetActorHiddenInGame(true);
+			Single->SetReserveSource(this);
+			Single->SetAmmoInMagazine(TakeAmmo(Single->GetAmmoType(), Single->GetMagazineSize()));
+			CarriedWeapons.Insert(Single, CarriedWeapons.Find(NewWeapon));
+		}
+	}
 
 	if (!EquippedWeapon)
 	{
@@ -90,6 +113,84 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 	AttachWeaponToHand();
 
 	EquippedWeapon->SetActorHiddenInGame(false);
+
+	// The owner animates the change; the holder only swaps the weapon.
+	if (AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner()))
+	{
+		OwningCharacter->PlayEquipAnimation(EquippedWeapon);
+	}
+}
+
+bool UWeaponHolderComponent::SelectSlot(int32 Slot)
+{
+	TArray<AWeaponBase*> InSlot;
+	for (AWeaponBase* Weapon : CarriedWeapons)
+	{
+		if (Weapon && Weapon->GetWeaponSlot() == Slot)
+		{
+			InSlot.Add(Weapon);
+		}
+	}
+
+	if (InSlot.IsEmpty())
+	{
+		return false;
+	}
+
+	// Find returns INDEX_NONE (-1) when the equipped weapon is in another slot, so +1
+	// lands on the first weapon of this one; otherwise it steps to the next and wraps.
+	const int32 CurrentIndex = InSlot.Find(EquippedWeapon);
+	AWeaponBase* Next = InSlot[(CurrentIndex + 1) % InSlot.Num()];
+
+	if (Next != EquippedWeapon)
+	{
+		EquipWeapon(Next);
+	}
+
+	return true;
+}
+
+AWeaponBase* UWeaponHolderComponent::FindCarriedWeapon(TSubclassOf<AWeaponBase> WeaponClass) const
+{
+	for (AWeaponBase* Weapon : CarriedWeapons)
+	{
+		// Exact class: BP_DualPistols must not count as carrying BP_Pistol, or vice versa.
+		if (Weapon && Weapon->GetClass() == WeaponClass)
+		{
+			return Weapon;
+		}
+	}
+
+	return nullptr;
+}
+
+AWeaponBase* UWeaponHolderComponent::GiveWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 RoundsInMagazine)
+{
+	if (!WeaponClass)
+	{
+		return nullptr;
+	}
+
+	AWeaponBase* NewWeapon = GetWorld()->SpawnActor<AWeaponBase>(WeaponClass);
+	if (!NewWeapon)
+	{
+		return nullptr;
+	}
+
+	// Spawning runs the weapon's BeginPlay, which fills the magazine — overwrite it after.
+	NewWeapon->SetAmmoInMagazine(RoundsInMagazine);
+
+	// Hidden until equipped; otherwise it would sit visible wherever it spawned.
+	NewWeapon->SetActorHiddenInGame(true);
+
+	AddWeapon(NewWeapon, false);
+
+	if (bAutoEquipOnPickup && EquippedWeapon != NewWeapon)
+	{
+		EquipWeapon(NewWeapon);
+	}
+
+	return NewWeapon;
 }
 
 void UWeaponHolderComponent::AttachWeaponToHand()
@@ -218,6 +319,43 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 	}
 
 	return EquippedWeapon->Fire(MuzzleLocation, FireDirection);
+}
+
+int32 UWeaponHolderComponent::GetReserveAmmo(EAmmoType Type) const
+{
+	return ReserveAmmo.FindRef(Type);
+}
+
+int32 UWeaponHolderComponent::GetMaxAmmo(EAmmoType Type) const
+{
+	const int32* Max = MaxAmmoByType.Find(Type);
+	return Max ? *Max : DefaultMaxAmmo;
+}
+
+int32 UWeaponHolderComponent::AddAmmo(EAmmoType Type, int32 Amount)
+{
+	if (Amount <= 0)
+	{
+		return 0;
+	}
+
+	int32& Current = ReserveAmmo.FindOrAdd(Type);
+	const int32 Taken = FMath::Min(Amount, FMath::Max(0, GetMaxAmmo(Type) - Current));
+	Current += Taken;
+	return Taken;
+}
+
+int32 UWeaponHolderComponent::TakeAmmo(EAmmoType Type, int32 Wanted)
+{
+	int32* Current = ReserveAmmo.Find(Type);
+	if (!Current || Wanted <= 0)
+	{
+		return 0;
+	}
+
+	const int32 Taken = FMath::Min(Wanted, *Current);
+	*Current -= Taken;
+	return Taken;
 }
 
 

@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/DecalComponent.h"
 #include "Weapons/ProjectileBase.h"
+#include "Weapons/WeaponHolderComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -55,7 +56,7 @@ bool AWeaponBase::CanReload() const
 bool AWeaponBase::CanAcceptRound() const
 {
 	return CurrentAmmoInMagazine < MagazineSize
-		&& (bInfiniteReserve || CurrentReserveAmmo > 0);
+		&& (bInfiniteReserve || GetReserveAmmo() > 0);
 }
 
 bool AWeaponBase::Reload()
@@ -88,12 +89,7 @@ void AWeaponBase::LoadRound()
 	// reserve runs dry partway through.
 	for (int32 Loaded = 0; Loaded < RoundsPerLoad && CanAcceptRound(); ++Loaded)
 	{
-		++CurrentAmmoInMagazine;
-
-		if (!bInfiniteReserve)
-		{
-			--CurrentReserveAmmo;
-		}
+		CurrentAmmoInMagazine += TakeReserve(1);
 	}
 
 	if (CanAcceptRound())
@@ -112,14 +108,7 @@ void AWeaponBase::FinishReload()
 	// Top up only what's missing and leave the remainder in reserve — a partial
 	// magazine is pooled, not discarded.
 	const int32 Needed = MagazineSize - CurrentAmmoInMagazine;
-	const int32 Transfer = bInfiniteReserve ? Needed : FMath::Min(Needed, CurrentReserveAmmo);
-
-	CurrentAmmoInMagazine += Transfer;
-
-	if (!bInfiniteReserve)
-	{
-		CurrentReserveAmmo -= Transfer;
-	}
+	CurrentAmmoInMagazine += TakeReserve(Needed);
 
 	bIsReloading = false;
 }
@@ -308,7 +297,21 @@ void AWeaponBase::BeginPlay()
 	// Not in the constructor — MagazineSize is a per-Blueprint default and isn't
 	// applied yet at construction time.
 	CurrentAmmoInMagazine = MagazineSize;
-	CurrentReserveAmmo = StartingReserveAmmo;
+}
+
+int32 AWeaponBase::GetReserveAmmo() const
+{
+	return ReserveSource ? ReserveSource->GetReserveAmmo(AmmoType) : 0;
+}
+
+int32 AWeaponBase::TakeReserve(int32 Wanted)
+{
+	if (bInfiniteReserve)
+	{
+		return Wanted;
+	}
+
+	return ReserveSource ? ReserveSource->TakeAmmo(AmmoType, Wanted) : 0;
 }
 
 // Called every frame
