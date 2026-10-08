@@ -1047,6 +1047,12 @@ unreliable.
 - Free-arm jog swing on the one-handed pistol (2026-10-07) — removed by the user.
 - Procedural dual arm spread, and a runtime run-and-gun spread alpha
   (2026-10-07) — see *Dual spread*.
+- Left strafe as the right strafe mirrored, via the blend space's per-sample
+  **Mirror** flag + `MDT_Mannequin` (tried by the user 2026-10-08, rolled back):
+  the torso over-twisted. Likely cause: the mirrored clip also flips the
+  pelvis/spine twist, and the raised layer blends from `spine_01` in mesh space
+  over it. If it's revisited, mirror only the legs — a layered blend from
+  `thigh_l`/`thigh_r` over a mirrored copy — rather than the whole sample.
 
 ### Open
 - Turn-in-place extras: 180° turns, crouched turns (crouch clips exist),

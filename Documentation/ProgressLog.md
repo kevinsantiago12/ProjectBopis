@@ -67,8 +67,7 @@ pool*, *Pickups and the backpack*). Design imported into the lore notes and GDD
    - **Lesson:** AnimGraph pin watches show nothing, because getters there use
      the fast path and never execute. For live values, use an on-screen readout
      or the Rewind Debugger.
-2. **Commit** — pickups, pool, slots, input assets, test pickups, jog fix, equip
-   animation (code, montages, maps), docs.
+2. ~~Commit~~ — done: committed and pushed by the user (2026-10-08).
 3. **Equip animation — done, user-confirmed:**
    - **Decisions (user):** fire blocked during equip; gun swaps instantly for
      now; pickups animate too.
