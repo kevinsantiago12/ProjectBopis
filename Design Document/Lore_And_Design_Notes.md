@@ -43,6 +43,11 @@
 
 # PART 1 — GENRE & HORROR CANON (imported 2026-09-28)
 
+> ⚠ **2026-10-09 (user): "Aswang is not a thing anymore."** Everything below
+> that depends on the Aswang is discarded — see DISCARDED. Whether the horror
+> genre and the rest of this PART survive without them is `[UNDECIDED]`,
+> pending design input. Do not fill the gap.
+
 *From `Project_Bopis_Noir_Action_Horror_Direction.txt`, narrative content
 only.*
 
@@ -386,6 +391,11 @@ Do not restore unless explicitly requested:
   President, and the Senator as "hope of the country". Dropped because it
   built two of four acts on killing humans in volume, which is the specific
   thing the Aswang premise exists to avoid.
+- **The Aswang** *(dropped by the user 2026-10-09)*. This covers the Aswang
+  baseline, the three enemy families (mature Aswang / ferals / rare humans),
+  and the readability and vocalization reasoning built on them. The coup plot
+  was dropped *because of* the Aswang premise; it stays dropped unless the
+  user says otherwise.
 
 ## CURRENT STORY SPINE `[PROVISIONAL]`
 
@@ -659,6 +669,9 @@ range. Readability has to be layered by distance:
 - **Unseen** — vocalization. Growls and screams as positional information.
 
 ## Enemy composition — materially changed by PART 1
+
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped, so the three families
+> below no longer stand. The new composition is `[UNDECIDED]`.
 Previously "enemies are human". Now three families:
 
 1. **Mature Aswang** — the overwhelming majority of what the player fights.

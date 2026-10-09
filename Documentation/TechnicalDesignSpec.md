@@ -732,6 +732,89 @@ out of a design conversation on 2026-09-28/30 and are implementation-side.
   sophistication. Halo 2's AI notes in [Research.md](Research.md) still apply
   — they're about readable behaviour, not about what the enemies are.
 
+> ⚠ **2026-10-09: the Aswang are dropped (user).** The families, two-layer
+> health rationale, vocalization and readability sections below were built on
+> them and are **not current** until the new enemy design lands. The Phase 5
+> build order (user, same day) does not depend on any of it:
+> 1. a shared character base, so enemies inherit the player's animation and
+>    weapons;
+> 2. basic movement;
+> 3. taking bullets and ragdolling.
+>
+> Enemy shooting comes later.
+
+### Built so far (2026-10-09) — steps 1–3, user-confirmed in PIE
+
+**Class tree**
+```
+ACharacter
+ └─ ABopisCharacterBase      BopisCharacterBase.h
+     ├─ AProjectBopisCharacter   the player
+     └─ AEnemyBase               Enemies/EnemyBase.h
+```
+
+**`ABopisCharacterBase`** — everything the AnimBP and weapons need, shared by
+player and enemies:
+- `WeaponHolder` component;
+- the 8 montage maps (fire / off-hand / aim-fire / aim-off-hand-fire, reload /
+  off-hand reload, equip / off-hand equip);
+- `bIsAiming` + `SetAiming(bool)`, `TimeUntilWeaponLowered` / `LowerWeaponDelay`,
+  `IsWeaponRaised`, `IsReloadAnimating`;
+- `PlayFireAnimation(Weapon)` (montage lookup + `AddRecoil`),
+  `PlayReloadAnimation(Weapon)`, `PlayEquipAnimation`, `IsEquipAnimating`, the
+  looping-reload driver `UpdateReloadMontage`;
+- capsule 34×96 and `bCanCrouch`.
+
+The player keeps camera, input, stances, crouch request, Focus and HUD.
+`DoFire` / `DoReload` call the holder, then the base's `Play*Animation`.
+
+**Refactor safety, worth remembering:** moving a `UPROPERTY` up into a parent
+class keeps Blueprint values without redirects, because tagged-property
+serialization matches by name across the hierarchy. `CreateDefaultSubobject`
+moved to the parent constructor with the **same subobject name** keeps the
+component. (Contrast the Focus rename, where names changed.)
+
+**Who casts to what:**
+- `UProjectBopisAnimInstance` → `ABopisCharacterBase`, so one `ABP_Player`
+  drives every humanoid.
+- `UWeaponHolderComponent` → `ABopisCharacterBase` (equip anim), `ACharacter`
+  (attach to the mesh). `FireEquippedWeapon` stays **player-only**: it aims from
+  the camera crosshair. Enemies need their own aim source when they shoot.
+- Pickups and widgets stay on the player.
+
+**`AEnemyBase`:**
+- `AIControllerClass = AAIController`,
+  `AutoPossessAI = PlacedInWorldOrSpawned`. Without this, a placed enemy has
+  no controller.
+- **Aim:** `bAimAtPlayer` → `SetFocus(PlayerPawn)` + `SetAiming(true)`.
+  - The controller's focus drives the control rotation, pitch included when the
+    focus is a pawn, so the AnimBP aim offset tracks with no extra code.
+  - With no focus, `bSetControlRotationFromPawnOrientation` keeps control =
+    facing.
+  - `bStartRaised` (debug) raises the gun without focus.
+- **Rotation:**
+  - Raised → `bUseControllerDesiredRotation` (turn toward the aim at
+    `TurnRate`, strafe).
+  - Lowered → `bOrientRotationToMovement`.
+  - `bUseControllerRotationYaw` stays off, because AI control rotation jumps
+    instantly and would snap the body.
+- **Speeds:** `LoweredSpeed` 300 / `RaisedSpeed` 250, `TurnRate` 360.
+- **Test patrol** (placeholder until a StateTree):
+  - `PatrolPoints` (EditInstanceOnly actors), `PatrolWaitTime` 1.
+  - It polls `GetMoveStatus() == Idle`, then `MoveToActor(Point, 50)`.
+  - `bCanStrafe` (default true) preserves the focus while moving.
+  - A failed request logs a "no NavMeshBoundsVolume?" warning.
+
+**Assets:**
+- `BP_EnemyBase`: `SKM_Manny_Simple`, `ABP_Player`, mesh offset as the
+  player, montage maps copied from `BP_PlayerCharacter`, `BP_Pistol`, the
+  `HandGrip_R` / `L` sockets.
+- `Enemy_Test` in `Lvl_Sandbox` with a NavMeshBoundsVolume + 3 Target Points
+  (set up by the user).
+
+**Known duplication:** the montage maps are per-Blueprint, so player and enemy
+each hold a copy. If they drift, move them into a shared data asset.
+
 ### Three families
 
 | Family | Share | Behaviour | Build cost |

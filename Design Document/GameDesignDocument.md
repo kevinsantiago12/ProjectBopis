@@ -371,6 +371,8 @@ character. Working today:
 - A composable HUD — reticle and ammo readout as separate, mix-and-match
   elements
 - A minimal dot crosshair
+- A first test enemy that carries a gun, patrols, and turns to keep the player in
+  its sights, moving with the same animation as the hero
 - Bullet impacts that match what was hit (dust, sparks, splinters, bullet
   holes), muzzle flash, weapon sound
 

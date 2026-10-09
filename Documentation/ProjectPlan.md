@@ -370,10 +370,13 @@ Note: same caveat as Phase 1 — `ShooterNPC`/`ShooterAIController` are gone
 with `Variant_Shooter`, so this is built fresh against the design doc's
 archetype-composition idea, not extended from the old classes.
 
-- [ ] New base enemy actor.
-- [ ] Movement, attack behavior, and battlefield role as separate pieces that combine per archetype, rather than one class with type branches.
-- [ ] One working archetype end-to-end (e.g. a basic armed thug) using StateTree, as proof of concept for the pattern.
-- [ ] Basic spawn/placement so an enemy can exist in a test level.
+**Build order (user, 2026-10-09):** animation + weapons first, then basic movement, then taking bullets + ragdoll. Enemy shooting is deliberately later. Aswang dropped the same day; the enemy roster is undecided.
+
+- [x] *(Done 2026-10-09.)* **1. Shared character base.** `ABopisCharacterBase` between `ACharacter` and the player: weapon holder, raised/aim/reload state, montage maps and playback, recoil hook. The anim instance and holder cast to the base, so one AnimBP drives player and enemies. Pure refactor; the player must behave identically.
+- [x] *(Done 2026-10-09: `BP_EnemyBase`, `Enemy_Test`.)* **2. `AEnemyBase` placed in the level**, holding a weapon, animated by the same AnimBP (idle, raised/lowered, equip).
+- [x] *(Done 2026-10-09: test patrol + `bAimAtPlayer` strafe; placeholder until StateTree.)* **3. Basic movement** — AI controller + navmesh; walk/jog to points, face a target (drives the aim offset via control rotation).
+- [ ] **4. Taking bullets + ragdoll** — health, hit reactions, death → ragdoll. Very important (user).
+- [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data.
 
 ## Phase 6 — First playable arena (vertical slice)
 Goal: prove the core combat loop in an actual space, with real weapons and

@@ -115,7 +115,7 @@ void UWeaponHolderComponent::EquipWeapon(AWeaponBase* WeaponToEquip)
 	EquippedWeapon->SetActorHiddenInGame(false);
 
 	// The owner animates the change; the holder only swaps the weapon.
-	if (AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner()))
+	if (ABopisCharacterBase* OwningCharacter = Cast<ABopisCharacterBase>(GetOwner()))
 	{
 		OwningCharacter->PlayEquipAnimation(EquippedWeapon);
 	}
@@ -200,7 +200,7 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 		return;
 	}
 
-	AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner());
+	ACharacter* OwningCharacter = Cast<ACharacter>(GetOwner());
 	if (!OwningCharacter)
 	{
 		return;
@@ -245,6 +245,8 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 		return EFireResult::NoWeapon;
 	}
 
+	// Aims from the player's camera crosshair, so this path is player-only. Enemies
+	// will get their own aim source when they start shooting.
 	AProjectBopisCharacter* OwningCharacter = Cast<AProjectBopisCharacter>(GetOwner());
 	if (!OwningCharacter)
 	{

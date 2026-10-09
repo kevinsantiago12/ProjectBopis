@@ -8,7 +8,7 @@
 #include "Weapons/WeaponBase.h"
 #include "ProjectBopisAnimInstance.generated.h"
 
-class AProjectBopisCharacter;
+class ABopisCharacterBase;
 class UAnimMontage;
 
 /**
@@ -220,10 +220,10 @@ protected:
 	float FreeArmMinStride = 8.0f;
 private:
 
-	void UpdateLocomotion(const AProjectBopisCharacter& Character);
+	void UpdateLocomotion(const ABopisCharacterBase& Character);
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
-	void UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon);
+	void UpdateLeftHandGrip(const ABopisCharacterBase& Character, const AWeaponBase* Weapon);
 	void UpdateTurnInPlace(float ActorYaw, float DeltaSeconds);
 	void UpdateRecoil(float DeltaSeconds);
 	void UpdateFreeArmSwing(float DeltaSeconds);

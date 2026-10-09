@@ -12,6 +12,80 @@
 
 ---
 
+## 2026-10-09 (2)
+**Summary:** **Phase 5 started: enemies.** Steps 1–3 are done and
+user-confirmed in PIE:
+- player and enemies share one character base, so the enemy inherits all the
+  animation and weapon work;
+- a test enemy stands, equips, raises its gun, patrols, and strafes while
+  aiming at the player.
+
+Detail in [TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*Enemies → Built
+so far*).
+
+- **Design changes (user):**
+  - **The Aswang are dropped.** Recorded in the lore notes' DISCARDED section.
+    PART 1 and enemy composition are flagged `[UNDECIDED]`, and the spec's
+    Aswang sections are flagged as not current.
+  - **Build order:** animation + weapons → basic movement → taking bullets +
+    ragdoll ("very important"). Enemy shooting comes later.
+  - Projectile conversion of the remaining weapons is deferred as minor.
+- **Step 1a:** `ABopisCharacterBase` extracted from the player (weapon holder,
+  montage maps and playback, raise/aim/reload state, recoil hook). Blueprint
+  values survived because property and subobject names were unchanged.
+- **Step 1b:** the anim instance and weapon holder now cast to the base. The
+  holder's crosshair fire path stays player-only.
+- **Step 2:** `AEnemyBase` (auto-possessed `AAIController`, `SetAiming`,
+  `bStartRaised`).
+  - Bridge: `BP_EnemyBase` (player mesh, `ABP_Player`, montage maps copied,
+    `BP_Pistol`).
+  - `Enemy_Test` placed in `Lvl_Sandbox`.
+- **Step 3:** test patrol (`PatrolPoints`, `PatrolWaitTime`) and
+  `bAimAtPlayer` (focus → aim offset, raised strafe).
+  - Turning: desired rotation when raised, orient-to-movement when lowered,
+    `TurnRate` 360.
+  - Speeds: lowered 300 / raised 250.
+  - The user placed the NavMeshBoundsVolume and Target Points.
+- **Code:** all applied by Claude on request, each built with the script.
+
+### ▶ RESUME HERE
+1. **Commit:** Phase 5 steps 1–3 (C++, `BP_EnemyBase`, the level + its
+   external actors, docs).
+2. **Phase 5 step 4: taking bullets + ragdoll** (very important, per the
+   user). To decide before the code:
+   - **Health model:** the Aswang-era two-layer idea is open again.
+   - **Hit reactions:** per bone / direction.
+   - **Headshot multiplier.**
+   - **Death:** ragdoll, impulse from the hit, weapon drop (ties into weapon
+     pickups), corpse cleanup.
+   - Whether the player can die too (same base).
+3. **Design question (user + design partner):** the enemy roster now that the
+   Aswang are gone. Humans only? Does horror stay in any form?
+4. **Focus extras:** sounds when assets exist; the kill refill
+   (`AddMeter(KillRefill)`) once enemies die, then passive regen off.
+5. **Deferred (minor):**
+   - convert the single pistol, battle rifle and both shotguns to projectiles
+     (the shotguns need a pellet BP);
+   - `BP_RifleProjectile` is unreferenced; delete it?
+6. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+   weapon; dot readability.
+7. **Exaggerated impacts, next passes:**
+   - impact sounds;
+   - boosted Niagara layers;
+   - bigger in Focus;
+   - debris and breakables.
+8. **Later:**
+   - the equip end pose;
+   - ammo pickup BPs per type;
+   - remappable keys;
+   - a starting loadout;
+   - high-powered pistol and dual SMG BPs;
+   - foot sync markers;
+   - enemy shooting (own aim source), StateTree behaviour, a shared montage-set
+     data asset if the player and enemy copies drift.
+
+---
+
 ## 2026-10-09
 **Summary:** One-handed pistol polish. The stance is **flipped to right foot
 forward**, and the free left arm now **swings procedurally in step with the
@@ -108,32 +182,8 @@ spec (*Impact effects*).
     skipped by the user.
   - User-confirmed in PIE.
 
-### ▶ RESUME HERE
-1. **Commit** — Focus (C++, assets, redirects), projectile changes, the user's
-   new projectile BPs, impact effects (C++, `DA_ImpactEffects`, the
-   `ImpactsVFXVol1` edits, `DefaultEngine.ini`), docs. `BP_RifleProjectile` / the deleted
-   `BP_Cal45Bullet` — confirm with the user which are still used.
-2. **Focus extras:** sounds (enter / exit / heartbeat) when assets exist; the
-   Phase 5 kill refill (`AddMeter(KillRefill)`), then passive regen off.
-3. **Projectile bullets — convert the remaining weapons:**
-   - single pistol, both shotguns (pellets as projectiles), battle rifle — a
-     bullet BP each (9,000 cm/s, radius 1, decal, NoCollision mesh).
-4. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
-   weapon; dot readability.
-5. **Later:**
-   - the equip clip's straight-ahead end pose;
-   - pickup BPs per ammo type, with sounds;
-   - remappable key names;
-   - a starting loadout list;
-   - high-powered pistol and dual SMG BPs;
-   - foot sync markers on the pistol strafe clips, if anything ever needs to
-     sync to the legs.
-6. **Exaggerated impacts — next passes:**
-   - impact sounds per surface, once assets exist;
-   - boosted Niagara copies in `ExtraSystems`;
-   - optionally bigger impacts in Focus;
-   - later, physics debris and breakables.
-7. **Then:** Phase 5 — enemy archetype foundation.
+*(RESUME HERE moved to 2026-10-09 (2). Focus, projectiles and impacts were
+committed and pushed as "Added Particles".)*
 
 ---
 

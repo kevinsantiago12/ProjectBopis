@@ -1,13 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectBopisCharacter.h"
-#include "ProjectBopisAnimInstance.h"
 #include "Gameplay/FocusComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
-#include "Animation/AnimInstance.h"
-#include "Animation/AnimMontage.h"
-#include "AlphaBlend.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -22,14 +18,8 @@
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
-	// The camera transition is driven per-frame from aim state, so tick is load-bearing.
-	PrimaryActorTick.bCanEverTick = true;
-
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-
-	WeaponHolder = CreateDefaultSubobject<UWeaponHolderComponent>(TEXT("WeaponHolder"));
-	Focus = CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
+	// Capsule, weapon holder and tick come from ABopisCharacterBase.
+	Focus =CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
 
 	FocusPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("FocusPostProcess"));
 	FocusPostProcess->SetupAttachment(RootComponent);
@@ -71,15 +61,9 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	// The body is now the only mesh, and everyone sees it.
 	GetMesh()->SetOwnerNoSee(false);
 
-	GetCapsuleComponent()->SetCapsuleSize(34.0f, 96.0f);
-
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
-
-	// Crouch does nothing at all without this, and fails silently — CanCrouch()
-	// just returns false with no warning. It is false by default.
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchedSpeed;
 }
 
@@ -214,12 +198,10 @@ void AProjectBopisCharacter::DoMove(float Right, float Forward)
 
 void AProjectBopisCharacter::Tick(float DeltaSeconds)
 {
+	// The base counts down the lowering timer and drives the reload montage.
 	Super::Tick(DeltaSeconds);
 
-	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
-
 	UpdateCrouch();
-	UpdateReloadMontage();
 	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
 }
@@ -237,9 +219,9 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	const FVector TargetSocketOffset = bIsAiming ? AimSocketOffset : HipSocketOffset;
 
 	float TargetFOV = DefaultFOV;
-	if (bIsAiming && WeaponHolder)
+	if (bIsAiming && GetWeaponHolder())
 	{
-		if (const AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon())
+		if (const AWeaponBase* EquippedWeapon = GetWeaponHolder()->GetEquippedWeapon())
 		{
 			// Magnification stays weapon-specific; the stance and shoulder-in don't.
 			if (EquippedWeapon->HasZoom())
@@ -348,7 +330,8 @@ void AProjectBopisCharacter::DoJumpEnd()
 
 void AProjectBopisCharacter::DoFire()
 {
-	if (!WeaponHolder)
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	if (!Holder)
 	{
 		return;
 	}
@@ -362,7 +345,7 @@ void AProjectBopisCharacter::DoFire()
 	// A trigger pull from the lowered stance turns the character to the camera
 	// before the shot leaves, so it never fires sideways out of a free-run pose.
 	// Snapped rather than interpolated: the shot is this frame.
-	if (WeaponHolder->GetEquippedWeapon())
+	if (Holder->GetEquippedWeapon())
 	{
 		if (!IsWeaponRaised())
 		{
@@ -375,9 +358,9 @@ void AProjectBopisCharacter::DoFire()
 
 	// Only a real shot animates. RateLimited and Reloading must stay silent, and
 	// Empty is handled by the weapon's own dry-fire sound.
-	const EFireResult FireResult = WeaponHolder->FireEquippedWeapon();
+	const EFireResult FireResult = Holder->FireEquippedWeapon();
 
-	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
+	AWeaponBase* EquippedWeapon = Holder->GetEquippedWeapon();
 	if (!EquippedWeapon)
 	{
 		return;
@@ -385,52 +368,7 @@ void AProjectBopisCharacter::DoFire()
 
 	if (FireResult == EFireResult::Fired)
 	{
-		// Deliberately not gated on UsesAnimationDrivenFeedback() — that flag says
-		// where the *weapon's* sound and muzzle flash come from. The arms animation
-		// is the character animating itself, and plays either way. Looked up by the
-		// weapon's anim type, so each weapon gets its own without owning the asset.
-		const EWeaponAnimType AnimType = EquippedWeapon->GetAnimType();
-		UAnimMontage* FoundMontage = nullptr;
-
-		// Most specific map first; each lookup only runs while nothing usable is found yet.
-		auto TryMap = [&FoundMontage, AnimType](const TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>>& Map)
-		{
-			if (!FoundMontage)
-			{
-				const TObjectPtr<UAnimMontage>* Entry = Map.Find(AnimType);
-				FoundMontage = Entry ? Entry->Get() : nullptr;
-			}
-		};
-
-		if (EquippedWeapon->WasLastShotOffhand())
-		{
-			if (bIsAiming)
-			{
-				TryMap(AimOffhandFireMontages);
-			}
-			TryMap(OffhandFireMontages);
-		}
-
-		if (bIsAiming)
-		{
-			TryMap(AimFireMontages);
-		}
-		TryMap(FireMontages);
-
-		if (FoundMontage)
-		{
-			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-			{
-				AnimInstance->Montage_Play(FoundMontage);
-			}
-		}
-
-		// Procedural kick on top of the montage. It stacks across rapid shots, where the
-		// montage just restarts.
-		if (UProjectBopisAnimInstance* BopisAnim = Cast<UProjectBopisAnimInstance>(GetMesh()->GetAnimInstance()))
-		{
-			BopisAnim->AddRecoil(EquippedWeapon->WasLastShotOffhand());
-		}
+		PlayFireAnimation(EquippedWeapon);
 	}
 	else if (FireResult == EFireResult::Empty && EquippedWeapon->ShouldAutoReloadWhenEmpty())
 	{
@@ -450,9 +388,9 @@ void AProjectBopisCharacter::DoToggleFocus()
 
 void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 {
-	if (WeaponHolder)
+	if (UWeaponHolderComponent* Holder = GetWeaponHolder())
 	{
-		WeaponHolder->SelectSlot(Slot);
+		Holder->SelectSlot(Slot);
 	}
 }
 
@@ -460,125 +398,13 @@ void AProjectBopisCharacter::DoReload()
 {
 	// The montage only plays if a reload actually started, so mashing the key on a
 	// full magazine does nothing rather than replaying the animation.
-	if (!WeaponHolder || !WeaponHolder->ReloadEquippedWeapon())
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	if (!Holder || !Holder->ReloadEquippedWeapon())
 	{
 		return;
 	}
 
-	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
-	if (!EquippedWeapon)
-	{
-		return;
-	}
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance)
-	{
-		return;
-	}
-
-	const EWeaponAnimType AnimType = EquippedWeapon->GetAnimType();
-
-	if (TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(AnimType); FoundMontage && *FoundMontage)
-	{
-		AnimInstance->Montage_Play(*FoundMontage);
-		ActiveReloadMontage = *FoundMontage;
-	}
-
-	// Dual wield reloads both guns in one beat: the off hand plays its own montage in its
-	// own slot group, mirrored onto the left arm by the AnimBP.
-	if (EquippedWeapon->IsDualWield())
-	{
-		if (TObjectPtr<UAnimMontage>* FoundOffhand = OffhandReloadMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
-		{
-			AnimInstance->Montage_Play(*FoundOffhand);
-		}
-	}
-}
-
-void AProjectBopisCharacter::PlayEquipAnimation(const AWeaponBase* Weapon)
-{
-	ActiveEquipMontage = nullptr;
-
-	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-	if (!Weapon || !AnimInstance)
-	{
-		return;
-	}
-
-	const EWeaponAnimType AnimType = Weapon->GetAnimType();
-
-	if (const TObjectPtr<UAnimMontage>* Found = EquipMontages.Find(AnimType); Found && *Found)
-	{
-		// Same slot group as fire/reload, so this also cuts off whatever the previous
-		// weapon was still playing.
-		ActiveEquipMontage = *Found;
-		AnimInstance->Montage_Play(ActiveEquipMontage);
-	}
-
-	if (Weapon->IsDualWield())
-	{
-		if (const TObjectPtr<UAnimMontage>* FoundOffhand = OffhandEquipMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
-		{
-			AnimInstance->Montage_Play(*FoundOffhand);
-		}
-	}
-}
-
-bool AProjectBopisCharacter::IsEquipAnimating() const
-{
-	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
-	return ActiveEquipMontage && AnimInstance && AnimInstance->Montage_IsPlaying(ActiveEquipMontage);
-}
-
-void AProjectBopisCharacter::UpdateReloadMontage()
-{
-	if (!ActiveReloadMontage)
-	{
-		return;
-	}
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance || !AnimInstance->Montage_IsPlaying(ActiveReloadMontage))
-	{
-		// Finished, or cut off — firing plays a montage in the same slot group.
-		ActiveReloadMontage = nullptr;
-		return;
-	}
-
-	static const FName LoopSection(TEXT("Loop"));
-	static const FName EndSection(TEXT("End"));
-
-	if (AnimInstance->Montage_GetCurrentSection(ActiveReloadMontage) != LoopSection)
-	{
-		return; // Start, End, or a magazine-style reload with no Loop at all.
-	}
-
-	// Loading stops when the magazine fills, the reserve runs dry, or the weapon is
-	// swapped: let the current insert finish, then play End (the rack).
-	const AWeaponBase* EquippedWeapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
-	if (!EquippedWeapon || !EquippedWeapon->IsReloading())
-	{
-		AnimInstance->Montage_SetNextSection(LoopSection, EndSection, ActiveReloadMontage);
-		return;
-	}
-
-	// Section jumps inside a montage don't blend, and Loop's first and last poses don't
-	// match, so letting it wrap snaps. Instead, a blend-time before Loop ends, start a
-	// fresh copy at Loop's start: it crossfades in while the old one fades out.
-	float LoopStart = 0.0f;
-	float LoopEnd = 0.0f;
-	ActiveReloadMontage->GetSectionStartAndEndTime(
-		ActiveReloadMontage->GetSectionIndex(LoopSection), LoopStart, LoopEnd);
-
-	if (AnimInstance->Montage_GetPosition(ActiveReloadMontage) >= LoopEnd - ReloadLoopBlendTime)
-	{
-		// bStopAllMontages = true stops the montages already in this slot group — here,
-		// the copy we're replacing — blending it out over the new copy's blend-in. That
-		// is the crossfade. (False would leave the old copy looping underneath.)
-		AnimInstance->Montage_PlayWithBlendIn(ActiveReloadMontage, FAlphaBlendArgs(ReloadLoopBlendTime),
-			1.0f, EMontagePlayReturnType::MontageLength, LoopStart, true);
-	}
+	PlayReloadAnimation(Holder->GetEquippedWeapon());
 }
 
 void AProjectBopisCharacter::DoCrouchStart()
@@ -630,12 +456,13 @@ void AProjectBopisCharacter::UpdateCrouch()
 
 void AProjectBopisCharacter::DoFireHeld()
 {
-	if (!WeaponHolder)
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	if (!Holder)
 	{
 		return;
 	}
 
-	AWeaponBase* EquippedWeapon = WeaponHolder->GetEquippedWeapon();
+	AWeaponBase* EquippedWeapon = Holder->GetEquippedWeapon();
 	if (!EquippedWeapon || EquippedWeapon->GetFireMode() != EWeaponFireMode::Auto)
 	{
 		return;

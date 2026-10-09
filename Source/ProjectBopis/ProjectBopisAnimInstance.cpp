@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectBopisAnimInstance.h"
-#include "ProjectBopisCharacter.h"
+#include "BopisCharacterBase.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -47,7 +47,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
 	// No pawn in the AnimBP editor preview; everything stays at its defaults.
-	const AProjectBopisCharacter* Character = Cast<AProjectBopisCharacter>(TryGetPawnOwner());
+	const ABopisCharacterBase* Character = Cast<ABopisCharacterBase>(TryGetPawnOwner());
 	if (!Character)
 	{
 		return;
@@ -80,7 +80,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 }
 
-void UProjectBopisAnimInstance::UpdateLocomotion(const AProjectBopisCharacter& Character)
+void UProjectBopisAnimInstance::UpdateLocomotion(const ABopisCharacterBase& Character)
 {
 	const FVector Velocity = Character.GetVelocity();
 	Speed = Velocity.Size();
@@ -226,7 +226,7 @@ void UProjectBopisAnimInstance::UpdateRecoil(float DeltaSeconds)
 		: 0.0;
 }
 
-void UProjectBopisAnimInstance::UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon)
+void UProjectBopisAnimInstance::UpdateLeftHandGrip(const ABopisCharacterBase& Character, const AWeaponBase* Weapon)
 {
 	const USkeletalMeshComponent* WeaponMesh = Weapon ? Weapon->GetWeaponMesh() : nullptr;
 	const USkeletalMeshComponent* BodyMesh = Character.GetMesh();
