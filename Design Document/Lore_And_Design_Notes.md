@@ -548,9 +548,19 @@ gives what fits and leaves the rest. Pickups don't respawn.
   crosshair no longer widens with sustained fire. Whether the underlying
   accuracy model stays is still open.
 
+**Focus — slow motion (user decisions, 2026-10-09).** Named "Focus", not "bullet time": that name is trademarked (Max Payne).
+- Toggled on and off with one key.
+- The world slows to about a third of normal speed, and **the player slows
+  with it**, but aiming stays as quick as normal (Max Payne's feel).
+- It runs on a **meter** that drains while active and **refills on kills**.
+  Passive refill and an unlimited mode are switches, for now and for testing.
+- Feedback: a meter on the HUD, a screen effect, and an audio change.
+- The shootdodge comes later, as its own feature.
+- Shotgun pellets are real projectiles too.
+
 **Bullets (user decision, 2026-10-08).** Every gun fires real bullets that
 travel, not instant hits. At normal speed the bullets are **not shown**. When
-slow motion arrives, they become visible, so bullet time is where you see the
+slow motion arrives, they become visible, so Focus is where you see the
 rounds in the air.
 
 Classic Filipino action cinema should also inform the attitude, locations,

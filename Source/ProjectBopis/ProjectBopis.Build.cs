@@ -18,7 +18,9 @@ public class ProjectBopis : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"Niagara",
+			"PhysicsCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

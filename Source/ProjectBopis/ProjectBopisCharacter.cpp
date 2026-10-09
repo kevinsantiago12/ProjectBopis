@@ -2,6 +2,8 @@
 
 #include "ProjectBopisCharacter.h"
 #include "ProjectBopisAnimInstance.h"
+#include "Gameplay/FocusComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
@@ -27,6 +29,21 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
 	WeaponHolder = CreateDefaultSubobject<UWeaponHolderComponent>(TEXT("WeaponHolder"));
+	Focus = CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
+
+	FocusPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("FocusPostProcess"));
+	FocusPostProcess->SetupAttachment(RootComponent);
+	FocusPostProcess->bUnbound = true;
+	FocusPostProcess->BlendWeight = 0.0f;
+
+	// Default look — tweak on the Blueprint.
+	FPostProcessSettings& Look = FocusPostProcess->Settings;
+	Look.bOverride_ColorSaturation = true;
+	Look.ColorSaturation = FVector4(0.5f, 0.5f, 0.5f, 1.0f);
+	Look.bOverride_VignetteIntensity = true;
+	Look.VignetteIntensity = 0.8f;
+	Look.bOverride_SceneFringeIntensity = true;
+	Look.SceneFringeIntensity = 1.5f;
 
 	// Rotation model, set explicitly rather than inherited — Step 2 of the third-person
 	// conversion toggles this pair at runtime. For now the character faces control
@@ -134,6 +151,10 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 					&AProjectBopisCharacter::DoSelectWeaponSlot, Index + 1);
 			}
 		}
+
+		// Bullet time
+		EnhancedInputComponent->BindAction(FocusAction, ETriggerEvent::Started, this,
+			&AProjectBopisCharacter::DoToggleFocus);
 
 	}
 	else
@@ -416,6 +437,14 @@ void AProjectBopisCharacter::DoFire()
 		// Handled here rather than inside the weapon, so the montage and the state
 		// change stay together — the weapon has no business knowing about montages.
 		DoReload();
+	}
+}
+
+void AProjectBopisCharacter::DoToggleFocus()
+{
+	if (Focus)
+	{
+		Focus->Toggle();
 	}
 }
 

@@ -42,17 +42,85 @@ feet**. Both user-confirmed in PIE. Detail in
 - **Code:** applied by Claude on request, each built with the script.
   **Bridge:** the swing node (`ModifyBone_5`).
 
+**Later the same day:**
+- **Projectile groundwork (C++):**
+  - fragment splash is now opt-in (default 0);
+  - damage uses the firing weapon's falloff, measured from the spawn point, and
+    `ApplyPointDamage`;
+  - meshes are hidden unless world dilation < 0.9 (tracers stay visible).
+- **Bullet speeds:** tried at 40k/90k cm/s, but the user preferred **9,000**,
+  so the rounds read in bullet time. Radius is now 1.
+- **Bullet time built:**
+  - **Design (user):** Q toggle; 0.3× world with the player slowed too, aim
+    normal; meter with kill refill / passive regen / infinite switches.
+  - **Code:** `UBulletTimeComponent` and `UBulletTimeWidget`. My first names
+    (`Activate` / `Deactivate` / `IsActive`) clashed with `UActorComponent`'s;
+    renamed.
+  - **Input:** `IA_BulletTime` on Q.
+  - **HUD:** the user built the meter.
+- **Feedback:**
+  - unbound `FocusPostProcess` (desaturate 0.5, vignette 0.8, fringe 1.5) faded
+    in real time;
+  - global pitch 0.6;
+  - empty enter / exit / loop sound slots.
+- **"Rounds visible in real time":** a temporary `[BulletVis]` log showed every
+  round fully hidden at spawn. The user had since rebuilt their projectiles
+  (`BP_Cal45Bullet_Projectile`, `BP_RifleRound_Projectile`, bullet model +
+  tracer) and confirmed they show only in slow motion.
+  `bKeepEffectsVisible` now defaults to off. The log was removed.
+- **Renamed "bullet time" → "Focus"** (user: the old name is trademarked).
+  - Code: `UFocusComponent`, `UFocusWidget`, `FocusAction`, `DoToggleFocus`,
+    `FocusPostProcess`, `FocusPitch`.
+  - Assets: `IA_Focus` (Q), `WBP_Focus`.
+  - `[CoreRedirects]` added to `DefaultEngine.ini`.
+- **Rename hiccup:** I also redirected the two *component* members onto their
+  old subobjects and saved `BP_PlayerCharacter`. That left duplicate
+  components. The user reverted the Blueprint to the last commit; I re-set
+  `FocusAction`, and only the new components remain. Lesson recorded in the
+  spec.
+
+**Later still — per-surface impacts** (user-confirmed in PIE). Detail in the
+spec (*Impact effects*).
+- **Questions answered:**
+  - Niagara is scalable (effect types, pooling).
+  - Mixing Cascade and Niagara is fine.
+  - Niagara works with baked lighting.
+- **Lighting policy changed (user):** dynamic lights are allowed. Static vs
+  dynamic is decided per case.
+- **Step 1:** 24 physical surface types named in `DefaultEngine.ini`; the
+  Rubber physical material set to SurfaceType24.
+- **Step 2:** effect type `NFX_Impact` created by the user; the bridge set it
+  up and assigned it to all 26 `NS_Impact*` systems.
+- **Step 3 (C++, applied by Claude on request, built with the script):**
+  - `UImpactEffectsData`;
+  - the `ImpactEffects` property on the weapon;
+  - physical-material returns on the trace and the projectile sweep;
+  - `Niagara` + `PhysicsCore` modules.
+- **Step 4 (bridge):** `DA_ImpactEffects` filled (24 surfaces + Default) and
+  assigned to all six weapons.
+- **The user:** physical materials on the level materials. Anything unmapped
+  falls back to Default (Concrete burst + generic hole).
+- **Exaggeration pass 1** (John Woo style; user picked options 1 + 2 of 5):
+  - **C++ (applied by Claude on request, built with the script):** per-surface
+    `Scale`, `ExtraSystems`, `DecalVariants` (random pick + random spin),
+    `Sound`, global `EffectScale`.
+  - **Bridge:** every decal variant filled in; `EffectScale` 1.5. Sound
+    skipped by the user.
+  - User-confirmed in PIE.
+
 ### ▶ RESUME HERE
-1. **Commit** — stance flip (AnimBP), procedural arm swing (C++ + AnimBP), docs.
-2. **Backlog — projectile bullets:**
-   - fragmentation opt-in;
-   - per-bullet speed and radius;
-   - falloff on projectiles;
-   - slow-motion-only visibility;
-   - then convert the remaining weapons.
-3. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+1. **Commit** — Focus (C++, assets, redirects), projectile changes, the user's
+   new projectile BPs, impact effects (C++, `DA_ImpactEffects`, the
+   `ImpactsVFXVol1` edits, `DefaultEngine.ini`), docs. `BP_RifleProjectile` / the deleted
+   `BP_Cal45Bullet` — confirm with the user which are still used.
+2. **Focus extras:** sounds (enter / exit / heartbeat) when assets exist; the
+   Phase 5 kill refill (`AddMeter(KillRefill)`), then passive regen off.
+3. **Projectile bullets — convert the remaining weapons:**
+   - single pistol, both shotguns (pellets as projectiles), battle rifle — a
+     bullet BP each (9,000 cm/s, radius 1, decal, NoCollision mesh).
+4. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
    weapon; dot readability.
-4. **Later:**
+5. **Later:**
    - the equip clip's straight-ahead end pose;
    - pickup BPs per ammo type, with sounds;
    - remappable key names;
@@ -60,7 +128,12 @@ feet**. Both user-confirmed in PIE. Detail in
    - high-powered pistol and dual SMG BPs;
    - foot sync markers on the pistol strafe clips, if anything ever needs to
      sync to the legs.
-5. **Then:** Phase 5 — enemy archetype foundation.
+6. **Exaggerated impacts — next passes:**
+   - impact sounds per surface, once assets exist;
+   - boosted Niagara copies in `ExtraSystems`;
+   - optionally bigger impacts in Focus;
+   - later, physics debris and breakables.
+7. **Then:** Phase 5 — enemy archetype foundation.
 
 ---
 

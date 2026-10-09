@@ -325,10 +325,15 @@ The project is still on UE5 defaults, which are the opposite of this target:
 
 ### Implications for gameplay work
 
-Baked lighting means **muzzle flashes and weapon fire should not cast dynamic
-light** by default — a per-shot point light is exactly the kind of cost this
-target is avoiding. Impact and muzzle effects carry their read through
-emissive materials and particles instead, which is also what the era did.
+**Policy change 2026-10-09 (user): dynamic lights are allowed.** The user
+decides static vs dynamic **per case** as content is built, rather than
+defaulting everything to baked. Niagara works with either: particles are lit
+by whatever lighting exists, and baked lighting only constrains particles that
+emit light themselves.
+
+Still the default stance: muzzle flashes and impacts carry their read
+through emissive materials and particles, which is also what the era did.
+Use a per-shot point light only where it earns the cost.
 
 The 2002 setting is a good fit: fluorescent interiors, wet concrete and neon
 signage read on strong shapes and colour, which is exactly what baked
@@ -357,8 +362,17 @@ motion. Started: `BP_Cal45Bullet` (`Content/ThirdPerson/Blueprints/`, `cal45_Ful
 mesh, decal `MI_Generic`) on `BP_DualPistols`. The other weapons are still
 hitscan until the user converts them.
 
-**Backlog before converting the rest** — `AProjectileBase` defaults predate
-this decision:
+**Status 2026-10-09:**
+- **Done:** items 1 (splash opt-in, default 0), 4 (`SetSourceWeapon` →
+  `GetDamageAtDistance` from the spawn point; hits use `ApplyPointDamage`) and 5
+  (`bShowOnlyInSlowMotion`, threshold 0.9, `bKeepEffectsVisible` on).
+- **Speeds:** the user preferred **9,000 cm/s** over 40–90k, so the rounds read
+  in bullet time.
+- **Radius:** 1 on both bullet BPs.
+- **Still to do:** convert the remaining weapons (single pistol, shotguns —
+  pellets as projectiles — battle rifle).
+
+**Original backlog list** — `AProjectileBase` defaults predated this decision:
 1. **Fragmentation is on for every round.** The C++ default is 150 cm radius,
    10 damage, swept on every hit with no skip. Make it opt-in: defaults 0, skip
    when 0. `BP_RifleProjectile` relies on the defaults today.
@@ -411,6 +425,77 @@ an explicit `IgnoredActors` list, ignores in both directions, and is told who
 to ignore explicitly by the weapon at spawn rather than inferring from
 `Instigator`/`Owner`. `OnHit` returns before `Destroy()` for ignored actors,
 so a stray self-hit doesn't consume the round.
+
+### Impact effects — per surface (2026-10-09)
+
+Every hit, hitscan or projectile, spawns a **Niagara burst + a bullet-hole
+decal chosen by the physical surface struck**. User-confirmed in PIE.
+
+- **Data:** `UImpactEffectsData` (`UDataAsset`, `Weapons/ImpactEffectsData.h`)
+  - `Surfaces`: `TMap<EPhysicalSurface, FImpactEffect>`;
+  - `Default`: used for unlisted surfaces and hits with no physical material;
+  - `DecalLifeSpan` 10.
+  - `FImpactEffect`: `System` (Niagara), `Decal` (material), `DecalSize` (5,5,5).
+    Either part may be empty.
+- **Spawn:** `SpawnImpact(WorldContext, Hit)`. `GetSurfaceType(Hit)`, then
+  `SpawnSystemAtLocation` at `ImpactPoint`, rotated to `ImpactNormal`,
+  **pooled** (`ENCPoolMethod::AutoRelease`). The decal gets
+  `SetFadeScreenSize(0)` as before.
+- **Wiring:**
+  - `AWeaponBase::ImpactEffects` (`Weapon|Impact`, `GetImpactEffects()`).
+  - Hitscan sets `bReturnPhysicalMaterial` on the trace.
+  - Projectiles set `bReturnMaterialOnMove` on the collision sphere and use
+    the **source weapon's** asset.
+  - The old `HitDecalMaterial` (weapon and projectile) is now only the
+    fallback when no asset is set.
+- **Modules:** `Niagara` and `PhysicsCore` added to `ProjectBopis.Build.cs`.
+- **Surface types:** `DefaultEngine.ini` → `[/Script/Engine.PhysicsSettings]`,
+  SurfaceType1–24 named to match the `ImpactsVFXVol1` physical materials:
+  Dirt, Rock, Sand, Water, Glass, Cloth, Metal, Wood, Grass, Carpet, Concrete,
+  Snow, Tile, Asphalt, Brick, Cardboard, Clay, Plastic, Electronics, Sheetrock,
+  Plaster, Leaves, Blood, Rubber. The pack's Rubber material was set to
+  SurfaceType24.
+- **Scalability:** `ImpactsVFXVol1/Niagara/NFX_Impact` is an effect type
+  (cull distance 5000, max 40 instances, distance significance) assigned to
+  all 26 `NS_Impact*` systems.
+- **Asset:** `ThirdPerson/Blueprints/DA_ImpactEffects`, set on all six weapon
+  BPs.
+  - Each surface uses its matching `NS_Impact*` and the `_1` variant of the
+    nearest `UWC_Bullet_Holes` folder.
+  - Rubber uses the Plastic burst, because the pack has none.
+  - Water, Glass, Snow, Leaves and Blood are burst only. The glass holes are
+    mesh decals, and decals on skinned characters look wrong.
+  - `Default` is the Concrete burst + `MI_Generic_1`.
+- **Level side:** a surface reacts only once its material (or instance) has a
+  **Phys Material**. Otherwise it gets `Default`.
+
+**Exaggeration pass (2026-10-09, user-confirmed in PIE).** The goal is
+John Woo-scale hits.
+- `FImpactEffect` gains:
+  - `ExtraSystems`: Niagara layers spawned with the main burst;
+  - `Scale`: per surface;
+  - `DecalVariants`: randomly picked together with `Decal`;
+  - `Sound`: `PlaySoundAtLocation`, which follows Focus's global pitch drop.
+- `UImpactEffectsData::EffectScale` multiplies every burst's scale.
+- Decals get a **random roll** around the normal.
+- The decal pool is a `TInlineAllocator<8>` local, so there's no heap
+  allocation per hit.
+
+**Data:**
+- `EffectScale` **1.5**.
+- `DecalVariants` cover every `UWC_Bullet_Holes` variant in each folder: 10
+  for Wood, Concrete, Ceramics and Bricks, 5 elsewhere.
+- Per-surface `Scale` is 1, `ExtraSystems` is empty, and there are no sounds.
+
+**Open:**
+- **Impact sounds:** no bullet-impact assets in the project yet. The only
+  candidate is `Knife_ImpactSurface_Cue`; `ProjectileImpact_att` is the
+  attenuation.
+- **Boosted Niagara copies as layers:** duplicate the `NS_Impact*` systems into
+  our own folder and raise counts, velocity and lifetime. Never edit the pack.
+- `ExtraSystems` is Niagara-only. The weapon pack's Cascade
+  `P_Impact_*_Large_01` effects would need it widened to `UFXSystemAsset`.
+- Bigger impacts during Focus.
 
 ---
 
@@ -1128,9 +1213,9 @@ unreliable.
 - Shotgun aim offset: uses the rifle AO (fine so far); unarmed AO samples
   probably have the same missing-base-pose fault if ever used.
 
-## Combat abilities — dual-wield, shootdodge, bullet-time
+## Combat abilities — dual-wield, shootdodge, Focus (slow motion)
 
-Designed 2026-09-30. **Dual pistols built 2026-10-04**; shootdodge and bullet-time not built. Recorded because the animation
+Designed 2026-09-30. **Dual pistols built 2026-10-04**; shootdodge not built; slow motion built 2026-10-09 as *Focus*. Recorded because the animation
 constraints shape the code, and the approaches below were worked out against
 what the project actually owns.
 
@@ -1283,15 +1368,70 @@ capsule for a two-second transient (don't build a second capsule config unless
 it visibly floats), and the spring arm will need its own length/offset near
 the floor or the camera looks at concrete.
 
-### Bullet-time — the counterintuitive part
+### Focus (slow motion) — built 2026-10-09
+**Name:** "Focus", **not "bullet time"** — that name is trademarked (Max
+Payne). Renamed the same day: code, assets and docs. Older entries in this file
+and the ProgressLog still say "bullet time".
 
-Global time dilation slows **everything on world time**, which includes
-`TimeBetweenShots`, `ReloadDuration` and bloom recovery. Naïve slow-motion
-therefore slows *the player's own gun* along with the world — the opposite of
-the intended feel.
+**Design (user):**
+- toggle on **Q**;
+- the world runs at **0.3×** and the **player is slowed with it** (Max Payne),
+  but **aiming stays normal**;
+- a **meter**: refill on kills, an optional passive-regen switch, an infinite
+  switch;
+- default feedback: HUD meter, screen effect, audio;
+- the shootdodge comes later, as a separate feature.
 
-Fix: `AActor::CustomTimeDilation` on the player, keeping them near normal
-while the world crawls. Cheap to do, painful to discover late.
+**`UFocusComponent`** (`Source/ProjectBopis/Gameplay/FocusComponent`), created
+on the character as `Focus`:
+- **Toggling:**
+  - `Toggle()` → `StartFocus()` / `StopFocus()`, `IsFocusActive()` (not
+    `Activate` / `Deactivate` / `IsActive` — `UActorComponent` already has
+    those).
+  - It refuses to start below `MinMeterToActivate` (10), to stop flicker.
+  - It switches off by itself when the meter empties.
+  - `EndPlay` restores normal time.
+- **Slowing:** `UGameplayStatics::SetGlobalTimeDilation(WorldTimeDilation)`. The
+  player isn't compensated. Mouse look stays responsive because it's applied
+  per input event, not per second.
+- **Meter (real seconds):** `RealDelta = DeltaTime / GlobalTimeDilation`.
+  - `MaxMeter` 100, `DrainPerSecond` 15 (≈6.7 s).
+  - `bPassiveRegen` (**on** until enemies exist) at `PassiveRegenPerSecond` 5.
+  - `bInfinite`.
+  - `AddMeter(Amount)` / `KillRefill` 20 — Phase 5 calls it on kills.
+- **Input:** `IA_Focus` (a copy of `IA_Reload`) on **Q** in `IMC_Default`,
+  bound by the character's `FocusAction` → `DoToggleFocus`.
+- **HUD:** `UFocusWidget` (`GetMeterFraction`, `IsFocusActive`); the user's
+  `WBP_Focus` progress bar sits in `WBP_PlayerHUD`.
+- **Feedback:**
+  - **Screen:** `FocusPostProcess`, an unbound `UPostProcessComponent` on the
+    character. Defaults: saturation 0.5, vignette 0.8, scene fringe 1.5;
+    tweak them on the Blueprint. Its `BlendWeight` is faded 0↔1 in **real**
+    time over `FeedbackFadeTime` (0.25 s). `UFocusComponent` finds it with
+    `FindComponentByClass`.
+  - **Audio:** `SetGlobalPitchModulation(FocusPitch 0.6)` over the same fade,
+    restored on stop and in `EndPlay`.
+  - **Optional sounds** (empty — no assets yet): `EnterSound`, `ExitSound`,
+    `LoopSound` (a 2D loop, faded out on stop).
+- **Rename hygiene:** `[CoreRedirects]` in `DefaultEngine.ini` maps the old
+  class, function and input-property names. **Don't** redirect a renamed
+  *component* member onto its old subobject. Doing that made
+  `BP_PlayerCharacter` keep the old `BulletTime` subobjects beside the new
+  ones; the fix was reverting that Blueprint to before the feature and
+  re-setting `FocusAction`.
+- **What slows with it:** everything on game time — fire rate, reloads, the
+  equip animation, the weapon lowering, camera blends.
+- **Bullets** become visible automatically: `AProjectileBase` shows all its
+  visuals below 0.9 dilation. `bKeepEffectsVisible` now defaults to **off**, so
+  tracers hide too. A temporary `[BulletVis]` log confirmed every round is
+  fully hidden at spawn at 1.0 dilation.
+- **The user's rounds:** `BP_Cal45Bullet_Projectile` (a bullet model with a
+  tracer) and `BP_RifleRound_Projectile` (faster). Both are hidden in real time
+  and visible in Focus.
+
+**Superseded:** the earlier plan to keep the player near normal speed with
+`CustomTimeDilation`. The user chose a slowed player. A partial player speed-up
+would be one line (`CustomTimeDilation` on the character) if ever wanted.
 
 ---
 
@@ -1453,7 +1593,7 @@ See [ProgressLog.md](ProgressLog.md) for dated detail and
 Marketplace packs live in their own top-level folders, **untouched**:
 `MilitaryWeapSilver` (weapons — conventional firearms, replaced
 `SciFiWeapDark` on 2026-09-21), `CleanFlatIcons` (reticle art), `UWC_Bullet_Holes`
-(decals), `ImpactsVFXVol1` (Niagara impacts, imported by accident, deferred),
+(decals), `ImpactsVFXVol1` (Niagara per-surface impacts, in use since 2026-10-09 — see *Impact effects*),
 and the migrated Lyra animation library under `Content/Characters/Heroes/`.
 
 Moving or renaming assets inside a pack breaks its internal cross-references —
@@ -1513,6 +1653,8 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-09 (5) — Bullet time renamed **Focus** (trademark): `UFocusComponent`, `UFocusWidget`, `IA_Focus`, `WBP_Focus`, CoreRedirects. Focus feedback (post-process + pitch drop, optional sounds). Projectile effects hide by default.
+- 2026-10-09 (4) — Bullet time built (`UBulletTimeComponent`, Q toggle, 0.3× world, slowed player, real-time meter with kill refill / passive regen / infinite, HUD widget). Projectiles: splash opt-in, falloff from the source weapon, point damage, hidden at normal speed; `BP_Cal45Bullet` / `BP_RifleProjectile` at 9,000 cm/s, radius 1.
 - 2026-10-09 (3) — Procedural one-handed free-arm swing driven by the feet (`UpdateFreeArmSwing`, auto-gain stride peak, `ModifyBone_5` on `upperarm_l`).
 - 2026-10-09 (2) — Free-arm jog swing retried and dropped again; cause recorded (no foot sync markers on the pistol strafe clips).
 - 2026-10-09 — One-handed pistol stance flipped (right foot forward) via Mirror nodes in the Idle state; bladed stance dropped; mirrored-strafe attempt recorded under *Decided against*.

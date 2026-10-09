@@ -59,8 +59,9 @@ everything.
 ### Fidelity target: fun over fidelity
 
 The visual bar is **early-2000s, Halo 1–2 era** — a deliberate choice that
-happens to sit naturally alongside a 2002 setting. Lighting is baked rather
-than simulated in real time, with dynamic lights kept to a minimum.
+happens to sit naturally alongside a 2002 setting. Lighting leans baked,
+with real-time lights used where they earn their place, decided scene by
+scene.
 
 It buys performance headroom, which for a game built on large escalating
 shootouts converts directly into more enemies on screen and a steadier frame
@@ -167,6 +168,11 @@ so switching weapons is a small commitment in a fight.
 
 Every gun fires real bullets that travel through the world. At normal speed
 you don't see them; slow motion is where the rounds become visible in the air.
+
+**Focus** (the game's slow motion) is a toggle. The whole world — the hero included — drops to a crawl
+while your aim stays quick, so you can place shots a normal-speed fight would
+never allow. It runs on a meter that drains while it's on and refills as you
+kill.
 
 A single pistol is fired **one-handed**, the free hand hanging at the side;
 the two-handed grip is saved for the heavier, high-powered pistol. Every shot
@@ -365,7 +371,8 @@ character. Working today:
 - A composable HUD — reticle and ammo readout as separate, mix-and-match
   elements
 - A minimal dot crosshair
-- Hit decals, muzzle flash, weapon sound
+- Bullet impacts that match what was hit (dust, sparks, splinters, bullet
+  holes), muzzle flash, weapon sound
 
 All of it was built under the old premise, and all of it is **implementation
 state rather than canon** — the test bed the new direction gets evaluated
@@ -417,3 +424,5 @@ a shooting range.
   motion. Weapon and ammo pickups: carry everything, shared ammo per calibre,
   number keys by category, a second pistol unlocks duals. Drawing a gun
   animates and briefly blocks firing.
+- 2026-10-09 — Focus (slow motion; not called "bullet time", a trademarked name): a toggle slowing the whole world (the hero too, aim
+  stays quick), on a meter refilled by kills.

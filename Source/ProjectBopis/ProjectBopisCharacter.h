@@ -15,6 +15,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UWeaponHolderComponent;
+class UFocusComponent;
+class UPostProcessComponent;
 class UAnimMontage;
 struct FInputActionValue;
 
@@ -52,6 +54,14 @@ class AProjectBopisCharacter : public ACharacter
 	/** Handles carrying/switching weapons */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UWeaponHolderComponent* WeaponHolder;
+
+	/** Focus (slow motion) — meter, toggle and world slow-down. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UFocusComponent> Focus;
+
+	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPostProcessComponent> FocusPostProcess;
 
 	/** Widget class to spawn for the player HUD */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -133,6 +143,10 @@ protected:
 	/** Weapon slot keys: element 0 selects slot 1 (key 1), element 1 slot 2, and so on. */
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TArray<UInputAction*> WeaponSlotActions;
+
+	/** Focus toggle Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* FocusAction;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -255,6 +269,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoSelectWeaponSlot(int32 Slot);
 
+	/** Toggles Focus from input. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoToggleFocus();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -324,6 +342,8 @@ public:
 
 	/**  Returns the weapon holder component **/
 	UWeaponHolderComponent* GetWeaponHolder() const { return WeaponHolder; }
+
+	UFocusComponent* GetFocus() const { return Focus; }
 
 	/** Whether the aim stance is held. Drives the camera move and zoom. */
 	UFUNCTION(BlueprintPure, Category = "Aim")

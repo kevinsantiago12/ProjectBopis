@@ -6,6 +6,7 @@
 #include "Components/DecalComponent.h"
 #include "Weapons/ProjectileBase.h"
 #include "Weapons/WeaponHolderComponent.h"
+#include "Weapons/ImpactEffectsData.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -231,6 +232,7 @@ void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDi
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(GetOwner());
+	QueryParams.bReturnPhysicalMaterial = true;
 
 	FHitResult HitResult;
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
@@ -245,10 +247,14 @@ void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDi
 
 	if (bHit)
 	{
-		if (HitDecalMaterial)
+		if (ImpactEffects)
+		{
+			ImpactEffects->SpawnImpact(this, HitResult);
+		}
+		else if (HitDecalMaterial)
 		{
 			if (UDecalComponent* SpawnedDecal = UGameplayStatics::SpawnDecalAtLocation(this, HitDecalMaterial, DecalSize,
-				HitResult.Location, HitResult.ImpactNormal.Rotation(), DecalLifeSpan))
+				HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation(), DecalLifeSpan))
 			{
 				SpawnedDecal->SetFadeScreenSize(0.0f);
 			}
@@ -281,6 +287,7 @@ void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& Sprea
 		SpreadDirection.Rotation(), SpawnParams))
 	{
 		Projectile->SetDamage(BaseDamage);
+		Projectile->SetSourceWeapon(this);
 
 		// Explicit, so the round can't hit whoever fired it even if Instigator is unset.
 		Projectile->AddIgnoredActor(GetInstigator());

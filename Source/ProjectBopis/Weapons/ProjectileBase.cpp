@@ -7,6 +7,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/DecalComponent.h"
+#include "Weapons/WeaponBase.h"
+#include "Weapons/ImpactEffectsData.h"
+#include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
 AProjectileBase::AProjectileBase()
@@ -17,6 +20,9 @@ AProjectileBase::AProjectileBase()
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(5.0f);
 	CollisionComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+
+	// Report the physical material we hit, so impacts can match the surface.
+	CollisionComponent->bReturnMaterialOnMove = true;
 	RootComponent = CollisionComponent;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
@@ -40,6 +46,9 @@ void AProjectileBase::BeginPlay()
 	// explicitly after spawning, in case Instigator/Owner aren't set.
 	AddIgnoredActor(GetInstigator());
 	AddIgnoredActor(GetOwner());
+
+	SpawnLocation = GetActorLocation();
+	UpdateVisibility();
 }
 
 void AProjectileBase::AddIgnoredActor(AActor* ActorToIgnore)
@@ -66,6 +75,30 @@ void AProjectileBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Time dilation can change mid-flight (Focus starting), so this is per frame.
+	UpdateVisibility();
+}
+
+void AProjectileBase::UpdateVisibility()
+{
+	const bool bShow = !bShowOnlyInSlowMotion || GetActorTimeDilation() < SlowMotionThreshold;
+	if (bShow == bVisualsShown)
+	{
+		return;
+	}
+	bVisualsShown = bShow;
+
+	TInlineComponentArray<UPrimitiveComponent*> Primitives(this);
+	for (UPrimitiveComponent* Primitive : Primitives)
+	{
+		// Never the collision sphere (it's invisible anyway, and must keep working),
+		// and optionally not tracers/trails.
+		if (Primitive == CollisionComponent || (bKeepEffectsVisible && Primitive->IsA<UFXSystemComponent>()))
+		{
+			continue;
+		}
+		Primitive->SetVisibility(bShow);
+	}
 }
 
 void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
@@ -84,7 +117,13 @@ void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 	// Uses ImpactPoint, not Location: on a swept collision Location is the centre
 	// of the collision sphere at impact, so the decal would float a radius off the
 	// surface and only land on some angles. Line traces don't have that gap.
-	if (HitDecalMaterial)
+	// The firing weapon's per-surface impacts if it has them; otherwise this round's own decal.
+	const UImpactEffectsData* ImpactEffects = SourceWeapon.IsValid() ? SourceWeapon->GetImpactEffects() : nullptr;
+	if (ImpactEffects)
+	{
+		ImpactEffects->SpawnImpact(this, Hit);
+	}
+	else if (HitDecalMaterial)
 	{
 		if (UDecalComponent* SpawnedDecal = UGameplayStatics::SpawnDecalAtLocation(this, HitDecalMaterial, DecalSize,
 			Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), DecalLifeSpan))
@@ -95,19 +134,27 @@ void AProjectileBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActo
 
 	if (OtherActor)
 	{
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigatorController(), this, nullptr);
+		// The firing weapon's falloff, by distance travelled; flat Damage if the weapon is gone.
+		const float Distance = FVector::Distance(SpawnLocation, Hit.ImpactPoint);
+		const float HitDamage = SourceWeapon.IsValid() ? SourceWeapon->GetDamageAtDistance(Distance) : Damage;
+		UGameplayStatics::ApplyPointDamage(OtherActor, HitDamage, GetVelocity().GetSafeNormal(), Hit,
+			GetInstigatorController(), this, nullptr);
 	}
 
-	TArray<FHitResult> FragmentHits;
-	FCollisionShape FragmentSphere = FCollisionShape::MakeSphere(FragmentRadius);
-	GetWorld()->SweepMultiByChannel(FragmentHits, Hit.Location, Hit.Location, FQuat::Identity, ECC_Pawn, FragmentSphere);
-
-	for (const FHitResult& FragmentHit : FragmentHits)
+	// Splash is opt-in — ordinary bullets have no FragmentRadius.
+	if (FragmentRadius > 0.0f && FragmentDamage > 0.0f)
 	{
-		AActor* FragmentActor = FragmentHit.GetActor();
-		if (FragmentActor && FragmentActor != OtherActor && FragmentActor != this && !IgnoredActors.Contains(FragmentActor))
+		TArray<FHitResult> FragmentHits;
+		const FCollisionShape FragmentSphere = FCollisionShape::MakeSphere(FragmentRadius);
+		GetWorld()->SweepMultiByChannel(FragmentHits, Hit.Location, Hit.Location, FQuat::Identity, ECC_Pawn, FragmentSphere);
+
+		for (const FHitResult& FragmentHit : FragmentHits)
 		{
-			UGameplayStatics::ApplyDamage(FragmentActor, FragmentDamage, GetInstigatorController(), this, nullptr);
+			AActor* FragmentActor = FragmentHit.GetActor();
+			if (FragmentActor && FragmentActor != OtherActor && FragmentActor != this && !IgnoredActors.Contains(FragmentActor))
+			{
+				UGameplayStatics::ApplyDamage(FragmentActor, FragmentDamage, GetInstigatorController(), this, nullptr);
+			}
 		}
 	}
 

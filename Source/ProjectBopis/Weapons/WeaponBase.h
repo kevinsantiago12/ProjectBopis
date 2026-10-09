@@ -12,6 +12,7 @@ class UMaterialInterface;
 class UAnimSequence;
 class AProjectileBase;
 class UWeaponHolderComponent;
+class UImpactEffectsData;
 
 UENUM(BlueprintType)
 enum class EWeaponFireMode : uint8
@@ -210,6 +211,8 @@ public:
 	/** The dual-wield version of this weapon, if it has one. */
 	TSubclassOf<AWeaponBase> GetDualWieldClass() const { return DualWieldClass; }
 
+	const UImpactEffectsData* GetImpactEffects() const { return ImpactEffects; }
+
 	/** For a dual-wield weapon, its single version, if it has one. */
 	TSubclassOf<AWeaponBase> GetSingleWieldClass() const { return SingleWieldClass; }
 
@@ -361,6 +364,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	float DecalLifeSpan = 10.0f;
+
+	/** Per-surface impact bursts and decals. When set, replaces HitDecalMaterial for this
+	    weapon's hits — hitscan and projectiles alike. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Impact")
+	TObjectPtr<UImpactEffectsData> ImpactEffects;
 
 	/** Accuracy cone at zero bloom - best-case spread, in degrees. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
