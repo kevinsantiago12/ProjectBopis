@@ -23,6 +23,8 @@ public:
 
 protected:
 
+	virtual void Die(AController* Killer, const FVector& ShotDirection) override;
+
 	/** Starts with the weapon up. For checking the raised pose before any AI drives it. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Debug")
 	bool bStartRaised = false;

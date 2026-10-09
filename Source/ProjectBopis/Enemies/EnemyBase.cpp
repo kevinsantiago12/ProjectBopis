@@ -23,9 +23,22 @@ void AEnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (IsDead())
+	{
+		return;
+	}
+
 	UpdateAim();
 	UpdateMovementMode();
 	UpdatePatrol(DeltaSeconds);
+}
+
+void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
+{
+	Super::Die(Killer, ShotDirection);
+
+	// The brain goes with the body: unpossess, and the AI controller is destroyed.
+	DetachFromControllerPendingDestroy();
 }
 
 void AEnemyBase::UpdateAim()

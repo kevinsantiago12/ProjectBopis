@@ -375,7 +375,11 @@ archetype-composition idea, not extended from the old classes.
 - [x] *(Done 2026-10-09.)* **1. Shared character base.** `ABopisCharacterBase` between `ACharacter` and the player: weapon holder, raised/aim/reload state, montage maps and playback, recoil hook. The anim instance and holder cast to the base, so one AnimBP drives player and enemies. Pure refactor; the player must behave identically.
 - [x] *(Done 2026-10-09: `BP_EnemyBase`, `Enemy_Test`.)* **2. `AEnemyBase` placed in the level**, holding a weapon, animated by the same AnimBP (idle, raised/lowered, equip).
 - [x] *(Done 2026-10-09: test patrol + `bAimAtPlayer` strafe; placeholder until StateTree.)* **3. Basic movement** — AI controller + navmesh; walk/jog to points, face a target (drives the aim offset via control rotation).
-- [ ] **4. Taking bullets + ragdoll** — health, hit reactions, death → ragdoll. Very important (user).
+- [~] **4. Taking bullets + ragdoll** — health, hit reactions, death → ragdoll. Very important (user).
+  - [x] *(Done 2026-10-10.)* **4a.** Per-bone hits (capsule ignores bullets), `UHealthComponent`, head ×4; death animation → riddled hit-dance (upper body on physical-animation motors) → Max Payne launch ragdoll; overkill burst → instant ragdoll. See the spec's *Taking bullets and dying*.
+  - [x] *(Done 2026-10-10.)* **Riddled break:** 30+ damage within 0.1 s while riddled → straight to ragdoll.
+  - [ ] **4b.** Hit reactions while alive (reuse the riddled motors).
+  - [ ] **4c.** Weapon drop as a pickup, corpse cleanup, Focus refill on kills.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data.
 
 ## Phase 6 — First playable arena (vertical slice)

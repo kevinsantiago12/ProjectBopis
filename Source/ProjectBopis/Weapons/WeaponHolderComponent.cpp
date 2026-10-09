@@ -25,6 +25,7 @@ void UWeaponHolderComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// The starting weapon first, so it's the one equipped; the rest go into the backpack.
 	if (StartingWeaponClass)
 	{
 		if (AWeaponBase* StartingWeapon = GetWorld()->SpawnActor<AWeaponBase>(StartingWeaponClass))
@@ -33,6 +34,32 @@ void UWeaponHolderComponent::BeginPlay()
 		}
 	}
 
+	for (const TSubclassOf<AWeaponBase>& WeaponClass : StartingLoadout)
+	{
+		if (!WeaponClass || FindCarriedWeapon(WeaponClass))
+		{
+			continue;
+		}
+
+		if (AWeaponBase* Weapon = GetWorld()->SpawnActor<AWeaponBase>(WeaponClass))
+		{
+			// Hidden until equipped; otherwise it would sit visible wherever it spawned.
+			Weapon->SetActorHiddenInGame(true);
+			AddWeapon(Weapon);
+		}
+	}
+
+	if (bStartWithFullAmmo)
+	{
+		// AddAmmo caps at each type's maximum, so asking for the maximum fills it.
+		for (const AWeaponBase* Weapon : CarriedWeapons)
+		{
+			if (Weapon)
+			{
+				AddAmmo(Weapon->GetAmmoType(), GetMaxAmmo(Weapon->GetAmmoType()));
+			}
+		}
+	}
 }
 
 

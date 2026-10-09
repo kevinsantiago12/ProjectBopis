@@ -92,6 +92,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	TSubclassOf<AWeaponBase> StartingWeaponClass;
 
+	/** More weapons to start with, after StartingWeaponClass (which is the one equipped).
+	    Weapons already carried — e.g. the single a dual implies — are skipped. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	TArray<TSubclassOf<AWeaponBase>> StartingLoadout;
+
+	/** Fill every carried ammo type to its maximum at start. A testing convenience for now. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder|Ammo")
+	bool bStartWithFullAmmo = false;
+
 	/** Switch to a weapon as soon as it's picked up. A player option; on by default. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Holder")
 	bool bAutoEquipOnPickup = true;

@@ -19,7 +19,9 @@ AProjectileBase::AProjectileBase()
 
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(5.0f);
-	CollisionComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	// The project's Projectile profile: blocks everything, but its object type lets
+	// characters' capsules ignore it so rounds strike the body underneath.
+	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
 
 	// Report the physical material we hit, so impacts can match the surface.
 	CollisionComponent->bReturnMaterialOnMove = true;

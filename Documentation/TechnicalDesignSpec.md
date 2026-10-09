@@ -540,6 +540,15 @@ SMG are for weapons not built yet. Set on the Blueprints 2026-10-08. Anim type
 and ammo type are independent (`BP_Pistol` is `PistolOneHanded`, duals `Dual`,
 both Pistol ammo).
 
+**Starting loadout (2026-10-10):** on `UWeaponHolderComponent`.
+- `StartingWeaponClass` is spawned and equipped first.
+- `StartingLoadout` (array) is added after it, hidden. Classes already carried
+  are skipped, e.g. the single that the duals imply.
+- `bStartWithFullAmmo` fills each carried type's pool to `GetMaxAmmo`.
+- `BP_PlayerCharacter`: duals in hand, all six weapons, full ammo — a
+  testing loadout, not a design decision. Enemies keep a single starting
+  weapon.
+
 ### Pickups and the backpack (2026-10-08)
 **No carry limit ("magic backpack").** `MaxCarriedWeapons` was removed;
 `AddWeapon` refuses only null or already-carried weapons. Its
@@ -814,6 +823,77 @@ component. (Contrast the Focus rename, where names changed.)
 
 **Known duplication:** the montage maps are per-Blueprint, so player and enemy
 each hold a copy. If they drift, move them into a shared data asset.
+
+### Taking bullets and dying — step 4a (2026-10-09/10, user-confirmed in PIE)
+
+All of this lives on `ABopisCharacterBase`, so the player can die the same way
+later. Values below are the C++ defaults; **the user tuned some of them on the
+Blueprints**, so the BP values are the live ones.
+
+**Hits land on bones, not the capsule.**
+- The capsule ignores `ECC_Visibility` (hitscan) and `ECC_Projectile`
+  (`#define ECC_Projectile ECC_GameTraceChannel1`, in `ProjectBopis.h`). The
+  mesh blocks both.
+- `AProjectileBase` uses the project's **`Projectile`** collision profile
+  (was `BlockAllDynamic`).
+- So every hit reports `BoneName` from the physics-asset body.
+
+**Health:**
+- `UHealthComponent` (`Gameplay/`), `MaxHealth` 100. `ApplyDamage` returns true
+  only for the emptying blow.
+- `BoneDamageMultipliers`: `head` ×4.
+- `Super::TakeDamage` is called **only while alive**. On a simulating body,
+  the engine would add its own `DamageImpulse` on top of ours.
+
+**Death sequence** (`TakeDamage` routes by state):
+
+| State | Entered when | What a hit does |
+|---|---|---|
+| Alive | — | Damage × bone multiplier. Health 0 → `Die`. |
+| **Dying** | health hits 0 | `Die`: AI detached (`AEnemyBase` override), movement off, capsule `NoCollision`, directional death animation. Hits add to `PostDeathDamage`; ≥ `RagdollDamageThreshold` (30) → riddled. |
+| **Riddled** | dying + threshold | The upper body (`RiddledRootBone` `spine_01` and below it in the hierarchy) simulates on `UPhysicalAnimationComponent` motors (world-space, strength `RiddledHoldStrength` 800, damping ×0.1). Legs stay animated; the death montage slows to `RiddledAnimRate` 0.2 and pauses short of its end. Each hit `KickBone`s the struck bone (×`RiddledKickScale` 1.5) and adds to `RiddledDamage`. After `RiddledDuration` (1 s, world time) → ragdoll launched with all of `RiddledDamage`. **Break:** damage within `OverkillWindow` (0.1 s; the triggering bullet opens the first window) ≥ `RiddledBreakDamage` (30) → ragdoll at once (a rifle round, a headshot, a blast; pistol 25 can't). |
+| **Ragdoll** | riddled timeout; death anim ends; overkill | Motors cleared, full `SetSimulatePhysics`. Every hit `LaunchBody`s it. |
+
+- **Death animation:** `DeathAnimations` (`FDirectionalAnimSet`: Front / Back /
+  Left / Right arrays, random per side, Front as fallback).
+  - The side comes from the shot direction in the body's frame.
+  - Played with `PlaySlotAnimationAsDynamicMontage` in **`DeathSlot`**
+    (`DeathGroup`), the **last node before Output Pose** in `ABP_Player` (added
+    by the user), so it overrides every layer.
+  - Clips: Lyra `MM_Death_*` from `Characters/Mannequins/Anims/Death/`.
+  - Ending: the Tick catches it 0.1 s before its end and ragdolls, so it never
+    blends back to the living pose.
+- **Instant ragdoll by overkill:** the killing blow's spare damage plus every
+  hit within `OverkillWindow` (0.1 s, world time, so pellets of one blast count
+  even in Focus) is `BurstOverkill`. Reaching ≥ `InstantRagdollOverkill` (50)
+  ragdolls straight away from any stage.
+  - A full close shotgun blast or a heavy magnum kill ragdolls. A partial blast
+    plays the death animation and may riddle.
+  - The pistol (25) never reaches it.
+  - Per-weapon instant ragdoll was considered and rejected in favour of this
+    weapon-agnostic rule.
+- **`LaunchBody` (Max Payne 2):** speed = `min(damage × LaunchSpeedPerDamage
+  24, MaxLaunchSpeedPerHit 900)`.
+  - **Whole body** (`AddImpulseToAllBodiesBelow`, velocity change) along the
+    shot, plus `LaunchLift` 0.25 upward.
+  - Plus the struck bone × `BoneKickScale` 1.
+  - Pellets each launch, so shotguns add up.
+- **`UseRagdollCollision`:** the `Ragdoll` profile, then re-block Visibility +
+  Projectile.
+- **`KickBone`:** impulses only reach simulating bodies. A hit on an animated
+  pelvis or leg while riddled kicks `RiddledRootBone` instead.
+
+**Assets:**
+- `BP_Enemy_Test` (child of `BP_EnemyBase`) is the placed `Enemy_Test`. It
+  replaced a plain `BP_EnemyBase` instance that held a stale empty
+  `DeathAnimations` (see the gotcha below).
+- `BP_EnemyBase` holds the death clips.
+
+**Not done (4b / 4c):**
+- 4b: hit reactions while alive (reuse the riddled motors);
+- 4c: drop the weapon as a pickup; corpse cleanup (the gun is still attached to
+  the hand); Focus `AddMeter(KillRefill)` on kills;
+- player death.
 
 ### Three families
 
@@ -1704,6 +1784,18 @@ Full list with reproduction detail lives in
 [ProjectPlan.md](ProjectPlan.md)'s "Gotchas learned the hard way" section. The
 ones most likely to bite:
 
+- **Bridge edits to a Blueprint's defaults don't reach instances already
+  placed in the open level** (2026-10-09). The BP editor propagates; a direct
+  CDO write doesn't. Saving the level then bakes the stale value into the
+  instance as an override. Symptom: `DeathAnimations` empty on `Enemy_Test`
+  even though `BP_EnemyBase` had them. Fix: reset-to-default on the instance,
+  or re-place it.
+- **The engine's `Ragdoll` collision profile ignores `Visibility`.** Hitscan
+  and the camera aim trace pass through ragdolls (the aim converged on the
+  wall behind). Re-block it after switching profiles (`UseRagdollCollision`).
+- **`AddImpulse` on a kinematic bone** logs "has to have Simulate Physics
+  enabled" and does nothing. With a partial simulation, check
+  `GetBodyInstance(Bone)->IsInstanceSimulatingPhysics()` first.
 - **Live Coding cannot handle structural changes.** New/renamed
   `UPROPERTY`/`UFUNCTION`, changed member types, or changed constructor
   attachment hierarchy all need a full editor close + Rebuild Solution. Live

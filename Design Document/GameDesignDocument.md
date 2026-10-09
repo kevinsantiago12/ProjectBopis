@@ -373,6 +373,9 @@ character. Working today:
 - A minimal dot crosshair
 - A first test enemy that carries a gun, patrols, and turns to keep the player in
   its sights, moving with the same animation as the hero
+- Deaths staged like the films: a death fall, a body that stays on its feet
+  jerking under sustained fire, then flies off the final bullets; a big enough
+  blast throws it at once
 - Bullet impacts that match what was hit (dust, sparks, splinters, bullet
   holes), muzzle flash, weapon sound
 

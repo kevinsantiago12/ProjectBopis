@@ -48,37 +48,81 @@ so far*).
   - The user placed the NavMeshBoundsVolume and Target Points.
 - **Code:** all applied by Claude on request, each built with the script.
 
+*(RESUME HERE moved to 2026-10-10. Steps 1–3 were committed and pushed.)*
+
+---
+
+## 2026-10-10
+**Summary:** **Phase 5 step 4a done: taking bullets and dying.** All
+user-confirmed in PIE. Detail in the spec (*Enemies → Taking bullets and
+dying*).
+
+- **Design (user, during the step):**
+  - Death plays an animation first; ragdoll only once the dying body takes X
+    more damage.
+  - Ragdolls fly on **every** bullet (Max Payne 2).
+  - Once ragdolled, he should **stay standing about a second** so the player
+    can unload into him: the riddled phase.
+  - Shotguns go straight to ragdoll **only on a big overkill** (a partial blast
+    can just riddle). The same rule lets magnums do it.
+- **Built:**
+  - per-bone hits (capsule ignores bullets; projectiles use the `Projectile`
+    profile);
+  - `UHealthComponent`, head ×4;
+  - death animation in a new full-body `DeathSlot` (added by the user) → riddled
+    (physical-animation motors on the upper body) → ragdoll launch scaled by
+    damage;
+  - overkill burst → instant ragdoll.
+- **Bugs found on the way:**
+  - My first version counted the killing blow's overkill toward the ragdoll,
+    which skipped the animation. Removed, then reintroduced as the separate
+    50-point instant-ragdoll rule.
+  - **Death animation never played:** the placed instance had a stale empty
+    `DeathAnimations`. Bridge CDO edits don't propagate to placed instances.
+    Found with a temporary `[DeathDbg]` log (since removed). The user had me
+    make **`BP_Enemy_Test`** (child of `BP_EnemyBase`), which now replaces
+    `Enemy_Test`.
+  - Shots passed through ragdolls: the `Ragdoll` profile ignores Visibility.
+    Fixed by `UseRagdollCollision`.
+  - `AddImpulse` on animated legs while riddled. Fixed by `KickBone`.
+- **The user tuned some values on the Blueprints themselves.**
+- **Code:** all applied by Claude on request, each built with the script.
+  **Bridge:** `DeathAnimations`, `BP_Enemy_Test` + instance swap.
+- **Riddled break (user):** 30+ damage within 0.1 s while riddled ends the
+  dance straight into ragdoll (`RiddledBreakDamage`, reusing
+  `OverkillWindow`). User-confirmed.
+- **Starting loadout (user, for testing):** `StartingLoadout` +
+  `bStartWithFullAmmo` on the weapon holder. Bridge: `BP_PlayerCharacter` gets
+  all six weapons, duals in hand, full pools. User-confirmed.
+
 ### ▶ RESUME HERE
-1. **Commit:** Phase 5 steps 1–3 (C++, `BP_EnemyBase`, the level + its
-   external actors, docs).
-2. **Phase 5 step 4: taking bullets + ragdoll** (very important, per the
-   user). To decide before the code:
-   - **Health model:** the Aswang-era two-layer idea is open again.
-   - **Hit reactions:** per bone / direction.
-   - **Headshot multiplier.**
-   - **Death:** ragdoll, impulse from the hit, weapon drop (ties into weapon
-     pickups), corpse cleanup.
-   - Whether the player can die too (same base).
-3. **Design question (user + design partner):** the enemy roster now that the
+1. **Commit:** step 4a, riddled break, starting loadout (C++, `BP_Enemy_Test`,
+   `BP_PlayerCharacter`, `ABP_Player` DeathSlot, level), docs.
+2. **Phase 5 step 4b:** hit reactions while alive (reuse the riddled motors).
+3. **Phase 5 step 4c:**
+   - drop the weapon as a pickup (ties into `AWeaponPickup` and the drop
+     design);
+   - corpse cleanup;
+   - Focus `AddMeter(KillRefill)` on kills, then passive regen off.
+4. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
-4. **Focus extras:** sounds when assets exist; the kill refill
-   (`AddMeter(KillRefill)`) once enemies die, then passive regen off.
-5. **Deferred (minor):**
+5. **Focus extras:** sounds when assets exist.
+6. **Deferred (minor):**
    - convert the single pistol, battle rifle and both shotguns to projectiles
      (the shotguns need a pellet BP);
    - `BP_RifleProjectile` is unreferenced; delete it?
-6. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+7. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
    weapon; dot readability.
-7. **Exaggerated impacts, next passes:**
+8. **Exaggerated impacts, next passes:**
    - impact sounds;
    - boosted Niagara layers;
    - bigger in Focus;
    - debris and breakables.
-8. **Later:**
+9. **Later:**
    - the equip end pose;
    - ammo pickup BPs per type;
    - remappable keys;
-   - a starting loadout;
+   - player death (same base, needs its own `Die`: keep the camera);
    - high-powered pistol and dual SMG BPs;
    - foot sync markers;
    - enemy shooting (own aim source), StateTree behaviour, a shared montage-set
