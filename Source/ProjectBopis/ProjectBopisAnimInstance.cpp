@@ -75,6 +75,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateUpperBody(DeltaSeconds);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
+	UpdateFreeArmSwing(DeltaSeconds);
 	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 }
@@ -169,7 +170,36 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		FreeArmReloadBlend, bReloadAnimating ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
 	const bool bOneHanded = CurrentAnimType == EWeaponAnimType::PistolOneHanded;
-	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;
+	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;}
+
+void UProjectBopisAnimInstance::UpdateFreeArmSwing(float DeltaSeconds)
+{
+	// Last frame's pose: how far the right foot leads the left along the way the body
+	// faces. Opposite arm follows opposite leg, so this alone drives a swing in step
+	// with the feet — forward, backpedal and strafe alike, at any gait rate.
+	float Target = 0.0f;
+
+	const USkeletalMeshComponent* Mesh = GetSkelMeshComponent();
+	const APawn* Pawn = TryGetPawnOwner();
+	if (Mesh && Pawn && Speed > StationarySpeed)
+	{
+		const FVector FootGap = Mesh->GetSocketLocation(TEXT("foot_r")) - Mesh->GetSocketLocation(TEXT("foot_l"));
+		const float Lead = FVector::DotProduct(FootGap, Pawn->GetActorForwardVector());
+
+		// Auto-gain: scale to the largest recent gap, so a side-step's small fore-aft
+		// alternation still gives a full swing. Rises at once, falls back over ~a second.
+		FreeArmStridePeak = FMath::Max(FMath::Abs(Lead),
+			FMath::FInterpTo(FreeArmStridePeak, FreeArmMinStride, DeltaSeconds, 1.0f));
+		FreeArmStridePeak = FMath::Max(FreeArmStridePeak, FreeArmMinStride);
+
+		Target = FMath::Clamp(Lead / FreeArmStridePeak, -1.0f, 1.0f);
+	}
+
+	FreeArmSwingPhase = FMath::FInterpTo(FreeArmSwingPhase, Target, DeltaSeconds, 12.0f);
+
+	// Fades in with speed, so a slow start doesn't flap the arm.
+	const float SpeedScale = FMath::Clamp(Speed / 300.0, 0.0, 1.0);
+	FreeArmSwingRotation = FreeArmSwingFull * (FreeArmSwingPhase * SpeedScale);
 }
 
 void UProjectBopisAnimInstance::AddRecoil(bool bOffhand)

@@ -800,6 +800,8 @@ preview) everything stays at defaults. The character calls the public
 | `ArmRecoilAlpha` | `MainRecoil` on pistol holds, else 0 (two-handed guns kick through the torso so the grip doesn't split) |
 | `OffhandArmRecoilAlpha` | `OffhandRecoil` on duals, else 0 |
 | `FreeArmRecoilAlpha` | `PistolOneHanded` only: `MainRecoil × FreeArmAlpha` |
+| `FreeArmSwingRotation` | procedural free-arm swing from the feet — see *One-handed pistol* |
+| `DualLoweredPlayRate` | `LocomotionPlayRate × DualLoweredRateScale` — the lowered-dual walk/jog rate |
 | `LeftArmAlpha` | duals only: `UpperBodyAlpha` (2026-10-06: crouched duals no longer force the arm up — lowered and crouched, the left hand comes from the crouch clip) |
 | `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
 | `LeftHandIKAlpha` | target = 1 **only while aiming (ADS) a long gun** (not Pistol, not dual) and not reload-animating, else 0; eases up (10), snaps down. Every other pose — lowered, hip-fire raised, moving, pistols — keeps the clip's hand-authored left hand (2026-10-06) |
@@ -816,7 +818,8 @@ Tuning on the AnimBP class defaults: `UpperBodyInterpSpeed`,
 `LeftHandIKInterpSpeed`, `RootYawRecoverySpeed`, `StationarySpeed`,
 `TurnThreshold`, `MaxRootYawOffset`, `TurnLeftMontage`, `TurnRightMontage`,
 **`LocomotionPlayRate`** (C++ default 0.8, **0.75 on `ABP_Player`**; clamp
-0.5–1), **`DualLoweredRateScale`** (0.7 default, **0.8** set), **`RecoilImpulse`** (15), **`RecoilStiffness`** (150),
+0.5–1), **`DualLoweredRateScale`** (0.7 default, **0.8** set),
+**`FreeArmSwingFull`** (roll 25 default, **10** set), **`FreeArmMinStride`** (8), **`RecoilImpulse`** (15), **`RecoilStiffness`** (150),
 **`RecoilDamping`** (0.7).
 
 **AnimGraph-facing reals are `double`.** Blueprint "Float" is double in UE5, and
@@ -885,9 +888,11 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
 6. **One-handed free arm** (2026-10-07): layered blend from **`clavicle_l`,
    local-space rotation**; Blend ← `MM_Pistol_Idle_OneHanded` (the user's copy
    of the hip-fire idle with the left arm at the side); weight `FreeArmAlpha`.
-   → Local→Component → Transform (Modify) Bone `lowerarm_l` (yaw +15°, additive,
-   bone space; alpha `FreeArmRecoilAlpha`) → Component→Local. See *One-handed
-   pistol*.
+   → Local→Component → **Modify Bone `upperarm_l`** (procedural swing; additive,
+   component space, rotation ← `FreeArmSwingRotation`, alpha `FreeArmAlpha`) →
+   Transform (Modify) Bone `lowerarm_l` (yaw +15°, additive, bone space; alpha
+   `FreeArmRecoilAlpha`) → Component→Local. The one-handed **Idle-state**
+   players are mirrored (right foot forward). See *One-handed pistol*.
 7. **Dual left-arm layer** (`clavicle_l`): Blend ← Blend by bool `bDualSpread`
    (0.2 s; True ← `MM_Pistol_Idle_Hipfire_Dual`, False ← `MM_Pistol_Idle_Hipfire`)
    → **`OffhandSlot`**
@@ -939,11 +944,55 @@ How the layer settled:
   with the fire montage's torso motion.
 - **Branching at `upperarm_l` was tried.** The clavicle then came from the
   two-handed clips and pulled the arm forward while strafing. Reverted.
-- **Free-arm jog swing was tried** (a synced `MM_Unarmed_Jog_Fwd` arm blended in
-  by speed). The user removed it; the arm hangs, plus its recoil node.
+- **Free-arm jog swing was tried twice** (2026-10-07 and 2026-10-09) and dropped.
+  - **Setup:** a `MM_Unarmed_Jog_Fwd` player as an Always Follower in the
+    `Locomotion` sync group, blended in by speed from `clavicle_l`.
+  - **Why it never synced to the feet:** the raised legs come from
+    `BS_Pistol_Strafe`, whose Lyra pistol clips have **no foot sync markers**
+    (only `AN_FootPlant_*` notifies). `MM_Unarmed_Jog_Fwd` has a
+    `FootSyncMarkers` track, so UE fell back to normalized-time sync and the
+    swing ran out of phase.
+  - **Swapping the swing source** to `MM_Pistol_Jog_Fwd` doesn't help: that
+    clip is two-handed.
+  - **If a clip-based swing ever comes back:** add sync markers (same names as
+    the unarmed jog) to the pistol strafe clips first.
+- **Procedural arm swing (2026-10-09, user-confirmed)** — replaces the
+  clip-based attempts.
+  - **C++ (`UpdateFreeArmSwing`):** each frame, the fore-aft gap between
+    `foot_r` and `foot_l` along the **actor's forward** vector, read from last
+    frame's pose. A + value means the right foot leads.
+  - **Auto-gain:** the gap is divided by `FreeArmStridePeak`, the largest
+    recent gap. The peak rises at once and falls back toward a floor over about
+    a second; the floor is `FreeArmMinStride`, 8 cm. This lets small side-step
+    gaps still give a full swing; with a fixed 50 cm stride, strafing barely
+    swung.
+  - **Smoothing:** the phase is smoothed (FInterpTo 12) and faded in by speed
+    (full at 300).
+  - **Output:** `FreeArmSwingRotation = FreeArmSwingFull × phase`. The user
+    set `FreeArmSwingFull` to 10° (the C++ default is roll 25).
+  - **Graph:** `ModifyBone_5` on `upperarm_l` — additive, **component
+    space**, Rotation pin ← `FreeArmSwingRotation`, alpha `FreeArmAlpha`. It
+    sits between the free-arm layer's Local→Component and the free-arm recoil
+    node (`ModifyBone_4`).
+  - **Why it works everywhere:** it reads the real feet, so it stays in step
+    whatever clip drives the legs: forward, backpedal (the body-relative
+    opposite-arm rule holds), both strafes, any gait rate.
 - **Reload:** `FreeArmReloadBlend` eases the layer out and back in, instead of
   switching off.
 - **Lowering:** the one-handed pistol is exempt from the raised-to-lowered snap.
+- **Stance flipped to right foot forward** (user, 2026-10-09).
+  - **How:** *Mirror with MDT_Mannequin* nodes on the one-handed pistol's
+    **Idle-state** players — the lowered unarmed idle and the raised hip-fire
+    idle — on their own players, so other anim types aren't flipped.
+  - **Why the gun stays right:** only the legs and pelvis of the mirrored
+    hip-fire clip survive. The raised upper-body layer replaces everything from
+    `spine_01` up, blended in mesh space. The gun stays in the right hand and
+    the torso doesn't flip.
+  - **Not affected:** moving (Move state), crouch, duals.
+  - **Considered and dropped:** a bladed stance, either a procedural pelvis yaw
+    or an authored shoulder-forward clip. The plain flip looked better.
+  - **A mirror on the top-level lowered-dual idle** flips only duals, since
+    that layer is weighted by `DualLoweredAlpha`. It was tried and removed.
 
 ### Gait — slower cadence with stride warping (2026-10-07)
 Lyra's locomotion was accurate but read as cartoonish; Max Payne 1–2 is the
@@ -1032,7 +1081,10 @@ in its group).
 
 ### Sync groups
 Leg blend spaces in the Move state carry group `Locomotion` (CanBeLeader) from an
-experiment; **sync to top-level arm players never demonstrably worked**. The
+experiment; **sync to top-level arm players never demonstrably worked**. Cause
+found 2026-10-09: the Lyra **pistol** locomotion clips have no foot sync markers
+(the unarmed ones do), so a follower falls back to normalized-time sync and
+drifts out of phase with the feet. The
 lowered-dual branch avoids the need by taking the whole body from one clip. The
 settings are harmless; treat sync between in-state and top-level players as
 unreliable.
@@ -1461,6 +1513,9 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-09 (3) — Procedural one-handed free-arm swing driven by the feet (`UpdateFreeArmSwing`, auto-gain stride peak, `ModifyBone_5` on `upperarm_l`).
+- 2026-10-09 (2) — Free-arm jog swing retried and dropped again; cause recorded (no foot sync markers on the pistol strafe clips).
+- 2026-10-09 — One-handed pistol stance flipped (right foot forward) via Mirror nodes in the Idle state; bladed stance dropped; mirrored-strafe attempt recorded under *Decided against*.
 - 2026-10-08 (3) — Equip animation on weapon change (`EquipMontages` / `OffhandEquipMontages`, holder → `PlayEquipAnimation`, fire blocked while equipping); dual lowered jog rate scale (`DualLoweredPlayRate`, scale 0.8).
 - 2026-10-08 (2) — Ammo phase D done: shared per-type ammo pool on the holder (per-weapon reserve removed, caps per type), `AAmmoPickup`, unlimited carry, number-key slot selection (`WeaponSlot`, `IA_WeaponSlot1–5`), `AWeaponPickup` (fixed/random rounds, acquire / unlock duals / ammo), auto-equip option, `DualWieldClass` / `SingleWieldClass`.
 - 2026-10-08 — All weapons to become projectile weapons, bullets hidden at normal speed and shown in slow motion (user decision); projectile backlog recorded (fragmentation opt-in, speed, radius, falloff, visibility rule). Content folder renamed `FirstPerson` → `ThirdPerson`.

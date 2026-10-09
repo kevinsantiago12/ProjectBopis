@@ -12,6 +12,58 @@
 
 ---
 
+## 2026-10-09
+**Summary:** One-handed pistol polish. The stance is **flipped to right foot
+forward**, and the free left arm now **swings procedurally in step with the
+feet**. Both user-confirmed in PIE. Detail in
+[TechnicalDesignSpec.md](TechnicalDesignSpec.md) (*One-handed pistol*).
+
+- **Mirrored left strafe** (blend space per-sample Mirror + `MDT_Mannequin`,
+  user): the torso over-twisted. Rolled back; recorded under *Decided
+  against*.
+- **Stance flip (user, in the AnimGraph):**
+  - *Mirror with MDT_Mannequin* on the one-handed pistol's own **Idle-state**
+    players, lowered and raised. Only the legs and pelvis flip, because the
+    raised upper body is laid over in mesh space.
+  - A first test on the top-level idle flipped only the duals, because that
+    layer is the lowered-dual one.
+  - A bladed stance was considered (procedural pelvis yaw, or an authored
+    clip) and dropped in favour of the plain flip.
+- **Free-arm swing:**
+  - **Clip-based retry:** an unarmed jog as a sync-group follower didn't follow
+    the feet. Cause: the Lyra pistol strafe clips have no foot sync markers. The
+    pistol jog as the source was two-handed. Dropped, and the C++ removed.
+  - **Procedural version (kept):** `UpdateFreeArmSwing` reads the fore-aft
+    foot gap each frame and drives a component-space Modify Bone on
+    `upperarm_l`.
+  - **Strafe fix:** auto-gain (`FreeArmStridePeak`, floor `FreeArmMinStride`
+    8). With a fixed 50 cm stride, strafing didn't swing.
+  - **User tuning:** swing 10°.
+- **Code:** applied by Claude on request, each built with the script.
+  **Bridge:** the swing node (`ModifyBone_5`).
+
+### ▶ RESUME HERE
+1. **Commit** — stance flip (AnimBP), procedural arm swing (C++ + AnimBP), docs.
+2. **Backlog — projectile bullets:**
+   - fragmentation opt-in;
+   - per-bullet speed and radius;
+   - falloff on projectiles;
+   - slow-motion-only visibility;
+   - then convert the remaining weapons.
+3. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+   weapon; dot readability.
+4. **Later:**
+   - the equip clip's straight-ahead end pose;
+   - pickup BPs per ammo type, with sounds;
+   - remappable key names;
+   - a starting loadout list;
+   - high-powered pistol and dual SMG BPs;
+   - foot sync markers on the pistol strafe clips, if anything ever needs to
+     sync to the legs.
+5. **Then:** Phase 5 — enemy archetype foundation.
+
+---
+
 ## 2026-10-08 (2)
 **Summary:** **Pickups done.** All user-confirmed in PIE ("works now"):
 - shared ammo pool per type;

@@ -529,7 +529,10 @@ gives what fits and leaves the rest. Pickups don't respawn.
   the hand at once.
 
 **Pistol handling and movement feel (user decisions, 2026-10-07).**
-- A **single pistol is fired one-handed**, the free hand hanging at the side.
+- A **single pistol is fired one-handed**, the free hand hanging at the side
+  and swinging naturally in step with the feet while moving. With one pistol
+  he stands **right foot forward** (decided 2026-10-09; a bladed stance was
+  considered and dropped).
   The two-handed grip is kept for the **high-powered pistol**. Lowered
   movement and idle look the same for both.
 - **Heavier gait.** The stock locomotion was accurate but read as cartoonish

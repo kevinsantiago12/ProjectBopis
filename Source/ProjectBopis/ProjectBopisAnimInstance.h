@@ -122,6 +122,10 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double FreeArmAlpha = 0.0;
 
+	/** One-handed pistol: the free arm's procedural swing, read from the feet. A rotation
+	    for the AnimGraph's upperarm_l Modify Bone (component space, additive). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	FRotator FreeArmSwingRotation = FRotator::ZeroRotator;
 	// ---- Recoil ----
 
 	/** Torso recoil, 0..1, every weapon. Weights a Transform (Modify) Bone on spine_05
@@ -204,6 +208,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.1", ClampMax = "1.0"))
 	double DualLoweredRateScale = 0.7;
 
+	/** Free-arm swing at full stride (left arm fully forward). Rotation in component space;
+	    flip the sign or move it to another axis if the arm swings the wrong way. */
+	UPROPERTY(EditDefaultsOnly, Category = "Tuning")
+	FRotator FreeArmSwingFull = FRotator(0.0, 0.0, 25.0);
+
+	/** Smallest fore-aft foot gap treated as a full stride (cm). The swing auto-scales to
+	    the largest recent gap, so side-steps swing as fully as forward strides; this
+	    floor stops near-still feet from being amplified into flapping. */
+	UPROPERTY(EditDefaultsOnly, Category = "Tuning", meta = (ClampMin = "1.0"))
+	float FreeArmMinStride = 8.0f;
 private:
 
 	void UpdateLocomotion(const AProjectBopisCharacter& Character);
@@ -212,6 +226,13 @@ private:
 	void UpdateLeftHandGrip(const AProjectBopisCharacter& Character, const AWeaponBase* Weapon);
 	void UpdateTurnInPlace(float ActorYaw, float DeltaSeconds);
 	void UpdateRecoil(float DeltaSeconds);
+	void UpdateFreeArmSwing(float DeltaSeconds);
+
+	/** Smoothed -1..1 swing phase: + when the right foot leads. */
+	float FreeArmSwingPhase = 0.0f;
+
+	/** Recent largest fore-aft foot gap — the swing's auto-gain. Decays slowly. */
+	float FreeArmStridePeak = 0.0f;
 
 	/** Latched while a fire/reload montage plays and until the drop it causes has
 	    finished easing — so a montage ending eases the arms down instead of snapping. */
