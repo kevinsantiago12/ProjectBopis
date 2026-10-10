@@ -152,31 +152,71 @@ dying*).
 - **Floating pickups (user report):** drops were caught mid-bounce or rested
   on corpses. Fixed with `SettleTime` 0.25 s, ignoring `PhysicsBody`, and a
   floor snap in `BecomePickup`. User-confirmed ("works now").
-- **Phase 5 step 4 is complete.**
+- **Phase 5 step 4 is complete.** *(Committed and pushed by the user.)*
+- **Shootdodge step 1 (user chose it next).** Detail and lessons in the spec
+  (*Shootdodge*). User-confirmed in PIE.
+  - **Design (user):**
+    - Left Shift, action "Shootdodge";
+    - dive the way you move relative to the camera, in any stance;
+    - a Focus minimum and a set cost; slow motion after take-off, off on
+      landing;
+    - aim and fire freely;
+    - prone until you move, can fire prone;
+    - pistol and duals first.
+  - **First attempt:**
+    - root motion off and a Ref Pose root lock on every clip;
+    - a Lyra dash wind-up, then the Dodge Start clips, then no wind-up;
+    - lighter gravity to fix a "slide";
+    - the Right dive glitched.
+    - **The user rolled everything back** (git + re-import) to the moment the
+      pack was added.
+  - **Second attempt:**
+    - **Clips (user + bridge):** Force Root Lock with **Anim First Frame** on
+      all clips; the End clips set back to Ref Pose (they floated above the
+      floor); the Right clips fixed by the user with keyed corrections on the
+      track.
+    - **C++ (applied by Claude on request, built with the script):**
+      - `UShootdodgeComponent` (launch on press, Start from the push-off
+        offset, lighter gravity) and the player wiring;
+      - `UFocusComponent::GetMeter` / `SpendMeter`;
+      - then, on user feedback:
+        - per-type play rates (Start 2×);
+        - no air braking during the dive (it stopped mid-air);
+        - `LandClipOffset` (the landing played 0.5 s late);
+        - a landing slide instead of a dead stop.
+    - **Bridge:** `IA_Shootdodge` on Left Shift; `ShootdodgeAction` and the
+      8-direction clip map on `BP_PlayerCharacter`.
+  - **For later (user):** the character sits **very low on screen** during the
+    dive. Fix it with the camera, not the animations.
 
 ### ▶ RESUME HERE
-1. **Commit:** Focus refill, floating-pickup fix, `BP_PlayerCharacter` (regen
-   off), docs.
-2. **Next in Phase 5:** pick with the user. Candidates:
+1. **Commit:** shootdodge step 1 (C++, `Dodge_Prone_Anim_Set`, `IA_Shootdodge`,
+   `IMC_Default`, `BP_PlayerCharacter`, `SK_Mannequin`), docs.
+2. **Shootdodge, next:**
+   - step 2: in-air aim + slow motion;
+   - step 3: the prone 360° blend space;
+   - step 4: camera (incl. the low-on-screen tweak: raise or offset the boom
+     while dodging, not the anims) + capsule.
+3. **Later in Phase 5:** pick with the user. Candidates:
    - **enemy shooting** (its own aim source from muzzle/eyes; accuracy);
    - **StateTree behaviour** replacing the test patrol (perception, cover,
      engage);
    - **player death** (same base; keep the camera; restart flow).
-3. **Design question (user + design partner):** the enemy roster now that the
+4. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
-4. **Focus extras:** sounds when assets exist.
-5. **Deferred (minor):**
+5. **Focus extras:** sounds when assets exist.
+6. **Deferred (minor):**
    - convert the single pistol, battle rifle and both shotguns to projectiles
      (the shotguns need a pellet BP);
    - `BP_RifleProjectile` is unreferenced; delete it?
-6. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+7. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
    weapon; dot readability.
-7. **Exaggerated impacts, next passes:**
+8. **Exaggerated impacts, next passes:**
    - impact sounds;
    - boosted Niagara layers;
    - bigger in Focus;
    - debris and breakables.
-8. **Later:**
+9. **Later:**
    - the equip end pose;
    - ammo pickup BPs per type;
    - remappable keys;

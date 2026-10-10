@@ -1587,6 +1587,115 @@ instead of `ReloadMontages` for dual weapons.
 
 ### Shootdodge
 
+#### Built — step 1, the dive (2026-10-10, user-confirmed in PIE)
+
+**Design (user):**
+- **Left Shift**, action `IA_Shootdodge` (Shootdodge).
+- Dive **in the movement input's direction relative to the camera**, in any
+  stance. The body snaps to the camera first. No input = forward.
+- **Focus:** needs ≥ `MinFocusToDive` (25), spends `FocusCost` (25) once.
+  Slow motion on after take-off and off on landing comes in step 2; a Focus
+  already running stays on.
+- Fire and aim freely; no supernatural speed-up of anything.
+- Prone until the first movement input; can fire prone.
+- **Pistol, one-handed pistol and duals only** (`IsPistolAnimType`).
+- **No wind-up:** launch on the press.
+
+**Asset: `Content/Dodge_Prone_Anim_Set/`** (re-imported 2026-10-10 after a
+rollback, below). 131 clips, all `_P` (pistol).
+- `Dodge/`:
+  - `anim_Dodge_Start / Loop / End / Getup_<dir>_P` for 8 directions (Fwd,
+    Fwd_Right, Right, Bwd_Right, Bwd, Bwd_Left, Left, Fwd_Left);
+  - `anim_Dodge_Idle_P`;
+  - `anim_Prone_<dir>_Aim_Up / Mid / Down_P`: 24 full poses, a 360° × pitch
+    aim set for lying down (step 3's blend space).
+- `Prone/`: crawl, transitions, prone fire, prone turn-in-place. Unused.
+- **Clip setup:**
+  - the pack ships with **root motion off**;
+  - all 131 clips: **Force Root Lock on, `RootMotionRootLock` = Anim First
+    Frame**;
+  - **except the 8 `anim_Dodge_End_*_P` → Ref Pose**: their first frame is
+    still airborne, so Anim First Frame floated the landing above the floor,
+    then prone pulled it down;
+  - the pack's `SK_Mannequin` is a Compatible Skeleton on ours;
+  - **the Right clips' glitch** (a sudden shift at the peak, then a swing back)
+    was **fixed by the user keying corrections on the track** (additive keys
+    in the clip). The pack's Right set is authored separately from Left (e.g.
+    Getup_Right is 2.63 s against Left's 1.77 s); no clip setting differed.
+
+**`UShootdodgeComponent`** (`Gameplay/ShootdodgeComponent.h`) on the player:
+- `TMap<EShootdodgeDirection, FShootdodgeAnims> Animations`:
+  - `FShootdodgeAnims` = `Start`, `StartOffset`, `Loop`, `Land`, `LandOffset`,
+    `Prone`, `Getup` (offsets −1 = use the component default);
+  - enum order Forward, ForwardRight, …, ForwardLeft **is** the octant order;
+  - bridge JSON keys are lower camel (`forward`, `forwardRight`, …).
+- **`TryStart`:**
+  - gates: on the ground, not crouched, not equipping, a pistol type, meter ≥
+    min, a Loop clip present;
+  - `PickDirection` takes `GetLastMovementInputVector()` in the camera's yaw
+    frame and rounds to the nearest 45°;
+  - `UFocusComponent::SpendMeter`;
+  - snaps yaw to the camera, `SetAnimationDrivenRotation(true)` (stance
+    `AnimationDriven`);
+  - then **`TakeOff` immediately**.
+- **`TakeOff`:**
+  - saves, then overrides, on the movement component: `GravityScale` ×
+    `DiveGravityScale` (0.6) and `BrakingDecelerationFalling` =
+    `DiveAirBraking` (0). The player's 1500 air braking had stopped the dive
+    mid-air.
+  - `LaunchCharacter` along camera yaw + octant × 45°: `DiveSpeed` 650,
+    `DiveLift` 450, both axes overridden. That's ~1.7 m peak, ~1.5 s up.
+  - Plays Start from `StartClipOffset` (0.4 s, the push-off frame, in clip
+    seconds), then Loop when it ends.
+- **`NotifyLanded`** (from `ACharacter::Landed`):
+  - restores gravity and air braking;
+  - **slide:** saves the walking braking settings, then sets
+    `BrakingDecelerationWalking` = `LandSlideDeceleration` (800),
+    `bUseSeparateBrakingFriction` true, `BrakingFriction` 0, and `Velocity.Z`
+    0. Horizontal speed bleeds off at a constant rate: ~2.6 m.
+  - Plays Land from `LandClipOffset` (0.5 s), skipping the clip's airborne
+    lead-in so the impact lands at touchdown.
+- **Then:** Prone (`Aim_Mid` pose, looped) → first movement input → Getup →
+  `Finish`, which restores everything and returns to the FreeRun stance.
+- **Play rates** (all directions): `StartPlayRate` 2, `LoopPlayRate`,
+  `LandPlayRate`, `PronePlayRate`, `GetupPlayRate` 1. Offsets stay in clip
+  seconds.
+- Clips play as dynamic montages in `DeathSlot` (full body), with 0.1 s
+  blends.
+- **Player:**
+  - `DoMove` routes to `NotifyMoveInput` while dodging (no air or slide
+    steering);
+  - `DoFire` doesn't snap yaw;
+  - `UpdateCrouch` is skipped.
+- **Known limits:**
+  - sliding off a ledge while prone falls in the prone pose (the second landing
+    isn't a dive landing);
+  - arms follow the clips, not the aim, until step 2.
+
+**Lessons from the first attempt (rolled back 2026-10-10, then re-applied):**
+- A Ref Pose root lock on *all* clips flattened the dive into a slide. That
+  needed the launch arc and lighter gravity, and it floated or misaligned
+  some clips.
+- The Lyra dash as a wind-up didn't match the pack.
+- The Dodge Start clips are 1.2–1.4 s long, too slow as a wind-up. Hence
+  "launch on the press, play Start from the push-off".
+- Considered and set aside: **Motion Warping**, and **using the pack's root
+  motion**. Root motion stays off; code drives the arc.
+
+**Next:**
+- **Camera (user, for later):** during a dive the character sits **very low
+  on screen**, probably because of the clips' root position. **Don't touch the
+  animations again.** Fix with the camera instead: raise or offset the boom
+  (`SocketOffset` / target offset) while dodging, eased in and out like the
+  aim camera. This belongs to step 4.
+- **Step 2:** in-air aim (an upper-body layer from a 360° blend space built
+  from the 24 prone aim poses) and slow motion after take-off / off on
+  landing.
+- **Step 3:** that blend space as the prone pose; fire prone.
+- **Step 4:** camera near the floor, capsule.
+
+#### Original plan (pre-asset)
+
 An asset exists: a **two-handed pistol shootdodge that lands prone, with a
 prone turn-in-place**. That is the full Max Payne loop — dive directionally,
 land, reacquire, keep firing, get up.

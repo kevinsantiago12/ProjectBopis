@@ -2,6 +2,7 @@
 
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/FocusComponent.h"
+#include "Gameplay/ShootdodgeComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Camera/CameraComponent.h"
@@ -20,6 +21,7 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 {
 	// Capsule, weapon holder and tick come from ABopisCharacterBase.
 	Focus =CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
+	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
 
 	FocusPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("FocusPostProcess"));
 	FocusPostProcess->SetupAttachment(RootComponent);
@@ -140,6 +142,9 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(FocusAction, ETriggerEvent::Started, this,
 			&AProjectBopisCharacter::DoToggleFocus);
 
+		EnhancedInputComponent->BindAction(ShootdodgeAction, ETriggerEvent::Started, this,
+			&AProjectBopisCharacter::DoShootdodge);
+
 	}
 	else
 	{
@@ -182,6 +187,13 @@ void AProjectBopisCharacter::DoMove(float Right, float Forward)
 {
 	if (!GetController())
 	{
+		return;
+	}
+
+	// Mid-dive the dive owns movement; lying prone, any movement means "get up".
+	if (Shootdodge && Shootdodge->IsDodging())
+	{
+		Shootdodge->NotifyMoveInput();
 		return;
 	}
 
@@ -347,7 +359,7 @@ void AProjectBopisCharacter::DoFire()
 	// Snapped rather than interpolated: the shot is this frame.
 	if (Holder->GetEquippedWeapon())
 	{
-		if (!IsWeaponRaised())
+		if (!IsWeaponRaised() && !(Shootdodge && Shootdodge->IsDodging()))
 		{
 			SetActorRotation(FRotator(0.0f, GetControlRotation().Yaw, 0.0f));
 		}
@@ -376,6 +388,29 @@ void AProjectBopisCharacter::DoFire()
 		// change stay together — the weapon has no business knowing about montages.
 		DoReload();
 	}
+}
+
+void AProjectBopisCharacter::DoShootdodge()
+{
+	if (Shootdodge)
+	{
+		Shootdodge->TryStart();
+	}
+}
+
+void AProjectBopisCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (Shootdodge)
+	{
+		Shootdodge->NotifyLanded();
+	}
+}
+
+void AProjectBopisCharacter::SetAnimationDrivenRotation(bool bAnimationDriven)
+{
+	ApplyMovementStance(bAnimationDriven ? EMovementStance::AnimationDriven : EMovementStance::FreeRun);
 }
 
 void AProjectBopisCharacter::DoToggleFocus()
@@ -425,6 +460,11 @@ void AProjectBopisCharacter::DoCrouchEnd()
 
 void AProjectBopisCharacter::UpdateCrouch()
 {
+	if (Shootdodge && Shootdodge->IsDodging())
+	{
+		return;
+	}
+
 	const UCharacterMovementComponent* Movement = GetCharacterMovement();
 	if (!Movement)
 	{

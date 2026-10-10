@@ -384,7 +384,13 @@ archetype-composition idea, not extended from the old classes.
     - [x] *(Done 2026-10-10.)* Weapon drop: `AWeaponDrop` tumbles on physics (throw capped at 400 cm/s), settles, becomes `BP_WeaponPickup`. Per-enemy weapons: `StartingWeaponClass` editable on placed actors.
     - [x] *(Done 2026-10-10.)* Focus refill on kills (`KillRefill` 20 when the player is the killer); passive regen turned off on `BP_PlayerCharacter`.
     - [x] *(Done 2026-10-10.)* Floating pickups fixed: settle needs 0.25 s at rest, drops ignore ragdolls, floor snap on becoming a pickup.
-- [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data.
+- [~] **Shootdodge** (user, 2026-10-10; a player feature, done here because the dodge pack arrived). See the spec's *Shootdodge*.
+  - [x] *(Done 2026-10-10.)* 0. Asset prep: compatible skeleton; root motion off; Force Root Lock, Anim First Frame (Ref Pose for the End clips); Right clips fixed by the user.
+  - [x] *(Done 2026-10-10.)* 1. Dive: Left Shift, camera-relative 8-way, Focus gate + cost, launch on press (lighter gravity, no air braking), Start from the push-off offset → Loop → Land from the impact offset with a slide → Prone → Getup on first move; per-type play rates.
+  - [ ] 2. In-air aim (upper-body layer from a 360° blend space) and fire; slow motion after take-off, off on landing.
+  - [ ] 3. Prone: 360° blend space as the pose, fire prone.
+  - [ ] 4. Camera: **character sits too low on screen during the dive (user)** — offset the boom while dodging, not the anims; camera near the floor; capsule.
+- [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data, player death.
 
 ## Phase 6 — First playable arena (vertical slice)
 Goal: prove the core combat loop in an actual space, with real weapons and

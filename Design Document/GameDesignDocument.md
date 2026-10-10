@@ -122,9 +122,10 @@ is a decision for design to make, not an assumption to carry forward.
 
 ### Open
 
-- Dual-wielding is in (dual pistols, firing alternately — see Weapons). Which
-  of dive/slide gunfire and slow motion make it in, and in what form, is still
-  open.
+- Dual-wielding is in (dual pistols, firing alternately — see Weapons), and so
+  is slow motion (Focus). The **shootdodge** is in progress: a dive in any
+  direction, guns blazing, sliding to a stop on the floor where you keep
+  firing until you choose to get up. Each dive costs Focus. Pistols first.
 - How "destructible-feeling" is delivered — cosmetic chaos versus mechanical
   destruction.
 - Whether the existing accuracy model stays, changes, or goes.

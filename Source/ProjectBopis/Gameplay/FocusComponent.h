@@ -42,6 +42,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	bool IsFocusActive() const { return bActive; }
 
+	float GetMeter() const { return Meter; }
+
+	/** Takes Amount off the meter (nothing while infinite). For one-off costs like a shootdodge. */
+	void SpendMeter(float Amount) { if (!bInfinite) { Meter = FMath::Max(0.0f, Meter - Amount); } }
+
 	/** 0..1, for the HUD. */
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	float GetMeterFraction() const { return MaxMeter > 0.0f ? Meter / MaxMeter : 0.0f; }

@@ -14,6 +14,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UFocusComponent;
+class UShootdodgeComponent;
 class UPostProcessComponent;
 struct FInputActionValue;
 
@@ -52,6 +53,10 @@ class AProjectBopisCharacter : public ABopisCharacterBase
 	/** Focus (slow motion) — meter, toggle and world slow-down. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UFocusComponent> Focus;
+
+	/** The Max Payne dive. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UShootdodgeComponent> Shootdodge;
 
 	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
@@ -102,6 +107,10 @@ protected:
 	/** Focus toggle Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FocusAction;
+
+	/** Shootdodge Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ShootdodgeAction;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -218,6 +227,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoToggleFocus();
 
+	/** Starts a shootdodge from input. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoShootdodge();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -241,6 +254,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void Landed(const FHitResult& Hit) override;
 
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -268,6 +283,11 @@ public:
 	UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	UFocusComponent* GetFocus() const { return Focus; }
+
+	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
+
+	/** Hands rotation to the animation (dives), or back to the movement stances. */
+	void SetAnimationDrivenRotation(bool bAnimationDriven);
 
 };
 
