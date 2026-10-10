@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectBopis.h"
+#include "ProjectBopisGameMode.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -28,6 +29,16 @@ void AEnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
+	// Staggered: rooted to the spot — no aiming, turning or patrolling until it passes.
+	if (IsStaggered())
+	{
+		if (AAIController* AI = Cast<AAIController>(GetController()))
+		{
+			AI->StopMovement();
+		}
+		return;
+	}
+
 	UpdateAim();
 	UpdateMovementMode();
 	UpdatePatrol(DeltaSeconds);
@@ -39,6 +50,12 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 
 	// The brain goes with the body: unpossess, and the AI controller is destroyed.
 	DetachFromControllerPendingDestroy();
+
+	// Counted toward the corpse limit; the oldest body goes once there are too many.
+	if (AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>())
+	{
+		GameMode->RegisterCorpse(this);
+	}
 }
 
 void AEnemyBase::UpdateAim()

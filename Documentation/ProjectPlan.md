@@ -378,8 +378,11 @@ archetype-composition idea, not extended from the old classes.
 - [~] **4. Taking bullets + ragdoll** — health, hit reactions, death → ragdoll. Very important (user).
   - [x] *(Done 2026-10-10.)* **4a.** Per-bone hits (capsule ignores bullets), `UHealthComponent`, head ×4; death animation → riddled hit-dance (upper body on physical-animation motors) → Max Payne launch ragdoll; overkill burst → instant ragdoll. See the spec's *Taking bullets and dying*.
   - [x] *(Done 2026-10-10.)* **Riddled break:** 30+ damage within 0.1 s while riddled → straight to ragdoll.
-  - [ ] **4b.** Hit reactions while alive (reuse the riddled motors).
-  - [ ] **4c.** Weapon drop as a pickup, corpse cleanup, Focus refill on kills.
+  - [x] *(Done 2026-10-10; built while the user was away, user-confirmed in PIE.)* **4b.** Hit reactions while alive: light physics flinch on every hit (feedback only), stagger on 60 damage within 0.5 s (rooted, reels, directional animation, re-triggerable for stun-lock). See the spec's *Hit reactions while alive*.
+  - [~] **4c.** Weapon drop as a pickup, corpse cleanup, Focus refill on kills.
+    - [x] *(Done 2026-10-10.)* Corpse limit: `MaxCorpses` 5 on the game mode; the oldest **out-of-view** body is removed (camera cone + line of sight), with its weapons.
+    - [ ] Weapon drop: physics, clamped launch, becomes a pickup.
+    - [ ] Focus refill on kills.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data.
 
 ## Phase 6 — First playable arena (vertical slice)

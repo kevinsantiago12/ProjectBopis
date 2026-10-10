@@ -889,11 +889,81 @@ Blueprints**, so the BP values are the live ones.
   `DeathAnimations` (see the gotcha below).
 - `BP_EnemyBase` holds the death clips.
 
-**Not done (4b / 4c):**
-- 4b: hit reactions while alive (reuse the riddled motors);
-- 4c: drop the weapon as a pickup; corpse cleanup (the gun is still attached to
-  the hand); Focus `AddMeter(KillRefill)` on kills;
-- player death.
+### Hit reactions while alive — step 4b (2026-10-10, built while the user was away; user-confirmed in PIE)
+
+**Design (user):**
+- **Light hit reaction** on every surviving hit: visual feedback only. The
+  enemy keeps moving, aiming and (later) shooting.
+- **Stagger:** X damage within X time roots the enemy in a riddled-like state,
+  exposed to more fire. Retriggering restarts it, so one enemy can be
+  **stun-locked**. Others can still kill you while you do it; that's the
+  balance, not a rule in code.
+
+**How:** same machinery as riddled.
+- `SimulateUpperBody(HoldStrength)` puts `RiddledRootBone` (`spine_01`) and
+  below it on physics with world-space motors. Riddled now uses it too.
+- The legs stay animated.
+- **Collision:** the living mesh is query-only (`CharacterMesh`), so
+  reactions switch it to `QueryAndPhysics` and back. The mesh now ignores
+  `ECC_Pawn`, so simulated bones aren't shoved by their own capsule.
+
+| | Trigger | Body | Ends |
+|---|---|---|---|
+| **Hit reaction** | any surviving hit below the stagger threshold | motors at `HitReactHoldStrength` 2000 (stiff), kick ×`HitReactKickScale` 0.6. Every hit restarts it at full physics. | physics blend weight fades 1→0 over `HitReactDuration` (0.3 s), then bones back to animation |
+| **Stagger** | ≥ `StaggerDamage` (60) within `StaggerWindow` (0.5 s, fixed window from the first hit; resets after each stagger) | motors at `StaggerHoldStrength` 600 (reeling), kick ×`StaggerKickScale` 1.2. `DisableMovement`; the enemy's Tick stops the AI move and skips aim / patrol. Directional `StaggerAnimations` in the full-body `DeathSlot`. | after `StaggerDuration` (0.8 s), fading over the last `HitReactDuration`; movement back to `MOVE_Walking` |
+
+- **Interaction with death:** `Die` calls `EndHitReactions` first, so the
+  death animation gets its bones back. Riddled and ragdoll then work as before.
+- **Off switches:** `HitReactDuration` 0 turns light reactions off.
+  `StaggerDuration` 0 turns staggers off.
+- **`PlayDirectionalAnimation(Set, Dir)`:** shared by death and stagger.
+  `DeathSlotName` is now the general full-body slot.
+- **Stagger clips** (bridge, on `BP_EnemyBase`, `BP_Enemy_Test` and both
+  placed instances): Lyra `Characters/Heroes/Mannequin/Animations/Actions/`.
+  - Front: `MM_HitReact_Front_Hvy_01`, `Front_Med_01`, `_02`
+  - Back: `Back_Med_01`
+  - Left: `Left_Med_01`
+  - Right: `Right_Med_01`
+- **Expected tuning:**
+  - The pistol (25) staggers on the 3rd quick round (75 ≥ 60 within 0.5 s).
+  - A shotgun blast staggers alone.
+  - The hold strengths are guesses until seen in PIE.
+
+### Corpse limit — step 4c, part 1 (2026-10-10, user-confirmed in PIE)
+
+**Rule (user):** at most `MaxCorpses` (default **5**) bodies. Past that, the
+**oldest body that's out of view** is removed. Age alone never removes a body
+the player can see.
+
+- **Game mode:** `AProjectBopisGameMode`, set on `BP_GameMode`.
+  - `RegisterCorpse(Actor)` is called from `AEnemyBase::Die`. Only enemies
+    register, so a future player corpse won't vanish.
+  - `TrimCorpses` walks oldest first and destroys out-of-view bodies until
+    within the limit.
+  - If every extra body is in view, a looping timer (`CorpseCheckInterval`
+    0.5 s) retries, and stops once back within the limit.
+  - The list holds `TWeakObjectPtr<AActor>`, so bodies destroyed elsewhere
+    drop out.
+- **"In view"** (`IsInView`, file-local):
+  - the mesh's bounds centre is inside the player camera's cone, half the FOV
+    plus the body's angular radius;
+  - **and** a Visibility trace from the camera, ignoring the view target,
+    reaches the body itself. Walls count as out of view.
+  - **Decided against:** `GetLastRenderTimeOnScreen()`. In UE5 it kept updating
+    for bodies behind the camera (Lumen and other off-screen passes), so every
+    corpse read as on screen. Found with a temporary `[CorpseDbg]` log (since
+    removed), read via the bridge Logs toolset because the log file had
+    stopped flushing.
+- **Weapons:** `UWeaponHolderComponent::EndPlay` destroys every carried weapon,
+  so a removed corpse doesn't leave its guns behind. The coming weapon drop will
+  take the dropped gun out of `CarriedWeapons` first.
+- Removal is instant. Possible later polish: sink or fade.
+
+**Not done (4c):**
+- **Drop the weapon** (user, 2026-10-10): with **physics**, launch **clamped**
+  (`MaxWeaponDropSpeed` ~400 cm/s), becoming a pickup per the drop design.
+- Focus `AddMeter(KillRefill)` on kills.
+- Player death.
 
 ### Three families
 
@@ -1789,7 +1859,15 @@ ones most likely to bite:
   CDO write doesn't. Saving the level then bakes the stale value into the
   instance as an override. Symptom: `DeathAnimations` empty on `Enemy_Test`
   even though `BP_EnemyBase` had them. Fix: reset-to-default on the instance,
-  or re-place it.
+  or re-place it. **This also hits child Blueprints:** setting a new value on
+  `BP_EnemyBase` and compiling did *not* update `BP_Enemy_Test`'s defaults
+  (2026-10-10). After a bridge CDO write, set the child BPs and every placed
+  instance too, and check them.
+- **`GetLastRenderTimeOnScreen()` is not a visibility test in UE5.** Lumen and
+  other off-screen passes keep it current for meshes behind the camera. Use a
+  camera-cone check plus a line trace. It was found because the editor log
+  file stopped flushing mid-session: the bridge Logs toolset reads the live
+  log instead.
 - **The engine's `Ragdoll` collision profile ignores `Visibility`.** Hitscan
   and the camera aim trace pass through ragdolls (the aim converged on the
   wall behind). Re-block it after switching profiles (`UseRagdollCollision`).

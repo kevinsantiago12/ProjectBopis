@@ -114,6 +114,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Health")
 	bool IsDead() const { return bIsDead; }
 
+	/** Staggered: upper body on physics and rooted to the spot, wide open to more fire. */
+	UFUNCTION(BlueprintPure, Category = "Health|Hit Reactions")
+	bool IsStaggered() const { return bIsStaggered; }
+
 	/** Whether the aim stance is held. Drives the camera move and zoom. */
 	UFUNCTION(BlueprintPure, Category = "Aim")
 	bool IsAiming() const { return bIsAiming; }
@@ -166,6 +170,64 @@ protected:
 	/** Starts a death animation for a hit from this direction. False if none is set. */
 	bool PlayDeathAnimation(const FVector& ShotDirection);
 
+	/** Plays one of a set's animations, picked by the side a shot came from, in the full-body
+	    DeathSlotName. Null if the set has nothing to play. */
+	UAnimMontage* PlayDirectionalAnimation(const FDirectionalAnimSet& Set, const FVector& ShotDirection);
+
+	/** Upper body (RiddledRootBone and below) onto physics, motors holding it to the animation.
+	    Shared by hit reactions, stagger and riddled. */
+	void SimulateUpperBody(float HoldStrength);
+
+	/** Light hit reaction: the upper body jerks on physics, then settles back over
+	    HitReactDuration. Feedback only — movement, aim and fire carry on underneath. */
+	void StartHitReaction(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage);
+
+	/** Heavy hit reaction from StaggerDamage within StaggerWindow: the upper body loosens on
+	    motors, a stagger animation plays, and the body can't move for StaggerDuration.
+	    Triggering it again restarts it — enemies can be stun-locked. */
+	void StartStagger(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage);
+
+	/** Ends a hit reaction or stagger: bones back to the animation, movement back on unless dead. */
+	void EndHitReactions();
+
+	/** Hit reaction: seconds the upper body stays on physics after a hit, fading back to the
+	    animation. 0 turns light hit reactions off. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions", meta = (ClampMin = "0.0"))
+	float HitReactDuration = 0.3f;
+
+	/** Hit reaction motor strength. High, so the body snaps back and keeps doing its job. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions", meta = (ClampMin = "0.0"))
+	float HitReactHoldStrength = 2000.0f;
+
+	/** Hit reaction kick on the struck bone, as a multiple of the normal launch speed. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions", meta = (ClampMin = "0.0"))
+	float HitReactKickScale = 0.6f;
+
+	/** Damage within StaggerWindow that staggers. Each stagger needs a fresh amount. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger", meta = (ClampMin = "0.0"))
+	float StaggerDamage = 60.0f;
+
+	/** World-time seconds over which hits add up toward StaggerDamage. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger", meta = (ClampMin = "0.0"))
+	float StaggerWindow = 0.5f;
+
+	/** Seconds a stagger roots the body. 0 turns staggers off (hits stay light reactions). */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger", meta = (ClampMin = "0.0"))
+	float StaggerDuration = 0.8f;
+
+	/** Stagger motor strength. Lower than a hit reaction's, so the body reels. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger", meta = (ClampMin = "0.0"))
+	float StaggerHoldStrength = 600.0f;
+
+	/** Kick on the struck bone while staggered, as a multiple of the normal launch speed. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger", meta = (ClampMin = "0.0"))
+	float StaggerKickScale = 1.2f;
+
+	/** Stagger animations by the side the staggering shot came from. Optional: without them
+	    the stagger is physics only. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Reactions|Stagger")
+	FDirectionalAnimSet StaggerAnimations;
+
 	virtual void BeginPlay() override;
 
 	/** Switches the body to the Ragdoll collision profile, keeping it solid to bullets
@@ -194,7 +256,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health|Riddled", meta = (ClampMin = "0.0"))
 	float RiddledDuration = 1.0f;
 
-	/** Bone from which the upper body simulates while riddled. Everything below stays animated. */
+	/** Bone from which the upper body simulates — riddled, staggered or reacting to a hit.
+	    Everything below stays animated, so the body keeps its feet. */
 	UPROPERTY(EditAnywhere, Category = "Health|Riddled")
 	FName RiddledRootBone = TEXT("spine_01");
 
@@ -224,7 +287,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health|Death")
 	FDirectionalAnimSet DeathAnimations;
 
-	/** Full-body slot the death animation plays in, last in the AnimGraph. */
+	/** Full-body slot, last in the AnimGraph, for death and stagger animations. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death")
 	FName DeathSlotName = TEXT("DeathSlot");
 
@@ -279,6 +342,16 @@ private:
 	bool bIsRagdoll = false;
 	bool bIsRiddled = false;
 	float RiddledTimeLeft = 0.0f;
+
+	bool bIsHitReacting = false;
+	float HitReactTimeLeft = 0.0f;
+
+	bool bIsStaggered = false;
+	float StaggerTimeLeft = 0.0f;
+
+	/** Damage in the current stagger window, and when that window opened. */
+	float StaggerWindowDamage = 0.0f;
+	float StaggerWindowStart = 0.0f;
 
 	/** Damage in the current riddled burst window, and when that window opened. */
 	float RiddledBurstDamage = 0.0f;

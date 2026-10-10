@@ -63,6 +63,22 @@ void UWeaponHolderComponent::BeginPlay()
 }
 
 
+void UWeaponHolderComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// The weapons are actors of their own; they leave with their owner.
+	for (AWeaponBase* Weapon : CarriedWeapons)
+	{
+		if (Weapon)
+		{
+			Weapon->Destroy();
+		}
+	}
+	CarriedWeapons.Reset();
+	EquippedWeapon = nullptr;
+
+	Super::EndPlay(EndPlayReason);
+}
+
 // Called every frame
 void UWeaponHolderComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {

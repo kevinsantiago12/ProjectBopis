@@ -94,31 +94,66 @@ dying*).
 - **Starting loadout (user, for testing):** `StartingLoadout` +
   `bStartWithFullAmmo` on the weapon holder. Bridge: `BP_PlayerCharacter` gets
   all six weapons, duals in hand, full pools. User-confirmed.
+- *(Committed and pushed by the user.)*
+- **Step 4b, hit reactions (built while the user was away).** The user gave
+  standing permission for this feature only: "make all the changes till you
+  implement this to completion".
+  - **Design (user):**
+    - a light physics reaction on every surviving hit, feedback only;
+    - a stagger from X damage in X time that roots the enemy riddled-style,
+      re-triggerable to stun-lock;
+    - durations tunable.
+  - **C++ (applied by Claude, built with the script):**
+    - `SimulateUpperBody` (shared with riddled);
+    - `StartHitReaction`, `StartStagger`, `EndHitReactions`;
+    - `PlayDirectionalAnimation` (shared with death);
+    - stagger window accounting in `TakeDamage`;
+    - the mesh ignores Pawn;
+    - the enemy's Tick halts the AI while staggered.
+  - **Bridge:** `StaggerAnimations` (Lyra hit-react Med/Hvy clips) on
+    `BP_EnemyBase`, `BP_Enemy_Test` and both placed `BP_Enemy_Test` instances.
+    The parent BP's value didn't propagate to the child: gotcha updated.
+  - **User-confirmed in PIE** ("works now"). The level was saved by the user.
+    Any tuning the user did lives on the BPs.
+- **Step 4c part 1, corpse limit** (user-confirmed in PIE).
+  - **Design (user):** 5 corpses by default, settable. With 6, the first one
+    **out of view** is removed, however long it has lain there.
+  - `MaxCorpses` / `CorpseCheckInterval` live on the game mode; the enemy's
+    `Die` registers the body.
+  - The holder's `EndPlay` destroys carried weapons.
+  - **Bug:** the first visibility check (`GetLastRenderTimeOnScreen`) read every
+    body as on screen, because Lumen and off-screen passes refresh it. Replaced
+    with a camera-cone + line-of-sight test.
+    - Diagnosed with a temporary `[CorpseDbg]` log, read through the bridge
+      Logs toolset: the editor log file had stopped flushing, and the editor
+      briefly showed Not Responding.
+    - The logs were removed afterwards (user asked).
+  - **Weapon drop design (user):** physics, but clamp the launch.
 
 ### ▶ RESUME HERE
-1. **Commit:** step 4a, riddled break, starting loadout (C++, `BP_Enemy_Test`,
-   `BP_PlayerCharacter`, `ABP_Player` DeathSlot, level), docs.
-2. **Phase 5 step 4b:** hit reactions while alive (reuse the riddled motors).
-3. **Phase 5 step 4c:**
-   - drop the weapon as a pickup (ties into `AWeaponPickup` and the drop
-     design);
-   - corpse cleanup;
+1. **Commit:** steps 4b + 4c part 1 (C++, `BP_EnemyBase`, `BP_Enemy_Test`,
+   level), docs.
+2. **Phase 5 step 4c, the rest:**
+   - **weapon drop:** detach on death, physics with a clamped launch
+     (`MaxWeaponDropSpeed`), becomes a pickup (ammo if the weapon is owned,
+     weapon + rounds if not; reuses `AWeaponPickup`). Plan already given to the
+     user;
    - Focus `AddMeter(KillRefill)` on kills, then passive regen off.
-4. **Design question (user + design partner):** the enemy roster now that the
+3. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
-5. **Focus extras:** sounds when assets exist.
-6. **Deferred (minor):**
+4. **Focus extras:** sounds when assets exist.
+5. **Deferred (minor):**
    - convert the single pistol, battle rifle and both shotguns to projectiles
      (the shotguns need a pellet BP);
    - `BP_RifleProjectile` is unreferenced; delete it?
-7. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
+6. **Quick checks (user):** dual left-forearm recoil direction; recoil feel per
    weapon; dot readability.
-8. **Exaggerated impacts, next passes:**
+7. **Exaggerated impacts, next passes:**
    - impact sounds;
    - boosted Niagara layers;
    - bigger in Focus;
    - debris and breakables.
-9. **Later:**
+8. **Later:**
    - the equip end pose;
    - ammo pickup BPs per type;
    - remappable keys;

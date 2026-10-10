@@ -33,6 +33,10 @@ ABopisCharacterBase::ABopisCharacterBase()
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Projectile, ECR_Block);
 
+	// When hit reactions put the upper body on physics, its bones must not collide with
+	// the character's own capsule (a Pawn) — they'd be shoved out of it.
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
 	BoneDamageMultipliers.Add(TEXT("head"), 4.0f);
 
 	// Crouch does nothing at all without this, and fails silently — CanCrouch()
@@ -47,6 +51,32 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
 
 	UpdateReloadMontage();
+
+	if (bIsStaggered)
+	{
+		// Settle back into the animation over the stagger's last HitReactDuration.
+		StaggerTimeLeft -= DeltaSeconds;
+		const float FadeTime = FMath::Max(HitReactDuration, KINDA_SMALL_NUMBER);
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone,
+			FMath::Clamp(StaggerTimeLeft / FadeTime, 0.0f, 1.0f), false, true);
+
+		if (StaggerTimeLeft <= 0.0f)
+		{
+			EndHitReactions();
+		}
+	}
+	else if (bIsHitReacting)
+	{
+		// Fade the physics out over the whole reaction, so the bones ease back into the animation.
+		HitReactTimeLeft -= DeltaSeconds;
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone,
+			FMath::Clamp(HitReactTimeLeft / FMath::Max(HitReactDuration, KINDA_SMALL_NUMBER), 0.0f, 1.0f), false, true);
+
+		if (HitReactTimeLeft <= 0.0f)
+		{
+			EndHitReactions();
+		}
+	}
 
 	if (bIsRiddled)
 	{
@@ -178,6 +208,33 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 			StartRagdoll(Hit, ShotDirection, Damage);
 		}
 	}
+	else if (Damage > 0.0f)
+	{
+		// Survived: hits within StaggerWindow add up, and enough of them stagger (again, if
+		// already staggered). Anything less is a light reaction, or a jolt to a staggered body.
+		const float Now = GetWorld()->GetTimeSeconds();
+		if (Now - StaggerWindowStart > StaggerWindow)
+		{
+			StaggerWindowStart = Now;
+			StaggerWindowDamage = 0.0f;
+		}
+		StaggerWindowDamage += Damage;
+
+		if (StaggerDuration > 0.0f && StaggerWindowDamage >= StaggerDamage)
+		{
+			// Each stagger needs a fresh StaggerDamage, so stun-locking takes sustained fire.
+			StaggerWindowDamage = 0.0f;
+			StartStagger(Hit, ShotDirection, Damage);
+		}
+		else if (bIsStaggered)
+		{
+			KickBone(Hit.BoneName, ShotDirection, Damage, StaggerKickScale);
+		}
+		else
+		{
+			StartHitReaction(Hit, ShotDirection, Damage);
+		}
+	}
 
 	return Damage;
 }
@@ -185,6 +242,9 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 void ABopisCharacterBase::Die(AController* Killer, const FVector& ShotDirection)
 {
 	bIsDead = true;
+
+	// Any hit reaction or stagger ends here; the death animation needs the bones back.
+	EndHitReactions();
 
 	// Out of the movement system and out of the way. The mesh still blocks bullets, so
 	// the dying body can be shot into a ragdoll.
@@ -197,12 +257,16 @@ void ABopisCharacterBase::Die(AController* Killer, const FVector& ShotDirection)
 
 bool ABopisCharacterBase::PlayDeathAnimation(const FVector& ShotDirection)
 {
-	DeathMontage = nullptr;
+	DeathMontage = PlayDirectionalAnimation(DeathAnimations, ShotDirection);
+	return DeathMontage != nullptr;
+}
 
+UAnimMontage* ABopisCharacterBase::PlayDirectionalAnimation(const FDirectionalAnimSet& Set, const FVector& ShotDirection)
+{
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (!AnimInstance)
 	{
-		return false;
+		return nullptr;
 	}
 
 	// Which side the shot came from, in the body's own frame: X forward, Y right.
@@ -210,32 +274,113 @@ bool ABopisCharacterBase::PlayDeathAnimation(const FVector& ShotDirection)
 	const TArray<TObjectPtr<UAnimSequenceBase>>* Options = nullptr;
 	if (FMath::Abs(FromShooter.X) >= FMath::Abs(FromShooter.Y))
 	{
-		Options = FromShooter.X >= 0.0f ? &DeathAnimations.Front : &DeathAnimations.Back;
+		Options = FromShooter.X >= 0.0f ? &Set.Front : &Set.Back;
 	}
 	else
 	{
-		Options = FromShooter.Y >= 0.0f ? &DeathAnimations.Right : &DeathAnimations.Left;
+		Options = FromShooter.Y >= 0.0f ? &Set.Right : &Set.Left;
 	}
 
-	// Fall back to any front death if this side has none.
+	// Fall back to the front set if this side has none.
 	if (Options->Num() == 0)
 	{
-		Options = &DeathAnimations.Front;
+		Options = &Set.Front;
 	}
 	if (Options->Num() == 0)
 	{
-		return false;
+		return nullptr;
 	}
 
 	UAnimSequenceBase* Chosen = (*Options)[FMath::RandRange(0, Options->Num() - 1)];
 	if (!Chosen)
 	{
-		return false;
+		return nullptr;
 	}
 
 	// A plain animation sequence wrapped as a montage on the fly, so no montage assets needed.
-	DeathMontage = AnimInstance->PlaySlotAnimationAsDynamicMontage(Chosen, DeathSlotName, 0.1f, 0.2f);
-	return DeathMontage != nullptr;
+	return AnimInstance->PlaySlotAnimationAsDynamicMontage(Chosen, DeathSlotName, 0.1f, 0.2f);
+}
+
+void ABopisCharacterBase::SimulateUpperBody(float HoldStrength)
+{
+	// Motors pull each simulated bone toward where the animation has it — world space, so
+	// the body holds its place rather than just its shape.
+	FPhysicalAnimationData Hold;
+	Hold.bIsLocalSimulation = false;
+	Hold.OrientationStrength = HoldStrength;
+	Hold.PositionStrength = HoldStrength;
+	Hold.AngularVelocityStrength = HoldStrength * 0.1f;
+	Hold.VelocityStrength = HoldStrength * 0.1f;
+
+	USkeletalMeshComponent* Body = GetMesh();
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, Hold, true);
+	Body->SetAllBodiesBelowSimulatePhysics(RiddledRootBone, true, true);
+	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 1.0f, false, true);
+}
+
+void ABopisCharacterBase::StartHitReaction(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
+{
+	if (HitReactDuration <= 0.0f)
+	{
+		return;
+	}
+
+	if (!bIsHitReacting)
+	{
+		// Physics needs physics collision; the living mesh is normally query-only.
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		SimulateUpperBody(HitReactHoldStrength);
+		bIsHitReacting = true;
+	}
+
+	// Every hit restarts the fade at full physics.
+	HitReactTimeLeft = HitReactDuration;
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 1.0f, false, true);
+
+	KickBone(Hit.BoneName, ShotDirection, BulletDamage, HitReactKickScale);
+}
+
+void ABopisCharacterBase::StartStagger(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
+{
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	// Looser motors than a hit reaction, so the body reels. Restarting refreshes everything.
+	bIsHitReacting = false;
+	bIsStaggered = true;
+	StaggerTimeLeft = StaggerDuration;
+	SimulateUpperBody(StaggerHoldStrength);
+
+	// Rooted to the spot: no walking out of it.
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
+
+	PlayDirectionalAnimation(StaggerAnimations, ShotDirection);
+
+	KickBone(Hit.BoneName, ShotDirection, BulletDamage, StaggerKickScale);
+}
+
+void ABopisCharacterBase::EndHitReactions()
+{
+	if (!bIsHitReacting && !bIsStaggered)
+	{
+		return;
+	}
+
+	const bool bWasStaggered = bIsStaggered;
+	bIsHitReacting = false;
+	bIsStaggered = false;
+
+	// Bones back to the animation, motors off, mesh back to query-only.
+	USkeletalMeshComponent* Body = GetMesh();
+	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 0.0f, false, true);
+	Body->SetAllBodiesBelowSimulatePhysics(RiddledRootBone, false, true);
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, FPhysicalAnimationData(), true);
+	Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	if (bWasStaggered && !bIsDead)
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
 }
 
 void ABopisCharacterBase::BeginPlay()
@@ -275,19 +420,8 @@ void ABopisCharacterBase::StartRiddled(const FHitResult& Hit, const FVector& Sho
 		AnimInstance->Montage_SetPlayRate(DeathMontage, RiddledAnimRate);
 	}
 
-	// Motors pull each simulated bone toward where the animation has it — world space, so
-	// the body holds its place rather than just its shape.
-	FPhysicalAnimationData Hold;
-	Hold.bIsLocalSimulation = false;
-	Hold.OrientationStrength = RiddledHoldStrength;
-	Hold.PositionStrength = RiddledHoldStrength;
-	Hold.AngularVelocityStrength = RiddledHoldStrength * 0.1f;
-	Hold.VelocityStrength = RiddledHoldStrength * 0.1f;
-
-	USkeletalMeshComponent* Body = GetMesh();
 	UseRagdollCollision();
-	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, Hold, true);
-	Body->SetAllBodiesBelowSimulatePhysics(RiddledRootBone, true, true);
+	SimulateUpperBody(RiddledHoldStrength);
 
 	// The bullet that started it lands too.
 	KickBone(Hit.BoneName, ShotDirection, BulletDamage, RiddledKickScale);

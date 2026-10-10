@@ -376,6 +376,8 @@ character. Working today:
 - Deaths staged like the films: a death fall, a body that stays on its feet
   jerking under sustained fire, then flies off the final bullets; a big enough
   blast throws it at once
+- Enemies that flinch at every hit, and reel helplessly under concentrated fire —
+  pin one down and you can keep it staggering, while the rest keep shooting
 - Bullet impacts that match what was hit (dust, sparks, splinters, bullet
   holes), muzzle flash, weapon sound
 
