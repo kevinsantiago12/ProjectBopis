@@ -91,7 +91,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	FName OffhandAttachSocketName = TEXT("hand_l");
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
+	/** The weapon in hand at spawn. Editable per placed actor too, so each enemy in a level
+	    can be given its own gun; the Blueprint's value is the default. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Holder")
 	TSubclassOf<AWeaponBase> StartingWeaponClass;
 
 	/** More weapons to start with, after StartingWeaponClass (which is the one equipped).

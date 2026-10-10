@@ -378,6 +378,8 @@ character. Working today:
   blast throws it at once
 - Enemies that flinch at every hit, and reel helplessly under concentrated fire —
   pin one down and you can keep it staggering, while the rest keep shooting
+- The dead drop their guns, which clatter to the floor and can be picked up for
+  the weapon or its ammunition
 - Bullet impacts that match what was hit (dust, sparks, splinters, bullet
   holes), muzzle flash, weapon sound
 

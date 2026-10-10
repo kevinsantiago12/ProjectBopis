@@ -129,16 +129,25 @@ dying*).
       briefly showed Not Responding.
     - The logs were removed afterwards (user asked).
   - **Weapon drop design (user):** physics, but clamp the launch.
+- *(4b + corpse limit committed and pushed by the user.)*
+- **Step 4c part 2, weapon drop** (user-confirmed in PIE).
+  - **C++ (applied by Claude on request, built with the script):**
+    - new `AWeaponDrop`: a physics box fitted to the gun, a throw capped at
+      400 cm/s, settles, then becomes a pickup via `SpawnActorDeferred` +
+      `AWeaponPickup::SetWeaponClass`;
+    - `AEnemyBase::DropWeapon` from `Die`.
+  - **Bridge:** `WeaponPickupClass` = `Pickups/BP_WeaponPickup` on both BPs and
+    all 6 placed enemies. First attempt used the wrong path: the BP lives in
+    `Blueprints/Pickups/`.
+  - **User asked how to give enemies weapons:**
+    - `StartingWeaponClass` changed `EditDefaultsOnly` → `EditAnywhere`, so it's
+      settable per placed enemy;
+    - a child BP per loadout is the no-code alternative.
 
 ### ▶ RESUME HERE
-1. **Commit:** steps 4b + 4c part 1 (C++, `BP_EnemyBase`, `BP_Enemy_Test`,
-   level), docs.
-2. **Phase 5 step 4c, the rest:**
-   - **weapon drop:** detach on death, physics with a clamped launch
-     (`MaxWeaponDropSpeed`), becomes a pickup (ammo if the weapon is owned,
-     weapon + rounds if not; reuses `AWeaponPickup`). Plan already given to the
-     user;
-   - Focus `AddMeter(KillRefill)` on kills, then passive regen off.
+1. **Commit:** weapon drop + per-enemy weapon (C++, BPs, level), docs.
+2. **Phase 5 step 4c, last item:** Focus `AddMeter(KillRefill)` on kills, then
+   passive regen off.
 3. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
 4. **Focus extras:** sounds when assets exist.

@@ -7,6 +7,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "ProjectBopis.h"
 #include "ProjectBopisGameMode.h"
+#include "Pickups/WeaponDrop.h"
+#include "Pickups/WeaponPickup.h"
+#include "Weapons/WeaponHolderComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -48,6 +51,8 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 {
 	Super::Die(Killer, ShotDirection);
 
+	DropWeapon(ShotDirection);
+
 	// The brain goes with the body: unpossess, and the AI controller is destroyed.
 	DetachFromControllerPendingDestroy();
 
@@ -56,6 +61,35 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 	{
 		GameMode->RegisterCorpse(this);
 	}
+}
+
+void AEnemyBase::DropWeapon(const FVector& ShotDirection)
+{
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	if (!Weapon || !WeaponPickupClass)
+	{
+		return;
+	}
+
+	// From the gun's current place in the hand, so it doesn't jump.
+	const FTransform GunTransform = Weapon->GetWeaponMesh()->GetComponentTransform();
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AWeaponDrop* Drop = GetWorld()->SpawnActor<AWeaponDrop>(AWeaponDrop::StaticClass(),
+		FTransform(GunTransform.GetRotation(), GunTransform.GetLocation()), Params);
+	if (!Drop)
+	{
+		return;
+	}
+
+	// Thrown along the killing shot with a little lift, capped so no hit can fling it far.
+	const FVector Velocity = (ShotDirection.GetSafeNormal() * WeaponDropSpeed
+		+ FVector::UpVector * WeaponDropLift).GetClampedToMaxSize(MaxWeaponDropSpeed);
+	Drop->Launch(Weapon->GetClass(), WeaponPickupClass, Velocity, FMath::VRand() * WeaponDropSpin);
+
+	// The gun has left the hand. The weapon actor itself stays with the corpse until cleanup.
+	Weapon->SetActorHiddenInGame(true);
 }
 
 void AEnemyBase::UpdateAim()

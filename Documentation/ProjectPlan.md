@@ -381,7 +381,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-10; built while the user was away, user-confirmed in PIE.)* **4b.** Hit reactions while alive: light physics flinch on every hit (feedback only), stagger on 60 damage within 0.5 s (rooted, reels, directional animation, re-triggerable for stun-lock). See the spec's *Hit reactions while alive*.
   - [~] **4c.** Weapon drop as a pickup, corpse cleanup, Focus refill on kills.
     - [x] *(Done 2026-10-10.)* Corpse limit: `MaxCorpses` 5 on the game mode; the oldest **out-of-view** body is removed (camera cone + line of sight), with its weapons.
-    - [ ] Weapon drop: physics, clamped launch, becomes a pickup.
+    - [x] *(Done 2026-10-10.)* Weapon drop: `AWeaponDrop` tumbles on physics (throw capped at 400 cm/s), settles, becomes `BP_WeaponPickup`. Per-enemy weapons: `StartingWeaponClass` editable on placed actors.
     - [ ] Focus refill on kills.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data.
 

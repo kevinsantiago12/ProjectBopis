@@ -35,6 +35,9 @@ public:
 
 	AWeaponPickup();
 
+	/** Which weapon this is. For pickups spawned at runtime (drops), before FinishSpawning. */
+	void SetWeaponClass(TSubclassOf<AWeaponBase> InWeaponClass) { WeaponClass = InWeaponClass; }
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 protected:

@@ -959,9 +959,46 @@ the player can see.
   take the dropped gun out of `CarriedWeapons` first.
 - Removal is instant. Possible later polish: sink or fade.
 
+### Weapon drop — step 4c, part 2 (2026-10-10, user-confirmed in PIE)
+
+**Design (user):** the dead enemy's gun falls with **physics**, the launch is
+**clamped**, and it becomes a pickup under the existing drop rule (ammo if
+owned, weapon + rounds if not, duals unlocked by a second single).
+
+- **`AEnemyBase::DropWeapon(ShotDirection)`**, from `Die`:
+  - spawns an **`AWeaponDrop`** at the equipped gun's mesh transform (no
+    scale, `AlwaysSpawn`);
+  - throw velocity = shot direction × `WeaponDropSpeed` 250 + up × `WeaponDropLift`
+    150, **`GetClampedToMaxSize(MaxWeaponDropSpeed 400)`**, spin `FMath::VRand()` ×
+    `WeaponDropSpin` 360°/s;
+  - the in-hand weapon is `SetActorHiddenInGame`; its actor stays with the
+    corpse until corpse cleanup.
+  - Empty `WeaponPickupClass` = enemies keep their guns. Set to
+    `Pickups/BP_WeaponPickup` on `BP_EnemyBase`, `BP_Enemy_Test` and the placed
+    instances.
+- **`AWeaponDrop`** (`Pickups/WeaponDrop.h`):
+  - root = `UBoxComponent` `Body`, `PhysicsActor` profile, ignoring
+    Pawn / Camera / Visibility / Projectile, simulating;
+  - `MeshComponent` takes the weapon's mesh from its class defaults;
+  - **`Launch`** fits the box to the mesh's local bounds, centres it, and
+    offsets the actor (`TeleportPhysics`) so the gun doesn't jump;
+  - **settles** when speed < `SettleSpeed` 20 after `MinFlightTime` 0.3 s, or at
+    `MaxFlightTime` 3 s;
+  - then **`BecomePickup`**: `SpawnActorDeferred<AWeaponPickup>` at the mesh's
+    transform, then `SetWeaponClass`, then `FinishSpawning` (so
+    `OnConstruction` sees the class), then destroys itself.
+- **Why a separate class:** physics needs the moving body as the actor's root.
+  Re-rooting `AWeaponPickup` would move every placed pickup to the origin. The
+  drop flies and hands over to an untouched pickup.
+- **Rounds** follow the pickup's `AmmoMode` (BP default: random, half to full
+  magazine). Duals drop as one pickup showing a single pistol mesh.
+- **Per-enemy weapons:** `UWeaponHolderComponent::StartingWeaponClass` is now
+  **`EditAnywhere`**. Select a placed enemy → WeaponHolder → Starting Weapon
+  Class. The BP value is the default.
+- The gun leaves the hand at the moment of death; the death animation plays
+  empty-handed (the Max Payne convention).
+
 **Not done (4c):**
-- **Drop the weapon** (user, 2026-10-10): with **physics**, launch **clamped**
-  (`MaxWeaponDropSpeed` ~400 cm/s), becoming a pickup per the drop design.
 - Focus `AddMeter(KillRefill)` on kills.
 - Player death.
 
