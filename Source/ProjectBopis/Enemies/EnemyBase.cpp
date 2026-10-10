@@ -10,6 +10,8 @@
 #include "Pickups/WeaponDrop.h"
 #include "Pickups/WeaponPickup.h"
 #include "Weapons/WeaponHolderComponent.h"
+#include "ProjectBopisCharacter.h"
+#include "Gameplay/FocusComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -60,6 +62,16 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 	if (AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>())
 	{
 		GameMode->RegisterCorpse(this);
+	}
+
+	// A kill by the player tops up their Focus meter.
+	const APawn* KillerPawn = Killer ? Killer->GetPawn() : nullptr;
+	if (const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(KillerPawn))
+	{
+		if (UFocusComponent* Focus = Player->GetFocus())
+		{
+			Focus->AddMeter(Focus->KillRefill);
+		}
 	}
 }
 

@@ -20,6 +20,10 @@ AWeaponDrop::AWeaponDrop()
 	Body->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	Body->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 	Body->SetCollisionResponseToChannel(ECC_Projectile, ECR_Ignore);
+
+	// Never rests on a corpse: ragdolls move and get cleaned up, which would leave the
+	// pickup hanging in the air.
+	Body->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
 	Body->SetSimulatePhysics(true);
 	RootComponent = Body;
 
@@ -59,8 +63,12 @@ void AWeaponDrop::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	FlightTime += DeltaSeconds;
-	const bool bSettled = FlightTime >= MinFlightTime && Body->GetPhysicsLinearVelocity().Size() < SettleSpeed;
-	if (bSettled || FlightTime >= MaxFlightTime)
+
+	// Landed once it has stayed slow for SettleTime, not just for one frame.
+	const bool bSlow = Body->GetPhysicsLinearVelocity().Size() < SettleSpeed;
+	SlowTime = bSlow ? SlowTime + DeltaSeconds : 0.0f;
+
+	if ((FlightTime >= MinFlightTime && SlowTime >= SettleTime) || FlightTime >= MaxFlightTime)
 	{
 		BecomePickup();
 	}
@@ -72,7 +80,22 @@ void AWeaponDrop::BecomePickup()
 	{
 		// Exactly where the gun lies, so the swap can't be seen. Deferred, so the pickup
 		// knows its weapon before its construction script picks the mesh.
-		const FTransform Where = MeshComponent->GetComponentTransform();
+		// Where the gun lies, lowered onto the floor if there's a gap under it (a forced swap
+		// mid-fall, or anything it was resting on that has since moved).
+		FTransform Where = MeshComponent->GetComponentTransform();
+		const FBox Bounds = Body->Bounds.GetBox();
+
+		FCollisionObjectQueryParams Floor;
+		Floor.AddObjectTypesToQuery(ECC_WorldStatic);
+		Floor.AddObjectTypesToQuery(ECC_WorldDynamic);
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(WeaponDropFloor), false, this);
+
+		FHitResult Hit;
+		const FVector Start = Bounds.GetCenter();
+		if (GetWorld()->LineTraceSingleByObjectType(Hit, Start, Start - FVector(0.0f, 0.0f, FloorSnapDistance), Floor, Params))
+		{
+			Where.AddToTranslation(FVector(0.0f, 0.0f, Hit.ImpactPoint.Z - Bounds.Min.Z));
+		}
 		if (AWeaponPickup* Pickup = GetWorld()->SpawnActorDeferred<AWeaponPickup>(PickupClass, Where,
 			nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn))
 		{

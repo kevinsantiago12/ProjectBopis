@@ -43,6 +43,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Drop", meta = (ClampMin = "0.0"))
 	float SettleSpeed = 20.0f;
 
+	/** Seconds it must stay below SettleSpeed before it counts as landed, so the top of a
+	    bounce isn't mistaken for rest. */
+	UPROPERTY(EditAnywhere, Category = "Drop", meta = (ClampMin = "0.0"))
+	float SettleTime = 0.25f;
+
+	/** How far below the gun to look for the floor when it becomes a pickup. */
+	UPROPERTY(EditAnywhere, Category = "Drop", meta = (ClampMin = "0.0"))
+	float FloorSnapDistance = 150.0f;
+
 	/** Seconds in the air before it may settle, so it isn't caught at the top of its arc. */
 	UPROPERTY(EditAnywhere, Category = "Drop", meta = (ClampMin = "0.0"))
 	float MinFlightTime = 0.3f;
@@ -58,4 +67,5 @@ private:
 	TSubclassOf<AWeaponBase> WeaponClass;
 	TSubclassOf<AWeaponPickup> PickupClass;
 	float FlightTime = 0.0f;
+	float SlowTime = 0.0f;
 };

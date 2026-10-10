@@ -143,11 +143,25 @@ dying*).
     - `StartingWeaponClass` changed `EditDefaultsOnly` → `EditAnywhere`, so it's
       settable per placed enemy;
     - a child BP per loadout is the no-code alternative.
+- *(Weapon drop + per-enemy weapon committed and pushed by the user.)*
+- **Step 4c part 3, Focus refill:** `AEnemyBase::Die` refills the player's
+  Focus by `KillRefill` when the player is the killer.
+  - Bridge: `bPassiveRegen` off on `BP_PlayerCharacter`.
+  - Noted: `bInfinite` is on there (the user's testing setting), which hides
+    the refill.
+- **Floating pickups (user report):** drops were caught mid-bounce or rested
+  on corpses. Fixed with `SettleTime` 0.25 s, ignoring `PhysicsBody`, and a
+  floor snap in `BecomePickup`. User-confirmed ("works now").
+- **Phase 5 step 4 is complete.**
 
 ### ▶ RESUME HERE
-1. **Commit:** weapon drop + per-enemy weapon (C++, BPs, level), docs.
-2. **Phase 5 step 4c, last item:** Focus `AddMeter(KillRefill)` on kills, then
-   passive regen off.
+1. **Commit:** Focus refill, floating-pickup fix, `BP_PlayerCharacter` (regen
+   off), docs.
+2. **Next in Phase 5:** pick with the user. Candidates:
+   - **enemy shooting** (its own aim source from muzzle/eyes; accuracy);
+   - **StateTree behaviour** replacing the test patrol (perception, cover,
+     engage);
+   - **player death** (same base; keep the camera; restart flow).
 3. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
 4. **Focus extras:** sounds when assets exist.

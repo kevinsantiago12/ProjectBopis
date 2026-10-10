@@ -982,11 +982,19 @@ owned, weapon + rounds if not, duals unlocked by a second single).
   - `MeshComponent` takes the weapon's mesh from its class defaults;
   - **`Launch`** fits the box to the mesh's local bounds, centres it, and
     offsets the actor (`TeleportPhysics`) so the gun doesn't jump;
-  - **settles** when speed < `SettleSpeed` 20 after `MinFlightTime` 0.3 s, or at
-    `MaxFlightTime` 3 s;
-  - then **`BecomePickup`**: `SpawnActorDeferred<AWeaponPickup>` at the mesh's
-    transform, then `SetWeaponClass`, then `FinishSpawning` (so
-    `OnConstruction` sees the class), then destroys itself.
+  - **settles** once its speed stays < `SettleSpeed` 20 for `SettleTime` 0.25 s
+    in a row (after `MinFlightTime` 0.3 s), or at `MaxFlightTime` 3 s;
+  - **ignores `ECC_PhysicsBody`**, so it never comes to rest on a ragdoll;
+  - then **`BecomePickup`**: snaps to the floor, then
+    `SpawnActorDeferred<AWeaponPickup>` at the mesh's transform, then
+    `SetWeaponClass`, then `FinishSpawning` (so `OnConstruction` sees the
+    class), then destroys itself.
+    - The floor snap is a `LineTraceSingleByObjectType` (WorldStatic +
+      WorldDynamic) down `FloorSnapDistance` 150 from the bounds centre. It
+      lowers the pickup by `Hit.Z − Bounds.Min.Z`.
+  - **Floating-pickup bug (fixed):** a single-frame speed check caught guns at
+    the top of a bounce, and drops landed on corpses that later moved or were
+    cleaned up. Pickups don't simulate, so either left them hanging.
 - **Why a separate class:** physics needs the moving body as the actor's root.
   Re-rooting `AWeaponPickup` would move every placed pickup to the origin. The
   drop flies and hands over to an untouched pickup.
@@ -998,9 +1006,21 @@ owned, weapon + rounds if not, duals unlocked by a second single).
 - The gun leaves the hand at the moment of death; the death animation plays
   empty-handed (the Max Payne convention).
 
-**Not done (4c):**
-- Focus `AddMeter(KillRefill)` on kills.
-- Player death.
+### Focus refill on kills — step 4c, part 3 (2026-10-10)
+
+- **`AEnemyBase::Die`:** if `Killer->GetPawn()` is an `AProjectBopisCharacter`,
+  `GetFocus()->AddMeter(KillRefill)` (20, set on `BP_PlayerCharacter` → Focus).
+  - The killer arrives through the damage chain: the holder sets the weapon's
+    instigator, and hitscan and projectiles pass `GetInstigatorController()` to
+    `ApplyPointDamage`.
+  - Kills by other enemies won't refill anything once enemies shoot.
+- **`bPassiveRegen` is now off** on `BP_PlayerCharacter` (bridge). Focus is
+  earned by kills.
+- `bInfinite` was **on** for the player (the user's testing setting). It must
+  be off to see the refill.
+
+**Step 4 is complete.** Still open:
+- **Player death:** same base; needs its own `Die` that keeps the camera.
 
 ### Three families
 
