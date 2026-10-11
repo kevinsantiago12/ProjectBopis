@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Animation/AnimEnums.h"
 #include "ShootdodgeComponent.generated.h"
 
 class AProjectBopisCharacter;
@@ -52,11 +53,12 @@ struct FShootdodgeAnims
 };
 
 /** Where the dive is. Start, Loop, Land and Prone are AnimBP states (blend spaces);
-    GettingUp is a montage over the normal graph. */
+    GettingUp is a montage over the normal graph. WindUp (last, so the others keep their
+    values) is the lead-in before the dive proper: a montage, still on the ground. */
 UENUM(BlueprintType)
 enum class EShootdodgePhase : uint8
 {
-	None, Start, Loop, Land, Prone, GettingUp
+	None, Start, Loop, Land, Prone, GettingUp, WindUp
 };
 
 /**
@@ -98,6 +100,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Shootdodge")
 	bool IsGettingUp() const { return Phase == EShootdodgePhase::GettingUp; }
 
+	/** The lead-in before the dive, until its animation has fully blended out (into the start
+	    of the flight): committed to it — no firing, reloading, switching or jumping. */
+	UFUNCTION(BlueprintPure, Category = "Shootdodge")
+	bool IsWindingUp() const { return Phase == EShootdodgePhase::WindUp || WindUpMontage != nullptr; }
+
 	/** Starts getting up, if lying prone. bThenReload queues a reload for when the body is
 	    back on its feet (the reload key asks for that; movement doesn't). */
 	void RequestGetUp(bool bThenReload = false);
@@ -120,6 +127,47 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TMap<EShootdodgeDirection, FShootdodgeAnims> Animations;
+
+	/** A short lead-in before the dive (Max Payne 3's step into the leap): the first
+	    WindUpLength seconds of a Lyra dash, on the ground. Nothing of the dive happens until it
+	    ends — no Focus spent, no slow motion, no launch. Only when diving from a held aim;
+	    otherwise, or with this off, the dive goes on the press. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up")
+	bool bWindUp = true;
+
+	/** Wind-up clips by direction. Forward and its diagonals use WindUpForward; Right and
+	    Backward-Right use WindUpRight, Left and Backward-Left WindUpLeft; only straight back
+	    uses WindUpBackward. A direction whose clip is missing dives straight away. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (EditCondition = "bWindUp"))
+	TObjectPtr<UAnimSequenceBase> WindUpForward;
+
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (EditCondition = "bWindUp"))
+	TObjectPtr<UAnimSequenceBase> WindUpBackward;
+
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (EditCondition = "bWindUp"))
+	TObjectPtr<UAnimSequenceBase> WindUpLeft;
+
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (EditCondition = "bWindUp"))
+	TObjectPtr<UAnimSequenceBase> WindUpRight;
+
+	/** Seconds of the wind-up clip to play (clip time) before the dive starts. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (ClampMin = "0.0", EditCondition = "bWindUp"))
+	float WindUpLength = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (ClampMin = "0.01", EditCondition = "bWindUp"))
+	float WindUpPlayRate = 1.0f;
+
+	/** How fast a run slows during the wind-up (cm/s²): it carries on and bleeds off
+	    gradually instead of stopping dead. 0 keeps the full speed; a 500 cm/s run loses
+	    about a third of it over a 0.2 s wind-up at the default. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (ClampMin = "0.0", EditCondition = "bWindUp"))
+	float WindUpDeceleration = 800.0f;
+
+	/** Seconds (game time) the wind-up blends out over the start of the flight. Slow motion
+	    starts with the flight, so this runs about three times longer in real time; firing
+	    waits until it's done. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Wind-up", meta = (ClampMin = "0.0", EditCondition = "bWindUp"))
+	float WindUpBlendOutTime = 0.08f;
 
 	/** Default seconds into each Start clip to begin — the push-off frame. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
@@ -208,6 +256,15 @@ private:
 	/** Rounds an angle (0 forward, +90 right) to the nearest of the eight directions. */
 	static EShootdodgeDirection OctantOf(float Angle);
 
+	/** The wind-up clip for a dive direction (nearest of the four), or null. */
+	UAnimSequenceBase* PickWindUp(EShootdodgeDirection Direction) const;
+
+	/** Plays the wind-up; Launch follows when it ends. False if there's nothing to play. */
+	bool BeginWindUp(EShootdodgeDirection Direction);
+
+	/** The dive proper: spends the Focus, sets the flight direction off the camera, takes off. */
+	void Launch(EShootdodgeDirection Direction);
+
 	void TakeOff();
 	void EnterProne();
 	void Finish();
@@ -224,6 +281,15 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> GetupMontage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> WindUpMontage;
+
+	/** The direction picked on the press, dived in once the wind-up ends. */
+	EShootdodgeDirection WindUpDirection = EShootdodgeDirection::Forward;
+
+	/** The anim instance's root motion mode before the wind-up (which ignores it). */
+	TEnumAsByte<ERootMotionMode::Type> SavedRootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
 
 	EShootdodgePhase Phase = EShootdodgePhase::None;
 

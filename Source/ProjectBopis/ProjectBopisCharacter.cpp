@@ -227,7 +227,8 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 
 	// Diving, landing and lying prone get their own framing; getting up eases back to normal.
 	const EShootdodgePhase DodgePhase = Shootdodge ? Shootdodge->GetPhase() : EShootdodgePhase::None;
-	const bool bDodgeCamera = DodgePhase != EShootdodgePhase::None && DodgePhase != EShootdodgePhase::GettingUp;
+	const bool bDodgeCamera = DodgePhase != EShootdodgePhase::None && DodgePhase != EShootdodgePhase::GettingUp
+		&& DodgePhase != EShootdodgePhase::WindUp;
 
 	// Derived from state every frame rather than pushed on aim start/end. A weapon
 	// swap mid-aim can't strand the camera, because there's nothing to strand.
@@ -337,6 +338,12 @@ void AProjectBopisCharacter::UpdateMovementStance()
 
 void AProjectBopisCharacter::DoJumpStart()
 {
+	// Winding up for a dive is a commitment: no hopping out of it.
+	if (Shootdodge && Shootdodge->IsWindingUp())
+	{
+		return;
+	}
+
 	// pass Jump to the character
 	Jump();
 }
@@ -362,7 +369,8 @@ void AProjectBopisCharacter::DoFire()
 	}
 
 	// Getting up from a dive leaves you open: the gun stays quiet until you're on your feet.
-	if (Shootdodge && Shootdodge->IsGettingUp())
+	// Same while winding up for one — the shooting starts with the leap.
+	if (Shootdodge && (Shootdodge->IsGettingUp() || Shootdodge->IsWindingUp()))
 	{
 		return;
 	}
@@ -436,6 +444,12 @@ void AProjectBopisCharacter::DoToggleFocus()
 
 void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 {
+	// The dive is animated for the gun in hand; no swapping while winding up for it.
+	if (Shootdodge && Shootdodge->IsWindingUp())
+	{
+		return;
+	}
+
 	if (UWeaponHolderComponent* Holder = GetWeaponHolder())
 	{
 		Holder->SelectSlot(Slot);

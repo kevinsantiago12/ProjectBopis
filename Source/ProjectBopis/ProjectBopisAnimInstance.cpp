@@ -203,7 +203,8 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAim(const ABopisCharacterBase& C
 	const UShootdodgeComponent* Shootdodge = Player ? Player->GetShootdodge() : nullptr;
 
 	ShootdodgePhase = Shootdodge ? Shootdodge->GetPhase() : EShootdodgePhase::None;
-	bShootdodging = ShootdodgePhase != EShootdodgePhase::None && ShootdodgePhase != EShootdodgePhase::GettingUp;
+	bShootdodging = ShootdodgePhase != EShootdodgePhase::None && ShootdodgePhase != EShootdodgePhase::GettingUp
+		&& ShootdodgePhase != EShootdodgePhase::WindUp;
 
 	if (Shootdodge)
 	{

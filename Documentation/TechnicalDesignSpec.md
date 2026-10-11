@@ -1863,10 +1863,53 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   - The rebuild script's editor close saves dirty assets. Bridge-built graph
     changes survive it, but so does anything half-done.
 
+**Step 8, wind-up (2026-10-11/12, user: "all sorted"):**
+- **Design (user):** Max Payne 3's step into the leap.
+  - It's an extra animation **before** the shootdodge, not part of it: no
+    Focus spent, no slow motion, no launch until it ends. The dive itself is
+    unchanged.
+  - It plays **only when diving from a held aim** (`IsAiming()`, the aim
+    button). Otherwise the dive goes on the press.
+  - The run keeps going and slows gradually.
+  - No firing, reload, weapon switch or jump during it.
+- **Clips:** the first `WindUpLength` (0.2 s) of a Lyra dash, as a dynamic
+  montage in `DeathSlot` at `WindUpPlayRate`.
+  - Forward and its diagonals: `WindUpForward` (the user set
+    `Unarmed/Jump/MM_Dash`).
+  - Right and Back-Right: `WindUpRight`. The user made `MM_Dash_LeftMirrored`
+    with an animation modifier.
+  - Left and Back-Left: `WindUpLeft` (`MM_Dash_Left`).
+  - Straight back, the Backward octant within 22.5°: `WindUpBackward`
+    (`MM_Dash_Backward`).
+  - A missing clip dives straight away.
+- **Code (`UShootdodgeComponent`):**
+  - `EShootdodgePhase::WindUp` is added **last**, so the AnimBP's enum
+    comparisons don't shift.
+  - `TryStart` runs the checks, sets animation-driven rotation, then
+    `BeginWindUp` or `Launch`.
+  - `Launch` holds what `TryStart` used to do after its checks:
+    `SpendMeter`, stop movement, `DiveYaw` from the camera **at launch**, then
+    `TakeOff`.
+  - **During the wind-up:**
+    - the body eases toward the aim, as in the dive;
+    - root motion is ignored (`SetRootMotionMode`, restored at launch);
+    - the run bleeds off at `WindUpDeceleration` (800 cm/s²), with braking
+      friction off, restored at launch. Without this, ignored movement input
+      let the normal braking stop the character dead.
+  - **At launch:** `Montage_Stop(WindUpBlendOutTime 0.08)`.
+  - **`IsWindingUp()`** stays true until the wind-up montage is fully blended
+    out (the tick clears `WindUpMontage` once `!Montage_IsActive`).
+    - Slow motion starts at launch, so a 0.15 s blend-out ran about 0.5 s of
+      real time with the dash still showing while bullets flew.
+    - It guards `DoFire`, `DoJumpStart` and `DoSelectWeaponSlot`. Reload is
+      already blocked, because a reload press outside prone does nothing.
+  - The anim instance's `bShootdodging` and the dive camera both exclude
+    `WindUp`.
+- **Tried and dropped:** playing the Start clips' own skipped lead-in
+  (0..`StartClipOffset`) as a push-off. The user wanted the Lyra dash's
+  running wind-up; the Start clips have no running start.
+
 **Next:**
-- **Ground push-off before take-off** (user). The dive is "perfect as it is";
-  add only a lead-in transition, possibly the first frames of the Lyra dash.
-  Don't change the launch, offsets or play rates.
 - Weapons other than pistols and duals, **together with aim correction**
   (user, 2026-10-11). The gun points far from the crosshair during the dive and
   prone. Shots come from the crosshair, but the arms follow the clips'

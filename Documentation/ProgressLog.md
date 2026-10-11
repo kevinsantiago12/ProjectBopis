@@ -60,11 +60,19 @@ in the spec (*Shootdodge → Built — steps 2–5*).
      - **Uncommitted:** C++ (anim instance, character base, shootdodge
        component), `ABP_Player`; the user's own changes to `BP_PlayerCharacter`
        and `anim_Prone_Left_Aim_Up_P`.
-   - **A push-off transition before take-off.** The dive itself is "perfect
-     as it is"; it just needs a ground push-off leading into it. Possibly the
-     Lyra dash again (only the first frames; it didn't match last time as a
-     full wind-up). Keep launch timing, offsets and rates unchanged; this is
-     only a lead-in.
+   - ~~A push-off transition before take-off~~: **done** (step 8, 2026-10-12,
+     user: "all sorted").
+     - A Lyra-dash wind-up, only when diving from a held aim. Momentum eases
+       off through it, and fire, reload, switching and jumping are blocked
+       until it has blended out.
+     - The user made `MM_Dash_LeftMirrored` with an animation modifier for the
+       right side.
+     - **Uncommitted:** C++ (shootdodge component, anim instance, character),
+       `BP_PlayerCharacter`, the new dash asset.
+     - **Also in git status (the user's):** `MM_Dash`, `MM_Dash_Backward`,
+       the crouch clips plus `MM_Unarmed_Crouch_Entry_Open`, and
+       `NewLevelSequence` (left over from the Sequencer mirror attempt;
+       probably safe to delete).
 3. **Shootdodge, later:**
    - other weapon types, **bundled with aim correction** (user, 2026-10-11).
      The gun points far from the crosshair during the dive and prone: the clips

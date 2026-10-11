@@ -50,17 +50,105 @@ bool UShootdodgeComponent::TryStart()
 		return false;
 	}
 
-	Focus->SpendMeter(FocusCost);
-
-	// The flight goes this direction's eighth of a turn away from the camera. The body
-	// turns toward the camera over the next moments (TickComponent) rather than snapping.
-	const float CameraYaw = Character->GetControlRotation().Yaw;
+	// Rotation belongs to the dive from the press: the body turns toward the camera over the
+	// next moments (TickComponent), through the wind-up and the flight.
 	Character->SetAnimationDrivenRotation(true);
+
+	// The wind-up is the deliberate dive, from a held aim; from anything else (running,
+	// hip-fire) the dive goes on the press.
+	if (!bWindUp || !Character->IsAiming() || !BeginWindUp(Direction))
+	{
+		Launch(Direction);
+	}
+	return true;
+}
+
+UAnimSequenceBase* UShootdodgeComponent::PickWindUp(EShootdodgeDirection Direction) const
+{
+	// Lyra's dash comes in four directions. Forward and its diagonals take the forward dash;
+	// the back diagonals take the side dash on their side; only straight back (within 22.5°
+	// of it — the Backward octant) takes the backward dash.
+	switch (Direction)
+	{
+	case EShootdodgeDirection::Forward:
+	case EShootdodgeDirection::ForwardRight:
+	case EShootdodgeDirection::ForwardLeft:   return WindUpForward;
+	case EShootdodgeDirection::Right:
+	case EShootdodgeDirection::BackwardRight: return WindUpRight;
+	case EShootdodgeDirection::Left:
+	case EShootdodgeDirection::BackwardLeft:  return WindUpLeft;
+	case EShootdodgeDirection::Backward:      return WindUpBackward;
+	default:                                  return nullptr;
+	}
+}
+
+bool UShootdodgeComponent::BeginWindUp(EShootdodgeDirection Direction)
+{
+	UAnimSequenceBase* Clip = PickWindUp(Direction);
+	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (!Clip || !AnimInstance || WindUpLength <= 0.0f)
+	{
+		return false;
+	}
+
+	// The dash clips carry root motion; the wind-up plays in place, so it's ignored until the
+	// launch.
+	SavedRootMotionMode = AnimInstance->RootMotionMode;
+	AnimInstance->SetRootMotionMode(ERootMotionMode::IgnoreRootMotion);
+
+	WindUpMontage = AnimInstance->PlaySlotAnimationAsDynamicMontage(Clip, SlotName, 0.1f, 0.15f, WindUpPlayRate);
+	if (!WindUpMontage)
+	{
+		AnimInstance->SetRootMotionMode(SavedRootMotionMode);
+		return false;
+	}
+
+	// Carry the run into the wind-up, slowing gradually: movement input goes to the dive now
+	// (and is ignored), so the walking braking would otherwise stop the character dead.
+	// Until the launch the speed bleeds off at WindUpDeceleration instead, friction off.
+	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+	SavedWalkingBraking = Movement->BrakingDecelerationWalking;
+	bSavedSeparateBrakingFriction = Movement->bUseSeparateBrakingFriction;
+	SavedBrakingFriction = Movement->BrakingFriction;
+	Movement->BrakingDecelerationWalking = WindUpDeceleration;
+	Movement->bUseSeparateBrakingFriction = true;
+	Movement->BrakingFriction = 0.0f;
+
+	WindUpDirection = Direction;
+	Phase = EShootdodgePhase::WindUp;
+	PhaseTime = 0.0f;
+	PhaseDuration = WindUpLength / WindUpPlayRate;
+	return true;
+}
+
+void UShootdodgeComponent::Launch(EShootdodgeDirection Direction)
+{
+	// The wind-up (if any) hands over: its montage blends out over the dive's Start (it's let
+	// go of in TickComponent once fully out), and the movement gets its braking back.
+	if (Phase == EShootdodgePhase::WindUp)
+	{
+		if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->Montage_Stop(WindUpBlendOutTime, WindUpMontage);
+			AnimInstance->SetRootMotionMode(SavedRootMotionMode);
+		}
+
+		UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+		Movement->BrakingDecelerationWalking = SavedWalkingBraking;
+		Movement->bUseSeparateBrakingFriction = bSavedSeparateBrakingFriction;
+		Movement->BrakingFriction = SavedBrakingFriction;
+	}
+
+	if (UFocusComponent* Focus = Character->GetFocus())
+	{
+		Focus->SpendMeter(FocusCost);
+	}
+
+	// The flight goes this direction's eighth of a turn away from the camera.
 	Character->GetCharacterMovement()->StopMovementImmediately();
-	DiveYaw = CameraYaw + static_cast<int32>(Direction) * 45.0f;
+	DiveYaw = Character->GetControlRotation().Yaw + static_cast<int32>(Direction) * 45.0f;
 
 	TakeOff();
-	return true;
 }
 
 EShootdodgeDirection UShootdodgeComponent::PickDirection() const
@@ -110,9 +198,19 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	PhaseTime += DeltaTime;
 
-	// Flying, landing and lying prone, the body turns to face the aim; the blend spaces
-	// show the dive (and the prone pose) for the flight's direction relative to it.
-	if (Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop
+	// The wind-up counts until its animation has fully blended out over the flight.
+	if (WindUpMontage && Phase != EShootdodgePhase::WindUp)
+	{
+		const UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (!AnimInstance || !AnimInstance->Montage_IsActive(WindUpMontage))
+		{
+			WindUpMontage = nullptr;
+		}
+	}
+
+	// Winding up, flying, landing and lying prone, the body turns to face the aim; the blend
+	// spaces show the dive (and the prone pose) for the flight's direction relative to it.
+	if (Phase == EShootdodgePhase::WindUp || Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop
 		|| Phase == EShootdodgePhase::Land || Phase == EShootdodgePhase::Prone)
 	{
 		const FRotator Aim(0.0f, Character->GetControlRotation().Yaw, 0.0f);
@@ -123,6 +221,13 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	switch (Phase)
 	{
+	case EShootdodgePhase::WindUp:
+		if (PhaseTime >= PhaseDuration)
+		{
+			Launch(WindUpDirection);
+		}
+		break;
+
 	case EShootdodgePhase::Start:
 		if (PhaseTime >= PhaseDuration)
 		{
