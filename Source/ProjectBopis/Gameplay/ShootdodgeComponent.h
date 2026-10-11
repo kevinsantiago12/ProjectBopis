@@ -170,6 +170,20 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float LandSlideDeceleration = 800.0f;
 
+	/** On landing the legs go onto physics, motors holding them to the animation, so the floor
+	    keeps a landing clip from sinking them into it. Back to the animation on lying prone. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs")
+	bool bLandingLegPhysics = true;
+
+	/** Landing leg motor strength. Higher keeps the legs closer to the clip; lower lets the
+	    floor (and the slide) move them more. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs", meta = (ClampMin = "0.0", EditCondition = "bLandingLegPhysics"))
+	float LandingLegHoldStrength = 2000.0f;
+
+	/** Seconds the legs take to blend from physics back to the animation once prone. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs", meta = (ClampMin = "0.0", EditCondition = "bLandingLegPhysics"))
+	float LandingLegBlendOutTime = 0.25f;
+
 	/** Slow motion for the flight: on at take-off, off on landing. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus")
 	bool bSlowMotion = true;

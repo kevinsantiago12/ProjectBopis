@@ -52,6 +52,19 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 
 	UpdateReloadMontage();
 
+	if (bLegsSimulating && LegsFadeTime > 0.0f)
+	{
+		// Ease the legs back into the animation, then let go of physics.
+		LegsFadeLeft -= DeltaSeconds;
+		const float Weight = LegsWeight * FMath::Clamp(LegsFadeLeft / LegsFadeTime, 0.0f, 1.0f);
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("thigh_l"), Weight, false, true);
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("thigh_r"), Weight, false, true);
+		if (LegsFadeLeft <= 0.0f)
+		{
+			StopSimulatingLegs();
+		}
+	}
+
 	if (bIsStaggered)
 	{
 		// Settle back into the animation over the stagger's last HitReactDuration.
@@ -318,6 +331,77 @@ void ABopisCharacterBase::SimulateUpperBody(float HoldStrength)
 	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 1.0f, false, true);
 }
 
+void ABopisCharacterBase::SimulateLegs(float HoldStrength)
+{
+	// Same world-space motors as the upper body: the legs keep to the animation unless
+	// something solid — the floor — is in the way.
+	FPhysicalAnimationData Hold;
+	Hold.bIsLocalSimulation = false;
+	Hold.OrientationStrength = HoldStrength;
+	Hold.PositionStrength = HoldStrength;
+	Hold.AngularVelocityStrength = HoldStrength * 0.1f;
+	Hold.VelocityStrength = HoldStrength * 0.1f;
+
+	// Physics needs physics collision; the living mesh is normally query-only.
+	USkeletalMeshComponent* Body = GetMesh();
+	Body->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	for (const TCHAR* Thigh : { TEXT("thigh_l"), TEXT("thigh_r") })
+	{
+		PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Thigh, Hold, true);
+		Body->SetAllBodiesBelowSimulatePhysics(Thigh, true, true);
+		Body->SetAllBodiesBelowPhysicsBlendWeight(Thigh, 1.0f, false, true);
+	}
+
+	bLegsSimulating = true;
+	LegsFadeTime = 0.0f;
+	LegsFadeLeft = 0.0f;
+	LegsWeight = 1.0f;
+}
+
+void ABopisCharacterBase::EndSimulatedLegs(float BlendOutTime)
+{
+	if (!bLegsSimulating || LegsFadeTime > 0.0f)
+	{
+		return;
+	}
+
+	if (BlendOutTime <= 0.0f)
+	{
+		StopSimulatingLegs();
+		return;
+	}
+
+	// Tick fades the blend weight down over this, then stops the simulation.
+	LegsFadeTime = BlendOutTime;
+	LegsFadeLeft = BlendOutTime;
+}
+
+void ABopisCharacterBase::StopSimulatingLegs()
+{
+	bLegsSimulating = false;
+	LegsFadeTime = 0.0f;
+
+	// Dead, the ragdoll owns every bone now; leave them be.
+	if (bIsDead)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* Body = GetMesh();
+	for (const TCHAR* Thigh : { TEXT("thigh_l"), TEXT("thigh_r") })
+	{
+		Body->SetAllBodiesBelowPhysicsBlendWeight(Thigh, 0.0f, false, true);
+		Body->SetAllBodiesBelowSimulatePhysics(Thigh, false, true);
+		PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Thigh, FPhysicalAnimationData(), true);
+	}
+
+	// The upper body may still be reacting to a hit, which needs physics collision too.
+	if (!bIsHitReacting && !bIsStaggered)
+	{
+		Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
+}
+
 void ABopisCharacterBase::StartHitReaction(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
 {
 	if (HitReactDuration <= 0.0f)
@@ -375,7 +459,10 @@ void ABopisCharacterBase::EndHitReactions()
 	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 0.0f, false, true);
 	Body->SetAllBodiesBelowSimulatePhysics(RiddledRootBone, false, true);
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, FPhysicalAnimationData(), true);
-	Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	if (!bLegsSimulating)
+	{
+		Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	}
 
 	if (bWasStaggered && !bIsDead)
 	{

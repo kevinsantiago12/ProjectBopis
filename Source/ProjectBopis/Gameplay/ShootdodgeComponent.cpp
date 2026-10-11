@@ -215,6 +215,12 @@ void UShootdodgeComponent::NotifyLanded()
 	PhaseTime = 0.0f;
 	PhaseDuration = PhaseLength(Anims.Land, Offset, LandPlayRate);
 	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
+
+	// Some landing clips sink the legs into the floor; on physics, the floor pushes them back.
+	if (bLandingLegPhysics)
+	{
+		Character->SimulateLegs(LandingLegHoldStrength);
+	}
 }
 
 void UShootdodgeComponent::EnterProne()
@@ -222,6 +228,9 @@ void UShootdodgeComponent::EnterProne()
 	Phase = EShootdodgePhase::Prone;
 	PhaseTime = 0.0f;
 	PhaseStartPosition = 0.0f;
+
+	// Down and settled: the legs ease back to the animation.
+	Character->EndSimulatedLegs(LandingLegBlendOutTime);
 }
 
 void UShootdodgeComponent::NotifyMoveInput()
@@ -264,6 +273,9 @@ void UShootdodgeComponent::Finish()
 
 	EndSlowMotion();
 	Phase = EShootdodgePhase::None;
+
+	// In case the dive ended without lying prone.
+	Character->EndSimulatedLegs(LandingLegBlendOutTime);
 
 	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
 	Movement->GravityScale = SavedGravityScale;

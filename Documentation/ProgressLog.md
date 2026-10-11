@@ -48,11 +48,18 @@ in the spec (*Shootdodge → Built — steps 2–5*).
    - ~~No visual recoil during a shootdodge~~: **done** (step 6). The
      shootdodge branch has its own recoil bones, wired through the bridge;
      user-confirmed. Two bridge pin gotchas on the way, now in the spec.
-   - **Prone poses between Forward and ForwardLeft / ForwardRight put the legs
-     through the floor,** probably from blending between the poses. Options:
-     check the `BS_Shootdodge_Aim` samples and interpolation (smoothing type,
-     sample spacing); snap to the nearest direction for the legs; or foot IK /
-     leg pinning.
+   - ~~Prone legs through the floor~~: **done for now** (step 7, user: "looks
+     ok for now").
+     - The prone pose holds the diagonal and transitions slowly (front: Fwd ↔
+       Fwd_Left/Right; back sides: Right/Left ↔ Bwd_Right/Left), with a
+       body/spine twist.
+     - Mid-swap: a torso lift (front) and foot IK.
+     - Physics legs on landing.
+     - Many approaches were tried and dropped along the way; the list is in the
+       spec so they aren't retried.
+     - **Uncommitted:** C++ (anim instance, character base, shootdodge
+       component), `ABP_Player`; the user's own changes to `BP_PlayerCharacter`
+       and `anim_Prone_Left_Aim_Up_P`.
    - **A push-off transition before take-off.** The dive itself is "perfect
      as it is"; it just needs a ground push-off leading into it. Possibly the
      Lyra dash again (only the first frames; it didn't match last time as a

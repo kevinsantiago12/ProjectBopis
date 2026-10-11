@@ -247,9 +247,77 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	float ShootdodgeAimPitch = 0.0f;
 
+	/** X of the prone blend space. Follows ShootdodgeDirection, except across the front span:
+	    blends between Fwd and Fwd_Left/Right sink the legs, so the pose holds the diagonal and
+	    only swaps to Fwd once the direction comes close to straight ahead. Eased at
+	    PronePoseSwapSpeed, so a swap is a slow transition rather than a jump. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ProneBlendDirection = 0.0f;
+
+	/** While the pose is off the real direction: the whole body turns by this so it still
+	    lies along the dive... */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FRotator ProneBodyTurn = FRotator::ZeroRotator;
+
+	/** ...and the spine turns back by this, on each of two spine bones, so the gun still
+	    points at the aim. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FRotator ProneSpineCounterTurn = FRotator::ZeroRotator;
+
+	/** How close to straight ahead (degrees) the direction has to come before the prone pose
+	    swaps from the diagonal to Fwd. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float ProneForwardSnapAngle = 10.0f;
+
+	/** Between Right/Left and Bwd_Right/Left the prone pose holds the back diagonal, and only
+	    swaps to Right/Left once the direction is within this many degrees of it. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float ProneSideSnapAngle = 22.5f;
+
+	/** Extra degrees before either swap goes back, so it doesn't flicker at the edge. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float ProneForwardSnapHysteresis = 5.0f;
+
+	/** How fast the prone pose eases toward where it should be — a swap's transition speed.
+	    Lower is slower. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float PronePoseSwapSpeed = 5.0f;
+
+	/** Component-space foot IK targets mid-swap across the front: each foot as animated,
+	    raised with the hips and above the floor. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FVector ProneFootTargetL = FVector::ZeroVector;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FVector ProneFootTargetR = FVector::ZeroVector;
+
+	/** Weight of the mid-swap leg fix (torso lift and foot IK): 0 on every authored prone
+	    pose, peaking halfway between Fwd and Fwd_Left/Right; 0 everywhere else. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	double ProneFootIKAlpha = 0.0;
+
+	/** Component-space lift for the pelvis mid-swap: the whole torso comes up by what the
+	    lower knee needs to clear the floor. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FVector ProneHipLift = FVector::ZeroVector;
+
+	/** How high above the floor the knee joint (calf bone) has to stay mid-swap. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float ProneKneeClearance = 7.0f;
+
+	/** How high above the floor the ankle bone has to stay mid-swap (roughly the ankle's
+	    height above the heel). */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float ProneFootClearance = 10.0f;
+
 private:
 
 	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
+	void UpdateProneDirection(float DeltaSeconds);
+	void UpdateProneFeet(const ABopisCharacterBase& Character, float DeltaSeconds);
+
+	/** How far Point sits below the floor plus Clearance (cm), 0 if it's clear or there's no floor. */
+	float FloorShortfall(const USkeletalMeshComponent& Mesh, const FVector& Point, float Clearance) const;
 	void UpdateLocomotion(const ABopisCharacterBase& Character);
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
@@ -293,4 +361,11 @@ private:
 	float OffhandRecoil = 0.0f;
 	FFloatSpringState MainRecoilSpring;
 	FFloatSpringState OffhandRecoilSpring;
+
+	/** The front-span prone pose is on (or heading for) Fwd rather than a diagonal. */
+	bool bProneHoldingForward = false;
+
+	/** The back-side prone pose (between Right/Left and Bwd_Right/Left) is on (or heading for)
+	    Right/Left rather than the back diagonal. */
+	bool bProneHoldingSide = false;
 };

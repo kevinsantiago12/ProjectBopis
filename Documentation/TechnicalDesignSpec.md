@@ -1792,11 +1792,78 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   the pin defaults back into the node, so **set the rotation after hiding the
   pins**.
 
+**Step 7, legs through the floor (2026-10-11, user: "looks ok for now"):**
+- **Cause:** `BS_Shootdodge_Aim` blends each bone's local rotation. Between
+  dissimilar lying-down poses that averaging sinks the legs: knees between Fwd
+  and Fwd_Left/Right, legs lifting or feet sinking between Right/Left and
+  Bwd_Right/Left. The forward landing clip itself also sinks the legs.
+- **Fix 1, hold the pose, then transition**
+  (`UProjectBopisAnimInstance::UpdateProneDirection`):
+  - Prone's blend space X reads **`ProneBlendDirection`** instead of
+    `ShootdodgeDirection`.
+  - Front span (<45°): holds Fwd_Left/Right, swapping to Fwd within
+    `ProneForwardSnapAngle` (10°).
+  - Back-side span (90–135°): holds Bwd_Right/Left, swapping to Right/Left
+    within `ProneSideSnapAngle` (22.5°).
+  - `ProneForwardSnapHysteresis` (5°) applies to both.
+  - Elsewhere the pose follows the direction.
+  - The pose eases at `PronePoseSwapSpeed` (5) along the shorter arc,
+    `NormalizeAxis` (easing the raw number across ±180° swept the pose
+    through the front).
+  - `ProneBodyTurn` turns `root` by the difference, so the body still lies
+    along the dive. `ProneSpineCounterTurn` turns `spine_01` and `spine_03`
+    back by half each, so the gun still points at the aim.
+- **Fix 2, mid-swap leg fix** (`UpdateProneFeet`):
+  - Weight `ProneFootIKAlpha = |sin 4θ|` of `ProneBlendDirection`, in those
+    two spans only. It's 0 on every authored pose and peaks halfway, so held
+    poses are untouched. Eased at 10.
+  - Front: the pelvis lifts (`ProneHipLift`) by the lower knee's shortfall
+    under `ProneKneeClearance` (7). The user accepts a torso lift
+    mid-transition.
+  - Both spans: foot IK targets = animated foot + max(hip lift, the foot's own
+    shortfall under `ProneFootClearance` 10). Feet are only raised, never
+    pulled down.
+  - **Feedback-free reads:** Copy Bones write `foot_*` → `ik_foot_*` and
+    `calf_*` → the spare `ik_hand_*` before the fix. Those bones hang off the
+    root, so C++ reads the legs as animated.
+    - `ik_hand_l/r` are free on the shootdodge branch: the hand-grip IK only
+      lives on the normal branch, which rebuilds them.
+- **Fix 3, physics legs on landing**
+  (`ABopisCharacterBase::SimulateLegs` / `EndSimulatedLegs`):
+  - `NotifyLanded` puts `thigh_l/r` and below on physics with world-space
+    physical-animation motors (`LandingLegHoldStrength` 2000), and turns on
+    mesh physics collision. The floor pushes back on sunk legs.
+  - `EnterProne` (and `Finish`) fade the legs back over
+    `LandingLegBlendOutTime` (0.25 s).
+  - It doesn't switch mesh collision off underneath a running hit reaction,
+    or the reverse.
+  - Settings: `bLandingLegPhysics` and the other options are on the
+    Shootdodge component (*Landing Legs*).
+- **Shootdodge branch now:** SM → L2C → twist ×3 → recoil ×3 → Copy Bones ×4 →
+  pelvis lift → Two Bone IK foot_l/r (effector component space, joint target
+  calf bone space, no effector rotation) → C2L → True.
+- **Tried and dropped (don't retry):**
+  - Mesh-space blending on the blend space: no effect. It's still on, and
+    harmless.
+  - Always-on foot IK: it bent the authored poses.
+  - A pelvis lift everywhere: the body floated. It also probably fed back on
+    itself, because it read the rendered knee.
+  - Knee pull-back from the rendered knee: it hunted and jittered.
+  - An exact knee solve (bisection over the IK geometry): still jittered.
+  - An inertialized pose swap: it snapped. The Blend Poses by bool request
+    never reached the Inertialization node, or the setup was off; not
+    pursued.
+  - Physics legs through all of prone, or weighted across the front span:
+    too much jitter.
+  - Foot planting on the back poses: didn't work, and the back turned out not
+    to be the problem span.
+- **Bridge gotchas:**
+  - Nodes can't be created inside a state, and an existing getter's variable
+    can't be repointed. The user rewires state internals.
+  - The rebuild script's editor close saves dirty assets. Bridge-built graph
+    changes survive it, but so does anything half-done.
+
 **Next:**
-- **Prone legs clip through the floor between Forward and ForwardLeft /
-  ForwardRight** (user). Suspected blend space interpolation between
-  dissimilar leg poses. Check the sample layout and smoothing; consider
-  nearest-sample legs or foot IK.
 - **Ground push-off before take-off** (user). The dive is "perfect as it is";
   add only a lead-in transition, possibly the first frames of the Lyra dash.
   Don't change the launch, offsets or play rates.

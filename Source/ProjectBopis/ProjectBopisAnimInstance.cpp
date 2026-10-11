@@ -7,6 +7,7 @@
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
 
 namespace
 {
@@ -81,6 +82,118 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 	UpdateShootdodgeAim(*Character, DeltaSeconds);
+	UpdateProneDirection(DeltaSeconds);
+	UpdateProneFeet(*Character, DeltaSeconds);
+}
+
+void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)
+{
+	if (ShootdodgePhase != EShootdodgePhase::Prone)
+	{
+		// Not lying down: the prone pose starts from the real direction when it begins.
+		ProneBlendDirection = ShootdodgeDirection;
+		bProneHoldingForward = FMath::Abs(ShootdodgeDirection) < ProneForwardSnapAngle;
+		bProneHoldingSide = FMath::Abs(ShootdodgeDirection) - 90.0f < ProneSideSnapAngle;
+		ProneBodyTurn = FRotator::ZeroRotator;
+		ProneSpineCounterTurn = FRotator::ZeroRotator;
+		return;
+	}
+
+	// Two spans don't blend: between Fwd and Fwd_Left/Right the blends sink the legs through
+	// the floor, and between Right/Left and Bwd_Right/Left they lift them. The front holds
+	// the diagonal and only swaps to Fwd once the direction comes close to straight ahead;
+	// the back-side span holds Bwd_Right/Left and only swaps to Right/Left once within
+	// ProneSideSnapAngle of it (each with a little hysteresis). Everywhere else the pose
+	// follows the direction. Either way it eases there at PronePoseSwapSpeed, so a swap is a
+	// slow transition; the body/spine turn below covers any lag.
+	const float AbsDirection = FMath::Abs(ShootdodgeDirection);
+	const float Side = ShootdodgeDirection < 0.0f ? -1.0f : 1.0f;
+	float PoseDirection = ShootdodgeDirection;
+	const bool bWasHoldingForward = bProneHoldingForward;
+	const bool bWasHoldingSide = bProneHoldingSide;
+	bProneHoldingForward = false;
+	bProneHoldingSide = false;
+	if (AbsDirection < 45.0f)
+	{
+		bProneHoldingForward = AbsDirection
+			< ProneForwardSnapAngle + (bWasHoldingForward ? ProneForwardSnapHysteresis : 0.0f);
+		PoseDirection = bProneHoldingForward ? 0.0f : Side * 45.0f;
+	}
+	else if (AbsDirection > 90.0f && AbsDirection < 135.0f)
+	{
+		bProneHoldingSide = AbsDirection - 90.0f
+			< ProneSideSnapAngle + (bWasHoldingSide ? ProneForwardSnapHysteresis : 0.0f);
+		PoseDirection = Side * (bProneHoldingSide ? 90.0f : 135.0f);
+	}
+
+	// Eased along the shorter way round: across straight back the direction wraps from +180
+	// to −180, and easing the plain number would sweep the pose through the front instead.
+	const float Remaining = FRotator::NormalizeAxis(PoseDirection - ProneBlendDirection);
+	ProneBlendDirection = FRotator::NormalizeAxis(
+		ProneBlendDirection + FMath::FInterpTo(0.0f, Remaining, DeltaSeconds, PronePoseSwapSpeed));
+
+	// The pose shows the body lying a little off the real direction: turn the whole body by
+	// the difference so it lies where the dive put it, and the spine back by the same (half
+	// on each of two bones) so the gun still points at the aim.
+	const float Difference = FRotator::NormalizeAxis(ShootdodgeDirection - ProneBlendDirection);
+	ProneBodyTurn = FRotator(0.0f, Difference, 0.0f);
+	ProneSpineCounterTurn = FRotator(0.0f, -0.5f * Difference, 0.0f);
+}
+
+void UProjectBopisAnimInstance::UpdateProneFeet(const ABopisCharacterBase& Character, float DeltaSeconds)
+{
+	// Only while the pose sits between two authored ones — mid-swap across the front (Fwd ↔
+	// Fwd_Left/Right) or the back sides (Right/Left ↔ Bwd_Right/Left). |sin 4θ| is 0 on every
+	// authored pose and peaks halfway, so held poses are never touched. Across the front the
+	// in-between pose sinks the knees: the torso comes up by what the lower knee needs (fine
+	// mid-transition), and the feet with it. Across the back sides only the feet are kept out
+	// of the floor.
+	const USkeletalMeshComponent* Mesh = Character.GetMesh();
+	const float AbsBlendDirection = FMath::Abs(ProneBlendDirection);
+	const bool bFrontSpan = AbsBlendDirection < 45.0f;
+	const bool bBackSideSpan = AbsBlendDirection > 90.0f && AbsBlendDirection < 135.0f;
+	const float BetweenPoses = FMath::Abs(FMath::Sin(FMath::DegreesToRadians(ProneBlendDirection * 4.0f)));
+	const double TargetAlpha = (Mesh && ShootdodgePhase == EShootdodgePhase::Prone && (bFrontSpan || bBackSideSpan))
+		? BetweenPoses : 0.0;
+	ProneFootIKAlpha = FMath::FInterpTo(ProneFootIKAlpha, TargetAlpha, DeltaSeconds, 10.0f);
+	if (ProneFootIKAlpha <= KINDA_SMALL_NUMBER)
+	{
+		ProneFootIKAlpha = 0.0;
+		ProneHipLift = FVector::ZeroVector;
+		return;
+	}
+
+	// The AnimGraph copies the feet (onto ik_foot_*) and the knees (onto the spare ik_hand_*)
+	// before the lift and the IK, and those bones hang off the root — so these are the legs
+	// exactly as animated, with nothing fed back from the fix itself.
+	const FVector FootL = Mesh->GetSocketLocation(TEXT("ik_foot_l"));
+	const FVector FootR = Mesh->GetSocketLocation(TEXT("ik_foot_r"));
+	const FVector KneeL = Mesh->GetSocketLocation(TEXT("ik_hand_l"));
+	const FVector KneeR = Mesh->GetSocketLocation(TEXT("ik_hand_r"));
+
+	const float HipLift = bFrontSpan
+		? FMath::Max(FloorShortfall(*Mesh, KneeL, ProneKneeClearance), FloorShortfall(*Mesh, KneeR, ProneKneeClearance))
+		: 0.0f;
+	ProneHipLift = FVector(0.0, 0.0, HipLift);
+
+	// The feet ride up with the hips, plus whatever more they need themselves.
+	const FTransform& ComponentTransform = Mesh->GetComponentTransform();
+	ProneFootTargetL = ComponentTransform.InverseTransformPosition(
+		FootL + FVector::UpVector * FMath::Max(HipLift, FloorShortfall(*Mesh, FootL, ProneFootClearance)));
+	ProneFootTargetR = ComponentTransform.InverseTransformPosition(
+		FootR + FVector::UpVector * FMath::Max(HipLift, FloorShortfall(*Mesh, FootR, ProneFootClearance)));
+}
+
+float UProjectBopisAnimInstance::FloorShortfall(const USkeletalMeshComponent& Mesh, const FVector& Point, float Clearance) const
+{
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ProneFloor), false, Mesh.GetOwner());
+	FHitResult Hit;
+	if (!Mesh.GetWorld()->LineTraceSingleByChannel(Hit, Point + FVector::UpVector * 50.0f,
+		Point - FVector::UpVector * 100.0f, ECC_Visibility, Params))
+	{
+		return 0.0f;
+	}
+	return FMath::Max(0.0f, Hit.ImpactPoint.Z + Clearance - Point.Z);
 }
 
 void UProjectBopisAnimInstance::UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds)

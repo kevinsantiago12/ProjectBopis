@@ -150,6 +150,14 @@ public:
 	/** Plays the reload montage(s) for a reload the weapon just started. */
 	void PlayReloadAnimation(const AWeaponBase* Weapon);
 
+	/** Puts the legs (each thigh and below) on physics, motors holding them to the animation
+	    in world space — the floor then pushes back on any part of a leg the pose sinks into
+	    it. Used for the shootdodge landing. */
+	void SimulateLegs(float HoldStrength);
+
+	/** Fades the legs back to the animation over BlendOutTime, then stops simulating them.
+	    Does nothing if they aren't simulating or are already fading. */
+	void EndSimulatedLegs(float BlendOutTime);
 protected:
 
 	/** Drives a looping (per-round) reload montage: crossfades each Loop restart, and
@@ -337,6 +345,17 @@ protected:
 	TObjectPtr<UAnimMontage> ActiveEquipMontage;
 
 private:
+
+	/** Legs straight back to the animation: blend 0, physics and motors off. */
+	void StopSimulatingLegs();
+
+	/** The legs are on physics (SimulateLegs), and the fade back out once it's begun. */
+	bool bLegsSimulating = false;
+	float LegsFadeTime = 0.0f;
+	float LegsFadeLeft = 0.0f;
+
+	/** The legs' physics blend weight when the fade began (or now, if not fading). */
+	float LegsWeight = 0.0f;
 
 	bool bIsDead = false;
 	bool bIsRagdoll = false;

@@ -393,7 +393,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-11.)* 4b. No firing during the get-up; no reload in the dive; reload while prone → get up, then reload.
   - [x] *(Done 2026-10-11.)* 5. `FocusMaxBloomMultiplier` on the Focus component: scales bloom during Focus (manual or dive).
   - [x] *(Done 2026-10-11.)* 6. Recoil during the dive and prone: the shootdodge branch got its own copy of the three procedural recoil bones.
-  - [ ] 7. Prone legs go through the floor between Forward and ForwardLeft/ForwardRight (blend space interpolation?).
+  - [x] *(Done 2026-10-11, "ok for now".)* 7. Legs through the floor: the prone pose holds the diagonal and transitions slowly (front: Fwd_Left/Right → Fwd within 10°; back sides: Bwd_Right/Left → Right/Left within 22.5°) with body/spine twist; a mid-swap torso lift (front) and foot IK; physics legs on landing. See the spec's *Step 7*.
   - [ ] 8. Ground push-off transition before take-off (Lyra dash lead-in?); the dive itself stays as is.
   - [ ] Later: other weapon types, **together with aim correction**: the gun points far from the crosshair during the dive and prone (clips aim where they were authored; no pitch outside prone). Planned fix: procedural spine correction from muzzle-vs-crosshair error, clamped. Also prone capsule, ledge slide-off while prone.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data, player death.
