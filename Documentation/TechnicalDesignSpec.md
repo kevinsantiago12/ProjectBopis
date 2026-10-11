@@ -1682,17 +1682,136 @@ rollback, below). 131 clips, all `_P` (pistol).
 - Considered and set aside: **Motion Warping**, and **using the pack's root
   motion**. Root motion stays off; code drives the arc.
 
+#### Built — steps 2–5 (2026-10-11, user-confirmed in PIE)
+
+Some step 1 details above are superseded: the body no longer snaps to the
+camera, and Start/Loop/Land/Prone are no longer dynamic montages.
+
+**Design (user):**
+- The dive's stages are **blend spaces** (Start, Loop, End), keyed on the dive
+  direction relative to the body. The prone blend space is used **only after
+  landing**. (My first version put the prone poses on an upper-body aim layer
+  for the flight; the user corrected it.)
+- **No snap on the press:** the body turns toward the camera smoothly.
+- **Slow motion** after take-off, off on landing, free of meter cost.
+- **Getting up is the drawback:** no firing during the get-up ("it gives you an
+  extended focus but leaves you vulnerable on the ground").
+- **No reload** anywhere in the dive. A reload press while prone gets you up,
+  and the reload runs once you're standing.
+- **Focus Max Bloom Multiplier:** a tunable bloom scale during Focus (1
+  normal, 0.5 half, 0 none). It replaced a "full accuracy in a shootdodge"
+  request.
+
+**Code:**
+- **Direction:** `DiveYaw` = camera yaw + octant × 45°, fixed at take-off.
+  `GetDirectionAngle()` = `NormalizeAxis(DiveYaw − actor yaw)`, −180..180.
+  The blend spaces read it as `ShootdodgeDirection`.
+- **Facing:** during Start/Loop/Land/Prone the tick `RInterpTo`s actor yaw
+  toward camera yaw at `FaceAimSpeed` (10; 0 snaps). The flight path doesn't
+  turn; the blend spaces swing the dive to match.
+- **Phases:** `EShootdodgePhase` {None, Start, Loop, Land, Prone, GettingUp}.
+  Start → Loop and Land → Prone on timers: the clip length minus the offset,
+  over the play rate (`PhaseLength`). GettingUp ends when its montage ends.
+- **AnimBP getters:** `GetPhasePlayRate()`; `GetPhaseStartPosition()`, the
+  offset normalised 0..1 (blend space Start Position is normalised).
+- **Anim instance vars:** `bShootdodging`, `ShootdodgePhase`,
+  `ShootdodgeDirection`, `ShootdodgePlayRate`, `ShootdodgeStartPosition`,
+  `ShootdodgeAimYaw`, `ShootdodgeAimPitch`.
+- **Get-up:** still a dynamic montage in `DeathSlot` at `GetupPlayRate`. The
+  clip is chosen from the octant the body lies in now
+  (`OctantOf(GetDirectionAngle())`), because the player may have turned while
+  down.
+- **Free Focus:** `UFocusComponent::BeginFreeFocus` / `EndFreeFocus`
+  (`bFree`).
+  - No drain; ignores the meter.
+  - Does nothing if Focus is already on.
+  - A Toggle during free Focus claims it as the player's own.
+  - `TakeOff` begins it; `NotifyLanded` / `Finish` end it.
+- **Get-up rules:**
+  - `IsGettingUp()`: `DoFire` returns early (held fire goes through
+    `DoFire`).
+  - `RequestGetUp(bool bThenReload)`: `NotifyMoveInput` forwards to it.
+  - `DoReload` while `IsDodging()` calls `RequestGetUp(true)` and returns.
+  - `Finish()` sets the phase to None first, then runs the queued reload via
+    `AProjectBopisCharacter::ReloadAfterShootdodge()` (→ `DoReload`), so it
+    can't re-queue.
+  - An empty-magazine auto-reload while prone also gets you up (it goes
+    through `DoReload`).
+- **Bloom:** `UFocusComponent::FocusMaxBloomMultiplier` (default 1, 0..1).
+  - `GetBloomMultiplier()` returns it while active, otherwise 1.
+  - `AWeaponBase::GetCurrentBloom()` (moved out of line) returns raw bloom ×
+    the holder's multiplier, found with `FindComponentByClass`. It's used by
+    `Fire`'s spread lerp and by the reticle.
+  - Raw bloom still builds and decays during Focus.
+  - Covers manual Focus and the dive (free Focus counts as active).
+- **Camera:** while the phase isn't None or GettingUp, the boom eases to
+  `ShootdodgeCameraHeight` (−60), `ShootdodgeArmLength` (300) and
+  `ShootdodgeSocketOffset` (0, 50, 0), via `UpdateCameraTransition`.
+- **User-tuned play rates:** Start 1.5, Loop 1, Land 1.5, Prone 1, Getup 3.
+
+**Assets (`/Game/ThirdPerson/`):**
+- `BS_Dodge_Start` / `BS_Dodge_Loop` / `BS_Dodge_End`: 1D, Direction
+  −180..180, 9 samples (±180 both Backward); only Loop loops.
+- `BS_Shootdodge_Aim`: the prone pose, 2D. X = dive direction, Y = aim pitch;
+  27 poses. Weight interpolation set to 0.
+- `ABP_Player`:
+  - a user-built Shootdodge state machine (Start / Loop / Land / Prone, Always
+    Reset on Entry), behind Blend Poses by bool `bShootdodging` (Reset Child
+    on Activation);
+  - each state's blend space takes X ← `ShootdodgeDirection`, PlayRate ←
+    `ShootdodgePlayRate`, StartPosition ← `ShootdodgeStartPosition`; Prone's
+    Y ← `ShootdodgeAimPitch`;
+  - `DeathSlot` sits after it, for the get-up.
+
+**Gotchas:**
+- **A blend space written through the bridge doesn't build its sample grid**
+  until it's opened, edited and saved in the editor. Until then it plays
+  sample 0 only, so every dive started "forward".
+- **A duplicated blend space keeps `TargetWeightInterpolationSpeedPerSec`.**
+  `BS_Shootdodge_Aim` had 5, which lagged the pose; set it to 0.
+- `ABP_Player` also runs on every enemy: a debug Print String in it fires per
+  character (misread values came from enemies, not the player).
+- The bridge can read state machine graphs but not create nodes inside
+  states, and it can't see AnimBP compile errors.
+
+**Step 6, recoil in the dive (2026-10-11, user-confirmed in PIE):**
+- **Cause:** the Shootdodge state machine fed Blend Poses by bool's True pin
+  directly, so the normal chain's recoil nodes never ran while dodging.
+- **Fix (bridge):** the shootdodge branch has its own recoil:
+  Shootdodge → Local to Component → Modify Bone `spine_05` / `lowerarm_r` /
+  `lowerarm_l` (copies of the main chain's: additive, bone space, −6° / 20° /
+  20°; alphas ← `SpineRecoilAlpha` / `ArmRecoilAlpha` /
+  `OffhandArmRecoilAlpha`) → Component to Local → True.
+  - The new nodes are `ModifyBone_6–8`, `LocalToComponentSpace_3` and
+    `ComponentToLocalSpace_3`.
+- The fire montage is deliberately left out: its upper body is the standing
+  hip-fire pose.
+- **Bridge gotcha:** a Transform (Modify) Bone created through the bridge
+  exposes Translation/Rotation/Scale as pins. An unconnected pin overrides the
+  node's value with 0. Hiding the pins (copying `showPinForProperties`) writes
+  the pin defaults back into the node, so **set the rotation after hiding the
+  pins**.
+
 **Next:**
-- **Camera (user, for later):** during a dive the character sits **very low
-  on screen**, probably because of the clips' root position. **Don't touch the
-  animations again.** Fix with the camera instead: raise or offset the boom
-  (`SocketOffset` / target offset) while dodging, eased in and out like the
-  aim camera. This belongs to step 4.
-- **Step 2:** in-air aim (an upper-body layer from a 360° blend space built
-  from the 24 prone aim poses) and slow motion after take-off / off on
-  landing.
-- **Step 3:** that blend space as the prone pose; fire prone.
-- **Step 4:** camera near the floor, capsule.
+- **Prone legs clip through the floor between Forward and ForwardLeft /
+  ForwardRight** (user). Suspected blend space interpolation between
+  dissimilar leg poses. Check the sample layout and smoothing; consider
+  nearest-sample legs or foot IK.
+- **Ground push-off before take-off** (user). The dive is "perfect as it is";
+  add only a lead-in transition, possibly the first frames of the Lyra dash.
+  Don't change the launch, offsets or play rates.
+- Weapons other than pistols and duals, **together with aim correction**
+  (user, 2026-10-11). The gun points far from the crosshair during the dive and
+  prone. Shots come from the crosshair, but the arms follow the clips'
+  authored aim, and pitch only reaches the prone blend space.
+  - Planned: each frame, take the error between the muzzle's forward and the
+    crosshair direction, and feed a smoothed, clamped (±60–90° yaw)
+    correction into spine Modify Bones on the shootdodge branch. Smoothing
+    keeps it from snapping, since the measured pose already includes the
+    last frame's correction.
+  - This also covers other weapons, since it needs no per-weapon aim poses.
+- Capsule while prone.
+- Sliding off a ledge while prone.
 
 #### Original plan (pre-asset)
 

@@ -12,6 +12,74 @@
 
 ---
 
+## 2026-10-11
+**Summary:** **Shootdodge steps 2–5 done**, all user-confirmed in PIE. Detail
+in the spec (*Shootdodge → Built — steps 2–5*).
+
+- **Step 2, in the air:**
+  - **Blend spaces (user correction):** the user wanted directional blend
+    spaces for Start / Loop / End, not the prone poses on an aim layer. Rebuilt:
+    `BS_Dodge_Start/Loop/End` (1D direction); the user built the AnimBP state
+    machine.
+  - **Play rates:** applied through the state machine's blend space pins.
+  - **Facing:** the snap on the press became an eased turn toward the aim
+    (`FaceAimSpeed`).
+  - **Slow motion:** free Focus (`BeginFreeFocus` / `EndFreeFocus`).
+- **Step 3, prone:** `BS_Shootdodge_Aim` keyed on dive direction (not aim yaw)
+  × pitch. The get-up is picked from how the body lies now.
+- **"Always the forward dive" bug:** blend spaces written by the bridge had no
+  built grid. The user opened, edited and saved each one. A duplicated
+  `BS_Shootdodge_Aim` also carried weight interpolation 5; set to 0. A
+  confusing debug print turned out to be the enemies, which share `ABP_Player`.
+- **Step 4, camera:** the boom is lowered and eased while dodging. The user
+  confirmed it's fine.
+- **Step 4b (user design), the get-up is the drawback:**
+  - no firing while getting up;
+  - no reload anywhere in the dive;
+  - reload while prone gets you up, then reloads once standing.
+- **Step 5:** `FocusMaxBloomMultiplier` on the Focus component (1 normal, 0.5
+  half bloom, 0 none). The user replaced "full accuracy in a shootdodge" with
+  this. Default 1; set it on `BP_PlayerCharacter` → Focus.
+- **Code:** all applied by Claude on request, each built with the script.
+
+### ▶ RESUME HERE
+1. ~~Commit shootdodge steps 2–5~~ (committed by the user).
+2. **Shootdodge to-dos (user, 2026-10-11):**
+   - ~~No visual recoil during a shootdodge~~: **done** (step 6). The
+     shootdodge branch has its own recoil bones, wired through the bridge;
+     user-confirmed. Two bridge pin gotchas on the way, now in the spec.
+   - **Prone poses between Forward and ForwardLeft / ForwardRight put the legs
+     through the floor,** probably from blending between the poses. Options:
+     check the `BS_Shootdodge_Aim` samples and interpolation (smoothing type,
+     sample spacing); snap to the nearest direction for the legs; or foot IK /
+     leg pinning.
+   - **A push-off transition before take-off.** The dive itself is "perfect
+     as it is"; it just needs a ground push-off leading into it. Possibly the
+     Lyra dash again (only the first frames; it didn't match last time as a
+     full wind-up). Keep launch timing, offsets and rates unchanged; this is
+     only a lead-in.
+3. **Shootdodge, later:**
+   - other weapon types, **bundled with aim correction** (user, 2026-10-11).
+     The gun points far from the crosshair during the dive and prone: the clips
+     aim where they were authored, and pitch only applies prone. Planned:
+     measure muzzle forward vs the crosshair direction each frame and twist
+     `spine_03`–`05` by the smoothed, clamped difference (C++ in the anim
+     instance + Modify Bone nodes on the shootdodge branch). No new animations
+     needed;
+   - the capsule while prone;
+   - sliding off a ledge while prone (it falls in the prone pose).
+4. **Later in Phase 5:** pick with the user. Candidates:
+   - **enemy shooting** (its own aim source from muzzle/eyes; accuracy);
+   - **StateTree behaviour** replacing the test patrol;
+   - **player death** (same base; keep the camera; restart flow).
+5. **Design question (user + design partner):** the enemy roster now that the
+   Aswang are gone.
+6. **Carried over from 2026-10-10's list** (items 5–9 there): Focus sounds,
+   deferred projectile conversions, quick feel checks, impact passes, later
+   items.
+
+---
+
 ## 2026-10-09 (2)
 **Summary:** **Phase 5 started: enemies.** Steps 1–3 are done and
 user-confirmed in PIE:
@@ -189,20 +257,18 @@ dying*).
   - **For later (user):** the character sits **very low on screen** during the
     dive. Fix it with the camera, not the animations.
 
-### ▶ RESUME HERE
-1. **Commit:** shootdodge step 1 (C++, `Dodge_Prone_Anim_Set`, `IA_Shootdodge`,
-   `IMC_Default`, `BP_PlayerCharacter`, `SK_Mannequin`), docs.
-2. **Shootdodge, next:**
-   - step 2: in-air aim + slow motion;
-   - step 3: the prone 360° blend space;
-   - step 4: camera (incl. the low-on-screen tweak: raise or offset the boom
-     while dodging, not the anims) + capsule.
-3. **Later in Phase 5:** pick with the user. Candidates:
+*(RESUME HERE moved to 2026-10-11. Step 1 was committed as "Add Initial
+Shootdodge".)*
+
+### (old) RESUME HERE
+1. ~~Commit shootdodge step 1~~ (done).
+2. ~~Shootdodge steps 2–4~~ (done 2026-10-11).
+4. **Later in Phase 5:** pick with the user. Candidates:
    - **enemy shooting** (its own aim source from muzzle/eyes; accuracy);
    - **StateTree behaviour** replacing the test patrol (perception, cover,
      engage);
    - **player death** (same base; keep the camera; restart flow).
-4. **Design question (user + design partner):** the enemy roster now that the
+5. **Design question (user + design partner):** the enemy roster now that the
    Aswang are gone. Humans only? Does horror stay in any form?
 5. **Focus extras:** sounds when assets exist.
 6. **Deferred (minor):**

@@ -123,9 +123,11 @@ is a decision for design to make, not an assumption to carry forward.
 ### Open
 
 - Dual-wielding is in (dual pistols, firing alternately — see Weapons), and so
-  is slow motion (Focus). The **shootdodge** is in progress: a dive in any
-  direction, guns blazing, sliding to a stop on the floor where you keep
-  firing until you choose to get up. Each dive costs Focus. Pistols first.
+  is slow motion (Focus). The **shootdodge** is playable with pistols: a dive in any
+  direction, the world slowing as you leave the ground, guns blazing, sliding
+  to a stop on the floor where you keep firing until you choose to get up.
+  Each dive costs Focus. The price is getting up: you can't shoot or reload
+  while scrambling to your feet. Focus can also steady your aim.
 - How "destructible-feeling" is delivered — cosmetic chaos versus mechanical
   destruction.
 - Whether the existing accuracy model stays, changes, or goes.

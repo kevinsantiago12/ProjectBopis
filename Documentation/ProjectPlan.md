@@ -387,9 +387,15 @@ archetype-composition idea, not extended from the old classes.
 - [~] **Shootdodge** (user, 2026-10-10; a player feature, done here because the dodge pack arrived). See the spec's *Shootdodge*.
   - [x] *(Done 2026-10-10.)* 0. Asset prep: compatible skeleton; root motion off; Force Root Lock, Anim First Frame (Ref Pose for the End clips); Right clips fixed by the user.
   - [x] *(Done 2026-10-10.)* 1. Dive: Left Shift, camera-relative 8-way, Focus gate + cost, launch on press (lighter gravity, no air braking), Start from the push-off offset → Loop → Land from the impact offset with a slide → Prone → Getup on first move; per-type play rates.
-  - [ ] 2. In-air aim (upper-body layer from a 360° blend space) and fire; slow motion after take-off, off on landing.
-  - [ ] 3. Prone: 360° blend space as the pose, fire prone.
-  - [ ] 4. Camera: **character sits too low on screen during the dive (user)** — offset the boom while dodging, not the anims; camera near the floor; capsule.
+  - [x] *(Done 2026-10-11.)* 2. In-air: Start/Loop/End directional blend spaces in an AnimBP state machine, keyed on dive direction relative to the body; the body eases toward the aim (no snap); fire freely; free slow motion after take-off, off on landing.
+  - [x] *(Done 2026-10-11.)* 3. Prone: `BS_Shootdodge_Aim` (dive direction × aim pitch) after landing only; fire prone; get-up picked from how the body lies now.
+  - [x] *(Done 2026-10-11.)* 4. Camera: boom lowered and eased while dodging (height −60, arm 300).
+  - [x] *(Done 2026-10-11.)* 4b. No firing during the get-up; no reload in the dive; reload while prone → get up, then reload.
+  - [x] *(Done 2026-10-11.)* 5. `FocusMaxBloomMultiplier` on the Focus component: scales bloom during Focus (manual or dive).
+  - [x] *(Done 2026-10-11.)* 6. Recoil during the dive and prone: the shootdodge branch got its own copy of the three procedural recoil bones.
+  - [ ] 7. Prone legs go through the floor between Forward and ForwardLeft/ForwardRight (blend space interpolation?).
+  - [ ] 8. Ground push-off transition before take-off (Lyra dash lead-in?); the dive itself stays as is.
+  - [ ] Later: other weapon types, **together with aim correction**: the gun points far from the crosshair during the dive and prone (clips aim where they were authored; no pitch outside prone). Planned fix: procedural spine correction from muzzle-vs-crosshair error, clamped. Also prone capsule, ledge slide-off while prone.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data, player death.
 
 ## Phase 6 — First playable arena (vertical slice)
