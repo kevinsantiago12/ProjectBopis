@@ -225,10 +225,14 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 		return;
 	}
 
+	// Diving, landing and lying prone get their own framing; getting up eases back to normal.
+	const EShootdodgePhase DodgePhase = Shootdodge ? Shootdodge->GetPhase() : EShootdodgePhase::None;
+	const bool bDodgeCamera = DodgePhase != EShootdodgePhase::None && DodgePhase != EShootdodgePhase::GettingUp;
+
 	// Derived from state every frame rather than pushed on aim start/end. A weapon
 	// swap mid-aim can't strand the camera, because there's nothing to strand.
-	const float TargetArmLength = bIsAiming ? AimArmLength : HipArmLength;
-	const FVector TargetSocketOffset = bIsAiming ? AimSocketOffset : HipSocketOffset;
+	const float TargetArmLength = bDodgeCamera ? ShootdodgeArmLength : (bIsAiming ? AimArmLength : HipArmLength);
+	const FVector TargetSocketOffset = bDodgeCamera ? ShootdodgeSocketOffset : (bIsAiming ? AimSocketOffset : HipSocketOffset);
 
 	float TargetFOV = DefaultFOV;
 	if (bIsAiming && GetWeaponHolder())
@@ -257,6 +261,9 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	CurrentCrouchCameraOffset = FMath::FInterpTo(
 		CurrentCrouchCameraOffset, TargetCrouchOffset, DeltaSeconds, CameraTransitionSpeed);
 
+	CurrentShootdodgeCameraHeight = FMath::FInterpTo(CurrentShootdodgeCameraHeight,
+		bDodgeCamera ? ShootdodgeCameraHeight : 0.0f, DeltaSeconds, CameraTransitionSpeed);
+
 	// Instant part: crouching shrinks the capsule and lowers its centre by the lost
 	// half-height in a single frame, and the boom rides on the capsule — so lift it by
 	// the same amount, also in a single frame, or the camera dips and floats back.
@@ -265,7 +272,7 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	const float CapsuleDrop = DefaultCapsuleHalfHeight - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
 	FVector BoomLocation = CameraBoom->GetRelativeLocation();
-	BoomLocation.Z = BoomBaseHeight + CapsuleDrop + CurrentCrouchCameraOffset;
+	BoomLocation.Z = BoomBaseHeight + CapsuleDrop + CurrentCrouchCameraOffset + CurrentShootdodgeCameraHeight;
 	CameraBoom->SetRelativeLocation(BoomLocation);
 }
 
@@ -354,6 +361,12 @@ void AProjectBopisCharacter::DoFire()
 		return;
 	}
 
+	// Getting up from a dive leaves you open: the gun stays quiet until you're on your feet.
+	if (Shootdodge && Shootdodge->IsGettingUp())
+	{
+		return;
+	}
+
 	// A trigger pull from the lowered stance turns the character to the camera
 	// before the shot leaves, so it never fires sideways out of a free-run pose.
 	// Snapped rather than interpolated: the shot is this frame.
@@ -431,6 +444,14 @@ void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 
 void AProjectBopisCharacter::DoReload()
 {
+	// No reloading anywhere in a dive. Lying prone, the reload key gets you up and the
+	// reload follows once you're standing.
+	if (Shootdodge && Shootdodge->IsDodging())
+	{
+		Shootdodge->RequestGetUp(true);
+		return;
+	}
+
 	// The montage only plays if a reload actually started, so mashing the key on a
 	// full magazine does nothing rather than replaying the animation.
 	UWeaponHolderComponent* Holder = GetWeaponHolder();

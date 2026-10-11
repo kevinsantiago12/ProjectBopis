@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapons/WeaponBase.h"
+#include "Gameplay/ShootdodgeComponent.h"
 #include "ProjectBopisAnimInstance.generated.h"
 
 class ABopisCharacterBase;
@@ -218,8 +219,37 @@ protected:
 	    floor stops near-still feet from being amplified into flapping. */
 	UPROPERTY(EditDefaultsOnly, Category = "Tuning", meta = (ClampMin = "1.0"))
 	float FreeArmMinStride = 8.0f;
+
+	/** In the dive's own states (Start/Loop/Land/Prone) — the AnimGraph switches to the
+	    Shootdodge state machine on this. False while getting up (a montage). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	bool bShootdodging = false;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	EShootdodgePhase ShootdodgePhase = EShootdodgePhase::None;
+
+	/** Dive direction relative to the body, −180..180 — X of the Start/Loop/Land blend spaces. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgeDirection = 0.0f;
+
+	/** Play rate for the current phase's blend space player. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgePlayRate = 1.0f;
+
+	/** Normalised start position (0..1) for the current phase's blend space player. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgeStartPosition = 0.0f;
+
+	/** Prone aim: camera yaw relative to the body (−180..180) and camera pitch. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgeAimYaw = 0.0f;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgeAimPitch = 0.0f;
+
 private:
 
+	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
 	void UpdateLocomotion(const ABopisCharacterBase& Character);
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);

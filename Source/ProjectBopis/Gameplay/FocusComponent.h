@@ -47,6 +47,14 @@ public:
 	/** Takes Amount off the meter (nothing while infinite). For one-off costs like a shootdodge. */
 	void SpendMeter(float Amount) { if (!bInfinite) { Meter = FMath::Max(0.0f, Meter - Amount); } }
 
+	/** Slow motion that costs nothing and ignores the meter — a shootdodge's flight. Does
+	    nothing if Focus is already on (the player's own Focus carries on). Returns whether
+	    it started, so the caller knows to end it. */
+	bool BeginFreeFocus();
+
+	/** Ends a free Focus from BeginFreeFocus. Leaves the player's own Focus alone. */
+	void EndFreeFocus();
+
 	/** 0..1, for the HUD. */
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	float GetMeterFraction() const { return MaxMeter > 0.0f ? Meter / MaxMeter : 0.0f; }
@@ -54,6 +62,14 @@ public:
 	/** Meter refill for one kill. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus")
 	float KillRefill = 20.0f;
+
+	/** Scales weapon bloom while Focus is on (including a shootdodge's slow motion).
+	    1 is normal, 0.5 half the bloom, 0 none: every shot stays at the base spread. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FocusMaxBloomMultiplier = 1.0f;
+
+	/** The bloom multiplier in effect right now: FocusMaxBloomMultiplier during Focus, else 1. */
+	float GetBloomMultiplier() const { return bActive ? FocusMaxBloomMultiplier : 1.0f; }
 
 protected:
 
@@ -109,7 +125,7 @@ protected:
 
 private:
 
-	void StartFocus();
+	void StartFocus(bool bIgnoreMeter = false);
 	void ApplyTimeDilation(float Dilation);
 	void UpdateFeedback(float RealDelta);
 
@@ -125,4 +141,7 @@ private:
 
 	float Meter = 0.0f;
 	bool bActive = false;
+
+	/** Active on someone else's behalf (a dive): no drain, and ended by them, not the meter. */
+	bool bFree = false;
 };

@@ -7,6 +7,7 @@
 #include "Weapons/WeaponBase.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Animation/AnimSequenceBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UShootdodgeComponent::UShootdodgeComponent()
@@ -43,22 +44,21 @@ bool UShootdodgeComponent::TryStart()
 		return false;
 	}
 
-	Direction = PickDirection();
-	const FShootdodgeAnims* Anims = Animations.Find(Direction);
-	if (!Anims || !Anims->Loop)
+	const EShootdodgeDirection Direction = PickDirection();
+	if (!Animations.Contains(Direction))
 	{
 		return false;
 	}
 
 	Focus->SpendMeter(FocusCost);
 
-	// Face the camera, so every direction is relative to where the player is looking.
-	Character->SetActorRotation(FRotator(0.0f, Character->GetControlRotation().Yaw, 0.0f));
+	// The flight goes this direction's eighth of a turn away from the camera. The body
+	// turns toward the camera over the next moments (TickComponent) rather than snapping.
+	const float CameraYaw = Character->GetControlRotation().Yaw;
 	Character->SetAnimationDrivenRotation(true);
 	Character->GetCharacterMovement()->StopMovementImmediately();
+	DiveYaw = CameraYaw + static_cast<int32>(Direction) * 45.0f;
 
-	// Straight into the air: a dodge is a reaction, so nothing stands between the key
-	// and leaving the ground.
 	TakeOff();
 	return true;
 }
@@ -71,38 +71,76 @@ EShootdodgeDirection UShootdodgeComponent::PickDirection() const
 		return EShootdodgeDirection::Forward;
 	}
 
-	// Angle of the input in the camera's frame: 0 ahead, +90 right. Rounded to the nearest
-	// eighth of a turn, which is the enum's order.
 	const FVector Local = FRotator(0.0f, Character->GetControlRotation().Yaw, 0.0f).UnrotateVector(Input);
-	const float Angle = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
-	const int32 Octant = (FMath::RoundToInt(Angle / 45.0f) + 8) % 8;
+	return OctantOf(FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X)));
+}
+
+EShootdodgeDirection UShootdodgeComponent::OctantOf(float Angle)
+{
+	// Nearest eighth of a turn; the enum's order is the octant order.
+	const int32 Octant = (FMath::RoundToInt(FRotator::NormalizeAxis(Angle) / 45.0f) + 8) % 8;
 	return static_cast<EShootdodgeDirection>(Octant);
+}
+
+float UShootdodgeComponent::GetDirectionAngle() const
+{
+	return Character ? FRotator::NormalizeAxis(DiveYaw - Character->GetActorRotation().Yaw) : 0.0f;
+}
+
+float UShootdodgeComponent::GetPhasePlayRate() const
+{
+	switch (Phase)
+	{
+	case EShootdodgePhase::Start: return StartPlayRate;
+	case EShootdodgePhase::Loop:  return LoopPlayRate;
+	case EShootdodgePhase::Land:  return LandPlayRate;
+	case EShootdodgePhase::Prone: return PronePlayRate;
+	default:                      return 1.0f;
+	}
+}
+
+float UShootdodgeComponent::PhaseLength(const UAnimSequenceBase* Clip, float Offset, float PlayRate)
+{
+	return Clip ? FMath::Max(0.0f, Clip->GetPlayLength() - Offset) / PlayRate : 0.0f;
 }
 
 void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	PhaseTime += DeltaTime;
+
+	// Flying, landing and lying prone, the body turns to face the aim; the blend spaces
+	// show the dive (and the prone pose) for the flight's direction relative to it.
+	if (Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop
+		|| Phase == EShootdodgePhase::Land || Phase == EShootdodgePhase::Prone)
+	{
+		const FRotator Aim(0.0f, Character->GetControlRotation().Yaw, 0.0f);
+		Character->SetActorRotation(FaceAimSpeed > 0.0f
+			? FMath::RInterpTo(Character->GetActorRotation(), Aim, DeltaTime, FaceAimSpeed)
+			: Aim);
+	}
+
 	switch (Phase)
 	{
-	case EShootdodgePhase::Airborne:
-		// Push-off done, still flying: settle into the looping flight pose.
-		if (!bLooping && HasFinished(ActiveMontage))
+	case EShootdodgePhase::Start:
+		if (PhaseTime >= PhaseDuration)
 		{
-			ActiveMontage = Play(Animations.FindChecked(Direction).Loop, LoopPlayRate, 1000);
-			bLooping = true;
+			Phase = EShootdodgePhase::Loop;
+			PhaseTime = 0.0f;
+			PhaseStartPosition = 0.0f;
 		}
 		break;
 
-	case EShootdodgePhase::Landing:
-		if (HasFinished(ActiveMontage))
+	case EShootdodgePhase::Land:
+		if (PhaseTime >= PhaseDuration)
 		{
 			EnterProne();
 		}
 		break;
 
 	case EShootdodgePhase::GettingUp:
-		if (HasFinished(ActiveMontage))
+		if (HasFinished(GetupMontage))
 		{
 			Finish();
 		}
@@ -115,39 +153,46 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 void UShootdodgeComponent::TakeOff()
 {
-	const FShootdodgeAnims& Anims = Animations.FindChecked(Direction);
-
-	// The dive direction in the world: the camera's yaw turned by this direction's eighth.
-	const float Yaw = Character->GetActorRotation().Yaw + static_cast<int32>(Direction) * 45.0f;
-	const FVector Horizontal = FRotator(0.0f, Yaw, 0.0f).Vector();
-
-	// Lighter gravity for the flight: a floatier arc than the launch alone would give.
+	// Lighter gravity and no air braking for the flight.
 	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
 	SavedGravityScale = Movement->GravityScale;
 	Movement->GravityScale = SavedGravityScale * DiveGravityScale;
 	SavedAirBraking = Movement->BrakingDecelerationFalling;
 	Movement->BrakingDecelerationFalling = DiveAirBraking;
 
-	Character->LaunchCharacter(Horizontal * DiveSpeed + FVector::UpVector * DiveLift, true, true);
+	Character->LaunchCharacter(FRotator(0.0f, DiveYaw, 0.0f).Vector() * DiveSpeed
+		+ FVector::UpVector * DiveLift, true, true);
 
-	Phase = EShootdodgePhase::Airborne;
-
-	// The tail of the push-off — from where the feet leave the ground — then the loop.
+	// The Start phase lasts as long as the take-off direction's clip has left to play.
+	const FShootdodgeAnims& Anims = Animations.FindChecked(OctantOf(GetDirectionAngle()));
 	const float Offset = Anims.StartOffset >= 0.0f ? Anims.StartOffset : StartClipOffset;
-	const float ClipLength = Anims.Start ? Anims.Start->GetPlayLength() : 0.0f;
-	bLooping = !Anims.Start || Offset >= ClipLength;
-	ActiveMontage = bLooping ? Play(Anims.Loop, LoopPlayRate, 1000) : Play(Anims.Start, StartPlayRate, 1, Offset);
+	const float Length = Anims.Start ? Anims.Start->GetPlayLength() : 0.0f;
+
+	Phase = EShootdodgePhase::Start;
+	PhaseTime = 0.0f;
+	PhaseDuration = PhaseLength(Anims.Start, Offset, StartPlayRate);
+	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
+
+	if (bSlowMotion)
+	{
+		if (UFocusComponent* Focus = Character->GetFocus())
+		{
+			bOwnsSlowMotion = Focus->BeginFreeFocus();
+		}
+	}
 }
 
 void UShootdodgeComponent::NotifyLanded()
 {
-	if (Phase != EShootdodgePhase::Airborne)
+	if (!IsAirborne())
 	{
 		return;
 	}
 
-	// Normal gravity again. The horizontal speed carries on as a slide, slowed only by
-	// LandSlideDeceleration (friction off), until the body comes to rest.
+	EndSlowMotion();
+
+	// Normal gravity; the horizontal speed carries on as a slide, slowed only by
+	// LandSlideDeceleration (friction off).
 	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
 	Movement->GravityScale = SavedGravityScale;
 	Movement->BrakingDecelerationFalling = SavedAirBraking;
@@ -160,35 +205,50 @@ void UShootdodgeComponent::NotifyLanded()
 	Movement->BrakingFriction = 0.0f;
 	Movement->Velocity.Z = 0.0f;
 
-	const FShootdodgeAnims& Anims = Animations.FindChecked(Direction);
-	Phase = EShootdodgePhase::Landing;
-	// Straight to the impact: the clip's airborne lead-in already happened as the real fall.
-	const float LandStart = Anims.LandOffset >= 0.0f ? Anims.LandOffset : LandClipOffset;
-	ActiveMontage = Play(Anims.Land, LandPlayRate, 1, LandStart);
-	if (!ActiveMontage)
-	{
-		EnterProne();
-	}
+	// The landing — straight to the impact frame — for the direction it came down in.
+	LandDirection = OctantOf(GetDirectionAngle());
+	const FShootdodgeAnims& Anims = Animations.FindChecked(LandDirection);
+	const float Offset = Anims.LandOffset >= 0.0f ? Anims.LandOffset : LandClipOffset;
+	const float Length = Anims.Land ? Anims.Land->GetPlayLength() : 0.0f;
+
+	Phase = EShootdodgePhase::Land;
+	PhaseTime = 0.0f;
+	PhaseDuration = PhaseLength(Anims.Land, Offset, LandPlayRate);
+	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
 }
 
 void UShootdodgeComponent::EnterProne()
 {
-	const FShootdodgeAnims& Anims = Animations.FindChecked(Direction);
 	Phase = EShootdodgePhase::Prone;
-	ActiveMontage = Play(Anims.Prone, PronePlayRate, 1000);
+	PhaseTime = 0.0f;
+	PhaseStartPosition = 0.0f;
 }
 
 void UShootdodgeComponent::NotifyMoveInput()
+{
+	RequestGetUp();
+}
+
+void UShootdodgeComponent::RequestGetUp(bool bThenReload)
 {
 	if (Phase != EShootdodgePhase::Prone)
 	{
 		return;
 	}
 
-	const FShootdodgeAnims& Anims = Animations.FindChecked(Direction);
+	bReloadQueued = bThenReload;
 	Phase = EShootdodgePhase::GettingUp;
-	ActiveMontage = Play(Anims.Getup, GetupPlayRate);
-	if (!ActiveMontage)
+	PhaseTime = 0.0f;
+
+	// The get-up for how the body lies now — the player may have turned while down.
+	LandDirection = OctantOf(GetDirectionAngle());
+	const FShootdodgeAnims& Anims = Animations.FindChecked(LandDirection);
+	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	GetupMontage = (Anims.Getup && AnimInstance)
+		? AnimInstance->PlaySlotAnimationAsDynamicMontage(Anims.Getup, SlotName, 0.15f, 0.2f, GetupPlayRate)
+		: nullptr;
+
+	if (!GetupMontage)
 	{
 		Finish();
 	}
@@ -196,18 +256,19 @@ void UShootdodgeComponent::NotifyMoveInput()
 
 void UShootdodgeComponent::Finish()
 {
-	if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance(); AnimInstance && ActiveMontage)
+	if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance(); AnimInstance && GetupMontage)
 	{
-		AnimInstance->Montage_Stop(0.2f, ActiveMontage);
+		AnimInstance->Montage_Stop(0.2f, GetupMontage);
 	}
+	GetupMontage = nullptr;
 
-	ActiveMontage = nullptr;
+	EndSlowMotion();
 	Phase = EShootdodgePhase::None;
-	Character->GetCharacterMovement()->GravityScale = SavedGravityScale;
-	Character->GetCharacterMovement()->BrakingDecelerationFalling = SavedAirBraking;
 
 	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
-	if (Phase == EShootdodgePhase::None && SavedWalkingBraking > 0.0f)
+	Movement->GravityScale = SavedGravityScale;
+	Movement->BrakingDecelerationFalling = SavedAirBraking;
+	if (SavedWalkingBraking > 0.0f)
 	{
 		Movement->BrakingDecelerationWalking = SavedWalkingBraking;
 		Movement->bUseSeparateBrakingFriction = bSavedSeparateBrakingFriction;
@@ -215,19 +276,25 @@ void UShootdodgeComponent::Finish()
 	}
 
 	Character->SetAnimationDrivenRotation(false);
+
+	// On the feet again: the reload asked for while lying there goes now.
+	if (bReloadQueued)
+	{
+		bReloadQueued = false;
+		Character->ReloadAfterShootdodge();
+	}
 }
 
-UAnimMontage* UShootdodgeComponent::Play(UAnimSequenceBase* Clip, float PlayRate, int32 LoopCount, float StartTime)
+void UShootdodgeComponent::EndSlowMotion()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (!Clip || !AnimInstance)
+	if (bOwnsSlowMotion)
 	{
-		return nullptr;
+		if (UFocusComponent* Focus = Character->GetFocus())
+		{
+			Focus->EndFreeFocus();
+		}
 	}
-
-	// Short blends: the clips are cut together into one motion.
-	return AnimInstance->PlaySlotAnimationAsDynamicMontage(Clip, SlotName, 0.1f, 0.1f, PlayRate,
-		LoopCount, -1.0f, StartTime);
+	bOwnsSlowMotion = false;
 }
 
 bool UShootdodgeComponent::HasFinished(const UAnimMontage* Montage) const

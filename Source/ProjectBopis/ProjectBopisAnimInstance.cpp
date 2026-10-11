@@ -2,6 +2,8 @@
 
 #include "ProjectBopisAnimInstance.h"
 #include "BopisCharacterBase.h"
+#include "ProjectBopisCharacter.h"
+#include "Gameplay/ShootdodgeComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -78,6 +80,28 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateFreeArmSwing(DeltaSeconds);
 	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
+	UpdateShootdodgeAim(*Character, DeltaSeconds);
+}
+
+void UProjectBopisAnimInstance::UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds)
+{
+	// Only the player dives; enemies stay in the normal graph.
+	const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(&Character);
+	const UShootdodgeComponent* Shootdodge = Player ? Player->GetShootdodge() : nullptr;
+
+	ShootdodgePhase = Shootdodge ? Shootdodge->GetPhase() : EShootdodgePhase::None;
+	bShootdodging = ShootdodgePhase != EShootdodgePhase::None && ShootdodgePhase != EShootdodgePhase::GettingUp;
+
+	if (Shootdodge)
+	{
+		ShootdodgeDirection = Shootdodge->GetDirectionAngle();
+		ShootdodgePlayRate = Shootdodge->GetPhasePlayRate();
+		ShootdodgeStartPosition = Shootdodge->GetPhaseStartPosition();
+	}
+
+	const FRotator Control = Character.GetControlRotation();
+	ShootdodgeAimYaw = FRotator::NormalizeAxis(Control.Yaw - Character.GetActorRotation().Yaw);
+	ShootdodgeAimPitch = FRotator::NormalizeAxis(Control.Pitch);
 }
 
 void UProjectBopisAnimInstance::UpdateLocomotion(const ABopisCharacterBase& Character)

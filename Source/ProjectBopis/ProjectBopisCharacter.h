@@ -166,6 +166,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float CrouchCameraOffset = 0.0f;
 
+	/** Extra camera height while shootdodging (diving, landing, prone), eased in and out.
+	    Negative lowers it toward the body lying near the floor. */
+	UPROPERTY(EditAnywhere, Category = "Camera|Shootdodge")
+	float ShootdodgeCameraHeight = -60.0f;
+
+	/** Boom length while shootdodging. */
+	UPROPERTY(EditAnywhere, Category = "Camera|Shootdodge")
+	float ShootdodgeArmLength = 300.0f;
+
+	/** Boom socket offset while shootdodging. */
+	UPROPERTY(EditAnywhere, Category = "Camera|Shootdodge")
+	FVector ShootdodgeSocketOffset = FVector(0.0f, 50.0f, 0.0f);
+
 	/** Pulls boom length, offset and FOV toward whatever the current state implies. */
 	void UpdateCameraTransition(float DeltaSeconds);
 
@@ -274,6 +287,9 @@ protected:
 	/** Current eased value of CrouchCameraOffset — 0 standing, CrouchCameraOffset crouched. */
 	float CurrentCrouchCameraOffset = 0.0f;
 
+	/** Current eased value of ShootdodgeCameraHeight — 0 normally, the full offset while dodging. */
+	float CurrentShootdodgeCameraHeight = 0.0f;
+
 public:
 
 	/** Returns the camera boom **/
@@ -288,6 +304,9 @@ public:
 
 	/** Hands rotation to the animation (dives), or back to the movement stances. */
 	void SetAnimationDrivenRotation(bool bAnimationDriven);
+
+	/** Runs the reload the player asked for while prone, once the get-up is done. */
+	void ReloadAfterShootdodge() { DoReload(); }
 
 };
 

@@ -10,21 +10,21 @@ class AProjectBopisCharacter;
 class UAnimSequenceBase;
 class UAnimMontage;
 
-/** The eight dive directions, relative to the camera. */
+/** The eight dive directions, relative to the body. Declaration order is the octant order. */
 UENUM(BlueprintType)
 enum class EShootdodgeDirection : uint8
 {
 	Forward, ForwardRight, Right, BackwardRight, Backward, BackwardLeft, Left, ForwardLeft
 };
 
-/** The clips for one dive direction, played in order. */
+/** One direction's clips. The blend spaces hold Start/Loop/Land for animation; these are
+    read here for timing (lengths) and for the get-up, which plays as a one-shot. */
 USTRUCT(BlueprintType)
 struct FShootdodgeAnims
 {
 	GENERATED_BODY()
 
-	/** Push-off. Plays from StartOffset (where the feet leave the ground), then Loop takes
-	    over. The character is already in the air from the first frame. */
+	/** Push-off. Its length (minus the offset) times the Start phase. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TObjectPtr<UAnimSequenceBase> Start;
 
@@ -32,11 +32,10 @@ struct FShootdodgeAnims
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	float StartOffset = -1.0f;
 
-	/** Loops while airborne. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TObjectPtr<UAnimSequenceBase> Loop;
 
-	/** The landing. */
+	/** The landing. Its length (minus the offset) times the Land phase. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TObjectPtr<UAnimSequenceBase> Land;
 
@@ -44,24 +43,26 @@ struct FShootdodgeAnims
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	float LandOffset = -1.0f;
 
-	/** Held while lying there. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TObjectPtr<UAnimSequenceBase> Prone;
 
+	/** Plays as a one-shot in SlotName, for the direction the body landed in. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TObjectPtr<UAnimSequenceBase> Getup;
 };
 
-UENUM()
+/** Where the dive is. Start, Loop, Land and Prone are AnimBP states (blend spaces);
+    GettingUp is a montage over the normal graph. */
+UENUM(BlueprintType)
 enum class EShootdodgePhase : uint8
 {
-	None, Airborne, Landing, Prone, GettingUp
+	None, Start, Loop, Land, Prone, GettingUp
 };
 
 /**
  *  The Max Payne dive: leave the ground on the press in one of eight directions relative to
- *  the camera, land prone, stay down until the player moves. Costs Focus. Pistols and duals
- *  only. The clips play in place (root locked); the arc is the launch plus lighter gravity.
+ *  the camera, keep facing the aim while flying (the blend spaces turn the dive to match),
+ *  land prone, stay down until the player moves. Costs Focus. Pistols and duals only.
  */
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PROJECTBOPIS_API UShootdodgeComponent : public UActorComponent
@@ -90,6 +91,29 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Shootdodge")
 	bool IsProne() const { return Phase == EShootdodgePhase::Prone; }
 
+	UFUNCTION(BlueprintPure, Category = "Shootdodge")
+	bool IsAirborne() const { return Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop; }
+
+	/** Scrambling to the feet after a dive — the vulnerable moment: no firing or reloading. */
+	UFUNCTION(BlueprintPure, Category = "Shootdodge")
+	bool IsGettingUp() const { return Phase == EShootdodgePhase::GettingUp; }
+
+	/** Starts getting up, if lying prone. bThenReload queues a reload for when the body is
+	    back on its feet (the reload key asks for that; movement doesn't). */
+	void RequestGetUp(bool bThenReload = false);
+
+	EShootdodgePhase GetPhase() const { return Phase; }
+
+	/** The dive's direction relative to where the body faces, −180..180 (0 forward, 90 right):
+	    what the Start/Loop/Land blend spaces are keyed on. */
+	float GetDirectionAngle() const;
+
+	/** Play rate for the current phase's blend space. */
+	float GetPhasePlayRate() const;
+
+	/** Where the current phase's blend space starts, normalised 0..1 — the clip offset. */
+	float GetPhaseStartPosition() const { return PhaseStartPosition; }
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -97,13 +121,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TMap<EShootdodgeDirection, FShootdodgeAnims> Animations;
 
-	/** Default seconds into each Start clip to begin — the push-off frame. A direction's
-	    own StartOffset overrides it. */
+	/** Default seconds into each Start clip to begin — the push-off frame. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float StartClipOffset = 0.4f;
 
-	/** Default seconds into each Land clip to begin — skips its airborne lead-in so the
-	    impact plays the moment the capsule touches down. */
+	/** Default seconds into each Land clip to begin — skips its airborne lead-in. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float LandClipOffset = 0.5f;
 
@@ -123,6 +145,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Play Rate", meta = (ClampMin = "0.01"))
 	float GetupPlayRate = 1.0f;
 
+	/** How fast the body turns to face the aim during the dive and while prone (interp speed;
+	    higher is snappier, 0 snaps instantly). The flight path doesn't turn with it. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float FaceAimSpeed = 10.0f;
+
 	/** Horizontal launch speed, in cm/s. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float DiveSpeed = 650.0f;
@@ -131,20 +158,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float DiveLift = 450.0f;
 
-	/** Gravity multiplier while airborne: below 1 hangs the body in the air longer without
-	    a higher jump. Restored on landing. */
+	/** Gravity multiplier while airborne. Restored on landing. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.05"))
 	float DiveGravityScale = 0.6f;
 
-	/** Horizontal braking while airborne, in cm/s². 0 keeps the full launch speed until
-	    landing; the player's normal air braking would otherwise stop the dive mid-flight. */
+	/** Horizontal braking while airborne, in cm/s². 0 keeps the full launch speed. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float DiveAirBraking = 0.0f;
 
-	/** On landing, the dive's speed bleeds off at this rate (cm/s²) instead of stopping dead —
-	    a slide along the floor. Higher stops sooner. */
+	/** On landing, the speed bleeds off at this rate (cm/s²) — a slide along the floor. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float LandSlideDeceleration = 800.0f;
+
+	/** Slow motion for the flight: on at take-off, off on landing. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus")
+	bool bSlowMotion = true;
 
 	/** Focus needed to dive at all. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus", meta = (ClampMin = "0.0"))
@@ -154,7 +182,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus", meta = (ClampMin = "0.0"))
 	float FocusCost = 25.0f;
 
-	/** Full-body AnimGraph slot the dive plays in. */
+	/** Full-body AnimGraph slot the get-up plays in. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	FName SlotName = TEXT("DeathSlot");
 
@@ -163,35 +191,45 @@ private:
 	/** The eight-way direction the movement input points, relative to the camera. */
 	EShootdodgeDirection PickDirection() const;
 
+	/** Rounds an angle (0 forward, +90 right) to the nearest of the eight directions. */
+	static EShootdodgeDirection OctantOf(float Angle);
+
 	void TakeOff();
 	void EnterProne();
 	void Finish();
+	void EndSlowMotion();
 
-	/** Plays a clip in SlotName at PlayRate from StartTime, looping LoopCount times. */
-	UAnimMontage* Play(UAnimSequenceBase* Clip, float PlayRate, int32 LoopCount = 1, float StartTime = 0.0f);
+	/** Seconds a clip plays from Offset at PlayRate; 0 if there's no clip. */
+	static float PhaseLength(const UAnimSequenceBase* Clip, float Offset, float PlayRate);
 
-	/** The montage has played out (or was never playing). */
+	/** The get-up montage has played out (or was never playing). */
 	bool HasFinished(const UAnimMontage* Montage) const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AProjectBopisCharacter> Character;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimMontage> ActiveMontage;
+	TObjectPtr<UAnimMontage> GetupMontage;
 
 	EShootdodgePhase Phase = EShootdodgePhase::None;
-	EShootdodgeDirection Direction = EShootdodgeDirection::Forward;
 
-	/** Airborne and past the Start clip, on the looping flight pose. */
-	bool bLooping = false;
+	/** The flight's world yaw, fixed at take-off. The body turns; the path doesn't. */
+	float DiveYaw = 0.0f;
 
-	/** The movement component's gravity scale before the dive, put back on landing. */
+	/** The direction the body landed in, relative to itself — picks the get-up. */
+	EShootdodgeDirection LandDirection = EShootdodgeDirection::Forward;
+
+	float PhaseTime = 0.0f;
+	float PhaseDuration = 0.0f;
+	float PhaseStartPosition = 0.0f;
+
+	bool bOwnsSlowMotion = false;
+
+	/** Reload asked for while prone — runs as soon as the get-up finishes. */
+	bool bReloadQueued = false;
+
 	float SavedGravityScale = 1.0f;
-
-	/** The movement component's air braking before the dive, put back on landing. */
 	float SavedAirBraking = 0.0f;
-
-	/** The movement component's ground braking before the slide, put back on getting up. */
 	float SavedWalkingBraking = 0.0f;
 	bool bSavedSeparateBrakingFriction = false;
 	float SavedBrakingFriction = 0.0f;

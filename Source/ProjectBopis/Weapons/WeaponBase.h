@@ -242,7 +242,8 @@ public:
 	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
 	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
 
-	float GetCurrentBloom() const { return CurrentBloom; }
+	/** Bloom as it affects the shot: the raw bloom, scaled down during the holder's Focus. */
+	float GetCurrentBloom() const;
 
 protected:
 	// Called when the game starts or when spawned

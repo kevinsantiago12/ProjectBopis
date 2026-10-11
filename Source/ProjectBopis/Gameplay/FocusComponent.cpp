@@ -46,7 +46,7 @@ void UFocusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 	if (bActive)
 	{
-		if (!bInfinite)
+		if (!bInfinite && !bFree)
 		{
 			Meter = FMath::Max(0.0f, Meter - DrainPerSecond * RealDelta);
 			if (Meter <= 0.0f)
@@ -65,6 +65,14 @@ void UFocusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void UFocusComponent::Toggle()
 {
+	// Pressing Focus during a free (dive) Focus claims it: it stays on after landing, and
+	// drains from now on.
+	if (bActive && bFree)
+	{
+		bFree = false;
+		return;
+	}
+
 	if (bActive)
 	{
 		StopFocus();
@@ -75,9 +83,9 @@ void UFocusComponent::Toggle()
 	}
 }
 
-void UFocusComponent::StartFocus()
+void UFocusComponent::StartFocus(bool bIgnoreMeter)
 {
-	if (bActive || (!bInfinite && Meter < MinMeterToActivate))
+	if (bActive || (!bIgnoreMeter && !bInfinite && Meter < MinMeterToActivate))
 	{
 		return;
 	}
@@ -104,6 +112,7 @@ void UFocusComponent::StopFocus()
 	}
 
 	bActive = false;
+	bFree = false;
 	ApplyTimeDilation(1.0f);
 
 	UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
@@ -115,6 +124,26 @@ void UFocusComponent::StopFocus()
 	{
 		LoopAudio->FadeOut(FeedbackFadeTime, 0.0f);
 		LoopAudio = nullptr;
+	}
+}
+
+bool UFocusComponent::BeginFreeFocus()
+{
+	if (bActive)
+	{
+		return false;
+	}
+
+	StartFocus(true);
+	bFree = bActive;
+	return bFree;
+}
+
+void UFocusComponent::EndFreeFocus()
+{
+	if (bActive && bFree)
+	{
+		StopFocus();
 	}
 }
 

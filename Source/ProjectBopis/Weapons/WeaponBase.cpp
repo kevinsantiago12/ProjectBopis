@@ -11,6 +11,7 @@
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "TimerManager.h"
+#include "Gameplay/FocusComponent.h"
 
 
 static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
@@ -182,7 +183,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 		FiringMesh->PlayAnimation(FireAnimation, false);
 	}
 
-	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, CurrentBloom);
+	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, GetCurrentBloom());
 	const FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
 
 	// Bloom displaces the pattern centre; the pellets fan out around it. One pellet
@@ -223,6 +224,15 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	}
 
 	return EFireResult::Fired;
+}
+
+float AWeaponBase::GetCurrentBloom() const
+{
+	// The holder's Focus steadies the hand. The raw bloom still builds and decays as normal;
+	// only its effect is scaled, so leaving Focus brings back whatever has built up.
+	const AActor* Holder = GetOwner();
+	const UFocusComponent* Focus = Holder ? Holder->FindComponentByClass<UFocusComponent>() : nullptr;
+	return CurrentBloom * (Focus ? Focus->GetBloomMultiplier() : 1.0f);
 }
 
 void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection)
