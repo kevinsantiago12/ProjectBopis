@@ -398,7 +398,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-12.)* 9. Aim correction (pistol and duals; dive + prone): spine_03/05 turned so the muzzle points at the crosshair, self-correcting, capped 70°.
   - [ ] 10. Capsule while prone.
   - [ ] 11. Sliding off a ledge while prone.
-  - [ ] 12. Other weapon types (aim correction should carry over).
+  - [x] *(Done 2026-10-12.)* 12. Other weapon types: long guns dive with a layered rifle arm hold, foregrip IK and a chest/arms/head aim split; duals get their own mirrored left-arm hold and left-gun aim; back poses lift the pistols off the hips. See the spec.
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data, player death.
 
 ## Phase 6 — First playable arena (vertical slice)

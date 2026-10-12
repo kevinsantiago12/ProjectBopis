@@ -81,7 +81,10 @@ in the spec (*Shootdodge → Built — steps 2–5*).
      - wind-up root motion held until the dash has blended out (a real fix);
      - the start position set in `BeginPlay` (it didn't fix the first-dive
        look, which the user put down to imagination; harmless).
-   - other weapon types (the aim correction should carry over);
+   - ~~other weapon types~~: **done** (2026-10-12): long guns and duals, plus
+     the back-pose gun lift. **Uncommitted:** anim instance, `WeaponBase`,
+     `ShootdodgeComponent`, `ABP_Player`. Open: a camera clamp for looking
+     down through the legs on back dives, if still needed;
    - the capsule while prone;
    - sliding off a ledge while prone (it falls in the prone pose).
 4. **Later in Phase 5:** pick with the user. Candidates:

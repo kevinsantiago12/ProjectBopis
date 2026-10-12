@@ -9,6 +9,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "AnimationRuntime.h"
 
 namespace
 {
@@ -88,14 +89,45 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
 }
 
+namespace
+{
+	/** Q, limited to MaxDegrees of turn about its own axis. */
+	FQuat ClampTurn(const FQuat& Q, float MaxDegrees)
+	{
+		FVector Axis;
+		float Angle;
+		Q.ToAxisAndAngle(Axis, Angle);
+		Angle = FMath::UnwindRadians(Angle);
+		const float MaxAngle = FMath::DegreesToRadians(MaxDegrees);
+		return FMath::Abs(Angle) > MaxAngle ? FQuat(Axis, FMath::Sign(Angle) * MaxAngle) : Q;
+	}
+}
+
 void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
 {
 	// The dive and prone clips aim wherever they were authored; the shots go to the crosshair.
 	// So the upper body turns until the gun points there too. Outside the dive's own phases
 	// it eases back to nothing.
+	//
+	// Long guns borrow the pistol dive with their own arm hold, the left hand on the grip
+	// (LeftHandGripLocation, in hand_r's space, from UpdateLeftHandGrip). That hold needs far
+	// more lift than the pistol arms, so for them the turn is split: the chest takes the yaw
+	// and only a little tilt, the arms the rest of the tilt, and the head looks at the target.
+	const bool bLongGunDive = bShootdodging && Weapon && !bIsPistolHold;
+	ShootdodgeLongGunAlpha = FMath::FInterpTo(ShootdodgeLongGunAlpha, bLongGunDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
+	ShootdodgeLeftHandAlpha = ShootdodgeLongGunAlpha * LeftHandGripAlpha;
+
+	// Duals: the dive's two-handed pistol arms would clasp the left gun to the right one, so
+	// the left arm takes a mirrored one-handed hold instead (the AnimGraph's left-arm layer).
+	const bool bDualDive = bShootdodging && Weapon && bIsDualWield;
+	ShootdodgeDualAlpha = FMath::FInterpTo(ShootdodgeDualAlpha, bDualDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
+	FQuat OffhandTarget = FQuat::Identity;
+
 	const USkeletalMeshComponent* Mesh = Character.GetMesh();
 	const APlayerController* PlayerController = Cast<APlayerController>(Character.GetController());
 	FQuat Target = FQuat::Identity;
+	FQuat ArmTarget = FQuat::Identity;
+	FQuat HeadTarget = FQuat::Identity;
 
 	if (bShootdodging && Mesh && Weapon && PlayerController)
 	{
@@ -111,35 +143,119 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 		const FVector AimPoint = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, ViewEnd, ECC_Visibility, Params)
 			? Hit.ImpactPoint : ViewEnd;
 
-		// The gun as drawn (correction included) and where it should point, both in the mesh's
-		// own space, where the spine nodes apply their rotation.
+		// The gun as drawn (corrections included) and where it should point, both in the
+		// mesh's own space, where the correction nodes apply their rotation.
 		const FTransform Muzzle = Weapon->GetMuzzleTransform();
 		const FTransform& ToComponent = Mesh->GetComponentTransform();
 		const FVector GunDirection = ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
 		const FVector WantedDirection = ToComponent.InverseTransformVectorNoScale(
 			(AimPoint - Muzzle.GetLocation()).GetSafeNormal());
 
-		// The rest of the way from here: added on top of the correction already applied. Each
-		// frame measures the result, so it settles rather than overshooting.
-		Target = FQuat::FindBetweenNormals(GunDirection, WantedDirection) * AimCorrectionTotal;
+		// The gun as the poses alone hold it: the correction now applied taken back out. The
+		// whole turn from there to the target is worked out fresh each frame, never added on to
+		// last frame's — so no roll about the barrel (which aiming can't see, so nothing would
+		// ever correct) piles up and twists the torso, head and wrists out of shape.
+		const FQuat Applied = bLongGunDive ? ArmAimCorrectionTotal * AimCorrectionTotal : AimCorrectionTotal;
+		const FQuat Whole = FQuat::FindBetweenNormals(Applied.UnrotateVector(GunDirection), WantedDirection);
+		Target = Whole;
 
-		// Capped: past the limit the spine would corkscrew; the gun stays off instead.
-		FVector Axis;
-		float Angle;
-		Target.ToAxisAndAngle(Axis, Angle);
-		Angle = FMath::UnwindRadians(Angle);
-		const float MaxAngle = FMath::DegreesToRadians(AimCorrectionMaxAngle);
-		if (FMath::Abs(Angle) > MaxAngle)
+		if (bLongGunDive)
 		{
-			Target = FQuat(Axis, FMath::Sign(Angle) * MaxAngle);
+			// The whole turn the gun needs, chest and arms together (the arms apply after the
+			// chest). The chest takes only a little of each — LongGunMaxYaw of turn about the
+			// vertical and LongGunMaxPitch of tilt: lying down, either one bends the torso (a turn
+			// about the vertical is a sideways bend for a body on its back). The arms take exactly
+			// the rest. A straight split each frame, so nothing switches on and off and jitters.
+			FQuat Tilt, Yaw;
+			Whole.ToSwingTwist(FVector::UpVector, Tilt, Yaw);
+			Target = ClampTurn(Tilt, LongGunMaxPitch) * ClampTurn(Yaw, LongGunMaxYaw);
+			ArmTarget = ClampTurn(Whole * Target.Inverse(), LongGunArmMaxAngle);
+
+			// Head: turns to face the target as well. Its forward is whatever way it faces in
+			// the reference pose (standing, facing the mesh's forward, +Y).
+			if (HeadLocalForward.IsZero())
+			{
+				const FReferenceSkeleton& RefSkeleton = Mesh->GetSkinnedAsset()->GetRefSkeleton();
+				const int32 HeadIndex = RefSkeleton.FindBoneIndex(TEXT("head"));
+				if (HeadIndex != INDEX_NONE)
+				{
+					const FTransform RefHead = FAnimationRuntime::GetComponentSpaceTransformRefPose(RefSkeleton, HeadIndex);
+					HeadLocalForward = RefHead.GetRotation().UnrotateVector(FVector::YAxisVector);
+				}
+			}
+			if (!HeadLocalForward.IsZero())
+			{
+				const FTransform Head = Mesh->GetSocketTransform(TEXT("head"));
+				const FVector HeadForward = ToComponent.InverseTransformVectorNoScale(
+					Head.GetRotation().RotateVector(HeadLocalForward));
+				const FVector ToTarget = ToComponent.InverseTransformVectorNoScale(
+					(AimPoint - Head.GetLocation()).GetSafeNormal());
+				// Fresh each frame from the head as the poses (and the chest) hold it, as for the gun.
+				HeadTarget = ClampTurn(FQuat::FindBetweenNormals(HeadCorrectionTotal.UnrotateVector(HeadForward), ToTarget),
+					HeadLookMaxAngle);
+			}
+		}
+		else
+		{
+			// Capped: past the limit the spine would corkscrew; the gun stays off instead.
+			Target = ClampTurn(Target, AimCorrectionMaxAngle);
+		}
+
+		// Duals: the left gun aims on its own, from the left upper arm, on top of everything
+		// the body already does for the right one. Same fresh measure, its own muzzle.
+		if (bDualDive && Weapon->GetOffhandMesh())
+		{
+			const FTransform OffhandMuzzle = Weapon->GetMuzzleTransform(true);
+			const FVector OffhandGun = ToComponent.InverseTransformVectorNoScale(OffhandMuzzle.GetUnitAxis(EAxis::X));
+			const FVector OffhandWanted = ToComponent.InverseTransformVectorNoScale(
+				(AimPoint - OffhandMuzzle.GetLocation()).GetSafeNormal());
+			OffhandTarget = ClampTurn(
+				FQuat::FindBetweenNormals(OffhandAimCorrectionTotal.UnrotateVector(OffhandGun), OffhandWanted),
+				OffhandAimMaxAngle);
 		}
 	}
 
 	const float Alpha = FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f);
 	AimCorrectionTotal = FQuat::Slerp(AimCorrectionTotal, Target, Alpha).GetNormalized();
+	ArmAimCorrectionTotal = FQuat::Slerp(ArmAimCorrectionTotal, ArmTarget, Alpha).GetNormalized();
+	HeadCorrectionTotal = FQuat::Slerp(HeadCorrectionTotal, HeadTarget, Alpha).GetNormalized();
+	OffhandAimCorrectionTotal = FQuat::Slerp(OffhandAimCorrectionTotal, OffhandTarget, Alpha).GetNormalized();
+	ShootdodgeOffhandAimCorrection = OffhandAimCorrectionTotal.Rotator();
 
-	// Half on each of two spine bones: the same mesh-space turn twice adds up to the whole.
-	ShootdodgeAimCorrection = FQuat::Slerp(FQuat::Identity, AimCorrectionTotal, 0.5f).Rotator();
+	// Pistols, lying back: the back poses hold the guns down at the hips, between the legs.
+	// The arms lift from the shoulders and the hands turn back down by the same amount, so
+	// the guns rise without changing where they point (the corrections above still aim
+	// them). From nothing at the side poses (90°) to BackGunLiftAngle from 135° round to
+	// straight back.
+	const float BackWeight = FMath::Clamp((FMath::Abs(ShootdodgeDirection) - 90.0f) / 45.0f, 0.0f, 1.0f);
+	const float LiftTarget = (bShootdodging && Weapon && !bLongGunDive) ? BackWeight * BackGunLiftAngle : 0.0f;
+	GunLiftAngle = FMath::FInterpTo(GunLiftAngle, LiftTarget, DeltaSeconds, 6.0f);
+
+	ShootdodgeArmLift = FRotator::ZeroRotator;
+	ShootdodgeHandCounterLift = FRotator::ZeroRotator;
+	if (GunLiftAngle > KINDA_SMALL_NUMBER && Mesh && Weapon)
+	{
+		// Raised about the level line across the gun: turning the barrel about (gun × up)
+		// swings it — and, from the shoulder, the hand — toward up.
+		const FVector Gun = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
+			Weapon->GetMuzzleTransform().GetUnitAxis(EAxis::X));
+		const FVector Axis = FVector::CrossProduct(Gun, FVector::UpVector).GetSafeNormal();
+		if (!Axis.IsZero())
+		{
+			const float Lift = FMath::DegreesToRadians(GunLiftAngle);
+			ShootdodgeArmLift = FQuat(Axis, Lift).Rotator();
+			ShootdodgeHandCounterLift = FQuat(Axis, -Lift).Rotator();
+		}
+	}
+
+	// Half on each of two bones: the same mesh-space turn twice adds up to the whole. Pistols
+	// put it on spine_03/05, long guns on the chest (spine_04/05); each arm takes the whole
+	// arm turn about its own shoulder.
+	const FQuat HalfTurn = FQuat::Slerp(FQuat::Identity, AimCorrectionTotal, 0.5f);
+	ShootdodgeAimCorrection = FQuat::Slerp(HalfTurn, FQuat::Identity, ShootdodgeLongGunAlpha).Rotator();
+	ShootdodgeChestAimCorrection = FQuat::Slerp(FQuat::Identity, HalfTurn, ShootdodgeLongGunAlpha).Rotator();
+	ShootdodgeArmAimCorrection = ArmAimCorrectionTotal.Rotator();
+	ShootdodgeHeadCorrection = FQuat::Slerp(FQuat::Identity, HeadCorrectionTotal, 0.5f).Rotator();
 }
 
 void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)

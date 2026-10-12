@@ -64,7 +64,8 @@ enum class EShootdodgePhase : uint8
 /**
  *  The Max Payne dive: leave the ground on the press in one of eight directions relative to
  *  the camera, keep facing the aim while flying (the blend spaces turn the dive to match),
- *  land prone, stay down until the player moves. Costs Focus. Pistols and duals only.
+ *  land prone, stay down until the player moves. Costs Focus. Animated for pistols and
+ *  duals; long guns use the same dive with their own arm hold.
  */
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class PROJECTBOPIS_API UShootdodgeComponent : public UActorComponent
@@ -127,6 +128,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
 	TMap<EShootdodgeDirection, FShootdodgeAnims> Animations;
+
+	/** Only pistols and duals can dive (the dive's own animations). Off lets long guns dive
+	    too, holding the gun in their own arm pose over the pistol dive. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge")
+	bool bPistolsOnly = false;
 
 	/** A short lead-in before the dive (Max Payne 3's step into the leap): the first
 	    WindUpLength seconds of a Lyra dash, on the ground. Nothing of the dive happens until it

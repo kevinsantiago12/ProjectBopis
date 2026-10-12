@@ -350,11 +350,12 @@ USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
 	return IsOffhandNext() ? OffhandMesh.Get() : WeaponMesh.Get();
 }
 
-FTransform AWeaponBase::GetMuzzleTransform() const
+FTransform AWeaponBase::GetMuzzleTransform(bool bOffhand) const
 {
-	if (WeaponMesh && WeaponMesh->DoesSocketExist(MuzzleSocketName))
+	const USkeletalMeshComponent* Mesh = (bOffhand && OffhandMesh) ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (Mesh && Mesh->DoesSocketExist(MuzzleSocketName))
 	{
-		return WeaponMesh->GetSocketTransform(MuzzleSocketName);
+		return Mesh->GetSocketTransform(MuzzleSocketName);
 	}
 	return GetActorTransform();
 }

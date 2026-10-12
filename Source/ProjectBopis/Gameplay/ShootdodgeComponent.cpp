@@ -39,10 +39,11 @@ bool UShootdodgeComponent::TryStart()
 		return false;
 	}
 
-	// Pistols and duals only, for now — the only weapons the dive is animated for.
+	// Any weapon unless bPistolsOnly: the dive is animated for pistols, and long guns borrow
+	// it with their own arm hold (the AnimGraph layers it on, see the anim instance).
 	const UWeaponHolderComponent* Holder = Character->GetWeaponHolder();
 	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
-	if (!Weapon || !IsPistolAnimType(Weapon->GetAnimType()) || Character->IsEquipAnimating())
+	if (!Weapon || (bPistolsOnly && !IsPistolAnimType(Weapon->GetAnimType())) || Character->IsEquipAnimating())
 	{
 		return false;
 	}

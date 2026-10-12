@@ -1919,9 +1919,13 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   - Compares the barrel (the `Muzzle` socket's X axis, from the new
     `AWeaponBase::GetMuzzleTransform`, main-hand mesh) with the direction to
     the target, in mesh space.
-  - `FindBetweenNormals(gun, wanted) × current` gives the next target. The
-    measured gun already includes the correction, so each frame closes the
-    remaining gap: it's self-correcting, with no overshoot.
+  - **Computed fresh each frame:** take the measured gun direction, remove the
+    correction currently applied (`Applied.UnrotateVector(gun)`), and use
+    `FindBetweenNormals(pose gun, wanted)` as the target.
+    - The first version accumulated instead (`FindBetween(gun, wanted) ×
+      current`). Roll about the barrel is invisible to aiming, so it piled up
+      and twisted the torso, head and dual left wrist (2026-10-12, fixed).
+    - The head and the off-hand arm use the same fresh measure.
   - Capped at `AimCorrectionMaxAngle` (70°), slerped at `AimCorrectionSpeed`
     (12), and eased back to identity outside the dive.
   - Output: `ShootdodgeAimCorrection`, half the total, applied to **both**
@@ -1931,10 +1935,57 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
 - **Assumption confirmed in Play mode:** the pistol's `Muzzle` socket X axis
   runs down the barrel. Other weapon meshes need the same check.
 
+**Long guns and duals (2026-10-12, user: "looks good"):**
+- **Gate:** `bPistolsOnly` on the component (default off), so every weapon
+  can dive. There are no long-gun dive clips; the pistol dive is reused.
+- **Long guns:**
+  - **Arm hold:** a Layered Blend per Bone (`clavicle_l` + `clavicle_r`, local
+    space) over the dive SM with `MM_Rifle_Idle_Hipfire`, weight
+    `ShootdodgeLongGunAlpha`.
+  - **Left hand:** Two Bone IK `hand_l`, effector in **`hand_r` bone space**
+    at `LeftHandGripLocation` (the standing grip offset; it moves with the gun,
+    no lag), joint target `lowerarm_l`. Alpha `ShootdodgeLeftHandAlpha`.
+  - **Aim split:** the rifle hold needs far more lift than the pistol arms;
+    putting it all on the spine bent the back.
+    - Each frame: `Whole` = the fresh turn from the gun with (Arm × Chest)
+      removed; swing/twist about up.
+    - The chest gets clamp(tilt, `LongGunMaxPitch` 20°) × clamp(yaw,
+      `LongGunMaxYaw` 35°) on `spine_04/05`.
+    - The arms get exactly the rest (`Whole × Chest⁻¹`, capped
+      `LongGunArmMaxAngle` 60°) on `upperarm_l/r`.
+    - A straight split, because an earlier version that switched the arms on
+      at the chest limit jittered.
+    - Lying back, a turn about the vertical is a sideways bend, hence the yaw
+      cap.
+  - **Head look:** `neck_01/head` (half each) turn the head's forward toward
+    the target, capped `HeadLookMaxAngle` 60°. The head's forward is from the
+    reference pose (`FAnimationRuntime::GetComponentSpaceTransformRefPose`;
+    mesh +Y).
+  - Pistols keep `spine_03/05`. The outputs cross-fade by
+    `ShootdodgeLongGunAlpha`.
+- **Duals:**
+  - **Left arm:** the dive clips are two-handed, which clasped the left gun to
+    the right one. A Layered Blend per Bone (`clavicle_l`) now takes
+    `MM_Pistol_Idle_Hipfire` → Mirror (`MDT_Mannequin`), weight
+    `ShootdodgeDualAlpha`.
+  - **Left gun aim:** its own self-correcting aim on `upperarm_l` from the
+    off-hand muzzle (`GetMuzzleTransform(true)`), capped `OffhandAimMaxAngle`
+    60°.
+- **Back-pose gun lift (pistols and duals):** the back poses held the guns at
+  the hips, between the legs.
+  - Both upper arms rotate by +θ, and both hands by −θ, about (gun × up), so
+    the guns rise without changing aim.
+  - θ = `BackGunLiftAngle` (35°) × clamp((|dir| − 90)/45), eased.
+  - The nodes sit right after the twist, before the corrections.
+- **Shootdodge branch order now:** SM → rifle arm layer → dual left-arm layer
+  → L2C → twist ×3 → lift ×4 → pistol correction (spine_03/05) → long-gun
+  chest/arms/head → off-hand `upperarm_l` → recoil ×3 → long-gun left-hand IK
+  → leg-fix Copy Bones → pelvis → foot IK ×2 → C2L.
+- **Open:** looking down through the legs on back dives. The lift seemed
+  enough; a camera pitch clamp for back dives was proposed but not built.
+  The wind-up still shows the dash's empty-handed arms with long guns.
+
 **Next:**
-- Weapons other than pistols and duals: the aim correction above should
-  carry over. Each needs its own dive and prone poses, or the pistol set
-  adapted.
 - Capsule while prone.
 - Sliding off a ledge while prone.
 
