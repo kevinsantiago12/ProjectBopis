@@ -307,7 +307,6 @@ private:
 
 	/** Reload asked for while prone — runs as soon as the get-up finishes. */
 	bool bReloadQueued = false;
-
 	float SavedGravityScale = 1.0f;
 	float SavedAirBraking = 0.0f;
 	float SavedWalkingBraking = 0.0f;

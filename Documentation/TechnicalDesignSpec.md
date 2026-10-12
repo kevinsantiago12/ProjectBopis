@@ -1909,17 +1909,32 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   (0..`StartClipOffset`) as a push-off. The user wanted the Lyra dash's
   running wind-up; the Start clips have no running start.
 
+**Aim correction (2026-10-12, user: "looks good"):**
+- **Problem:** the dive and prone clips aim where they were authored, while
+  the shots go to the crosshair.
+- **Fix:** `UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection`, active
+  only while `bShootdodging`.
+  - Traces the camera view to the crosshair target (`GetPlayerViewPoint`, out
+    to the weapon's max range; it ignores the character and the weapon).
+  - Compares the barrel (the `Muzzle` socket's X axis, from the new
+    `AWeaponBase::GetMuzzleTransform`, main-hand mesh) with the direction to
+    the target, in mesh space.
+  - `FindBetweenNormals(gun, wanted) × current` gives the next target. The
+    measured gun already includes the correction, so each frame closes the
+    remaining gap: it's self-correcting, with no overshoot.
+  - Capped at `AimCorrectionMaxAngle` (70°), slerped at `AimCorrectionSpeed`
+    (12), and eased back to identity outside the dive.
+  - Output: `ShootdodgeAimCorrection`, half the total, applied to **both**
+    `spine_03` and `spine_05` (Modify Bones 13/14, additive, component space).
+    They sit after the twist nodes and before the recoil.
+  - It needs no per-weapon aim poses, so it should carry over to other weapons.
+- **Assumption confirmed in Play mode:** the pistol's `Muzzle` socket X axis
+  runs down the barrel. Other weapon meshes need the same check.
+
 **Next:**
-- Weapons other than pistols and duals, **together with aim correction**
-  (user, 2026-10-11). The gun points far from the crosshair during the dive and
-  prone. Shots come from the crosshair, but the arms follow the clips'
-  authored aim, and pitch only reaches the prone blend space.
-  - Planned: each frame, take the error between the muzzle's forward and the
-    crosshair direction, and feed a smoothed, clamped (±60–90° yaw)
-    correction into spine Modify Bones on the shootdodge branch. Smoothing
-    keeps it from snapping, since the measured pose already includes the
-    last frame's correction.
-  - This also covers other weapons, since it needs no per-weapon aim poses.
+- Weapons other than pistols and duals: the aim correction above should
+  carry over. Each needs its own dive and prone poses, or the pistol set
+  adapted.
 - Capsule while prone.
 - Sliding off a ledge while prone.
 

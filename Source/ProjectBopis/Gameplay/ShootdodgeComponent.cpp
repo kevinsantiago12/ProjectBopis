@@ -20,6 +20,15 @@ void UShootdodgeComponent::BeginPlay()
 	Super::BeginPlay();
 
 	Character = Cast<AProjectBopisCharacter>(GetOwner());
+
+	// The Start blend space captures its start position when it first initializes — at
+	// game start — so hand it the push-off point from the outset, not 0: otherwise the first
+	// dive plays the clip's ground push-off in mid-air.
+	if (const FShootdodgeAnims* Forward = Animations.Find(EShootdodgeDirection::Forward); Forward && Forward->Start)
+	{
+		const float Offset = Forward->StartOffset >= 0.0f ? Forward->StartOffset : StartClipOffset;
+		PhaseStartPosition = FMath::Clamp(Offset / Forward->Start->GetPlayLength(), 0.0f, 1.0f);
+	}
 }
 
 bool UShootdodgeComponent::TryStart()
@@ -124,13 +133,14 @@ bool UShootdodgeComponent::BeginWindUp(EShootdodgeDirection Direction)
 void UShootdodgeComponent::Launch(EShootdodgeDirection Direction)
 {
 	// The wind-up (if any) hands over: its montage blends out over the dive's Start (it's let
-	// go of in TickComponent once fully out), and the movement gets its braking back.
+	// go of in TickComponent once fully out, and only then does root motion come back — the
+	// dash's own, still blending, would otherwise push the flight up), and the movement gets
+	// its braking back.
 	if (Phase == EShootdodgePhase::WindUp)
 	{
 		if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
 		{
 			AnimInstance->Montage_Stop(WindUpBlendOutTime, WindUpMontage);
-			AnimInstance->SetRootMotionMode(SavedRootMotionMode);
 		}
 
 		UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
@@ -198,13 +208,18 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	PhaseTime += DeltaTime;
 
-	// The wind-up counts until its animation has fully blended out over the flight.
+	// The wind-up counts until its animation has fully blended out over the flight; then root
+	// motion comes back.
 	if (WindUpMontage && Phase != EShootdodgePhase::WindUp)
 	{
-		const UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (!AnimInstance || !AnimInstance->Montage_IsActive(WindUpMontage))
 		{
 			WindUpMontage = nullptr;
+			if (AnimInstance)
+			{
+				AnimInstance->SetRootMotionMode(SavedRootMotionMode);
+			}
 		}
 	}
 

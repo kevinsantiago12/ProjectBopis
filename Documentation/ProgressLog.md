@@ -74,13 +74,14 @@ in the spec (*Shootdodge → Built — steps 2–5*).
        `NewLevelSequence` (left over from the Sequencer mirror attempt;
        probably safe to delete).
 3. **Shootdodge, later:**
-   - other weapon types, **bundled with aim correction** (user, 2026-10-11).
-     The gun points far from the crosshair during the dive and prone: the clips
-     aim where they were authored, and pitch only applies prone. Planned:
-     measure muzzle forward vs the crosshair direction each frame and twist
-     `spine_03`–`05` by the smoothed, clamped difference (C++ in the anim
-     instance + Modify Bone nodes on the shootdodge branch). No new animations
-     needed;
+   - ~~aim correction~~: **done** (2026-10-12, user: "looks good"). Spine
+     turned so the muzzle points at the crosshair; see the spec.
+     **Uncommitted:** `WeaponBase`, anim instance, `ABP_Player`. Also
+     uncommitted from the first-dive investigation:
+     - wind-up root motion held until the dash has blended out (a real fix);
+     - the start position set in `BeginPlay` (it didn't fix the first-dive
+       look, which the user put down to imagination; harmless).
+   - other weapon types (the aim correction should carry over);
    - the capsule while prone;
    - sliding off a ledge while prone (it falls in the prone pose).
 4. **Later in Phase 5:** pick with the user. Candidates:

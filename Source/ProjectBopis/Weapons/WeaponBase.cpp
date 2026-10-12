@@ -350,6 +350,15 @@ USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
 	return IsOffhandNext() ? OffhandMesh.Get() : WeaponMesh.Get();
 }
 
+FTransform AWeaponBase::GetMuzzleTransform() const
+{
+	if (WeaponMesh && WeaponMesh->DoesSocketExist(MuzzleSocketName))
+	{
+		return WeaponMesh->GetSocketTransform(MuzzleSocketName);
+	}
+	return GetActorTransform();
+}
+
 FVector AWeaponBase::GetMuzzleLocation() const
 {
 	const USkeletalMeshComponent* FiringMesh = GetFiringMesh();

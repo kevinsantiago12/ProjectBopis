@@ -310,7 +310,25 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float ProneFootClearance = 10.0f;
 
+	/** Shootdodge aim correction, on each of two spine bones (component space): turns the upper
+	    body so the gun points at the crosshair, whatever the dive or prone pose aims at. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FRotator ShootdodgeAimCorrection = FRotator::ZeroRotator;
+
+	/** Furthest the aim correction turns the upper body, in degrees. Past it the gun stays off. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
+	float AimCorrectionMaxAngle = 70.0f;
+
+	/** How quickly the correction closes the gap (interp speed; higher is snappier). */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float AimCorrectionSpeed = 12.0f;
+
 private:
+
+	void UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	/** The full aim correction (both spine bones together), component space. */
+	FQuat AimCorrectionTotal = FQuat::Identity;
 
 	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
 	void UpdateProneDirection(float DeltaSeconds);

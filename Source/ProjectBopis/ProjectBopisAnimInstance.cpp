@@ -8,6 +8,7 @@
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 
 namespace
 {
@@ -84,6 +85,61 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateShootdodgeAim(*Character, DeltaSeconds);
 	UpdateProneDirection(DeltaSeconds);
 	UpdateProneFeet(*Character, DeltaSeconds);
+	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
+}
+
+void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
+{
+	// The dive and prone clips aim wherever they were authored; the shots go to the crosshair.
+	// So the upper body turns until the gun points there too. Outside the dive's own phases
+	// it eases back to nothing.
+	const USkeletalMeshComponent* Mesh = Character.GetMesh();
+	const APlayerController* PlayerController = Cast<APlayerController>(Character.GetController());
+	FQuat Target = FQuat::Identity;
+
+	if (bShootdodging && Mesh && Weapon && PlayerController)
+	{
+		// Where the crosshair is looking: the camera's view, out to whatever it hits.
+		FVector ViewLocation;
+		FRotator ViewRotation;
+		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(ShootdodgeAim), false, &Character);
+		Params.AddIgnoredActor(Weapon);
+		FHitResult Hit;
+		const FVector AimPoint = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, ViewEnd, ECC_Visibility, Params)
+			? Hit.ImpactPoint : ViewEnd;
+
+		// The gun as drawn (correction included) and where it should point, both in the mesh's
+		// own space, where the spine nodes apply their rotation.
+		const FTransform Muzzle = Weapon->GetMuzzleTransform();
+		const FTransform& ToComponent = Mesh->GetComponentTransform();
+		const FVector GunDirection = ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
+		const FVector WantedDirection = ToComponent.InverseTransformVectorNoScale(
+			(AimPoint - Muzzle.GetLocation()).GetSafeNormal());
+
+		// The rest of the way from here: added on top of the correction already applied. Each
+		// frame measures the result, so it settles rather than overshooting.
+		Target = FQuat::FindBetweenNormals(GunDirection, WantedDirection) * AimCorrectionTotal;
+
+		// Capped: past the limit the spine would corkscrew; the gun stays off instead.
+		FVector Axis;
+		float Angle;
+		Target.ToAxisAndAngle(Axis, Angle);
+		Angle = FMath::UnwindRadians(Angle);
+		const float MaxAngle = FMath::DegreesToRadians(AimCorrectionMaxAngle);
+		if (FMath::Abs(Angle) > MaxAngle)
+		{
+			Target = FQuat(Axis, FMath::Sign(Angle) * MaxAngle);
+		}
+	}
+
+	const float Alpha = FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f);
+	AimCorrectionTotal = FQuat::Slerp(AimCorrectionTotal, Target, Alpha).GetNormalized();
+
+	// Half on each of two spine bones: the same mesh-space turn twice adds up to the whole.
+	ShootdodgeAimCorrection = FQuat::Slerp(FQuat::Identity, AimCorrectionTotal, 0.5f).Rotator();
 }
 
 void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)

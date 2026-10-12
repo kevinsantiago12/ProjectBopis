@@ -395,7 +395,10 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-11.)* 6. Recoil during the dive and prone: the shootdodge branch got its own copy of the three procedural recoil bones.
   - [x] *(Done 2026-10-11, "ok for now".)* 7. Legs through the floor: the prone pose holds the diagonal and transitions slowly (front: Fwd_Left/Right → Fwd within 10°; back sides: Bwd_Right/Left → Right/Left within 22.5°) with body/spine twist; a mid-swap torso lift (front) and foot IK; physics legs on landing. See the spec's *Step 7*.
   - [x] *(Done 2026-10-12.)* 8. Wind-up: from a held aim only, the first 0.2 s of a Lyra dash (per direction; mirrored left dash for the right) plays before the dive, momentum easing off, actions blocked; the dive itself unchanged. See the spec's *Step 8*.
-  - [ ] Later: other weapon types, **together with aim correction**: the gun points far from the crosshair during the dive and prone (clips aim where they were authored; no pitch outside prone). Planned fix: procedural spine correction from muzzle-vs-crosshair error, clamped. Also prone capsule, ledge slide-off while prone.
+  - [x] *(Done 2026-10-12.)* 9. Aim correction (pistol and duals; dive + prone): spine_03/05 turned so the muzzle points at the crosshair, self-correcting, capped 70°.
+  - [ ] 10. Capsule while prone.
+  - [ ] 11. Sliding off a ledge while prone.
+  - [ ] 12. Other weapon types (aim correction should carry over).
 - [ ] Later: enemy shooting, StateTree behaviour, archetypes composed from data, player death.
 
 ## Phase 6 — First playable arena (vertical slice)

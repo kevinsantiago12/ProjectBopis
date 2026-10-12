@@ -147,6 +147,10 @@ public:
 	/** World location of the muzzle socket — where shots actually leave from. */
 	FVector GetMuzzleLocation() const;
 
+	/** World transform of the main-hand mesh's muzzle socket — its X axis runs down the barrel.
+	    (Not the firing mesh: aim correction wants one steady gun, not the alternating one.) */
+	FTransform GetMuzzleTransform() const;
+
 	/** Dual-wield weapons carry a second mesh in the other hand and alternate shots between them. */
 	bool IsDualWield() const { return bDualWield; }
 
