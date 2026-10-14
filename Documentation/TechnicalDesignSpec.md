@@ -2734,6 +2734,14 @@ on the character as `Focus`:
   bound by the character's `FocusAction` → `DoToggleFocus`.
 - **HUD:** `UFocusWidget` (`GetMeterFraction`, `IsFocusActive`); the user's
   `WBP_Focus` progress bar sits in `WBP_PlayerHUD`.
+- **Health bar (placeholder, 2026-10-14, user-confirmed):** `UHealthWidget`
+  (`UI/HealthWidget.h/.cpp`, a `UPlayerHUDElementWidget`) exposes
+  `GetHealthFraction()` (health ÷ max from the player's
+  `UHealthComponent`; 0 with no character).
+  - The user's `WBP_Health` has a red Progress Bar whose Percent is
+    *bound* to it, which polls every frame. That's fine for a placeholder;
+    the real HUD should update on change.
+  - It sits in `WBP_PlayerHUD`.
 - **Feedback:**
   - **Screen:** `FocusPostProcess`, an unbound `UPostProcessComponent` on the
     character. Defaults: saturation 0.5, vignette 0.8, scene fringe 1.5;

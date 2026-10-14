@@ -225,6 +225,15 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	bool bShootdodging = false;
 
+	/** Weight of the reload montage's arms over the prone pose (the AnimGraph's prone-branch
+	    layered blend, from the clavicles down): eased in while a reload plays, out after. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ProneReloadAlpha = 0.0f;
+
+	/** How fast ProneReloadAlpha eases in and out (per second; 6 ≈ 0.17 s). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.1"))
+	float ProneReloadBlendSpeed = 6.0f;
+
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	EShootdodgePhase ShootdodgePhase = EShootdodgePhase::None;
 
@@ -369,6 +378,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "90.0"))
 	float BackOffhandExtraLift = 20.0f;
 
+	/** Duals in a shootdodge: how far each arm swings out to its own side of the screen, in
+	    degrees, so the guns clear the head and body from behind the shoulder. The hands turn
+	    back by the same, so the guns still point where they did. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "60.0"))
+	float DualDiveSpreadAngle = 20.0f;
+
 	/** How far the arms lift the guns in the back poses, in degrees (full from 135° round to
 	    straight back, nothing at the side poses). */
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "90.0"))
@@ -469,7 +484,9 @@ private:
 	    finished easing — so a montage ending eases the arms down instead of snapping. */
 	bool bEaseLowering = false;
 
-	/** A reload montage is playing (End included) — the left-hand IK stays off. */
+	/** A reload montage is playing (End included) — the left-hand IK stays off, and the
+	    prone branch borrows the upper-body slot's arms. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	bool bReloadAnimating = false;
 
 	/** Aim button held (ADS) — not hip-fire raises. The left-hand IK only runs while aiming. */

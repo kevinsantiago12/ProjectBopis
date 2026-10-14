@@ -138,6 +138,38 @@
     random spot.
   - **TEMP debug removed.**
   - All user-confirmed.
+- **Content cleanup (2026-10-14):**
+  - The **Mercenary pack** (`Content/Mercenary_Male_WaveforceStudio/`,
+    538 MB, untracked) was deleted from disk with the editor closed.
+    - In-editor force delete crashed every time: removing its textures
+      triggered a recompile of its own materials, and the shader
+      preprocessor overflowed the stack.
+    - A full reference scan first showed nothing outside the folder used it.
+      `BP_PlayerCharacter_Merc` was already gone.
+  - The orphaned **Survival** World Partition folders
+    (`__ExternalActors__/Survival_01`, `__ExternalActors__/Survival_Character`,
+    `__ExternalObjects__/Survival_Character`) were also deleted; their pack
+    and map were already gone.
+  - **Kamz_Pack stays**, because `BP_Kamz` is still the game mode's pawn.
+- **A placeholder health bar (2026-10-14, user-confirmed):** `UHealthWidget`
+  (`GetHealthFraction`) + the user's `WBP_Health` (a bound progress bar) in
+  `WBP_PlayerHUD`.
+- **The user added the dodge-roll animations (2026-10-14)**, ready for the
+  roll.
+- **The navmesh kept reverting after rebuilds (2026-10-14):**
+  - Lvl_Sandbox is World Partition, and the built nav data lives in the
+    `RecastNavMesh-Default` external actor
+    (`__ExternalActors__/ThirdPerson/Lvl_Sandbox/1/AE/8NXSYG2EA3YFUOAUSHUREF.uasset`,
+    last saved 10-09). Rebuilds were never saved into it.
+  - **Fix:** `DefaultEngine.ini` `[/Script/NavigationSystem.RecastNavMesh]
+    RuntimeGeneration=Dynamic`, so the navmesh is built at load and updated
+    when geometry moves, with nothing to save. The actor doesn't override it.
+  - **The user reported it didn't change anything,** and parked the issue
+    ("forget that"). The setting is still in the ini; revert it if it stays
+    useless. **Open item:** why the navmesh reverts.
+  - **Gotcha:** to remove a big marketplace pack, close the editor and
+    delete the folder on disk after checking references. Force delete in the
+    editor can crash on the material recompiles.
 - **Kamz physics:** the dump showed `PA_Kamz` is an exact copy of
   `PA_Mannequin`, so the bodies aren't the cause. The suspect is scaled bones
   in `SKM_Kamz`'s reference pose; the user is to check the scale.
@@ -148,7 +180,8 @@
 - **Code:** applied by Claude on request, each built with the script.
 
 ### ▶ RESUME HERE
-1. **Commit (user):**
+1. **Commit (user):** **DONE**, committed and pushed 2026-10-14. The list
+   below is kept for reference.
    - `ShootdodgeComponent`, `ProjectBopisAnimInstance`, `EnemyBase`,
      `HealthComponent`, `ProjectBopisCharacter`;
    - also `BopisCharacterBase.h` (virtual `PlayDeathAnimation`), the new
@@ -162,6 +195,7 @@
      `bUnkillable`);
    - docs.
    - Leave the test-only character packs out if they're not wanted in history.
+     Merc and Survival have been deleted from disk; Kamz remains.
 2. **Enemy shooting (v2, the hit-chance model):**
    - Tune it in real shootouts, plus any per-action changes the user wants
      (Focus, crouch…).
@@ -179,9 +213,13 @@
 3. **Gunman behaviour v1 is DONE (2026-10-14):** steps 1–4 + roaming. The
    user: "plays pretty well".
    - The arena runs on an `AEncounterDirector` with Target Point spawns.
-   - **NEXT (user, 2026-10-14): "we need to add more moves to the player."**
-     Ask which moves first: they're design calls. Rolls already have a hook,
-     `AProjectBopisCharacter::IsEvading()`. Present one move at a time.
+   - **NEXT (user, 2026-10-14): a dodge roll**, the first of "more moves for
+     the player".
+     - Ask the design specifics first: input, direction, distance,
+       i-frames or not, Focus cost, firing during it, animation source.
+     - Hook it into `AProjectBopisCharacter::IsEvading()`, so enemy hit
+       chance gets ×`EvadingHitMultiplier` during it.
+     - Present one step at a time.
    - Possible follow-ups:
      - one pusher at a time, if rushes pile up;
      - a muzzle clear-shot check against geometry, if enemies keep firing

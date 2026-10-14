@@ -3,6 +3,7 @@
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
+#include "Gameplay/RollComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Camera/CameraComponent.h"
@@ -21,12 +22,15 @@
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedPlayerInput.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
 	// Capsule, weapon holder and tick come from ABopisCharacterBase.
 	Focus =CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
 	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
+	Roll = CreateDefaultSubobject<URollComponent>(TEXT("Roll"));
 
 	// The player never staggers: being rooted mid-fight (or mid-dive) is no fun. Hits stay
 	// light reactions.
@@ -160,6 +164,9 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(ShootdodgeAction, ETriggerEvent::Started, this,
 			&AProjectBopisCharacter::DoShootdodge);
 
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this,
+			&AProjectBopisCharacter::DoRoll);
+
 	}
 	else
 	{
@@ -212,6 +219,12 @@ void AProjectBopisCharacter::DoMove(float Right, float Forward)
 		return;
 	}
 
+	// Knelt after a roll: the slide carries on, input doesn't steer it.
+	if (bPostRollCrouchHoldsPosition && bPostRollCrouching)
+	{
+		return;
+	}
+
 	// Camera-relative in BOTH stances — this is the whole camera-relative model.
 	// Only pitch and roll are discarded; yaw defines the movement frame. The
 	// stance decides whether the character rotates to face the result, not
@@ -249,6 +262,11 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	}
 
 	UpdateCampingHeat(DeltaSeconds);
+	if (IsEvadingNow())
+	{
+		LastEvadingTime = GetWorld()->GetTimeSeconds();
+	}
+	UpdateAutoReload(DeltaSeconds);
 	UpdateCrouch();
 	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
@@ -374,8 +392,8 @@ void AProjectBopisCharacter::UpdateMovementStance()
 
 void AProjectBopisCharacter::DoJumpStart()
 {
-	// Winding up for a dive is a commitment: no hopping out of it.
-	if (Shootdodge && Shootdodge->IsWindingUp())
+	// Winding up for a dive is a commitment: no hopping out of it. Nor out of a roll.
+	if ((Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -405,8 +423,8 @@ void AProjectBopisCharacter::DoFire()
 	}
 
 	// Getting up from a dive leaves you open: the gun stays quiet until you're on your feet.
-	// Same while winding up for one — the shooting starts with the leap.
-	if (Shootdodge && (Shootdodge->IsGettingUp() || Shootdodge->IsWindingUp()))
+	// Same while winding up for one — the shooting starts with the leap — and mid-roll.
+	if ((Shootdodge && (Shootdodge->IsGettingUp() || Shootdodge->IsWindingUp())) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -449,10 +467,55 @@ void AProjectBopisCharacter::DoFire()
 
 void AProjectBopisCharacter::DoShootdodge()
 {
+	if (Roll && Roll->IsRolling())
+	{
+		return;
+	}
 	if (Shootdodge)
 	{
 		Shootdodge->TryStart();
 	}
+}
+
+void AProjectBopisCharacter::DoRoll()
+{
+	if (!Roll)
+	{
+		return;
+	}
+	// A roll is the way out of a kneel (or a crouch): up first, then roll.
+	bPostRollCrouching = false;
+	bCrouchRequested = false;
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	Roll->TryRoll();
+}
+
+void AProjectBopisCharacter::StartPostRollCrouch()
+{
+	if (bPostRollCrouch && !IsDead())
+	{
+		bPostRollCrouching = true;
+
+		// Down now, not on the next UpdateCrouch: the roll is already blending out, and it
+		// has to blend into the crouch, not into a standing pose first.
+		if (!bIsCrouched)
+		{
+			Crouch();
+		}
+	}
+}
+
+bool AProjectBopisCharacter::IsInputHeld(const UInputAction* Action) const
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	const UEnhancedInputLocalPlayerSubsystem* Subsystem = PlayerController
+		? ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer())
+		: nullptr;
+	const UEnhancedPlayerInput* PlayerInput = Subsystem ? Subsystem->GetPlayerInput() : nullptr;
+	return PlayerInput && Action && PlayerInput->GetActionValue(Action).Get<bool>();
 }
 
 float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -484,6 +547,10 @@ void AProjectBopisCharacter::Die(AController* Killer, const FVector& ShotDirecti
 	if (Shootdodge)
 	{
 		Shootdodge->CancelForDeath();
+	}
+	if (Roll)
+	{
+		Roll->Cancel();
 	}
 	if (Focus)
 	{
@@ -524,7 +591,12 @@ void AProjectBopisCharacter::UpdateCampingHeat(float DeltaSeconds)
 		CampAnchor = GetActorLocation();
 		TimeAtCampAnchor = 0.0f;
 	}
-	TimeAtCampAnchor += DeltaSeconds;
+	// Knelt after a roll: the clock at this spot stops — shooting from the knee doesn't count
+	// as camping. Heat already built holds where it is.
+	if (!bPostRollCrouching)
+	{
+		TimeAtCampAnchor += DeltaSeconds;
+	}
 
 	// Heat follows how long they've been here, past the grace; it climbs at that pace and
 	// drains at its own once they've gone.
@@ -541,8 +613,14 @@ bool AProjectBopisCharacter::IsInHitGrace() const
 
 bool AProjectBopisCharacter::IsEvading() const
 {
-	// The flight only: landing, lying prone and getting up are the vulnerable part.
-	return Shootdodge && Shootdodge->IsAirborne();
+	// Under way now, or only just over: the effect lingers a while after landing or rolling.
+	return IsEvadingNow() || GetWorld()->GetTimeSeconds() - LastEvadingTime < EvadeLingerTime;
+}
+
+bool AProjectBopisCharacter::IsEvadingNow() const
+{
+	// The dive's flight, or a dodge roll.
+	return (Shootdodge && Shootdodge->IsAirborne()) || (Roll && Roll->IsRolling());
 }
 
 void AProjectBopisCharacter::FollowBodyWithCamera(float DeltaSeconds)
@@ -585,8 +663,8 @@ void AProjectBopisCharacter::DoToggleFocus()
 
 void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 {
-	// The dive is animated for the gun in hand; no swapping while winding up for it.
-	if (Shootdodge && Shootdodge->IsWindingUp())
+	// The dive is animated for the gun in hand; no swapping while winding up for it, or rolling.
+	if ((Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -599,11 +677,15 @@ void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 
 void AProjectBopisCharacter::DoReload()
 {
-	// No reloading anywhere in a dive. Lying prone, the reload key gets you up and the
-	// reload follows once you're standing.
-	if (Shootdodge && Shootdodge->IsDodging())
+	if (Roll && Roll->IsRolling())
 	{
-		Shootdodge->RequestGetUp(true);
+		return;
+	}
+
+	// Lying prone after a dive, it reloads on the floor; the rest of a dive (wind-up, flight,
+	// landing, getting up) has no time for it.
+	if (Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne())
+	{
 		return;
 	}
 
@@ -616,6 +698,34 @@ void AProjectBopisCharacter::DoReload()
 	}
 
 	PlayReloadAnimation(Holder->GetEquippedWeapon());
+
+	// Reloading breaks the moment: slow motion ends.
+	if (bStopFocusOnReload && Focus && Focus->IsFocusActive())
+	{
+		Focus->StopFocus();
+	}
+}
+
+void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
+{
+	// An empty gun reloads itself once the player is free to — standing or lying prone, not
+	// mid-dive or mid-roll — after a beat, so the last shot reads.
+	const UWeaponHolderComponent* Holder = GetWeaponHolder();
+	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	const bool bInDive = Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne();
+	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating();
+	if (!bAutoReload || !Weapon || !bFreeToReload || Weapon->GetAmmoInMagazine() > 0 || !Weapon->CanReload())
+	{
+		EmptyGunTime = 0.0f;
+		return;
+	}
+
+	EmptyGunTime += DeltaSeconds;
+	if (EmptyGunTime >= AutoReloadDelay)
+	{
+		EmptyGunTime = 0.0f;
+		DoReload();
+	}
 }
 
 void AProjectBopisCharacter::DoCrouchStart()
@@ -636,8 +746,24 @@ void AProjectBopisCharacter::DoCrouchEnd()
 
 void AProjectBopisCharacter::UpdateCrouch()
 {
-	if (Shootdodge && Shootdodge->IsDodging())
+	if ((Shootdodge && Shootdodge->IsDodging()) || (Roll && Roll->IsRolling()))
 	{
+		return;
+	}
+
+	// Knelt after a roll, firing (Vanquish): down for as long as the roll button is held —
+	// let go and the normal rule below takes over again (standing, unless the player had
+	// asked to crouch anyway).
+	if (bPostRollCrouching && !IsRollHeld())
+	{
+		bPostRollCrouching = false;
+	}
+	if (bPostRollCrouching)
+	{
+		if (!bIsCrouched)
+		{
+			Crouch();
+		}
 		return;
 	}
 

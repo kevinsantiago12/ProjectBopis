@@ -139,22 +139,6 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		bLeadGone = TimeAtLastKnown >= LeadGoneAfter;
 	}
 
-	// Attack tokens: only a few enemies at a time really try to hit — the rest keep the
-	// pressure on with near misses. Asked for while in sight, handed back when it isn't.
-	AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>();
-	bool bHasAttackToken = !GameMode;
-	if (GameMode)
-	{
-		if (bSeesPlayer)
-		{
-			bHasAttackToken = GameMode->RequestAttackToken(this);
-		}
-		else
-		{
-			GameMode->ReleaseAttackToken(this);
-		}
-	}
-
 	// What the player is doing, for the hit chance.
 	const AProjectBopisCharacter* PlayerHero = Cast<AProjectBopisCharacter>(Player);
 	const UShootdodgeComponent* PlayerDodge = PlayerHero ? PlayerHero->GetShootdodge() : nullptr;
@@ -186,6 +170,28 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	const bool bSuppressing = bAlerted && !bSeesPlayer && TimeSinceSeenPlayer <= SuppressFireDuration;
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+
+	// Attack tokens: only a few enemies at a time really try to hit — the rest keep the
+	// pressure on with near misses. Held only while it can be used — in sight and in range,
+	// gun up and ready, no friend in the line of fire — so nobody sits on one reloading or
+	// from across the map; nearer enemies take precedence.
+	AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>();
+	bool bHasAttackToken = !GameMode;
+	if (GameMode)
+	{
+		const bool bCanUseToken = bShootAtPlayer && bSeesPlayer && Distance <= AttackTokenRange
+			&& Weapon && IsWeaponRaised() && !IsEquipAnimating() && !Weapon->IsReloading()
+			&& LineOfFireBlockedTime <= 0.0f;
+		if (bCanUseToken)
+		{
+			bHasAttackToken = GameMode->RequestAttackToken(this, Distance);
+		}
+		else
+		{
+			GameMode->ReleaseAttackToken(this);
+		}
+	}
+
 	if (!bShootAtPlayer || !bAlerted || !(bSeesPlayer || bSuppressing) || !Weapon || !IsWeaponRaised()
 		|| IsEquipAnimating() || Weapon->IsReloading())
 	{
@@ -500,7 +506,7 @@ void AEnemyBase::DropWeapon(const FVector& ShotDirection)
 	// Thrown along the killing shot with a little lift, capped so no hit can fling it far.
 	const FVector Velocity = (ShotDirection.GetSafeNormal() * WeaponDropSpeed
 		+ FVector::UpVector * WeaponDropLift).GetClampedToMaxSize(MaxWeaponDropSpeed);
-	Drop->Launch(Weapon->GetClass(), WeaponPickupClass, Velocity, FMath::VRand() * WeaponDropSpin);
+	Drop->Launch(Weapon->GetDropClass(), WeaponPickupClass, Velocity, FMath::VRand() * WeaponDropSpin);
 
 	// The gun has left the hand. The weapon actor itself stays with the corpse until cleanup.
 	Weapon->SetActorHiddenInGame(true);

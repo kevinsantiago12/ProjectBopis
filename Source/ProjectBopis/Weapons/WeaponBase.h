@@ -221,6 +221,9 @@ public:
 	/** The dual-wield version of this weapon, if it has one. */
 	TSubclassOf<AWeaponBase> GetDualWieldClass() const { return DualWieldClass; }
 
+	/** The class a dropped copy of this weapon should be: DropAsClass, or its own. */
+	TSubclassOf<AWeaponBase> GetDropClass() const { return DropAsClass ? DropAsClass : TSubclassOf<AWeaponBase>(GetClass()); }
+
 	const UImpactEffectsData* GetImpactEffects() const { return ImpactEffects; }
 
 	/** For a dual-wield weapon, its single version, if it has one. */
@@ -302,6 +305,12 @@ protected:
 	    Leave empty for weapons that can't be dual-wielded. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<AWeaponBase> DualWieldClass;
+
+	/** What this weapon turns into when an enemy drops it. Empty: itself. For enemy-only
+	    variants (e.g. a pistol with an enemy animation type) that should drop as the
+	    ordinary weapon the player picks up. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Drop")
+	TSubclassOf<AWeaponBase> DropAsClass;
 
 	/** For a dual-wield weapon: its single version (e.g. BP_DualPistols → BP_Pistol).
 	    Carrying the pair always includes one, so adding this weapon also adds the single

@@ -211,6 +211,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
 	float FarHitRange = 2500.0f;
 
+	/** Farther than this (cm) from the player, an enemy doesn't take an attack token: its
+	    shots are all near misses, and the token goes to someone close enough to use it. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
+	float AttackTokenRange = 2500.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
 	float FarHitMultiplier = 0.4f;
 

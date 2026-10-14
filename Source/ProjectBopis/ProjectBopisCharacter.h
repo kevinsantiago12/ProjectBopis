@@ -15,6 +15,7 @@ class UCameraComponent;
 class UInputAction;
 class UFocusComponent;
 class UShootdodgeComponent;
+class URollComponent;
 class UPostProcessComponent;
 struct FInputActionValue;
 
@@ -57,6 +58,10 @@ class AProjectBopisCharacter : public ABopisCharacterBase
 	/** The Max Payne dive. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UShootdodgeComponent> Shootdodge;
+
+	/** Dodge roll. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<URollComponent> Roll;
 
 	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
@@ -111,6 +116,10 @@ protected:
 	/** Shootdodge Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShootdodgeAction;
+
+	/** Dodge roll Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* RollAction;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -244,6 +253,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoShootdodge();
 
+	/** Starts a dodge roll from input. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoRoll();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -311,6 +324,32 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Hit Grace", meta = (ClampMin = "0.0"))
 	float HitGraceTime = 0.5f;
 
+	/** Seconds the evasive effect (enemies' EvadingHitMultiplier) lingers after a shootdodge
+	    lands or a roll ends. 0: only while actually diving or rolling. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Evasion", meta = (ClampMin = "0.0"))
+	float EvadeLingerTime = 2.0f;
+
+	/** Vanquish-style: keep the roll button held and the roll cuts into a crouch partway (see
+	    the Roll component's CrouchOutAfter): firing from the knee until it's let go. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Roll")
+	bool bPostRollCrouch = true;
+
+	/** Movement input is ignored while knelt: the roll's momentum slides into it. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Roll")
+	bool bPostRollCrouchHoldsPosition = true;
+
+	/** An empty gun reloads by itself once the player is free to (standing or lying prone,
+	    not mid-dive or mid-roll), AutoReloadDelay after it ran dry. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
+	bool bAutoReload = true;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "0.0"))
+	float AutoReloadDelay = 0.2f;
+
+	/** Starting a reload ends Focus (slow motion) if it's on. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
+	bool bStopFocusOnReload = true;
+
 	/** How quickly the camera catches up with the falling body. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float DeathCameraFollowSpeed = 8.0f;
@@ -348,8 +387,20 @@ public:
 
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
-	/** Mid-evasion — a shootdodge's flight now, rolling later. Enemies' close-range
-	    accuracy doesn't apply to an evading player, and their shots are capped. */
+	URollComponent* GetRoll() const { return Roll; }
+
+	/** Drops into the post-roll kneel until the roll button is let go (the roll calls this
+	    when it's held past its CrouchOutAfter). */
+	void StartPostRollCrouch();
+
+	/** The roll button is down right now. */
+	bool IsRollHeld() const { return IsInputHeld(RollAction); }
+
+	/** Knelt after a roll (see bPostRollCrouch). */
+	bool IsPostRollCrouching() const { return bPostRollCrouching; }
+
+	/** Mid-evasion (a shootdodge's flight, a roll) or within EvadeLingerTime after one —
+	    enemies' shots are much less likely to land. */
 	bool IsEvading() const;
 
 	/** 0..1: how long the player has stayed put. Every enemy's hit chance rises with it, so
@@ -390,6 +441,24 @@ private:
 
 	/** World time of the last hit taken; well in the past until the first. */
 	float LastHitTakenTime = -1000.0f;
+
+	/** Mid-dive (the flight) or mid-roll, this very moment — IsEvading adds the linger. */
+	bool IsEvadingNow() const;
+
+	/** World time evasion was last under way. */
+	float LastEvadingTime = -1000.0f;
+
+	/** An input action is down right now (Enhanced Input's live value, not the last event). */
+	bool IsInputHeld(const UInputAction* Action) const;
+
+	/** Knelt after a roll, until the roll button is let go. */
+	bool bPostRollCrouching = false;
+
+	/** Reloads an empty gun by itself, once the player is free to. */
+	void UpdateAutoReload(float DeltaSeconds);
+
+	/** Seconds the equipped gun has been empty with a reload possible. */
+	float EmptyGunTime = 0.0f;
 	bool bDeathSlowMo = false;
 
 };

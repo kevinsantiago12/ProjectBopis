@@ -66,6 +66,8 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bIsWeaponRaised = Character->IsWeaponRaised();
 	bIsCrouched = Character->bIsCrouched;
 	bReloadAnimating = Character->IsReloadAnimating();
+	ProneReloadAlpha = FMath::FInterpConstantTo(ProneReloadAlpha, bReloadAnimating ? 1.0f : 0.0f,
+		DeltaSeconds, ProneReloadBlendSpeed);
 	bIsAiming = Character->IsAiming();
 
 	if (Weapon)
@@ -143,7 +145,9 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	FQuat ArmTarget = FQuat::Identity;
 	FQuat HeadTarget = FQuat::Identity;
 
-	if (bShootdodging && Mesh && Weapon && PlayerController)
+	// Reloading, the gun isn't being aimed: the correction lets go (it would bend the torso to
+	// point a gun at the crosshair that's down by the chest), and comes back once it's done.
+	if (bShootdodging && Mesh && Weapon && PlayerController && !bReloadAnimating)
 	{
 		// Where the crosshair is looking: the camera's view, out to whatever it hits.
 		FVector ViewLocation;
@@ -257,29 +261,46 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	OffhandExtraLiftAngle = FMath::FInterpTo(OffhandExtraLiftAngle, OffhandLiftTarget, DeltaSeconds, 6.0f);
 
 	// Raised about the level line across a gun: turning its barrel about (gun × up) swings
-	// it — and, from the shoulder, the hand — toward up; the hand turns back by the same.
-	auto LiftFor = [Mesh](const FTransform& Muzzle, float Degrees, FRotator& OutArm, FRotator& OutHand)
+	// it — and, from the shoulder, the hand — toward up. Then swung out by Spread. The hand
+	// turns back by the whole of it, so the gun keeps pointing where it did.
+	auto LiftFor = [Mesh](const FTransform& Muzzle, float Degrees, const FQuat& Spread, FRotator& OutArm, FRotator& OutHand)
 	{
-		OutArm = FRotator::ZeroRotator;
-		OutHand = FRotator::ZeroRotator;
-		if (Degrees <= KINDA_SMALL_NUMBER || !Mesh)
+		FQuat Lift = FQuat::Identity;
+		if (Degrees > KINDA_SMALL_NUMBER && Mesh)
 		{
-			return;
+			const FVector Gun = Mesh->GetComponentTransform().InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
+			const FVector Axis = FVector::CrossProduct(Gun, FVector::UpVector).GetSafeNormal();
+			if (!Axis.IsZero())
+			{
+				Lift = FQuat(Axis, FMath::DegreesToRadians(Degrees));
+			}
 		}
-		const FVector Gun = Mesh->GetComponentTransform().InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
-		const FVector Axis = FVector::CrossProduct(Gun, FVector::UpVector).GetSafeNormal();
-		if (!Axis.IsZero())
-		{
-			const float Lift = FMath::DegreesToRadians(Degrees);
-			OutArm = FQuat(Axis, Lift).Rotator();
-			OutHand = FQuat(Axis, -Lift).Rotator();
-		}
+		const FQuat Arm = Spread * Lift;
+		OutArm = Arm.Rotator();
+		OutHand = Arm.Inverse().Rotator();
 	};
+
+	// Duals: from behind the right shoulder, two guns aimed at one point sit in front of the
+	// head and body. Each arm swings out to its own side of the screen (about the camera's
+	// up), so the guns clear the body; the aim correction above still points them.
+	FQuat SpreadRight = FQuat::Identity;
+	FQuat SpreadLeft = FQuat::Identity;
+	if (Mesh && PlayerController && ShootdodgeDualAlpha > KINDA_SMALL_NUMBER)
+	{
+		FVector ViewLocation;
+		FRotator ViewRotation;
+		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		const FVector CameraUp = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
+			ViewRotation.Quaternion().GetUpVector());
+		const float Spread = FMath::DegreesToRadians(DualDiveSpreadAngle) * ShootdodgeDualAlpha;
+		SpreadRight = FQuat(CameraUp, Spread);
+		SpreadLeft = FQuat(CameraUp, -Spread);
+	}
 
 	if (Weapon)
 	{
-		LiftFor(Weapon->GetMuzzleTransform(), GunLiftAngle, ShootdodgeArmLift, ShootdodgeHandCounterLift);
-		LiftFor(Weapon->GetMuzzleTransform(bDualDive), GunLiftAngle + OffhandExtraLiftAngle,
+		LiftFor(Weapon->GetMuzzleTransform(), GunLiftAngle, SpreadRight, ShootdodgeArmLift, ShootdodgeHandCounterLift);
+		LiftFor(Weapon->GetMuzzleTransform(bDualDive), GunLiftAngle + OffhandExtraLiftAngle, SpreadLeft,
 			ShootdodgeArmLiftL, ShootdodgeHandCounterLiftL);
 	}
 	else

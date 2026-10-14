@@ -95,7 +95,7 @@ void AProjectBopisGameMode::TrimCorpses()
 	}
 }
 
-bool AProjectBopisGameMode::RequestAttackToken(AActor* Requester)
+bool AProjectBopisGameMode::RequestAttackToken(AActor* Requester, float Distance)
 {
 	const float Now = GetWorld()->GetTimeSeconds();
 
@@ -114,19 +114,41 @@ bool AProjectBopisGameMode::RequestAttackToken(AActor* Requester)
 		}
 	}
 
-	if (AttackTokens.ContainsByPredicate([Requester](const FAttackToken& Token) { return Token.Holder.Get() == Requester; }))
+	// Already holding: keep it, and keep its distance current for the comparison below.
+	if (FAttackToken* Held = AttackTokens.FindByPredicate([Requester](const FAttackToken& Token) { return Token.Holder.Get() == Requester; }))
 	{
+		Held->Distance = Distance;
 		return true;
 	}
 
 	const float* CooldownUntil = AttackTokenCooldowns.Find(Requester);
-	if ((CooldownUntil && Now < *CooldownUntil) || AttackTokens.Num() >= MaxAttackTokens)
+	if (CooldownUntil && Now < *CooldownUntil)
 	{
 		return false;
 	}
 
-	AttackTokens.Add({ Requester, Now });
-	return true;
+	if (AttackTokens.Num() < MaxAttackTokens)
+	{
+		AttackTokens.Add({ Requester, Now, Distance });
+		return true;
+	}
+
+	// All taken: the nearest threats are the ones that can kill. Clearly nearer than the
+	// farthest holder takes its token; the one bumped can ask again straight away.
+	int32 Farthest = INDEX_NONE;
+	for (int32 Index = 0; Index < AttackTokens.Num(); ++Index)
+	{
+		if (Farthest == INDEX_NONE || AttackTokens[Index].Distance > AttackTokens[Farthest].Distance)
+		{
+			Farthest = Index;
+		}
+	}
+	if (Farthest != INDEX_NONE && Distance + AttackTokenStealMargin < AttackTokens[Farthest].Distance)
+	{
+		AttackTokens[Farthest] = { Requester, Now, Distance };
+		return true;
+	}
+	return false;
 }
 
 void AProjectBopisGameMode::ReleaseAttackToken(AActor* Holder, bool bCooldown)
