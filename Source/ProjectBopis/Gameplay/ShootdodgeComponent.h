@@ -110,7 +110,25 @@ public:
 	    back on its feet (the reload key asks for that; movement doesn't). */
 	void RequestGetUp(bool bThenReload = false);
 
+	/** The character died: drops the dive on the spot, whatever phase it's in. Montages
+	    stop, the slow motion ends, and nothing is restored — the ragdoll takes it from here. */
+	void CancelForDeath();
+
 	EShootdodgePhase GetPhase() const { return Phase; }
+
+	/** The body is flying, landing or lying flat — the times GetBodyShape describes it. */
+	UFUNCTION(BlueprintPure, Category = "Shootdodge")
+	bool IsBodyDown() const
+	{
+		return Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop
+			|| Phase == EShootdodgePhase::Land || Phase == EShootdodgePhase::Prone;
+	}
+
+	/** The flying/lying body as a capsule, laid flat along the dive's direction: for other
+	    systems to query against (explosions, melee, AI checks) while IsBodyDown, instead of
+	    the standing-height main capsule. A shape only — run your own query with it. */
+	UFUNCTION(BlueprintPure, Category = "Shootdodge")
+	void GetBodyShape(FVector& OutCentre, FQuat& OutRotation, float& OutRadius, float& OutHalfHeight) const;
 
 	/** The dive's direction relative to where the body faces, −180..180 (0 forward, 90 right):
 	    what the Start/Loop/Land blend spaces are keyed on. */
@@ -224,6 +242,29 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float LandSlideDeceleration = 800.0f;
 
+	/** Capsule half-height from take-off until getting up (cm; standing is the capsule's own).
+	    The body flies and lies flat, so a standing capsule would catch on what it clears. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "1.0"))
+	float DiveCapsuleHalfHeight = 35.0f;
+
+	/** Keeps the lying/flying body out of walls: a capsule shape laid flat along the dive's
+	    direction (the body never turns from it) is swept ahead each frame, and the velocity
+	    into a wall comes off, so the body slides along it. Queries only. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision")
+	bool bBodyCollision = true;
+
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "1.0", EditCondition = "bBodyCollision"))
+	float BodyCapsuleRadius = 18.0f;
+
+	/** Half the body shape's length, end to end (cm) — about half the character's height. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "1.0", EditCondition = "bBodyCollision"))
+	float BodyCapsuleHalfLength = 90.0f;
+
+	/** Most the body is pushed back out of a wall it's already in, per frame (cm) — eases out
+	    rather than popping. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "0.0", EditCondition = "bBodyCollision"))
+	float BodyPushOutPerFrame = 10.0f;
+
 	/** On landing the legs go onto physics, motors holding them to the animation, so the floor
 	    keeps a landing clip from sinking them into it. Back to the animation on lying prone. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs")
@@ -272,7 +313,19 @@ private:
 	void Launch(EShootdodgeDirection Direction);
 
 	void TakeOff();
+
+	/** Down to DiveCapsuleHalfHeight, bottom kept where it is. */
+	void ShrinkCapsule();
+
+	/** Back to standing height, if there's room for it where the body lies. False if not. */
+	bool RestoreCapsule();
+
+	/** Trims the velocity into any wall the body shape would run into this frame. */
+	void KeepBodyOutOfWalls(float DeltaTime);
 	void EnterProne();
+
+	/** Slid off an edge while landing or prone: back to the in-air Loop, to land again. */
+	void FallOffEdge();
 	void Finish();
 	void EndSlowMotion();
 
@@ -318,4 +371,8 @@ private:
 	float SavedWalkingBraking = 0.0f;
 	bool bSavedSeparateBrakingFriction = false;
 	float SavedBrakingFriction = 0.0f;
+
+	/** The capsule is short for the dive; its standing half-height to go back to. */
+	bool bCapsuleShrunk = false;
+	float SavedCapsuleHalfHeight = 0.0f;
 };

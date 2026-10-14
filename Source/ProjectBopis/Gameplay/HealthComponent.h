@@ -35,6 +35,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health", meta = (ClampMin = "1.0"))
 	float MaxHealth = 100.0f;
 
+	/** Damage takes health down but never empties it — for testing, and the player until
+	    player death exists. */
+	UPROPERTY(EditAnywhere, Category = "Health")
+	bool bUnkillable = false;
+
 private:
 
 	float Health = 0.0f;

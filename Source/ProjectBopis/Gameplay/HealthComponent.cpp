@@ -22,6 +22,6 @@ bool UHealthComponent::ApplyDamage(float Amount)
 		return false;
 	}
 
-	Health = FMath::Max(0.0f, Health - Amount);
+	Health = FMath::Max(bUnkillable ? 1.0f : 0.0f, Health - Amount);
 	return IsDepleted();
 }

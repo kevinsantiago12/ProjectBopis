@@ -20,7 +20,27 @@ public:
 	/** Records a fresh corpse; past MaxCorpses, the oldest is removed. */
 	void RegisterCorpse(AActor* Corpse);
 
+	/** Asks to be one of the few enemies allowed to really try to hit the player. True if
+	    the requester holds a token (already, or granted now). */
+	bool RequestAttackToken(AActor* Requester);
+
+	/** Hands a token back early (lost sight, died). bCooldown: wait AttackTokenCooldown
+	    before taking another, as when a hold runs out. */
+	void ReleaseAttackToken(AActor* Holder, bool bCooldown = false);
+
 protected:
+	/** How many enemies at once may try to hit the player; the rest only fire near misses. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack Tokens", meta = (ClampMin = "0"))
+	int32 MaxAttackTokens = 2;
+
+	/** Seconds an enemy keeps its token before handing it on. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack Tokens", meta = (ClampMin = "0.1"))
+	float AttackTokenHoldTime = 3.0f;
+
+	/** Seconds after a token runs out before the same enemy can take another. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack Tokens", meta = (ClampMin = "0.0"))
+	float AttackTokenCooldown = 1.5f;
+
 	/** Most bodies left lying around at once. Older ones are removed as new ones fall. */
 	UPROPERTY(EditAnywhere, Category = "Corpses", meta = (ClampMin = "0"))
 	int32 MaxCorpses = 5;
@@ -38,6 +58,17 @@ private:
 	TArray<TWeakObjectPtr<AActor>> Corpses;
 
 	FTimerHandle CorpseCheckTimer;
+
+	/** Who holds a token, and since when (world seconds). */
+	struct FAttackToken
+	{
+		TWeakObjectPtr<AActor> Holder;
+		float GrantedAt = 0.0f;
+	};
+	TArray<FAttackToken> AttackTokens;
+
+	/** World time before which each enemy can't take a token again. */
+	TMap<TWeakObjectPtr<AActor>, float> AttackTokenCooldowns;
 };
 
 

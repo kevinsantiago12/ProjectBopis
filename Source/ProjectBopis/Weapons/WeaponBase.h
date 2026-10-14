@@ -167,6 +167,9 @@ public:
 
 	float GetMaxRange() const { return MaxRange; }
 
+	/** How fast this weapon's rounds travel (cm/s); 0 for hitscan, which arrives instantly. */
+	float GetProjectileSpeed() const;
+
 	float GetDamageAtDistance(float Distance) const;
 
 	EWeaponFireMode GetFireMode() const { return FireMode; }
@@ -191,9 +194,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	bool CanFire() const;
 
-	/** Fires the weapon. See EFireResult for why a shot may not have happened. */
+	/** Fires the weapon. See EFireResult for why a shot may not have happened.
+	    bExact: the round flies exactly down TraceDirection — no bloom scatter. For shooters
+	    that place their own shots (enemies); pellets still fan out. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	EFireResult Fire(const FVector& TraceStart, const FVector& TraceDirection);
+	EFireResult Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact = false);
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	int32 GetAmmoInMagazine() const { return CurrentAmmoInMagazine; }
@@ -246,6 +251,10 @@ public:
 	FCrosshairSettings GetCrosshairSettings() const { return Crosshair; }
 	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
 	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
+
+	/** Actors this weapon's rounds pass straight through: when an enemy with friendly fire off
+	    fires, every other enemy — pellets and rounds in flight included. */
+	void GetFriendlyActors(TArray<AActor*>& OutFriends) const;
 
 	/** Bloom as it affects the shot: the raw bloom, scaled down during the holder's Focus. */
 	float GetCurrentBloom() const;
@@ -324,6 +333,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float MaxRange = 5000.0f;
+
+	/** How far the shot is heard (cm) — enemies within it are alerted. 0: silent. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|AI", meta = (ClampMin = "0.0"))
+	float NoiseRange = 3000.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	bool bHasZoom = false;

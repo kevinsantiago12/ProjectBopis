@@ -3,6 +3,7 @@
 
 #include "Weapons/WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Hearing.h"
 #include "Components/DecalComponent.h"
 #include "Weapons/ProjectileBase.h"
 #include "Weapons/WeaponHolderComponent.h"
@@ -12,6 +13,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
+#include "Enemies/EnemyBase.h"
+#include "EngineUtils.h"
 
 
 static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
@@ -126,7 +129,16 @@ void AWeaponBase::CancelReload()
 	bIsReloading = false;
 }
 
-EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection)
+float AWeaponBase::GetProjectileSpeed() const
+{
+	// Read off the projectile class's defaults — the speed is the same for every round.
+	const AProjectileBase* Round = (bIsProjectileWeapon && ProjectileClass)
+		? ProjectileClass->GetDefaultObject<AProjectileBase>()
+		: nullptr;
+	return Round ? Round->GetInitialSpeed() : 0.0f;
+}
+
+EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact)
 {
 	if (!CanFire())
 	{
@@ -164,6 +176,12 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	--CurrentAmmoInMagazine;
 
+	// The shot carries: enemies within NoiseRange hear it, and who fired it.
+	if (NoiseRange > 0.0f)
+	{
+		UAISense_Hearing::ReportNoiseEvent(GetWorld(), GetActorLocation(), 1.0f, GetOwner(), NoiseRange);
+	}
+
 	USkeletalMeshComponent* FiringMesh = GetFiringMesh();
 
 	if (!bUseAnimationDrivenFeedback)
@@ -184,7 +202,9 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	}
 
 	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, GetCurrentBloom());
-	const FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
+	const FVector SpreadDirection = bExact
+		? TraceDirection
+		: FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
 
 	// Bloom displaces the pattern centre; the pellets fan out around it. One pellet
 	// at zero pellet spread skips the second random draw entirely, so every existing
@@ -243,6 +263,10 @@ void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDi
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(GetOwner());
 	QueryParams.bReturnPhysicalMaterial = true;
+
+	TArray<AActor*> Friends;
+	GetFriendlyActors(Friends);
+	QueryParams.AddIgnoredActors(Friends);
 
 	FHitResult HitResult;
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
@@ -303,6 +327,14 @@ void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& Sprea
 		Projectile->AddIgnoredActor(GetInstigator());
 		Projectile->AddIgnoredActor(GetOwner());
 		Projectile->AddIgnoredActor(this);
+
+		// An enemy's rounds pass through the other enemies.
+		TArray<AActor*> Friends;
+		GetFriendlyActors(Friends);
+		for (AActor* Friend : Friends)
+		{
+			Projectile->AddIgnoredActor(Friend);
+		}
 	}
 }
 
@@ -371,4 +403,19 @@ FVector AWeaponBase::GetMuzzleLocation() const
 	// Fall back to the actor origin. Returning zero would put every shot at world
 	// origin if the socket were ever renamed — a spectacular and confusing bug.
 	return GetActorLocation();
+}
+
+void AWeaponBase::GetFriendlyActors(TArray<AActor*>& OutFriends) const
+{
+	// Only enemies spare each other, and only those with friendly fire off; the player's
+	// rounds hit everyone.
+	const AEnemyBase* Shooter = Cast<AEnemyBase>(GetOwner());
+	if (!Shooter || Shooter->HasFriendlyFire())
+	{
+		return;
+	}
+	for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+	{
+		OutFriends.Add(*It);
+	}
 }

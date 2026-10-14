@@ -101,6 +101,20 @@ namespace
 		const float MaxAngle = FMath::DegreesToRadians(MaxDegrees);
 		return FMath::Abs(Angle) > MaxAngle ? FQuat(Axis, FMath::Sign(Angle) * MaxAngle) : Q;
 	}
+
+	/** Direction, its up/down angle (from level, in degrees) kept within Min..Max; the way it
+	    points across the ground is kept. Straight up or down there's no such way, so it's left. */
+	FVector ClampElevation(const FVector& Direction, float MinDegrees, float MaxDegrees)
+	{
+		const FVector Flat = FVector(Direction.X, Direction.Y, 0.0f).GetSafeNormal();
+		if (Flat.IsZero())
+		{
+			return Direction;
+		}
+		const float Elevation = FMath::Asin(FMath::Clamp(Direction.Z, -1.0f, 1.0f));
+		const float Clamped = FMath::Clamp(Elevation, FMath::DegreesToRadians(MinDegrees), FMath::DegreesToRadians(MaxDegrees));
+		return Flat * FMath::Cos(Clamped) + FVector::UpVector * FMath::Sin(Clamped);
+	}
 }
 
 void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
@@ -148,8 +162,11 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 		const FTransform Muzzle = Weapon->GetMuzzleTransform();
 		const FTransform& ToComponent = Mesh->GetComponentTransform();
 		const FVector GunDirection = ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
-		const FVector WantedDirection = ToComponent.InverseTransformVectorNoScale(
-			(AimPoint - Muzzle.GetLocation()).GetSafeNormal());
+		// The poses follow the aim up and down only so far (Max Payne's way): past the limit the
+		// guns stay at it, while the shots still go from the muzzle to the crosshair's point.
+		// (The mesh only ever turns about the vertical, so its up is the world's.)
+		const FVector WantedDirection = ClampElevation(ToComponent.InverseTransformVectorNoScale(
+			(AimPoint - Muzzle.GetLocation()).GetSafeNormal()), AimPitchMin(), AimPitchMax());
 
 		// The gun as the poses alone hold it: the correction now applied taken back out. The
 		// whole turn from there to the target is worked out fresh each frame, never added on to
@@ -188,8 +205,8 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 				const FTransform Head = Mesh->GetSocketTransform(TEXT("head"));
 				const FVector HeadForward = ToComponent.InverseTransformVectorNoScale(
 					Head.GetRotation().RotateVector(HeadLocalForward));
-				const FVector ToTarget = ToComponent.InverseTransformVectorNoScale(
-					(AimPoint - Head.GetLocation()).GetSafeNormal());
+				const FVector ToTarget = ClampElevation(ToComponent.InverseTransformVectorNoScale(
+					(AimPoint - Head.GetLocation()).GetSafeNormal()), AimPitchMin(), AimPitchMax());
 				// Fresh each frame from the head as the poses (and the chest) hold it, as for the gun.
 				HeadTarget = ClampTurn(FQuat::FindBetweenNormals(HeadCorrectionTotal.UnrotateVector(HeadForward), ToTarget),
 					HeadLookMaxAngle);
@@ -207,8 +224,8 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 		{
 			const FTransform OffhandMuzzle = Weapon->GetMuzzleTransform(true);
 			const FVector OffhandGun = ToComponent.InverseTransformVectorNoScale(OffhandMuzzle.GetUnitAxis(EAxis::X));
-			const FVector OffhandWanted = ToComponent.InverseTransformVectorNoScale(
-				(AimPoint - OffhandMuzzle.GetLocation()).GetSafeNormal());
+			const FVector OffhandWanted = ClampElevation(ToComponent.InverseTransformVectorNoScale(
+				(AimPoint - OffhandMuzzle.GetLocation()).GetSafeNormal()), AimPitchMin(), AimPitchMax());
 			OffhandTarget = ClampTurn(
 				FQuat::FindBetweenNormals(OffhandAimCorrectionTotal.UnrotateVector(OffhandGun), OffhandWanted),
 				OffhandAimMaxAngle);
@@ -222,30 +239,52 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	OffhandAimCorrectionTotal = FQuat::Slerp(OffhandAimCorrectionTotal, OffhandTarget, Alpha).GetNormalized();
 	ShootdodgeOffhandAimCorrection = OffhandAimCorrectionTotal.Rotator();
 
-	// Pistols, lying back: the back poses hold the guns down at the hips, between the legs.
+	// Lying back: the back poses hold the guns down at the hips, between the legs.
 	// The arms lift from the shoulders and the hands turn back down by the same amount, so
 	// the guns rise without changing where they point (the corrections above still aim
 	// them). From nothing at the side poses (90°) to BackGunLiftAngle from 135° round to
 	// straight back.
 	const float BackWeight = FMath::Clamp((FMath::Abs(ShootdodgeDirection) - 90.0f) / 45.0f, 0.0f, 1.0f);
-	const float LiftTarget = (bShootdodging && Weapon && !bLongGunDive) ? BackWeight * BackGunLiftAngle : 0.0f;
+	// Long guns too, with their own amount: the rifle hold sits low across the legs as well
+	// (the left hand then follows the grip through its IK, which runs after the lift).
+	const float LiftAmount = bLongGunDive ? LongGunBackLiftAngle : BackGunLiftAngle;
+	const float LiftTarget = (bShootdodging && Weapon) ? BackWeight * LiftAmount : 0.0f;
 	GunLiftAngle = FMath::FInterpTo(GunLiftAngle, LiftTarget, DeltaSeconds, 6.0f);
 
-	ShootdodgeArmLift = FRotator::ZeroRotator;
-	ShootdodgeHandCounterLift = FRotator::ZeroRotator;
-	if (GunLiftAngle > KINDA_SMALL_NUMBER && Mesh && Weapon)
+	// Duals' left arm sits lower still in those poses (its own one-handed hold), so it lifts
+	// further; its turn is about its own gun.
+	const float OffhandLiftTarget = (bShootdodging && bDualDive) ? BackWeight * BackOffhandExtraLift : 0.0f;
+	OffhandExtraLiftAngle = FMath::FInterpTo(OffhandExtraLiftAngle, OffhandLiftTarget, DeltaSeconds, 6.0f);
+
+	// Raised about the level line across a gun: turning its barrel about (gun × up) swings
+	// it — and, from the shoulder, the hand — toward up; the hand turns back by the same.
+	auto LiftFor = [Mesh](const FTransform& Muzzle, float Degrees, FRotator& OutArm, FRotator& OutHand)
 	{
-		// Raised about the level line across the gun: turning the barrel about (gun × up)
-		// swings it — and, from the shoulder, the hand — toward up.
-		const FVector Gun = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
-			Weapon->GetMuzzleTransform().GetUnitAxis(EAxis::X));
+		OutArm = FRotator::ZeroRotator;
+		OutHand = FRotator::ZeroRotator;
+		if (Degrees <= KINDA_SMALL_NUMBER || !Mesh)
+		{
+			return;
+		}
+		const FVector Gun = Mesh->GetComponentTransform().InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
 		const FVector Axis = FVector::CrossProduct(Gun, FVector::UpVector).GetSafeNormal();
 		if (!Axis.IsZero())
 		{
-			const float Lift = FMath::DegreesToRadians(GunLiftAngle);
-			ShootdodgeArmLift = FQuat(Axis, Lift).Rotator();
-			ShootdodgeHandCounterLift = FQuat(Axis, -Lift).Rotator();
+			const float Lift = FMath::DegreesToRadians(Degrees);
+			OutArm = FQuat(Axis, Lift).Rotator();
+			OutHand = FQuat(Axis, -Lift).Rotator();
 		}
+	};
+
+	if (Weapon)
+	{
+		LiftFor(Weapon->GetMuzzleTransform(), GunLiftAngle, ShootdodgeArmLift, ShootdodgeHandCounterLift);
+		LiftFor(Weapon->GetMuzzleTransform(bDualDive), GunLiftAngle + OffhandExtraLiftAngle,
+			ShootdodgeArmLiftL, ShootdodgeHandCounterLiftL);
+	}
+	else
+	{
+		ShootdodgeArmLift = ShootdodgeHandCounterLift = ShootdodgeArmLiftL = ShootdodgeHandCounterLiftL = FRotator::ZeroRotator;
 	}
 
 	// Half on each of two bones: the same mesh-space turn twice adds up to the whole. Pistols
@@ -387,7 +426,8 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAim(const ABopisCharacterBase& C
 
 	const FRotator Control = Character.GetControlRotation();
 	ShootdodgeAimYaw = FRotator::NormalizeAxis(Control.Yaw - Character.GetActorRotation().Yaw);
-	ShootdodgeAimPitch = FRotator::NormalizeAxis(Control.Pitch);
+	// The prone poses' up/down too follows the aim only within the shootdodge limits.
+	ShootdodgeAimPitch = FMath::Clamp(FRotator::NormalizeAxis(Control.Pitch), AimPitchMin(), AimPitchMax());
 }
 
 void UProjectBopisAnimInstance::UpdateLocomotion(const ABopisCharacterBase& Character)

@@ -12,6 +12,192 @@
 
 ---
 
+## 2026-10-12 / 14
+**Summary:**
+- **The shootdodge list is finished** (steps 6–12 plus tuning).
+- **Enemy shooting** (Phase 5 step 5, now the v2 hit-chance model),
+  **player death** and **gunman behaviour v1** are built, the last ending in
+  a wave spawner in the user's square arena. The user: "plays pretty well".
+- All user-confirmed in PIE; detail in the spec (*Shootdodge*, *Enemies →
+  Enemy shooting / v2 / Player death / Gunman behaviour v1*).
+- **The session ended on 2026-10-14.** The user's next ask: **more moves for
+  the player** (see RESUME HERE item 3).
+
+- **Shootdodge:**
+  - **Recoil** in the dive.
+  - **Prone legs:** hold the diagonal, then a slow transition; a mid-swap
+    torso lift and foot IK; physics legs on landing.
+  - **Wind-up:** a Lyra dash from a held aim only, with momentum easing off
+    and actions blocked.
+  - **Aim correction:** computed fresh each frame. The first, accumulating
+    version drifted roll and twisted the head and wrist.
+  - **Long guns:** a rifle arm hold, foregrip IK, a chest/arm/head split.
+  - **Duals:** a mirrored left arm and its own aim.
+  - **Back-pose lifts:** per weapon type, with an extra one for the duals'
+    left arm.
+  - **Up/down aim clamp:** split between pistols and long guns.
+  - **Capsules:** a short main capsule with a headroom check, and a body-shape
+    query against walls.
+  - **Ledge falls:** fall and land again.
+- **A crash was found and fixed:** an `AddTickPrerequisiteComponent`
+  (movement waiting on the Shootdodge component) made the landing's physics-
+  legs switch race the mesh's anim worker thread. Never re-add it.
+- **Enemy shooting (user's accuracy spec):** grows in sight, drains out of
+  sight; a moving player scales the cap and the growth; a flattened spread
+  cone; bursts.
+  - The player is unkillable meanwhile (`bUnkillable`).
+  - **TEMP debug is on:** hit messages, an accuracy readout above enemies,
+    shot lines.
+  - The player mesh had `NoCollision` from the template (bullets passed
+    through); now fixed.
+  - **Tuning, user's rule: "force the player either to find cover or be in
+    constant motion", the same at any distance:**
+    - The cap is hard.
+    - The movement penalty is by plain speed.
+    - Misses are a disc sized **in cm at the player** (`MaxMissRadius` 200 →
+      `MinMissRadius` 5), so distance doesn't change the odds.
+    - Tried and dropped: an angular cone (made close range deadly) and a
+      penalty from the sweep across the view (barely applied far away).
+    - The player no longer staggers (`StaggerDuration` 0); the flinch is kept
+      for now.
+  - **Tuning 2 (the user's rules):**
+    - **Straight lines are easy to track:** speed toward or away from the
+      enemy counts ×0.3.
+    - **Close range is risky:** shots fire at ≥85% within 5 m, fading out
+      by 12 m. Only evading saves you up close.
+    - **The dive cap** (50%) applies to shots during the flight only. It no
+      longer resets the enemy's build-up. Prone and get-up are the
+      vulnerability window.
+    - **`AProjectBopisCharacter::IsEvading()`** is the hook rolls will join.
+    - A "cap stuck at 25% after getting up" report was the movement cap: the
+      user had tuned `MovingAccuracyScale` on `BP_Enemy_Test`.
+  - **The user's verdict:** further tuning needs real shootouts, not test
+    setups. **Next is enemy behaviour.**
+- **Player death:**
+  - The dive is cancelled; dying mid-dive goes to ragdoll with the dive's
+    momentum.
+  - Death slow motion: 2 real seconds at 0.2×, with the Focus look.
+  - The camera follows the pelvis; only look input works.
+  - The level reloads after 3 real seconds.
+  - Enemies stop firing at the body.
+  - **`BP_Kamz` inherits `bUnkillable` from `BP_PlayerCharacter`**, which
+    is why the player "wasn't dying" at first.
+- **Accuracy, tuning 3** (in real fights):
+  - **No movement cap:** moving only slows growth (×0.33 at full speed).
+  - **Dive cap:** 25% on shots during the flight.
+  - **Landing resets enemy accuracy to 25%.**
+  - **Enemies lead projectile shots** by `LeadSkill` × the shot's accuracy.
+    Without it, 30 m/s rounds missed a strafing player even at 100%.
+- **Shooting v2, the hit-chance model, replaces all of that** (the user:
+  "mooks cant hit me up close unless the accuracy thing goes up"; wants it
+  free-flowing, movement and dodges first, aiming fine but no camping; about
+  6 mooks max). Four steps, all user-confirmed:
+  1. **A per-shot hit roll:** base 0.3 × distance (×2.3 at 3 m … ×0.4 at
+     25 m) × player state (dive ×0.1, running ×0.6). Hits go to weighted
+     random bones (head 5%, normal damage on the player); misses are placed
+     near misses past the ear or shoulder; enemy shots skip bloom.
+  2. **Camping heat on the player:** after 1.5 s within 2.5 m of a spot, up
+     to ×2.5 hit chance over 4 s; it drains when you move on.
+  3. **Attack tokens:** 2 enemies at a time may hit, 3 s holds and a 1.5 s
+     cooldown; the rest fire near misses.
+  4. **Warning burst** on a fresh engagement, and a **0.5 s post-hit grace**.
+  - The old accuracy settings are gone, and so are their
+    `BP_Enemy_Test` overrides.
+- **Gunman behaviour v1** (Phase 5 item 6; the user's choices: aggressive
+  mooks, sight + gunfire awareness, the user blocks out the space):
+  - **Step 1, awareness: done.**
+    - `ABopisAIController` with sight and hearing.
+    - Unaware → alerted by sight, gunfire or a hit, rippling to allies within
+      15 m.
+    - Weapons make noise (`NoiseRange`).
+    - `bAimAtPlayer` was replaced by `bStartAlerted`.
+  - **Step 2, StateTree: done (user-confirmed).**
+    - The Gunman Move task and Gunman Check condition, plus engage-spot
+      scoring and last-known memory on the enemy.
+    - The user built `ST_Gunman` by hand (the bridge can't create or author
+      StateTrees). Claude checked it read-only through the bridge and found
+      one bad Delay (deviation > duration).
+  - **Follow-ups from the first shootouts (all user-confirmed):**
+    - **No x-ray aim:** focus only while in sight, plus 0.3 s; then it covers
+      the last known spot.
+    - **Suppressive fire** at that spot for 2 s (`SuppressFireDuration`; 0 =
+      trained enemies hold fire).
+    - **Down after a dive** (landing, prone, get-up) builds enemy accuracy at
+      the moving rate.
+  - **Step 3, pushing in: done (user-confirmed).**
+    - Random on purpose ("we don't want the enemy to be too smart").
+    - `PushChance` 20% per reposition, to 2–4.5 m from the player at 450 cm/s,
+      firing.
+    - `FindEngageSpot` became `FindSpot(range, around, radius)`, called by
+      `ChooseNextSpot`.
+- **2026-10-14:**
+  - **The wave spawner** (`AEncounterDirector`): 6 alive at once, 1–3 s
+    replacements, spawn points ≥12 m away and preferably out of view, a
+    random gun from a pool, spawned alerted.
+  - **Roaming** once the lead goes cold: the furthest Target Point or a
+    random spot.
+  - **TEMP debug removed.**
+  - All user-confirmed.
+- **Kamz physics:** the dump showed `PA_Kamz` is an exact copy of
+  `PA_Mannequin`, so the bodies aren't the cause. The suspect is scaled bones
+  in `SKM_Kamz`'s reference pose; the user is to check the scale.
+- **Test-only content (the user's, to be removed later):** the Kamz and
+  Mercenary packs, `BP_Kamz` (the game mode's current pawn),
+  `BP_PlayerCharacter_Merc`. Kamz's physics asset "expands" on hit
+  reactions; not being fixed.
+- **Code:** applied by Claude on request, each built with the script.
+
+### ▶ RESUME HERE
+1. **Commit (user):**
+   - `ShootdodgeComponent`, `ProjectBopisAnimInstance`, `EnemyBase`,
+     `HealthComponent`, `ProjectBopisCharacter`;
+   - also `BopisCharacterBase.h` (virtual `PlayDeathAnimation`), the new
+     `Enemies/BopisAIController.*` and `Enemies/GunmanStateTreeNodes.*`,
+     `WeaponBase`, `ProjectileBase`, `ProjectBopis.Build.cs`, the new
+     `Gameplay/EncounterDirector.*`, `WeaponHolderComponent.h`,
+     `ProjectBopisGameMode.*` (attack tokens);
+   - the arena level (director + Target Points);
+   - `ST_Gunman`, and `BP_EnemyBase` (Behaviour slot);
+   - `ABP_Player`; `BP_PlayerCharacter` + `BP_Kamz` (mesh collision,
+     `bUnkillable`);
+   - docs.
+   - Leave the test-only character packs out if they're not wanted in history.
+2. **Enemy shooting (v2, the hit-chance model):**
+   - Tune it in real shootouts, plus any per-action changes the user wants
+     (Focus, crouch…).
+   - The TEMP debug has been removed (2026-10-14).
+   - **Done:** the player's gunfire heard after the alert moves the last
+     known spot, and enemies search there without return fire.
+   - **Done:** allies and the line of fire.
+     - Hold fire with a Pawn tube from the muzzle to the player.
+     - Reposition after 1 s blocked; `ST_Gunman`'s Hold got the transition.
+     - Allies don't block sight. That was the real cause: a blocked view
+       sent the enemy into suppression, firing through its buddy.
+     - `bFriendlyFire` per enemy, on in `BP_EnemyBase`.
+     - The magenta tube debug has been removed. The rest of the TEMP
+       shooting debug is still on.
+3. **Gunman behaviour v1 is DONE (2026-10-14):** steps 1–4 + roaming. The
+   user: "plays pretty well".
+   - The arena runs on an `AEncounterDirector` with Target Point spawns.
+   - **NEXT (user, 2026-10-14): "we need to add more moves to the player."**
+     Ask which moves first: they're design calls. Rolls already have a hook,
+     `AProjectBopisCharacter::IsEvading()`. Present one move at a time.
+   - Possible follow-ups:
+     - one pusher at a time, if rushes pile up;
+     - a muzzle clear-shot check against geometry, if enemies keep firing
+       into corners (sight is judged from the head, but shots leave the
+       muzzle).
+   - Player death is done.
+   - Optional: player death animations (none are set, so every death is a
+     ragdoll), and a retry prompt or checkpoints instead of a level reload.
+4. **Shootdodge extra:** the long-gun wind-up shows the dash's empty-handed
+   arms.
+5. **Design question (user + design partner):** the enemy roster.
+6. **Carried over** (2026-10-10's items 5–9): Focus sounds, projectile
+   conversions, feel checks, impact passes.
+
+---
+
 ## 2026-10-11
 **Summary:** **Shootdodge steps 2–5 done**, all user-confirmed in PIE. Detail
 in the spec (*Shootdodge → Built — steps 2–5*).
@@ -85,8 +271,13 @@ in the spec (*Shootdodge → Built — steps 2–5*).
      the back-pose gun lift. **Uncommitted:** anim instance, `WeaponBase`,
      `ShootdodgeComponent`, `ABP_Player`. Open: a camera clamp for looking
      down through the legs on back dives, if still needed;
-   - the capsule while prone;
-   - sliding off a ledge while prone (it falls in the prone pose).
+   - ~~the capsule while prone~~: **done** (2026-10-13). A short main capsule
+     with a headroom check, plus a body-shape query for walls. **Uncommitted:**
+     `ShootdodgeComponent`. The landing crash came from
+     `AddTickPrerequisiteComponent` (see the spec; never re-add it);
+   - ~~sliding off a ledge while prone~~: **done** (2026-10-13). It falls in
+     the flight pose and lands again. **Uncommitted:** `ShootdodgeComponent`,
+     `ABP_Player` (the two new transitions).
 4. **Later in Phase 5:** pick with the user. Candidates:
    - **enemy shooting** (its own aim source from muzzle/eyes; accuracy);
    - **StateTree behaviour** replacing the test patrol;

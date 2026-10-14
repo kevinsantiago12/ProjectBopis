@@ -9,6 +9,8 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequenceBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Engine/World.h"
 
 UShootdodgeComponent::UShootdodgeComponent()
 {
@@ -20,6 +22,11 @@ void UShootdodgeComponent::BeginPlay()
 	Super::BeginPlay();
 
 	Character = Cast<AProjectBopisCharacter>(GetOwner());
+
+	// Don't make the movement wait for this component's tick (AddTickPrerequisiteComponent):
+	// it reorders the frame so the landing's switch of the legs onto physics (made inside the
+	// movement update) races the mesh's animation work on another thread, and crashes. The
+	// wall check's trimmed velocity simply takes effect a frame later.
 
 	// The Start blend space captures its start position when it first initializes — at
 	// game start — so hand it the push-off point from the outset, not 0: otherwise the first
@@ -209,6 +216,18 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	PhaseTime += DeltaTime;
 
+	// Slid off an edge while landing or lying down: back into the air, to land again.
+	if ((Phase == EShootdodgePhase::Land || Phase == EShootdodgePhase::Prone)
+		&& Character->GetCharacterMovement()->IsFalling())
+	{
+		FallOffEdge();
+	}
+
+	if (IsBodyDown())
+	{
+		KeepBodyOutOfWalls(DeltaTime);
+	}
+
 	// The wind-up counts until its animation has fully blended out over the flight; then root
 	// motion comes back.
 	if (WindUpMontage && Phase != EShootdodgePhase::WindUp)
@@ -226,8 +245,7 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	// Winding up, flying, landing and lying prone, the body turns to face the aim; the blend
 	// spaces show the dive (and the prone pose) for the flight's direction relative to it.
-	if (Phase == EShootdodgePhase::WindUp || Phase == EShootdodgePhase::Start || Phase == EShootdodgePhase::Loop
-		|| Phase == EShootdodgePhase::Land || Phase == EShootdodgePhase::Prone)
+	if (Phase == EShootdodgePhase::WindUp || IsBodyDown())
 	{
 		const FRotator Aim(0.0f, Character->GetControlRotation().Yaw, 0.0f);
 		Character->SetActorRotation(FaceAimSpeed > 0.0f
@@ -281,6 +299,10 @@ void UShootdodgeComponent::TakeOff()
 	SavedAirBraking = Movement->BrakingDecelerationFalling;
 	Movement->BrakingDecelerationFalling = DiveAirBraking;
 
+	// The body flies, lands and lies flat: a standing-height capsule would catch on what it
+	// visibly clears (a low window, under a table). Short from here until getting up.
+	ShrinkCapsule();
+
 	Character->LaunchCharacter(FRotator(0.0f, DiveYaw, 0.0f).Vector() * DiveSpeed
 		+ FVector::UpVector * DiveLift, true, true);
 
@@ -301,6 +323,131 @@ void UShootdodgeComponent::TakeOff()
 			bOwnsSlowMotion = Focus->BeginFreeFocus();
 		}
 	}
+}
+
+void UShootdodgeComponent::GetBodyShape(FVector& OutCentre, FQuat& OutRotation, float& OutRadius, float& OutHalfHeight) const
+{
+	// The body lies along the line it launched on and never turns from it: a capsule laid flat
+	// along the dive's direction, centred on the character, resting on the main capsule's
+	// bottom — the same shape from take-off until standing up.
+	const UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	OutRadius = BodyCapsuleRadius;
+	OutHalfHeight = FMath::Max(BodyCapsuleRadius, BodyCapsuleHalfLength);
+	OutCentre = Character->GetActorLocation()
+		+ FVector(0.0f, 0.0f, BodyCapsuleRadius - Capsule->GetScaledCapsuleHalfHeight());
+	OutRotation = FRotationMatrix::MakeFromZ(FRotator(0.0f, DiveYaw, 0.0f).Vector()).ToQuat();
+}
+
+void UShootdodgeComponent::KeepBodyOutOfWalls(float DeltaTime)
+{
+	if (!bBodyCollision)
+	{
+		return;
+	}
+
+	// Geometry queries only — nothing is created or moved, so nothing touches the mesh's
+	// physics. The body shape is swept ahead by this frame's movement; the velocity into
+	// whatever wall it meets comes off, so the body slides along it, the way the main capsule
+	// does. Tested just clear of the floor it lies on; floor-like surfaces aren't walls.
+	FVector Centre;
+	FQuat Rotation;
+	float Radius, HalfHeight;
+	GetBodyShape(Centre, Rotation, Radius, HalfHeight);
+	Centre.Z += 2.0f;
+
+	// Swept ahead by this frame's movement — or a hair, standing still, so an overlap is still
+	// found while lying there.
+	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+	FVector Move = FVector(Movement->Velocity.X, Movement->Velocity.Y, 0.0f) * DeltaTime;
+	if (Move.IsNearlyZero())
+	{
+		Move = FVector(0.0f, 0.0f, 0.1f);
+	}
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ShootdodgeBody), false, Character);
+	FCollisionResponseParams Responses(ECR_Ignore);
+	Responses.CollisionResponse.SetResponse(ECC_WorldStatic, ECR_Block);
+	Responses.CollisionResponse.SetResponse(ECC_WorldDynamic, ECR_Block);
+
+	FHitResult Hit;
+	if (!GetWorld()->SweepSingleByChannel(Hit, Centre, Centre + Move, Rotation, ECC_Pawn,
+		FCollisionShape::MakeCapsule(Radius, HalfHeight), Params, Responses))
+	{
+		return;
+	}
+
+	const FVector Normal = Hit.bStartPenetrating ? Hit.Normal : Hit.ImpactNormal;
+	if (Normal.Z >= 0.7f)
+	{
+		return;
+	}
+	const FVector Wall = FVector(Normal.X, Normal.Y, 0.0f).GetSafeNormal();
+
+	// Already in it (diving off right beside a wall, or slid along into it): eased back out,
+	// a little each frame rather than popping.
+	if (Hit.bStartPenetrating)
+	{
+		const float Out = FMath::Min(Hit.PenetrationDepth + 0.5f, BodyPushOutPerFrame);
+		Character->AddActorWorldOffset(Wall * Out, true);
+	}
+
+	// No further into it: the velocity into the wall comes off; along it stays.
+	const float Into = FVector::DotProduct(Movement->Velocity, Wall);
+	if (Into < 0.0f)
+	{
+		Movement->Velocity -= Wall * Into;
+	}
+}
+
+void UShootdodgeComponent::ShrinkCapsule()
+{
+	UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	const float FullHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+	const float ShortHalfHeight = FMath::Max(DiveCapsuleHalfHeight, Capsule->GetUnscaledCapsuleRadius());
+	if (bCapsuleShrunk || ShortHalfHeight >= FullHalfHeight)
+	{
+		return;
+	}
+
+	// The bottom stays where it is: the centre comes down by the difference and the mesh goes
+	// back up by the same, so nothing visibly moves. (The camera is re-derived from the
+	// capsule's size every frame, as for crouching.)
+	SavedCapsuleHalfHeight = FullHalfHeight;
+	const float Drop = FullHalfHeight - ShortHalfHeight;
+	Capsule->SetCapsuleHalfHeight(ShortHalfHeight);
+	Character->AddActorWorldOffset(FVector(0.0, 0.0, -Drop * Capsule->GetShapeScale()));
+	Character->GetMesh()->AddRelativeLocation(FVector(0.0, 0.0, Drop));
+	bCapsuleShrunk = true;
+}
+
+bool UShootdodgeComponent::RestoreCapsule()
+{
+	if (!bCapsuleShrunk)
+	{
+		return true;
+	}
+
+	UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	const float Drop = SavedCapsuleHalfHeight - Capsule->GetUnscaledCapsuleHalfHeight();
+	const FVector StandingCentre = Capsule->GetComponentLocation() + FVector(0.0, 0.0, Drop * Capsule->GetShapeScale());
+
+	// Room to stand: the full capsule, bottom where it is now, against whatever blocks it.
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ShootdodgeStand), false, Character);
+	FCollisionResponseParams Responses;
+	Capsule->InitSweepCollisionParams(Params, Responses);
+	const FCollisionShape StandingShape = FCollisionShape::MakeCapsule(
+		Capsule->GetScaledCapsuleRadius(), SavedCapsuleHalfHeight * Capsule->GetShapeScale());
+	if (GetWorld()->OverlapBlockingTestByChannel(StandingCentre, Capsule->GetComponentQuat(),
+		Capsule->GetCollisionObjectType(), StandingShape, Params, Responses))
+	{
+		return false;
+	}
+
+	Capsule->SetCapsuleHalfHeight(SavedCapsuleHalfHeight);
+	Character->AddActorWorldOffset(FVector(0.0, 0.0, Drop * Capsule->GetShapeScale()));
+	Character->GetMesh()->AddRelativeLocation(FVector(0.0, 0.0, -Drop));
+	bCapsuleShrunk = false;
+	return true;
 }
 
 void UShootdodgeComponent::NotifyLanded()
@@ -344,6 +491,28 @@ void UShootdodgeComponent::NotifyLanded()
 	}
 }
 
+void UShootdodgeComponent::FallOffEdge()
+{
+	// The walking braking was set for the landing slide; put it back first, so the next
+	// landing saves (and Finish restores) the real values rather than the slide's.
+	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
+	Movement->BrakingDecelerationWalking = SavedWalkingBraking;
+	Movement->bUseSeparateBrakingFriction = bSavedSeparateBrakingFriction;
+	Movement->BrakingFriction = SavedBrakingFriction;
+
+	// Over the edge with the slide's speed: no air braking, so it carries on; normal gravity
+	// (the light dive gravity is for the leap, not a fall). NotifyLanded puts the air braking
+	// back on touchdown, as for the first landing.
+	SavedAirBraking = Movement->BrakingDecelerationFalling;
+	Movement->BrakingDecelerationFalling = DiveAirBraking;
+
+	// The landing's physics legs ease off; the body falls in the flight pose.
+	Character->EndSimulatedLegs(LandingLegBlendOutTime);
+	Phase = EShootdodgePhase::Loop;
+	PhaseTime = 0.0f;
+	PhaseStartPosition = 0.0f;
+}
+
 void UShootdodgeComponent::EnterProne()
 {
 	Phase = EShootdodgePhase::Prone;
@@ -362,6 +531,13 @@ void UShootdodgeComponent::NotifyMoveInput()
 void UShootdodgeComponent::RequestGetUp(bool bThenReload)
 {
 	if (Phase != EShootdodgePhase::Prone)
+	{
+		return;
+	}
+
+	// Standing up needs the full capsule to fit where the body lies; under a table or low
+	// cover it doesn't, and the body stays down until there's room.
+	if (!RestoreCapsule())
 	{
 		return;
 	}
@@ -397,6 +573,7 @@ void UShootdodgeComponent::Finish()
 
 	// In case the dive ended without lying prone.
 	Character->EndSimulatedLegs(LandingLegBlendOutTime);
+	RestoreCapsule();
 
 	UCharacterMovementComponent* Movement = Character->GetCharacterMovement();
 	Movement->GravityScale = SavedGravityScale;
@@ -416,6 +593,29 @@ void UShootdodgeComponent::Finish()
 		bReloadQueued = false;
 		Character->ReloadAfterShootdodge();
 	}
+}
+
+void UShootdodgeComponent::CancelForDeath()
+{
+	if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance())
+	{
+		if (WindUpMontage)
+		{
+			AnimInstance->Montage_Stop(0.1f, WindUpMontage);
+			AnimInstance->SetRootMotionMode(SavedRootMotionMode);
+		}
+		if (GetupMontage)
+		{
+			AnimInstance->Montage_Stop(0.1f, GetupMontage);
+		}
+	}
+	WindUpMontage = nullptr;
+	GetupMontage = nullptr;
+
+	EndSlowMotion();
+	bReloadQueued = false;
+	Phase = EShootdodgePhase::None;
+	SetComponentTickEnabled(false);
 }
 
 void UShootdodgeComponent::EndSlowMotion()

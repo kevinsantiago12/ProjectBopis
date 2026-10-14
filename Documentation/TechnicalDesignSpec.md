@@ -1019,8 +1019,576 @@ owned, weapon + rounds if not, duals unlocked by a second single).
 - `bInfinite` was **on** for the player (the user's testing setting). It must
   be off to see the refill.
 
-**Step 4 is complete.** Still open:
-- **Player death:** same base; needs its own `Die` that keeps the camera.
+**Step 4 is complete.** Player death followed on 2026-10-13 (see *Player
+death* below).
+
+### Enemy shooting — step 5 (2026-10-13, user-confirmed in PIE)
+
+> ⚠ **The accuracy model below was replaced the same day by the hit-chance
+> model** (*Enemy shooting v2*, after *Player death*).
+> - **Replaced:** per-enemy accuracy build-up, growth scales, the
+>   close-range floor, the dive cap and post-dive reset, and the miss disc.
+> - **Still current from this section:** sight, the trigger (and suppressive
+>   fire), the no-x-ray aim, leading, bursts, ammo, and the gotchas.
+
+**Design (user's spec, "start with this"; amendments per player action to come):**
+- Each enemy has an **accuracy**, 0..1:
+  - it starts low;
+  - with the player in sight, it grows the longer they stay visible;
+  - out of sight ("breaking cover"), it drains gradually.
+- **A moving player** slows the growth. It started as a lower cap plus slower
+  growth. **Since 2026-10-13 there's no cap:** "the enemy can always get full
+  100% accuracy, movement will just slow the accuracy increase (… 33%
+  initially)."
+- **Misses** are real bullets. "Variablize as much as possible."
+- **The user later added:**
+  - Misses are limited **vertically**, so the enemy doesn't shoot the ground
+    in front of itself.
+  - **The penalty for movement must be the same at any distance.** "The aim
+    is to force the player either to find cover or be in constant motion."
+  - **Running straight at or away from the enemy** makes you easier to hit
+    than strafing.
+  - **Close range is risky:** moving up close still gets you killed.
+    "Shootdodging and rolling (later on) is the way to fight up close."
+  - **The dive gets its own cap,** now 25%, for the flight only. "Lying
+    prone for long periods will kill you, its the vulnerability window."
+  - **Enemies lead their shots,** after "even at 100% I can still dodge
+    bullets".
+  - **Landing resets the enemy's accuracy to 25%:** "after the shootdodge,
+    reset the accuracy to 25%".
+
+**Code (`AEnemyBase::UpdateShooting`, each tick, alive and not staggered):**
+- **Aim point:** the player's `GetMesh()` `spine_03`, or the actor location
+  if the skeleton has no such bone.
+- **Sight (`CanSeePlayer`):** a Visibility trace from the enemy's `head` to
+  that point, ignoring itself and its weapon. It counts as seen if it reaches
+  the player or hits nothing. **A dead player counts as unseen**, so enemies
+  stop firing at the body.
+- **Accuracy:**
+  - **Effective speed** = sideways speed + `RadialSpeedWeight 0.3` ×
+    straight-line speed. It uses the player's horizontal velocity relative to
+    the enemy, split along the line between them, and has no distance term.
+    The debug readout's cm/s is this number.
+  - `GrowthScale = lerp(1, MovingGrowthScale 0.33,
+    clamp(effectiveSpeed / MovingSpeedForFullPenalty 500))`;
+  - **Seen:** `Accuracy = min(MaxAccuracy 1.0, Accuracy +
+    AccuracyGrowthPerSecond 0.05 × GrowthScale × dt)`. There's no movement
+    cap: moving only slows the build-up. Full speed takes about 55 s from 10%
+    to 100%; standing still takes 18 s.
+  - **Down after a dive** (the landing, prone and get-up phases:
+    `IsBodyDown() && !IsAirborne()`, or `IsGettingUp()`): `GrowthScale =
+    MovingGrowthScale`, even when the body is still. The user asked for it on
+    2026-10-13: a low, small target is harder to settle on. The wind-up
+    builds at the normal rate.
+  - **Unseen:** − `AccuracyLossPerSecond 0.1`, down to `InitialAccuracy 0.1`.
+    Accuracy is set to `InitialAccuracy` in `BeginPlay`.
+  - **Not alerted:** it counts as unseen, so nothing builds (see *Gunman
+    behaviour v1*).
+  - **Landing from a dive:** when `IsEvading()` goes from true to false (the
+    flight ended), `Accuracy = min(Accuracy, AccuracyAfterShootdodge 0.25)`.
+    Every enemy ticking `UpdateShooting` does this, seen or not; a staggered
+    one misses the frame. It's tracked with `bPlayerWasDodging`.
+- **Shot accuracy** is worked out per tick from the stored accuracy. Neither
+  rule below changes the build-up:
+  - **Evading** (`AProjectBopisCharacter::IsEvading()`, currently
+    `Shootdodge->IsAirborne()`, which means the Start/Loop flight):
+    `min(Accuracy, ShootdodgeMaxAccuracy 0.25)`.
+    - Wind-up, landing, prone and get-up are not evading: they're the
+      vulnerability window.
+    - Rolls go into `IsEvading()` when they exist.
+  - **Otherwise:** `max(Accuracy, CloseRangeFloor)`. The floor is
+    `CloseRangeAccuracy 0.85 × closeness`, where closeness is 1 within
+    `CloseRange` (500 cm) and fades linearly to 0 at `CloseRangeFadeEnd`
+    (1200 cm). The distance is measured from the enemy's actor to the aim
+    point. All three values are per enemy, so a shotgunner can be short and
+    brutal and a rifleman long and gentle.
+  - The readout adds `CLOSE xx%` or `DIVE xx%` while either applies.
+- **Trigger:** only with `bShootAtPlayer`, the enemy alerted, the player seen
+  **or being suppressed**, the gun raised, and not equipping or reloading.
+  (`bAimAtPlayer` was replaced by awareness on 2026-10-13.)
+- **Suppressive fire** (user, 2026-10-13):
+  - For `SuppressFireDuration 2` s after losing sight (`TimeSinceSeenPlayer`),
+    it keeps firing bursts at `LastKnownPlayerLocation + 40` (chest height).
+  - These shots use the stored, draining accuracy, with no lead and no
+    close-range floor.
+  - **0 turns it off:** "trained" enemies will hold fire instead.
+  - Alerted by gunfire without seeing the player (`Alert` seeds the last
+    known spot and the timer), it suppresses toward the noise for the same
+    window.
+  - The readout says `SUPPRESS`.
+- **Aim (`UpdateAim`), no x-ray** (user, 2026-10-13: "aiming at me through
+  the wall"):
+  - `SetFocus(Player)` only while `TimeSinceSeenPlayer ≤
+    TrackThroughCoverTime 0.3`.
+  - After that, `SetFocalPoint(last known + 40)`, so it covers the corner
+    where the player vanished.
+  - Within 2 m of that spot (searching), the focus clears and it faces its
+    travel, gun still up.
+- **Hearing after the alert** (user-confirmed 2026-10-13; "you can shoot
+  behind a wall and hes not gonna know that you are there"):
+  - `ABopisAIController::OnTargetPerceived` calls
+    `AEnemyBase::HearPlayer(Stimulus.StimulusLocation)` when the heard noise's
+    actor is the player. Allies' gunfire only alerts the unaware.
+  - `HearPlayer` (alerted, alive) sets `LastKnownPlayerLocation` to the
+    sound. The aim then covers it, and searches go there.
+  - **No return fire at a sound:** the user removed that ("remove the
+    suppress bit, just search the area"). Suppression is after losing sight
+    only.
+  - **Gunman Move [Last Known Position]** with `bFollowNewInfo` (default on):
+    - it stores its `Destination` and re-issues the move whenever the last
+      known spot moves more than 2 m;
+    - it **never finishes**: it stays on the spot listening, so `ST_Gunman`'s
+      `Wait` state is no longer reached (harmless);
+    - finding the player ends the search through the tree's transition.
+- **Allies and the line of fire** (user-confirmed 2026-10-13; "they still
+  end up killing each other"):
+  - **Hold fire:** in `FireAt`, before every shot, `SweepMultiByObjectType`
+    runs a **Pawn-object** sphere tube (`LineOfFireRadius 20` cm) from the
+    **muzzle to the shot's target point**: the chosen bone, the chest, or the
+    suppression spot, led as usual. It deliberately ignores the round's own
+    near-miss offset.
+    - Any live `AEnemyBase` in the tube means the shot is held (`FireAt`
+      returns false). Hits and near misses alike, the burst isn't spent, and
+      it retries next tick.
+  - **Reposition when blocked:** held time accumulates in
+    `LineOfFireBlockedTime`; a fired shot or a new move
+    (`ClearLineOfFireBlocked`) resets it.
+    - Gunman Check **`LineOfFireBlocked`** is true at
+      `RepositionWhenBlockedAfter 1` s.
+    - `ST_Gunman`'s **Hold** has *On Tick → Reposition if Line Of Fire
+      Blocked* (added by the user, checked via the bridge).
+  - **Allies don't block sight:** `HasClearShot` ignores every enemy and
+    their equipped weapons.
+    - Without this, a buddy in between broke sight, the enemy dropped into
+      suppression, and it fired at the last known spot through him.
+    - Walls and cover still block sight.
+  - **Friendly fire:** `bFriendlyFire`, per enemy; C++ default off, and the
+    user turned it **on** in `BP_EnemyBase`.
+    - Off: `AWeaponBase::GetFriendlyActors` lists every enemy, so hitscan
+      ignores them and projectiles `AddIgnoredActor` them. Rounds pass
+      through.
+    - On: crossfire, rounds in flight and stray pellets can still hit
+      allies, and hold-fire only stops deliberate shots through one.
+  - **What was tried and dropped:**
+    - a line trace, then a single sphere sweep on Visibility: the first hit
+      was often the ally's *gun*, which isn't an `AEnemyBase`;
+    - a tube along the round's own path to 1 m past the target: near misses
+      offset past a friend still fired.
+  - **A wrong lead, recorded so it isn't repeated:** the `.uasset` contains a
+    `CharacterMesh` string, but the bridge read showed `BP_EnemyBase`,
+    `BP_Enemy_Test` and `BP_PlayerCharacter` meshes are all **Custom** with
+    Visibility and Projectile at Block. A name-table string is not an applied
+    preset.
+- **TEMP debug removed (2026-10-14):** `bDebugShooting` (the readout and
+  shot lines) and the player's `bShowHitsTaken` are gone. If hit chances need
+  showing again while tuning, put them behind a CVar.
+- **Leading:** for projectile weapons
+  (`AWeaponBase::GetProjectileSpeed()`, read from the projectile class's
+  `InitialSpeed`; 0 for hitscan), the aim point moves ahead by `player
+  velocity × flight time × LeadSkill 1.0 × ShotAccuracy`.
+  - The flight time is a single estimate: muzzle-to-chest distance ÷ speed.
+  - So a fresh enemy barely leads, a fully tracked one leads almost
+    perfectly, and a mid-dive shot leads only 25%.
+  - Without this, enemy rounds (30 m/s) landed behind a strafing player even
+    at 100%.
+  - **Bursts:** `BurstShotsMin/Max` 3–5, at the weapon's own `CanFire` rate,
+    then a `BurstPauseMin/Max` 0.5–1.5 s pause.
+  - **Empty magazine:** `ReloadEquippedWeapon` + its animation, or, with no
+    reserve, `SetAmmoInMagazine(full)`. Enemies never run dry.
+- **Shot (`FireAt`):** `Weapon->Fire(muzzle, dir)` + `PlayFireAnimation`.
+  - `dir` aims at a point on a **flattened disc around the chest, sized in cm
+    at the player**:
+    - the radius is `lerp(MaxMissRadius 200, MinMissRadius 5, ShotAccuracy)` side
+      to side, × `VerticalSpreadScale 0.3` up and down;
+    - the point is sampled uniformly on the squashed disc.
+  - The spread is `radius ÷ distance`, as a tangent, so accuracy alone sets
+    the hit chance at any range.
+  - It's limited to `MaxSpreadAngle 30°` from the barrel. That only matters
+    within about 3.5 m at low accuracy, where point blank gets slightly easier.
+  - The weapon's own bloom adds a little on top.
+- **Getter:** `GetAccuracy()`.
+
+**What was tried and dropped (2026-10-13):**
+- **An angular cone** (`MaxSpreadAngle 12°`/`MinSpreadAngle 0.5°`): a fixed
+  angle covers less ground up close, so walking up to an enemy made you
+  easy to hit.
+- **A penalty from the sweep across the enemy's view** (sideways speed ÷
+  distance): fixed close range, but the penalty barely applied far away, or
+  when running straight in, or when the enemy strafed alongside.
+- **A soft cap** (draining at `AccuracyLossPerSecond` down to the cap): with
+  the cap moving every frame, accuracy sat well above it.
+- **Speed alone, with no direction:** running straight at an enemy protected
+  you as much as strafing.
+- **A distance-independent miss disc on its own:** you could dodge everything
+  at point blank. That's why the close-range floor was added.
+- **The dive cap as the build-up's cap, for the whole dive (wind-up to
+  get-up):** it clamped the stored accuracy, so every dive reset the enemy,
+  and lying prone stayed safe. It now applies to shots only, during the
+  flight. The user later asked for a reset on **landing** instead, which is
+  `AccuracyAfterShootdodge`.
+- **A movement cap on accuracy**, hard or soft: replaced by growth-only
+  slowing, at the user's request.
+
+**Player (2026-10-13):**
+- **The player never staggers:** `StaggerDuration = 0` in
+  `AProjectBopisCharacter`'s constructor. Being rooted would also cut a dive
+  short. The light flinch stays, for now.
+- `UHealthComponent::bUnkillable` (health floors at 1) is still there for
+  testing. **The user unticked it** on `BP_PlayerCharacter` once player death
+  worked.
+- **TEMP debug, to remove once tuned:**
+  - `AProjectBopisCharacter::TakeDamage` prints `HIT -dmg (bone) health x/y`
+    (`bShowHitsTaken`);
+  - the enemy's `bDebugShooting` draws "unaware/SEES/lost acc% (growth ×n)
+    speed cm/s [CLOSE/DIVE xx%]" above the head, plus a line per shot, red if it reaches the player and
+    yellow if it misses, for 1 s.
+
+**Gotchas found:**
+- **`BP_PlayerCharacter`'s mesh was `NoCollision`** (a template leftover
+  overriding the C++ responses), so no bullet or trace could hit the player.
+  It's now set to the enemy's mesh collision (query-only Pawn: blocks
+  Visibility and Projectile, ignores Pawn/Vehicle/Camera).
+- **`BP_Kamz` is a child of `BP_PlayerCharacter`.** Values it overrides stay
+  its own (the mesh collision had to be set on both). Values it doesn't
+  override come from the parent: it inherited `bUnkillable`, which made
+  "the player isn't dying".
+- Tune the AnimBP's settings on **Class Defaults**; Preview-window edits
+  aren't saved.
+
+**Next (user, as development goes):** accuracy amendments per player action
+(Focus, crouch, firing…), judged in real shootouts (*Gunman behaviour v1*).
+
+### Player death — Phase 5 (2026-10-13, user-confirmed in PIE)
+
+The user's choices:
+- reload the level;
+- the camera follows the body;
+- dying mid-dive goes straight to ragdoll.
+
+**Code:**
+- **`AProjectBopisCharacter::Die`** (overrides the base's):
+  - It reads `bDiedMidDive = Shootdodge->IsBodyDown()` (flying, landing or
+    prone), then `DiveDeathVelocity` (the velocity at death).
+  - It calls `UShootdodgeComponent::CancelForDeath()`. That stops the
+    wind-up/get-up montages (restoring the root-motion mode), ends the dive's
+    slow motion, clears the queued reload, sets the phase to `None`, and
+    stops the component ticking. Nothing else is restored, because the
+    ragdoll takes over.
+  - It stops Focus, then starts **death slow motion**: `BeginFreeFocus()` (the
+    Focus look and pitch) with the global dilation overridden to
+    `DeathTimeDilation 0.2`.
+  - It sets `bIsAiming = false`, then calls `Super::Die`.
+  - Then it sets `bUseControllerRotationYaw = false` and
+    `ClearActionEventBindings()`, and rebinds only Look/MouseLook. Look orbits
+    the camera; nothing else responds.
+- **No death animation mid-dive:**
+  - `PlayDeathAnimation` is now `virtual` on `ABopisCharacterBase`. The
+    player's override returns false when `bDiedMidDive`, so the base
+    `TakeDamage` ragdolls at once.
+  - The player's `TakeDamage` then adds `DiveDeathVelocity` to every body
+    (`SetAllPhysicsLinearVelocity(..., true)`), so the dive's momentum
+    carries into the ragdoll.
+  - The player Blueprints have no `DeathAnimations` set, so every player death
+    is a ragdoll for now.
+- **`Tick` while dead** skips crouch, stances and camera framing:
+  - `FollowBodyWithCamera` eases the boom's world location to the `pelvis` at
+    `DeathCameraFollowSpeed 8`. The capsule stays where the player died.
+  - `TimeSinceDeath` counts **real seconds** (`FApp::GetDeltaTime()`, from
+    before any dilation). At `DeathSlowMoDuration 2` it calls
+    `EndFreeFocus()`, and at `DeathRestartDelay 3` it calls `RestartLevel()`
+    (`OpenLevel` with the current level's name).
+  - A game-time `FTimerHandle` was used first and dropped: slow motion
+    stretched it.
+
+### Enemy shooting v2 — the hit-chance model (2026-10-13, user-confirmed in PIE)
+
+**Why it was replaced:** the user said "It seems the mooks cant hit me up
+close unless the accuracy thing goes up." What they want: "emphasis on
+movement and using your 'dodges' and accuracy to survive gunfights, it should
+be freeflowing… aiming and shooting is a valid strategy but we dont want them
+camping out with it."
+- The old accuracy number only sized a miss disc. 85% still missed about
+  half the time, and every tweak was a patch on top.
+- The new design is Claude's proposal, accepted: the cinematic-shooter
+  approach (Max Payne 3 / Uncharted).
+- The user caps fights at **about 6 mooks**.
+
+**Each shot rolls to hit** (`AEnemyBase::UpdateShooting` / `FireAt`):
+- `HitChance = min(MaxHitChance 0.9, BaseHitChance 0.3 × DistanceFactor ×
+  StateFactor × CampingFactor)`.
+- **Distance:** ×`CloseHitMultiplier 2.3` within `CloseHitRange 300`, ×1 at
+  `MidHitRange 1000`, ×`FarHitMultiplier 0.4` from `FarHitRange 2500`;
+  linear in between (`GetMappedRangeValueClamped`).
+- **State:**
+  - mid-evasion (`IsEvading()`, the dive's flight): ×`EvadingHitMultiplier
+    0.1`;
+  - down after a dive (landing, prone, get-up): ×`DownHitMultiplier 1.0`;
+  - otherwise speed: ×1 standing → ×`MovingHitMultiplier 0.6` at
+    `MovingSpeedForFullPenalty 500` cm/s.
+- **Camping:** ×(1 + `CampingHitBonus 1.5` × the player's camping heat).
+- **A hit also needs:**
+  - the enemy can see the player;
+  - it holds an **attack token**;
+  - it isn't in a **warning burst**;
+  - the player isn't in **hit grace**.
+- **Typical chances** (standing / running / mid-dive, fresh heat): 3 m
+  69/41/7%, 10 m 30/18/3%, 20 m 16/10/2%.
+
+**Placement (`FireAt(Target, bHit)`):**
+- **Hits** aim at a bone drawn from `HitBoneWeights`:
+  - torso 60% (`spine_03` 25, `spine_05` 20, `pelvis` 15);
+  - arms 15% (upper arms 4 each, lower arms 3.5 each);
+  - legs 20% (thighs 6 each, calves 4 each);
+  - head 5%.
+  - Bones the player's mesh lacks are skipped. Scatter is `HitScatter 5` cm.
+- **Near misses** pass 60–150 cm (`NearMissMin/Max`) to a random side, at
+  −0.25..1 × `NearMissHeight 60` cm, so past the ear or over the shoulder,
+  never into the floor.
+- **Suppression** shots are near misses around the last known spot.
+- **Leading:** both hits and misses are led by `velocity × flight time ×
+  LeadSkill 1.0` for projectile weapons.
+- **No bloom:** `AWeaponBase::Fire(…, bExact = true)` skips the bloom
+  scatter, so a placed shot stays placed. Pellets still fan out; the player's
+  own guns are unchanged.
+- **Player headshots do normal damage:** the player's constructor removes
+  the `head` ×4 from `BoneDamageMultipliers`. Enemies keep ×4.
+
+**Camping heat** (`AProjectBopisCharacter::UpdateCampingHeat`, on the
+player, shared by all enemies):
+- **Anchor:** staying within `CampRadius 250` cm of the anchor accumulates
+  time there. Leaving re-anchors at the current spot and resets the time.
+- **Heat:** the target is `clamp((time − CampGraceTime 1.5) /
+  CampTimeToFullHeat 4)`. Heat rises to the target at once, and falls toward
+  it at `CampHeatDrainPerSecond 0.5`.
+- **Consequences:**
+  - strafing inside the circle still counts as camping;
+  - heat runs on game time, so it builds slower in slow motion;
+  - it's read through `GetCampingHeat()`.
+
+**Attack tokens** (`AProjectBopisGameMode`):
+- **Limits:** `MaxAttackTokens 2`, `AttackTokenHoldTime 3`,
+  `AttackTokenCooldown 1.5`.
+- **Requesting:** an enemy calls `RequestAttackToken` each tick while it sees
+  the player. Tokens are first come, first served.
+  - Expired holds are handed back, with that enemy put on cooldown, during
+    the next request.
+- **Releasing:** `ReleaseAttackToken` on losing sight (no cooldown) and on
+  death.
+- **No game mode** (another map's mode): everyone may hit.
+- Token holds are a `TArray` of weak holder + grant time; cooldowns are a
+  `TMap`.
+
+**Fairness:**
+- **Warning burst:**
+  - With `bWarningBurst` on, the first burst at a *seen* player after
+    alerting, or after `WarningBurstResetTime 4` s unseen, is all misses.
+  - A burst fired while suppressing doesn't use it up.
+- **Hit grace:**
+  - `AProjectBopisCharacter::IsInHitGrace()` holds for `HitGraceTime 0.5` s
+    after damage was taken (stamped in `TakeDamage`).
+  - It gates the roll, not damage, so rounds already in flight still land.
+
+**Debug readout (TEMP):** `SEES hit xx% (dist ×, state ×, camp ×) cm/s` plus
+the `PUSH` / `TOKEN` / `WARN` tags.
+
+### Gunman behaviour v1 — work order (2026-10-13, done 2026-10-14)
+
+**Why:** the user wants real shootouts, not test setups, to judge feel and
+difficulty.
+
+**The user's choices (2026-10-13):**
+- **Aggressive mooks** (John Woo): alert, then keep shooting while
+  repositioning near the player at a preferred range, sometimes pushing in.
+  No cover system yet.
+- **Awareness by sight + gunfire:** unaware until they see you or hear
+  shots. An alerted enemy alerts others near it, so the player can start a
+  fight on their own terms.
+- **The user blocks out the test space.** Claude handles the enemy
+  settings, navmesh notes and spawn logic.
+
+**Architecture:**
+- **`ABopisAIController`** (new) owns an `UAIPerceptionComponent` with sight
+  and hearing.
+- **The behaviour** is a per-archetype StateTree (`ST_Gunman`), run by the
+  controller's StateTree AI component. The tasks are C++; the tree is
+  assembled in the editor.
+- **The enemy keeps the primitives** the tree drives: aim/focus, raise,
+  move, and permission to fire. Accuracy and bursts stay in
+  `UpdateShooting`.
+- **Gunfire is a hearing noise** reported by `AWeaponBase::Fire`
+  (`UAISense_Hearing::ReportNoiseEvent`), with a per-weapon range, so
+  suppressed weapons later just get a shorter one.
+
+**Order (one item at a time):**
+1. **Awareness:**
+   - the controller + perception;
+   - an unaware → alerted state on the enemy (`Alert(Target)`): alerted by
+     sight, by gunfire heard, or by being hit;
+   - spreading the alert to allies within a radius, after a short delay;
+   - player gunfire as noise.
+   - Until the StateTree exists, an alerted enemy uses the old
+     `bAimAtPlayer` behaviour as its engage. *(Done.)*
+2. **StateTree scaffolding:**
+   - C++ tasks: pick an engage spot (reachable, at the preferred range, with
+     line of sight), move there while aiming and firing, hold and shoot for
+     a while, then go again; go to the last known position when the player
+     is lost.
+   - `ST_Gunman` assembled in the editor.
+   - It replaces the test patrol/aim (the patrol stays as the unaware
+     state).
+3. **Pushing in**, and tuning the preferred range.
+4. **Encounters:** placing/spawning groups for the user's blockout (waves or
+   triggers, as the space needs).
+
+**Step 1, built (user-confirmed 2026-10-13):**
+- **`ABopisAIController`** (`Enemies/BopisAIController.h/.cpp`) is the
+  enemy's `AIControllerClass`.
+  - **Sight:** 3000 cm, lost at 3500, 70° each side.
+  - **Hearing:** range 10000 cm; the weapon's `NoiseRange` decides.
+  - **Detection:** both senses detect every affiliation, since nothing has a
+    team.
+  - **`OnTargetPerceived`** (bound in `BeginPlay`) calls `Alert(player)` on
+    sight of the player, or on any gunfire heard.
+- **`AEnemyBase`:**
+  - **Alerting:** `Alert(Target)` sets `bAlerted`, the alert target and the
+    last known location, then spreads to every live enemy within
+    `AlertAlliesRadius 1500` after `AlertAlliesDelay 0.5`. Each newly alerted
+    enemy passes it on, so it ripples.
+  - **Being hit** alerts it too (`TakeDamage` override → instigator's pawn).
+  - **`bStartAlerted`** (default off) replaces the old `bAimAtPlayer` test
+    flag.
+  - **Unaware** means gun down, no shooting, no build-up, test patrol only.
+- **Gunfire noise:** `AWeaponBase::Fire` calls
+  `UAISense_Hearing::ReportNoiseEvent(muzzle, 1, owner, NoiseRange 3000)` on
+  each shot; 0 makes the weapon silent.
+
+**Step 2, built (user-confirmed 2026-10-13; `ST_Gunman` built by the user,
+checked via the bridge). Follow-ups: no x-ray aim and suppressive fire (see
+*Enemy shooting*).**
+- **The controller runs the tree:**
+  - It owns a `UStateTreeAIComponent` (`BrainComponent`) with
+    start-automatically off.
+  - `StartBehaviour()` (from `BeginPlay` if already possessed, or
+    `OnPossess` mid-game) calls `SetStateTree(Enemy->GetBehaviour())` +
+    `StartLogic()`.
+  - The controller is destroyed with the body on death, so the tree goes
+    with it.
+- **`AEnemyBase`:**
+  - **`Behaviour`:** the StateTree asset slot. `BP_EnemyBase` →
+    `/Game/ThirdPerson/AI/ST_Gunman`.
+  - **`FindSpot(range, around, radius)`** (it was `FindEngageSpot` until step
+    3): `EngageSpotSamples 12` random reachable nav points within the radius
+    of the sample centre, scored against the **last known** player spot:
+    - −1 per cm outside the range band;
+    - +1000 for a clear shot from eye height to the chest;
+    - −500 per live ally within `AllySpacing 300`.
+  - **`ChooseNextSpot`** (used by Gunman Move; step 3 below) either:
+    - pushes in, or
+    - looks for a normal engage spot in `PreferredRangeMin/Max 600–1500`
+      within `RepositionRadius 800` of itself.
+  - **Memory:** `LastKnownPlayerLocation` and `TimeSinceSeenPlayer` are
+    updated in `UpdateShooting` and seeded by `Alert`.
+  - **`HasClearShot`** is shared with `CanSeePlayer`.
+  - **The test patrol** only runs while unaware.
+  - The module gained the `NavigationSystem` dependency.
+
+**Step 3, pushing in (user-confirmed 2026-10-13).** The user chose
+**random**: "We don't want the enemy to be too smart. After all the idea is
+to get as much stylish kills as possible."
+- **Each Gunman Move [Engage Spot]** rolls `PushChance 0.2`.
+- **On a hit:** `FindSpot(PushRangeMin/Max 200–450, around the last known
+  player spot, radius PushRangeMax)`, and `bPushingIn` is set.
+  - While it's set, `UpdateMovementMode` uses `PushSpeed 450` (normally
+    `RaisedSpeed 250`). It keeps firing on the way.
+  - The task's `ExitState` calls `EndPush()`, so after arriving it holds, and
+    the next move rolls again.
+  - The readout shows `PUSH`.
+- **No coordination:** several enemies can push at once. A one-pusher-at-a-
+  time cap would be pacing, not smarts, and can be added if it's too much.
+- **A push lands it inside the close-range floor zone (<5 m):** dangerous for
+  the player, and a mook in the open to dive at.
+- **Preferred range:** the 600–1500 defaults are kept. It's per enemy, to be
+  tuned in play.
+- **Nodes** (`Enemies/GunmanStateTreeNodes.h/.cpp`; instance data with a
+  `Context` AI controller, plus `Parameter`s):
+  - **`FGunmanMoveTask` "Gunman Move":** goal is `EngageSpot` or
+    `LastKnownPosition`; `MoveToLocation` with strafing (keeps the focus) and
+    projection. Succeeds on arrival (move status idle), fails with no
+    spot/path, and stops movement on early exit.
+  - **`FGunmanCondition` "Gunman Check":** `IsAlerted` or `HasLostPlayer`
+    (alerted and unseen for `LostForSeconds`), with `bInvert`.
+- **`ST_Gunman`** (`StateTree AI Component` schema; the schema classes are
+  left at AIController/Pawn, which works because the nodes cast for
+  themselves):
+
+```
+Root
+├─ Unaware        Delay (forever)           On Tick → Engage   if Is Alerted
+├─ Engage                                   On Tick → Search   if Has Lost Player 3 s
+│   ├─ Reposition Gunman Move [Engage Spot] On Completed → Hold
+│   └─ Hold       Delay 2 ± 1               On Completed → Reposition
+└─ Search                                   On Tick → Engage   if NOT Has Lost Player 3 s
+    ├─ Go Look    Gunman Move [Last Known]  On Completed → Wait
+    └─ Wait       Delay (forever)
+```
+
+- **The bridge can't author StateTrees:** there's no create-asset tool and no
+  StateTree toolset. It **can read** them:
+  - the editor data is `ST_X.ST_X:StateTreeEditorData_0`;
+  - the states hang off its `subTrees`/`children`, each with `tasks`,
+    `transitions` (`trigger`, `state.iD`, `conditions`) and
+    `enterConditions`;
+  - each node's `node`/`instance` `_structType` names the type.
+  - Note the gotcha found while checking: a Delay's **Random Deviation**
+    larger than its Duration can roll ≤ 0 and end at once.
+
+**Step 4, encounters: the wave spawner (user-confirmed 2026-10-14).** The
+user's call: "lets do waves… constantly spawn enemies so that there are always
+6 at the same time, when we spawn we randomly assign a weapon to them." The
+test map is a square arena.
+- **`AEncounterDirector`** (`Gameplay/EncounterDirector.h/.cpp`) is placed
+  one per arena.
+  - **Settings:** `EnemyClass` (`BP_Enemy_Test`), `SpawnPoints` (Target
+    Points, per instance), `WeaponPool`, `MaxAlive 6`, `RespawnDelayMin/Max
+    1–3` s, `TotalEnemies` (0 = endless), `MinSpawnDistance 1200`,
+    `bPreferOutOfView`, `bSpawnAlerted`.
+  - **`BeginPlay`** fills to `MaxAlive`.
+  - **`Tick`** (0.2 s) prunes the dead or destroyed from its weak `Alive`
+    list. When short, it schedules a replacement after the random delay and
+    keeps retrying while no point is free.
+  - **`PickSpawnPoint`** skips points within `MinSpawnDistance` of the player
+    or within 1.5 m of a live spawned enemy. It prefers points outside about
+    60° either side of the player's view direction, falling back to any
+    usable point.
+  - **`TrySpawnOne`:**
+    - `SpawnActorDeferred` at the point, lifted by the class CDO's capsule
+      half-height, with `AdjustIfPossibleButDontSpawnIfColliding`;
+    - `UWeaponHolderComponent::SetStartingWeaponClass` from the pool, which
+      must happen **before** `FinishSpawning`, because the holder equips in
+      `BeginPlay`;
+    - `FinishSpawning`, then `Alert(player)` if `bSpawnAlerted`.
+- **Patrol points** are the old test patrol for *unaware* placed enemies;
+  every placed enemy shared one list. Spawned enemies start alerted and never
+  use them.
+
+**Roaming (user-confirmed 2026-10-14):** "roam when alerted but no vision and
+does not have a last known position anymore… random spot on the map OR… the
+target point (the furthest one)".
+- **The lead goes cold:** `bLeadGone` is set once the enemy has stood within
+  2.5 m of `LastKnownPlayerLocation` for `LeadGoneAfter 3` s while alerted
+  and not seeing the player. Sight and `HearPlayer` reset it.
+- **`ChooseRoamSpot`:** with `RoamToPointChance 0.5`, the **furthest
+  `ATargetPoint`** in the level, which includes the spawn points; otherwise
+  a random reachable nav point within `RoamRadius 3000`.
+- **Aim while roaming:** with the lead gone, `UpdateAim` clears the focus, so
+  the enemy looks where it's going, gun up.
+- **Nodes:** Gunman Move goal **`Roam`** (finishes on arrival); Gunman Check
+  **`LeadGone`**.
+- **`ST_Gunman`** (edited by the user): Search gains *Go Look → Roam if Lead
+  Gone*, plus a new state **Roam**: Gunman Move [Roam], *On Completed →
+  Roam*, and *On Tick → Go Look if NOT Lead Gone*.
+
+**Gunman behaviour v1 is complete.**
 
 ### Three families
 
@@ -1985,9 +2553,78 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   enough; a camera pitch clamp for back dives was proposed but not built.
   The wind-up still shows the dash's empty-handed arms with long guns.
 
-**Next:**
-- Capsule while prone.
-- Sliding off a ledge while prone.
+**Capsules (2026-10-13, user: "will work for now"):**
+- **Main capsule:** `ShrinkCapsule` at `TakeOff` brings it to
+  `DiveCapsuleHalfHeight` (35).
+  - The bottom stays put: actor down by the difference, mesh relative +Z by
+    the same. The camera is re-derived from the capsule size every frame.
+  - `RestoreCapsule` runs on `RequestGetUp`: an `OverlapBlockingTestByChannel`
+    with the full capsule. If blocked, the get-up (and a reload-to-stand
+    press) is refused and the body stays down. `Finish` also tries it.
+- **Body shape (queries only, no component):** `GetBodyShape` gives a capsule
+  laid flat along `DiveYaw`, centred on the actor, resting on the main
+  capsule's bottom (`BodyCapsuleRadius` 18, `BodyCapsuleHalfLength` 90).
+  - The body never turns from the dive line, so it's one fixed shape until
+    standing (user's call: no pose sampling, no turn checks).
+  - `KeepBodyOutOfWalls`, while `IsBodyDown()`:
+    - sweeps it 2 cm off the floor by this frame's horizontal move (or a
+      hair, lying still);
+    - skips floor-like hits (normal Z ≥ 0.7);
+    - if it starts inside a wall, pushes the actor out along the normal by
+      the depth, capped `BodyPushOutPerFrame` (10);
+    - removes the velocity into the wall.
+  - `IsBodyDown()` / `GetBodyShape()` are public and Blueprint-callable, for
+    explosions, melee and AI to query later.
+- **Crash, two lessons:**
+  - **Never `AddTickPrerequisiteComponent` from the character movement to
+    this component.** It reorders the frame so the landing's `SimulateLegs`
+    (called inside the movement update) races the mesh's worker-thread anim
+    evaluation. Result: an engine-only crash, "Array index out of bounds: 71
+    from an array of size 0", every landing. The wall trim takes effect one
+    frame late instead.
+  - The first body capsule was also a runtime-created `UCapsuleComponent` with
+    overlap events, moved per frame. It was rolled back too, so queries only
+    from here on.
+
+**Ledges (2026-10-13, user: "falling works"):**
+- `FallOffEdge` runs if the movement is falling during Land or Prone:
+  - restores the walking braking first, so the next landing saves the real
+    values (otherwise `Finish` would restore the slide's 800/friction 0 and
+    leave movement slippery);
+  - sets the air braking to `DiveAirBraking` (the slide's speed carries on);
+  - gravity stays normal;
+  - eases off the landing physics legs;
+  - sets Phase = Loop.
+- `NotifyLanded` (airborne = Start/Loop) then runs a full second landing.
+- **AnimBP (user):** Land → Loop and Prone → Loop transitions in the
+  Shootdodge state machine, rule `ShootdodgePhase == Loop`.
+
+**Aim pitch clamp (2026-10-13, user request, Max Payne style):**
+- The poses follow the aim up and down only within `ShootdodgeAimPitchMin` /
+  `ShootdodgeAimPitchMax` (−35° / +45° from level).
+- `ClampElevation` applies to the wanted direction for the right gun, the
+  left gun and the head, and `ShootdodgeAimPitch` (the prone blend space's Y)
+  is clamped too.
+- Shots are unaffected: `FireEquippedWeapon` fires from the muzzle to the
+  crosshair's aim point.
+- This likely covers "looking down through the legs" on back dives as well.
+
+**Follow-ups (2026-10-13, user-tuned, "works"):**
+- **Pitch limits split:**
+  - pistols/duals: `ShootdodgeAimPitchMin/Max` (user: −15/45);
+  - long guns: `LongGunAimPitchMin/Max`;
+  - picked by `AimPitchMin()/AimPitchMax()` on `bIsPistolHold`.
+  - Tune on the ABP's Class Defaults: Preview-window edits aren't saved.
+- **Back-pose lift, extended:**
+  - Long guns use their own `LongGunBackLiftAngle`. The left hand follows the
+    grip through its IK after the lift.
+  - The duals' left arm lifts `BackOffhandExtraLift` further, about its own
+    gun (`ShootdodgeArmLiftL` / `ShootdodgeHandCounterLiftL`, on the
+    `upperarm_l`/`hand_l` lift nodes). Its one-handed hold sat lower and
+    clipped the legs.
+
+**Next:** the shootdodge list is done. Open extra: the long-gun wind-up
+showing empty-handed dash arms.
 
 #### Original plan (pre-asset)
 

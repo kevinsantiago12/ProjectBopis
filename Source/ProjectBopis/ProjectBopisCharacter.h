@@ -270,6 +270,52 @@ protected:
 
 	virtual void Landed(const FHitResult& Hit) override;
 
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+		AController* EventInstigator, AActor* DamageCauser) override;
+
+	virtual void Die(AController* Killer, const FVector& ShotDirection) override;
+
+	/** No death animation for a body that's diving or lying down: it goes straight to ragdoll. */
+	virtual bool PlayDeathAnimation(const FVector& ShotDirection) override;
+
+	/** Real seconds from death to the level reloading (slow motion doesn't stretch it). */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float DeathRestartDelay = 3.0f;
+
+	/** Real seconds of slow motion when the player dies. 0 turns it off. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float DeathSlowMoDuration = 2.0f;
+
+	/** World speed during the death slow motion. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float DeathTimeDilation = 0.2f;
+
+	/** Camping: staying within this distance (cm) of one spot counts as staying put. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))
+	float CampRadius = 250.0f;
+
+	/** Seconds at a spot before heat starts to build — time to line up a few shots, free. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))
+	float CampGraceTime = 1.5f;
+
+	/** Seconds after the grace for heat to reach full. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.1"))
+	float CampTimeToFullHeat = 4.0f;
+
+	/** Heat lost per second once the player has moved on. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))
+	float CampHeatDrainPerSecond = 0.5f;
+
+	/** After taking a hit, seconds before any enemy may roll another — so one burst can't
+	    shred the player. Rounds already in flight still land. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Grace", meta = (ClampMin = "0.0"))
+	float HitGraceTime = 0.5f;
+
+	/** How quickly the camera catches up with the falling body. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float DeathCameraFollowSpeed = 8.0f;
+
+
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
@@ -302,11 +348,49 @@ public:
 
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
+	/** Mid-evasion — a shootdodge's flight now, rolling later. Enemies' close-range
+	    accuracy doesn't apply to an evading player, and their shots are capped. */
+	bool IsEvading() const;
+
+	/** 0..1: how long the player has stayed put. Every enemy's hit chance rises with it, so
+	    standing and shooting is fine for a moment and punished if it becomes camping. */
+	UFUNCTION(BlueprintPure, Category = "Combat|Camping")
+	float GetCampingHeat() const { return CampingHeat; }
+
+	/** Just been hit: enemies hold off rolling hits until HitGraceTime has passed. */
+	bool IsInHitGrace() const;
+
 	/** Hands rotation to the animation (dives), or back to the movement stances. */
 	void SetAnimationDrivenRotation(bool bAnimationDriven);
 
 	/** Runs the reload the player asked for while prone, once the get-up is done. */
 	void ReloadAfterShootdodge() { DoReload(); }
+
+private:
+
+	/** Dead: the camera boom rides the body (pelvis) instead of the capsule left behind. */
+	void FollowBodyWithCamera(float DeltaSeconds);
+
+	void RestartLevel();
+
+	/** Died diving, landing or prone: no death animation, and the dive's momentum goes
+	    into the ragdoll. */
+	bool bDiedMidDive = false;
+	FVector DiveDeathVelocity = FVector::ZeroVector;
+
+	/** Real seconds since death: ends the slow motion, then reloads the level. */
+	float TimeSinceDeath = 0.0f;
+
+	/** Builds heat while the player stays near CampAnchor; drains it once they move on. */
+	void UpdateCampingHeat(float DeltaSeconds);
+
+	float CampingHeat = 0.0f;
+	FVector CampAnchor = FVector::ZeroVector;
+	float TimeAtCampAnchor = 0.0f;
+
+	/** World time of the last hit taken; well in the past until the first. */
+	float LastHitTakenTime = -1000.0f;
+	bool bDeathSlowMo = false;
 
 };
 

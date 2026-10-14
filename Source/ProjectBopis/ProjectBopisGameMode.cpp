@@ -94,3 +94,46 @@ void AProjectBopisGameMode::TrimCorpses()
 		Timers.ClearTimer(CorpseCheckTimer);
 	}
 }
+
+bool AProjectBopisGameMode::RequestAttackToken(AActor* Requester)
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	// Holders that are gone drop out; holds that have run their time are handed back, and
+	// that enemy waits out the cooldown — so the tokens go round the room.
+	for (int32 Index = AttackTokens.Num() - 1; Index >= 0; --Index)
+	{
+		AActor* Holder = AttackTokens[Index].Holder.Get();
+		if (!Holder || Now - AttackTokens[Index].GrantedAt >= AttackTokenHoldTime)
+		{
+			if (Holder)
+			{
+				AttackTokenCooldowns.Add(Holder, Now + AttackTokenCooldown);
+			}
+			AttackTokens.RemoveAtSwap(Index);
+		}
+	}
+
+	if (AttackTokens.ContainsByPredicate([Requester](const FAttackToken& Token) { return Token.Holder.Get() == Requester; }))
+	{
+		return true;
+	}
+
+	const float* CooldownUntil = AttackTokenCooldowns.Find(Requester);
+	if ((CooldownUntil && Now < *CooldownUntil) || AttackTokens.Num() >= MaxAttackTokens)
+	{
+		return false;
+	}
+
+	AttackTokens.Add({ Requester, Now });
+	return true;
+}
+
+void AProjectBopisGameMode::ReleaseAttackToken(AActor* Holder, bool bCooldown)
+{
+	const int32 Removed = AttackTokens.RemoveAll([Holder](const FAttackToken& Token) { return Token.Holder.Get() == Holder; });
+	if (Removed > 0 && bCooldown)
+	{
+		AttackTokenCooldowns.Add(Holder, GetWorld()->GetTimeSeconds() + AttackTokenCooldown);
+	}
+}

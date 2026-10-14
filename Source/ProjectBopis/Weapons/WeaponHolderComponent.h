@@ -18,6 +18,10 @@ public:
 	// Sets default values for this component's properties
 	UWeaponHolderComponent();
 
+	/** Sets the weapon in hand at spawn. Only meaningful before BeginPlay — for a spawner
+	    handing a fresh enemy its gun (SpawnActorDeferred). */
+	void SetStartingWeaponClass(TSubclassOf<AWeaponBase> InClass) { StartingWeaponClass = InClass; }
+
 	/** Adds a weapon to the carried list; auto-equips it if nothing is currently equipped.
 	    No carry limit (magic backpack). bAddStartingReserve puts the weapon's
 	    StartingReserveAmmo into the pool (pickups pass false: they bring their own rounds).

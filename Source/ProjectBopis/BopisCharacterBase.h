@@ -176,7 +176,7 @@ protected:
 	void LaunchBody(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage);
 
 	/** Starts a death animation for a hit from this direction. False if none is set. */
-	bool PlayDeathAnimation(const FVector& ShotDirection);
+	virtual bool PlayDeathAnimation(const FVector& ShotDirection);
 
 	/** Plays one of a set's animations, picked by the side a shot came from, in the full-body
 	    DeathSlotName. Null if the set has nothing to play. */

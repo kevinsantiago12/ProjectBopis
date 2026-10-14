@@ -22,6 +22,9 @@ public:
 
 	void SetDamage(float InDamage) { Damage = InDamage; }
 
+	/** Launch speed (cm/s) — how fast the round travels, for shooters leading a target. */
+	float GetInitialSpeed() const;
+
 	/** The weapon that fired this round. Damage at impact comes from its falloff curve,
 	    measured from where the round spawned — so shotgun pellets keep their falloff. */
 	void SetSourceWeapon(AWeaponBase* Weapon) { SourceWeapon = Weapon; }

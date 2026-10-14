@@ -353,6 +353,22 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	FRotator ShootdodgeHandCounterLift = FRotator::ZeroRotator;
 
+	/** The left arm's own lift and hand counter-turn (duals lift it further, about its own gun). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FRotator ShootdodgeArmLiftL = FRotator::ZeroRotator;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FRotator ShootdodgeHandCounterLiftL = FRotator::ZeroRotator;
+
+	/** Long guns' own back-pose lift, in degrees (the rifle hold sits low across the legs too). */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float LongGunBackLiftAngle = 30.0f;
+
+	/** Duals: how much further the left arm lifts in the back poses, in degrees — its
+	    one-handed hold sits lower and would clip the legs. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float BackOffhandExtraLift = 20.0f;
+
 	/** How far the arms lift the guns in the back poses, in degrees (full from 135° round to
 	    straight back, nothing at the side poses). */
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "90.0"))
@@ -378,6 +394,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
 	float HeadLookMaxAngle = 60.0f;
 
+	/** Pistols and duals: how far down / up (degrees from level) the dive and prone poses
+	    follow the aim. Past it the guns hold at the limit; the shots still go from the muzzle to
+	    the crosshair's point. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "-89.0", ClampMax = "0.0"))
+	float ShootdodgeAimPitchMin = -35.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "89.0"))
+	float ShootdodgeAimPitchMax = 45.0f;
+
+	/** Long guns' own down / up limits for the same (rifles, shotguns; head included). */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "-89.0", ClampMax = "0.0"))
+	float LongGunAimPitchMin = -35.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "89.0"))
+	float LongGunAimPitchMax = 45.0f;
+
 	/** Furthest the aim correction turns the upper body, in degrees. Past it the gun stays off. */
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
 	float AimCorrectionMaxAngle = 70.0f;
@@ -389,6 +421,10 @@ protected:
 private:
 
 	void UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	/** The shootdodge's up/down aim limits for the gun in hand: long guns' or pistols'. */
+	float AimPitchMin() const { return bIsPistolHold ? ShootdodgeAimPitchMin : LongGunAimPitchMin; }
+	float AimPitchMax() const { return bIsPistolHold ? ShootdodgeAimPitchMax : LongGunAimPitchMax; }
 
 	/** The full aim correction (both spine bones together), component space. */
 	FQuat AimCorrectionTotal = FQuat::Identity;
@@ -402,6 +438,9 @@ private:
 
 	/** The back poses' gun lift right now, eased (degrees). */
 	float GunLiftAngle = 0.0f;
+
+	/** Duals: the left arm's extra lift right now, eased (degrees). */
+	float OffhandExtraLiftAngle = 0.0f;
 
 	/** Which way the head bone faces, in its own space — from the reference pose, found once. */
 	FVector HeadLocalForward = FVector::ZeroVector;

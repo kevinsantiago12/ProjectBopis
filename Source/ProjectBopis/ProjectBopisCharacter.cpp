@@ -16,12 +16,25 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/PlayerHUDWidget.h"
 #include "Weapons/WeaponBase.h"
+#include "Gameplay/HealthComponent.h"
+#include "Engine/DamageEvents.h"
+#include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/App.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
 	// Capsule, weapon holder and tick come from ABopisCharacterBase.
 	Focus =CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
 	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
+
+	// The player never staggers: being rooted mid-fight (or mid-dive) is no fun. Hits stay
+	// light reactions.
+	StaggerDuration = 0.0f;
+
+	// Enemies' hits can land on the head (rarely — see AEnemyBase::HitBoneWeights), but the
+	// player takes it at normal damage: a stray round shouldn't be an instant death.
+	BoneDamageMultipliers.Remove(TEXT("head"));
 
 	FocusPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("FocusPostProcess"));
 	FocusPostProcess->SetupAttachment(RootComponent);
@@ -72,6 +85,8 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 void AProjectBopisCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CampAnchor = GetActorLocation();
 
 	DefaultFOV = FollowCamera->FieldOfView;
 
@@ -213,6 +228,27 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	// The base counts down the lowering timer and drives the reload montage.
 	Super::Tick(DeltaSeconds);
 
+	// Dead: no stances, crouch or framing any more — just keep the body in view.
+	if (IsDead())
+	{
+		// Counted in real seconds: FApp's delta is the frame's, before any time dilation.
+		TimeSinceDeath += FApp::GetDeltaTime();
+		if (bDeathSlowMo && TimeSinceDeath >= DeathSlowMoDuration)
+		{
+			bDeathSlowMo = false;
+			Focus->EndFreeFocus();
+		}
+		if (TimeSinceDeath >= DeathRestartDelay)
+		{
+			RestartLevel();
+			return;
+		}
+
+		FollowBodyWithCamera(DeltaSeconds);
+		return;
+	}
+
+	UpdateCampingHeat(DeltaSeconds);
 	UpdateCrouch();
 	UpdateMovementStance();
 	UpdateCameraTransition(DeltaSeconds);
@@ -417,6 +453,111 @@ void AProjectBopisCharacter::DoShootdodge()
 	{
 		Shootdodge->TryStart();
 	}
+}
+
+float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	const float Result = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// Starts the grace in which enemies can't roll another hit.
+	if (Result > 0.0f)
+	{
+		LastHitTakenTime = GetWorld()->GetTimeSeconds();
+	}
+
+	// The killing blow ragdolled a diving body (in Super): it keeps flying the way it was going.
+	if (IsDead() && !DiveDeathVelocity.IsZero())
+	{
+		GetMesh()->SetAllPhysicsLinearVelocity(DiveDeathVelocity, true);
+		DiveDeathVelocity = FVector::ZeroVector;
+	}
+
+	return Result;
+}
+
+void AProjectBopisCharacter::Die(AController* Killer, const FVector& ShotDirection)
+{
+	// Read before Super stops the movement: the dive's state and its speed.
+	bDiedMidDive = Shootdodge && Shootdodge->IsBodyDown();
+	DiveDeathVelocity = bDiedMidDive ? GetVelocity() : FVector::ZeroVector;
+	if (Shootdodge)
+	{
+		Shootdodge->CancelForDeath();
+	}
+	if (Focus)
+	{
+		// Whatever slow motion was running gives way to the death's own.
+		Focus->StopFocus();
+		if (DeathSlowMoDuration > 0.0f && Focus->BeginFreeFocus())
+		{
+			UGameplayStatics::SetGlobalTimeDilation(this, DeathTimeDilation);
+			bDeathSlowMo = true;
+		}
+	}
+	bIsAiming = false;
+
+	Super::Die(Killer, ShotDirection);
+
+	// Look still orbits the camera; nothing else answers, and the body no longer turns with it.
+	bUseControllerRotationYaw = false;
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		EnhancedInputComponent->ClearActionEventBindings();
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
+		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
+	}
+
+	TimeSinceDeath = 0.0f;
+}
+
+bool AProjectBopisCharacter::PlayDeathAnimation(const FVector& ShotDirection)
+{
+	return !bDiedMidDive && Super::PlayDeathAnimation(ShotDirection);
+}
+
+void AProjectBopisCharacter::UpdateCampingHeat(float DeltaSeconds)
+{
+	// Moved on from the spot: a new spot starts here, and the time there starts again.
+	if (FVector::Dist2D(GetActorLocation(), CampAnchor) > CampRadius)
+	{
+		CampAnchor = GetActorLocation();
+		TimeAtCampAnchor = 0.0f;
+	}
+	TimeAtCampAnchor += DeltaSeconds;
+
+	// Heat follows how long they've been here, past the grace; it climbs at that pace and
+	// drains at its own once they've gone.
+	const float TargetHeat = FMath::Clamp((TimeAtCampAnchor - CampGraceTime) / CampTimeToFullHeat, 0.0f, 1.0f);
+	CampingHeat = TargetHeat >= CampingHeat
+		? TargetHeat
+		: FMath::Max(TargetHeat, CampingHeat - CampHeatDrainPerSecond * DeltaSeconds);
+}
+
+bool AProjectBopisCharacter::IsInHitGrace() const
+{
+	return GetWorld()->GetTimeSeconds() - LastHitTakenTime < HitGraceTime;
+}
+
+bool AProjectBopisCharacter::IsEvading() const
+{
+	// The flight only: landing, lying prone and getting up are the vulnerable part.
+	return Shootdodge && Shootdodge->IsAirborne();
+}
+
+void AProjectBopisCharacter::FollowBodyWithCamera(float DeltaSeconds)
+{
+	if (!CameraBoom || !GetMesh()->DoesSocketExist(TEXT("pelvis")))
+	{
+		return;
+	}
+	const FVector Target = GetMesh()->GetSocketLocation(TEXT("pelvis"));
+	CameraBoom->SetWorldLocation(FMath::VInterpTo(CameraBoom->GetComponentLocation(), Target, DeltaSeconds, DeathCameraFollowSpeed));
+}
+
+void AProjectBopisCharacter::RestartLevel()
+{
+	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
 }
 
 void AProjectBopisCharacter::Landed(const FHitResult& Hit)

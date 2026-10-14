@@ -12,6 +12,11 @@
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
+float AProjectileBase::GetInitialSpeed() const
+{
+	return ProjectileMovement ? ProjectileMovement->InitialSpeed : 0.0f;
+}
+
 AProjectileBase::AProjectileBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
