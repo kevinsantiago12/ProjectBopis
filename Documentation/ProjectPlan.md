@@ -62,6 +62,9 @@ class written against the design doc's spec, not a refactor of old code.
   - Trace source was refined twice: first from the raw camera transform, then — per a real Halo-accuracy request — reworked to use `APlayerController::DeprojectScreenPositionToWorld` at a specific screen-space point (horizontal center, **2/3 down the viewport**, `CrosshairViewportPositionY = 0.667` on `WeaponHolderComponent`) rather than an approximated rotation offset. This is now the permanent trace-source approach.
 
 ## Phase 2 — Bloom / accuracy system ✅ COMPLETE (2026-08-12)
+> **Superseded 2026-10-15** by the Max Payne shooting model (Phase 5, item 8):
+> bloom, the cadence penalty and Semi/Auto were removed. Kept as history.
+
 Goal: the actual accuracy model from the design doc — this is the first
 system where "correct" behavior really matters.
 
@@ -416,7 +419,25 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-14, user-confirmed.)* 4. Encounters: `AEncounterDirector` wave spawner (6 alive at once, 1–3 s replacements, spawn points ≥12 m away and preferably out of view, random weapon from a pool, spawned alerted).
   - [x] *(Done 2026-10-14, user-confirmed.)* 4b. Roaming when the lead goes cold: the furthest Target Point or a random reachable spot; `ST_Gunman` got the Roam state.
   - [x] *(Done 2026-10-14.)* TEMP shooting debug removed (`bDebugShooting`, `bShowHitsTaken`).
-- [ ] Later: archetypes composed from data.
+  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Attack tokens only held while usable (in sight, within `AttackTokenRange` 2500, gun up, not reloading, no ally in the line of fire); nearer enemies take a token from the farthest holder (`AttackTokenStealMargin` 300). User: the holders could be off away from the fight while the two in front couldn't kill you.
+- [x] *(Done 2026-10-14, user-confirmed.)* **Placeholder health bar:** `UHealthWidget` + the user's `WBP_Health` in `WBP_PlayerHUD`.
+- [~] **7. More player moves** (user, 2026-10-14). See the spec's *Dodge roll and the moves around it*.
+  - [x] *(Done 2026-10-14, user-confirmed.)* Dodge roll: `URollComponent`, own key (`IA_Roll`), 8-way camera-relative, squares up to the camera first, evasive, no firing, no Focus cost.
+  - [x] *(Done 2026-10-14.)* Move-out: movement input from 60% of the roll cuts it short at run speed.
+  - [x] *(Done 2026-10-14.)* Auto-reload, Focus ends on reload, prone reload on the floor (AnimBP cached-pose layer, `ProneReloadAlpha`), no torso bend during it. `DropAsClass` for enemy-only weapon variants.
+  - [x] *(Done 2026-10-14.)* `EvadeLingerTime` 2 s of evasion after a dive lands or a roll ends.
+  - [x] *(Done 2026-10-14.)* Roll Focus: 1 real second of free slow motion from 30% of the roll.
+  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* The kneel (Vanquish): hold the roll button past `CrouchOutAfter` → cut into a crouch, held as long as the button is; no camping heat while knelt. Blend tuning is the user's (`CrouchOutAfter`, `CrouchOutBlendTime`).
+  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Quick turn to aim (`AimTurnRate` 1080°/s) instead of the snap; crouched turn-in-place (crouch turn montages, root motion off on their clips).
+  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Dual shootdodge arm spread (`DualDiveSpreadAngle` 20°); Inertialization node after the Shootdodge state machine (sporadic Land → Loop error).
+  - Dropped: roll hold → prone slide, slide into the kneel, inertial roll-to-kneel blend, held roll Focus.
+- [x] *(Done 2026-10-15, compiled; not yet playtested.)* **8. Shooting model → Max Payne 1/2** (user: "those were designed for FPS"). Supersedes Phase 2's bloom model. See the spec's *Combat: the shooting model*.
+  - [x] 1. Hold to fire for every weapon at `TimeBetweenShots`; Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed; a held trigger doesn't break into a reload.
+  - [x] 2. Spread replaces bloom: `Spread`, `MovingSpreadMultiplier` (not mid-dive), `SustainedSpread` burst wander, `FocusSpreadMultiplier`.
+  - [x] 2b. Enemy firing pattern per weapon (`AIFiring`: bursts, interval, pause); `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy for harder variants.
+  - [x] 3. All seven weapon BPs retuned through the bridge.
+  - [x] 4. Docs.
+- [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable arena (vertical slice)
 Goal: prove the core combat loop in an actual space, with real weapons and
@@ -496,6 +517,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-15 — Phase 5: attack-token fix; health bar; item 7 (more player moves: roll, move-out, auto/prone reload, evasion linger, roll Focus, kneel, aim turn, crouched turns, dual dive spread) and item 8 (Max Payne shooting model, increments 1–4) ticked. Phase 2 marked superseded.
 - 2026-10-09 (2) — Bullet time ticked; projectile backlog partly done.
 - 2026-10-09 — One-handed stance flip + procedural free-arm swing ticked.
 - 2026-10-08 (3) — Equip animation ticked; AnimGraph pin-watch gotcha added.

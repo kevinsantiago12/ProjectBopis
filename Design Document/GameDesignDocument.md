@@ -106,31 +106,45 @@ The character moves with weight. Movement is deliberately paced slower than
 stock animation, with longer strides — closer to Max Payne than to an arcade
 shooter — so constant motion reads as purposeful rather than frantic.
 
-### Under reconsideration
+### Shooting
 
-The previous version of the game built its combat on a specific accuracy
-model — no bonus for aiming down sights, hip-fire fully effective, accuracy
-governed by how you pace your trigger rather than by a recoil pattern, with
-the crosshair widening as you fire and tightening as you stop. That model is
-built and working today — though the crosshair itself is now a simple dot,
-so the widening is no longer shown on screen.
+Shooting feels like Max Payne 1 and 2. Hold the trigger and a gun keeps
+firing at its own steady pace — pistols, duals and shotguns included — and
+the guns are accurate: a bullet goes close to where you point. Running costs a
+little accuracy, a dive costs none, and long bursts from automatic weapons
+wander a little. Aiming brings the camera in but doesn't make you more
+accurate; firing from the hip is fully effective. The skill is in moving,
+diving and using slow motion, not in pacing the trigger.
 
-It is neither confirmed nor dropped for the new game. It's being reconsidered
-against the John Woo direction — and it's worth noting that "hip-fire is the
-default, movement over cover" is a natural fit for heroic bloodshed. But that
-is a decision for design to make, not an assumption to carry forward.
+Enemies fire each weapon its own way: short bursts from fast weapons, steady
+single shots from the rest. Tougher enemies later fire longer bursts with
+shorter pauses.
+
+*Replaced (2026-10-15):* the previous accuracy model, where accuracy
+loosened as you fired and the skill was pacing your trigger, came from the
+game's earlier first-person design.
+
+### Moves
+
+- Dual-wielding is in (dual pistols, firing alternately — see Weapons), and so
+  is slow motion (Focus). The **shootdodge** is playable with every gun type: a dive in any
+  direction, the world slowing as you leave the ground, guns blazing, sliding
+  to a stop on the floor where you keep firing — and reloading — until you
+  choose to get up. Each dive costs Focus. The price is getting up: you can't
+  shoot while scrambling to your feet.
+- A **dodge roll** on its own key: a quick roll in any direction that enemies
+  struggle to hit, with a moment of free slow motion partway through to line
+  up the shots for coming out of it. You can't shoot mid-roll, but you can run
+  straight out of the end of it.
+- **The kneel**, borrowed from Vanquish: keep the roll button held and the
+  roll ends in a crouch, firing from the knee for as long as you hold it.
+- Dives and rolls stay hard to hit for a couple of seconds after you land.
+- An empty gun reloads by itself, and reloading ends slow motion.
 
 ### Open
 
-- Dual-wielding is in (dual pistols, firing alternately — see Weapons), and so
-  is slow motion (Focus). The **shootdodge** is playable with pistols: a dive in any
-  direction, the world slowing as you leave the ground, guns blazing, sliding
-  to a stop on the floor where you keep firing until you choose to get up.
-  Each dive costs Focus. The price is getting up: you can't shoot or reload
-  while scrambling to your feet. Focus can also steady your aim.
 - How "destructible-feeling" is delivered — cosmetic chaos versus mechanical
   destruction.
-- Whether the existing accuracy model stays, changes, or goes.
 
 ---
 
@@ -154,8 +168,8 @@ designed for the previous premise and are open to revision.
 Two more now exist alongside them: **shotguns** — a semi-automatic one with
 fast follow-up shots and a pump-action one, both loaded a couple of shells at a
 time. In the spirit of DOOM's shotgun, they still hit at a distance; the price
-is a very slow reload — and **dual pistols**. Dual pistols fire left, right, left, right with each trigger
-pull, and both guns reload together. The character carries them very
+is a very slow reload — and **dual pistols**. Dual pistols fire left, right, left, right for as long as
+the trigger is held, and both guns reload together. The character carries them very
 differently from a single gun: arms down and loose at the sides when not
 fighting, both guns up and pointed when shooting — spread wide apart when
 firing on the move, drawn in tighter when taking careful aim. Dual submachine
@@ -360,13 +374,16 @@ character. Working today:
 - A character who carries his weapon lowered and raises it to fire, strafes
   while shooting, turns on the spot to follow the aim, and crouches into cover
   when standing still
-- Weapons that fire, with an accuracy model that loosens under sustained fire
+- Weapons that keep firing while the trigger is held, each at its own pace and
+  accuracy (Max Payne 1 and 2 as the model)
+- A dodge roll that can end in a kneel, and a shootdodge you can reload in
+  while lying on the floor
 - Configured test-bed weapons with distinct handling, plus a shotgun and dual
   pistols
 - A one-handed pistol stance, a heavier walking gait, and a visible kick on
   every shot
 - A working projectile weapon with fragmenting impact
-- Fire rate limits, full-automatic fire, per-weapon fire animation
+- Per-weapon fire rates and fire animation
 - Scoped zoom
 - Ammunition with magazines, a shared supply per calibre, and reloading
 - Weapon and ammunition pickups, an unlimited weapon backpack, number-key weapon
@@ -438,3 +455,10 @@ a shooting range.
   animates and briefly blocks firing.
 - 2026-10-09 — Focus (slow motion; not called "bullet time", a trademarked name): a toggle slowing the whole world (the hero too, aim
   stays quick), on a meter refilled by kills.
+- 2026-10-14 — Player moves: a dodge roll with a moment of slow motion, the
+  kneel (hold the roll button), evasion that lingers after a dive or roll,
+  automatic reloads, reloading on the floor after a dive.
+- 2026-10-15 — **Shooting reworked to feel like Max Payne 1 and 2:** every gun
+  fires while the trigger is held, guns are accurate, running costs a little
+  accuracy; enemies fire each weapon its own way. The earlier
+  trigger-pacing accuracy model is retired.

@@ -573,6 +573,36 @@ travel, not instant hits. At normal speed the bullets are **not shown**. When
 slow motion arrives, they become visible, so Focus is where you see the
 rounds in the air.
 
+**Shooting model — Max Payne 1 and 2 (user decision, 2026-10-15).** The old
+FPS model (see PART 4) was "designed for FPS"; the shooting should fit Max
+Payne 1 and 2 instead.
+- **Every gun fires while the trigger is held**, at its own steady rate. The
+  user's examples: duals and shotguns keep firing while held instead of a pull
+  per shot. Clicking faster gains nothing.
+- **Guns are accurate.** Each has a small spread of its own. Moving costs a
+  little accuracy (a shootdodge doesn't); long automatic bursts wander a
+  little. No trigger-discipline mechanic: the skill is positioning, Focus and
+  the dodges.
+- **Enemies fire each weapon its own way:** bursts for fast weapons, steady
+  single shots for the others, with adjustable timings. **Harder enemy
+  variants** later shoot bigger bursts with shorter pauses.
+
+**Player moves (user decisions, 2026-10-14 / 15).** "More moves for the
+player", after the shootdodge.
+- **Dodge roll:** its own key, in the direction you're moving relative to the
+  camera. Evasive (enemies rarely hit during it), no firing during it, no
+  Focus cost. You can move out of the end of it straight away.
+- **Slow motion mid-roll:** about a second of free slow motion partway through
+  — you can't shoot yet, but you can line up the shots for coming out of it.
+- **Evasion lingers** for a moment (2 s) after a dive lands or a roll ends.
+- **The kneel (Vanquish):** keep the roll button held and the roll cuts into a
+  crouch, shooting from the knee for as long as it's held; letting go returns
+  to normal movement.
+- **Reloading:** an empty gun reloads by itself; reloading ends slow motion;
+  lying prone after a dive, you reload on the floor instead of getting up.
+- *Considered and dropped:* holding roll into a prone slide (the kneel took
+  that button); slow motion held after the roll.
+
 Classic Filipino action cinema should also inform the attitude, locations,
 villains, firearms and larger-than-life action rather than relying exclusively
 on Hong Kong or American references.
@@ -636,12 +666,18 @@ it comes from the newer source and survives whatever the arcs become.*
 Linear navigation, nonlinear combat. Freedom comes from how the player uses
 the geometry within an arena, not from branching routes.
 
-## FPS combat philosophy
-Hip-fire fully effective with no ADS accuracy bonus; aim as targeting
-information rather than an accuracy buff; zoom restricted to appropriate
-weapons and distinct from aim; Halo: Reach-style **bloom** as the primary
-accuracy mechanic, with trigger discipline as the core skill; no camera-climb
-recoil as the skill test. *Built and working today.*
+## FPS combat philosophy — *settled 2026-10-15*
+**Judged by the user:** replaced by the Max Payne 1 and 2 shooting model (see
+PART 3, *Shooting model*). Kept from it: hip-fire fully effective, no
+aim-down-sights accuracy bonus, zoom separate from aim, no camera-climb
+recoil. Dropped: Halo: Reach-style **bloom** and trigger discipline as the
+core skill.
+
+*Original entry:* Hip-fire fully effective with no ADS accuracy bonus; aim as
+targeting information rather than an accuracy buff; zoom restricted to
+appropriate weapons and distinct from aim; Halo: Reach-style **bloom** as the
+primary accuracy mechanic, with trigger discipline as the core skill; no
+camera-climb recoil as the skill test.
 
 ## Weapons dictate playstyle
 Weapons encourage playstyles; levels should not hard-force a weapon type. A

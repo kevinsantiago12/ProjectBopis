@@ -63,13 +63,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus")
 	float KillRefill = 20.0f;
 
-	/** Scales weapon bloom while Focus is on (including a shootdodge's slow motion).
-	    1 is normal, 0.5 half the bloom, 0 none: every shot stays at the base spread. */
+	/** Scales weapon spread while Focus is on (including a shootdodge's slow motion).
+	    1 is normal, 0.5 half, 0 dead on. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FocusMaxBloomMultiplier = 1.0f;
+	float FocusSpreadMultiplier = 1.0f;
 
-	/** The bloom multiplier in effect right now: FocusMaxBloomMultiplier during Focus, else 1. */
-	float GetBloomMultiplier() const { return bActive ? FocusMaxBloomMultiplier : 1.0f; }
+	/** The spread multiplier in effect right now: FocusSpreadMultiplier during Focus, else 1. */
+	float GetSpreadMultiplier() const { return bActive ? FocusSpreadMultiplier : 1.0f; }
 
 protected:
 

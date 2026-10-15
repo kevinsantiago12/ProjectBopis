@@ -133,6 +133,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	bool bMovementCancelsCrouch = false;
 
+	/** Crouched, the character takes a firing stance: the weapon comes up and stays up,
+	    facing the camera (no aim zoom — that's still the aim button), and the camera eases
+	    down by CrouchCameraOffset. Off: crouching leaves the weapon as it was and the camera
+	    at standing height. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crouch")
+	bool bCrouchCombatStance = true;
+
 	/** Max walk speed when not aiming. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunSpeed = 500.0f;
@@ -144,6 +151,12 @@ protected:
 	/** How quickly the character turns to face travel in FreeRun. Yaw only. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float FreeRunRotationRate = 360.0f;
+
+	/** How fast the body turns to the camera when the gun comes up facing elsewhere (firing
+	    from the lowered stance, out of a roll), in degrees per second — a quick turn rather
+	    than a snap. 0: snaps. */
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.0"))
+	float AimTurnRate = 1080.0f;
 
 	/** Max walk speed while crouched. Normally unused — moving stands the character up —
 	    but applies if a low ceiling blocks the uncrouch. */
@@ -170,10 +183,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float CameraTransitionSpeed = 12.0f;
 
-	/** Extra camera height while crouched, eased in and out. 0 keeps the camera exactly
-	    where it is when standing; negative lowers it with the crouch. */
+	/** Camera height change while crouched in the combat stance (bCrouchCombatStance),
+	    eased in and out. Negative lowers it with the crouch; 0 keeps it at standing height. */
 	UPROPERTY(EditAnywhere, Category = "Camera")
-	float CrouchCameraOffset = 0.0f;
+	float CrouchCameraOffset = -40.0f;
 
 	/** Extra camera height while shootdodging (diving, landing, prone), eased in and out.
 	    Negative lowers it toward the body lying near the floor. */
@@ -396,8 +409,14 @@ public:
 	/** The roll button is down right now. */
 	bool IsRollHeld() const { return IsInputHeld(RollAction); }
 
+	/** The roll may cut into a kneel (bPostRollCrouch on, alive). */
+	bool CanPostRollCrouch() const { return bPostRollCrouch && !IsDead(); }
+
 	/** Knelt after a roll (see bPostRollCrouch). */
 	bool IsPostRollCrouching() const { return bPostRollCrouching; }
+
+	/** Turning to the camera as the gun comes up (see AimTurnRate). */
+	bool IsTurningToAim() const { return bTurningToAim; }
 
 	/** Mid-evasion (a shootdodge's flight, a roll) or within EvadeLingerTime after one —
 	    enemies' shots are much less likely to land. */
@@ -453,6 +472,11 @@ private:
 
 	/** Knelt after a roll, until the roll button is let go. */
 	bool bPostRollCrouching = false;
+
+	/** Turns the body toward the camera while bTurningToAim, then locks it there. */
+	void UpdateAimTurn(float DeltaSeconds);
+
+	bool bTurningToAim = false;
 
 	/** Reloads an empty gun by itself, once the player is free to. */
 	void UpdateAutoReload(float DeltaSeconds);

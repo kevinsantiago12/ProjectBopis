@@ -267,19 +267,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Placement", meta = (ClampMin = "0.0", ClampMax = "1.5"))
 	float LeadSkill = 1.0f;
 
-	/** Shots per burst (random in range), fired at the weapon's own rate. */
-	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Bursts", meta = (ClampMin = "1"))
-	int32 BurstShotsMin = 3;
+	/** This shooter's bursts against its weapon's (the weapon's AIFiring): ×1.5 fires half as
+	    many shots again. Weapons that fire single shots stay single. For harder variants. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Bursts", meta = (ClampMin = "0.1"))
+	float BurstShotsMultiplier = 1.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Bursts", meta = (ClampMin = "1"))
-	int32 BurstShotsMax = 5;
-
-	/** Pause between bursts, in seconds (random in range). */
+	/** This shooter's pauses against its weapon's: ×0.6 waits 40% less between bursts. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Bursts", meta = (ClampMin = "0.0"))
-	float BurstPauseMin = 0.5f;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Bursts", meta = (ClampMin = "0.0"))
-	float BurstPauseMax = 1.5f;
+	float BurstPauseMultiplier = 1.0f;
 
 public:
 
@@ -357,6 +352,9 @@ private:
 
 	int32 BurstShotsLeft = 0;
 	float BurstPauseLeft = 0.0f;
+
+	/** Seconds until the next shot of the burst (the weapon's ShotInterval). */
+	float ShotIntervalLeft = 0.0f;
 
 	/** The next burst at a seen player is a warning (all misses). */
 	bool bWarningBurstPending = true;

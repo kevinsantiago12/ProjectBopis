@@ -12,6 +12,124 @@
 
 ---
 
+## 2026-10-14 (2) / 15
+**Summary:**
+- **More player moves** (RESUME HERE item 3 from 10-14): the dodge roll and
+  everything around it — move-out, roll Focus, evasion linger, the kneel,
+  auto/prone reload, a quick turn to aim, crouched turn-in-place, a dual
+  shootdodge arm spread.
+- **The shooting model was reworked to Max Payne 1/2** (user: "those were
+  designed for FPS"). Bloom and Semi/Auto are gone; every gun fires while
+  held, with a small per-weapon spread; enemies fire each weapon in its own
+  pattern. All seven weapons retuned.
+- **Attack tokens** fixed so the enemies in front of you can actually kill you.
+- The user committed "Roll Feature Added" (2026-10-15 00:04); everything
+  from the kneel's camping-heat change on is **uncommitted**.
+- Detail in the spec: *Combat: the shooting model*, *Dodge roll and the moves
+  around it*, *Turn-in-place*, *Enemy shooting v2 → Attack tokens*.
+- **Code:** applied by Claude on request each time, built with the script; all
+  compiled clean. **Not yet playtested:** everything from the held-button
+  kneel on (see RESUME HERE item 2).
+
+- **Health bar and roll (2026-10-14, user-confirmed):** `UHealthWidget` +
+  `WBP_Health`; `URollComponent` (Roll set, `IA_Roll`, evasive, no firing, no
+  Focus cost), squares up to the camera before rolling, move-out from 60%.
+- **Reloading (2026-10-14):** auto-reload (0.2 s), Focus ends on reload,
+  **prone reload** on the floor. The AnimBP needed a cached upper-body pose
+  and a new layered blend (`ProneReloadAlpha`) — a duplicate `DefaultSlot`
+  node broke dive fire poses. The torso stopped bending during it (aim
+  correction gated on `bReloadAnimating`).
+  - **`DropAsClass`:** the user's `BP_Pistol_EnemyOnly` (enemy anim type)
+    drops as `BP_Pistol`.
+- **Evasion linger** 2 s after a dive lands or a roll ends; **roll Focus**,
+  1 real second of free slow motion from 30% of the roll.
+- **The kneel (Vanquish):** built as "fire held at the roll's end, 2 s",
+  then moved by the user to **holding the roll button**: cut-in at
+  `CrouchOutAfter` 0.5, kneeling as long as it's held (no timer), no camping
+  heat while knelt, evasion only from the linger.
+  - A "stands up, then crouches" hitch: `Crouch()` now happens on the cut-in
+    frame, before the roll blends out.
+  - **Tried and reverted:** a slide into the kneel (momentum to the foot
+    plant), an inertial roll-to-kneel blend (+ an Inertialization node after
+    `DeathSlot`, removed), a held roll Focus. The user: make the blend more
+    convincing instead — tuning `CrouchOutAfter` / `CrouchOutBlendTime`.
+  - The user's roll-hold → prone slide idea was **dropped**; the kneel took
+    the button.
+- **Fixes and polish (2026-10-15):**
+  - A sporadic `No Inertialization node found … 'Land' to 'Loop'` in the
+    Shootdodge machine: all its transitions are Standard Blend; the machine
+    raises it itself. Fixed by an Inertialization node after `StateMachine_0`
+    (bridge).
+  - **Dual dive spread:** duals hid behind the head mid-dive; each arm swings
+    out 20° about the camera's up, the hands turned back.
+  - **Quick turn to aim** (`AimTurnRate` 1080°/s) replaces the snap when firing
+    or aiming facing away (e.g. after a roll).
+  - **Crouched turn-in-place:** crouch turn montages (duplicated through the
+    bridge). It stuttered — the Lyra crouch turn clips had **root motion on**;
+    turned off.
+  - The `StopLogic failed. Component tick is disabled` warning is enemy deaths
+    unpossessing (harmless, noisy).
+- **Attack tokens (2026-10-15):** user: "Can it be that the enemy holding
+  attack tokens are off screen, but the 2 that is right infront of you dont
+  have tokens?" Yes in nearby cases (far but in sight, holding while
+  reloading/blocked, first come first served). Now held only while usable
+  (`AttackTokenRange` 2500), and a requester 300 cm nearer takes the farthest
+  holder's token.
+- **Shooting model → Max Payne 1/2 (2026-10-15):**
+  1. Hold to fire for every weapon at `TimeBetweenShots`; Semi/Auto,
+     `IntendedTimeBetweenShots` and the cadence penalty removed. A held
+     trigger doesn't break into a reload.
+  2. Spread replaces bloom: `Spread`, ×1.5 moving (not mid-dive), burst
+     wander, `FocusSpreadMultiplier` (renamed; **the user's old
+     `FocusMaxBloomMultiplier` value on `BP_PlayerCharacter` was dropped**,
+     now 1).
+  2b. Enemy firing per weapon (`AIFiring`: bursts, interval, pause), with
+     `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy for harder
+     variants (the user's ask). The enemy's own burst values were dropped.
+  3. Retuned through the bridge (table in the spec): pistol 0.22 s / 0.4°,
+     duals 0.12 / 0.7°, shotgun 0.35, pump 0.9, battle rifle 0.6 / 0.15°,
+     assault rifle 0.10 / 0.6° +2° wander; pistols and shotguns single-shot
+     for enemies, duals 2–4 and the assault rifle 4–8 round bursts.
+  4. Docs: spec section rewritten, lore PART 4's *FPS combat philosophy*
+     settled, the user's decisions recorded in PART 3, GDD (+ html) updated.
+
+### ▶ RESUME HERE
+1. **Commit (user).** Uncommitted since "Roll Feature Added":
+   - Source: `ProjectBopisCharacter.*`, `ProjectBopisAnimInstance.*`,
+     `EnemyBase.*`, `WeaponBase.*`, `ProjectBopisGameMode.*`,
+     `Gameplay/FocusComponent.h`, `UI/ReticleWidget.*`;
+   - Content: `ABP_Player`, the seven weapon BPs, `BP_PlayerCharacter`,
+     `BP_EnemyBase`, the two `MM_Pistol_Crouch_Turn*_90` clips and the new
+     `AM_Pistol_Crouch_Turn*_90` montages;
+   - docs. (`BP_Kamz` and the Kamz anims are the user's own changes.)
+   - Then push from your own terminal: `git push`.
+2. **Playtest (user)**, all compiled but untested:
+   - **the shooting model:** held fire rates, spread, enemy bursts vs single
+     shots; retune per weapon (`TimeBetweenShots`, `Spread`, `AIFiring`);
+     decide `FocusSpreadMultiplier` (1 = no effect);
+   - the kneel (hold roll) and its blend (`CrouchOutAfter`,
+     `CrouchOutBlendTime`, the stand→crouch transition);
+   - the quick aim turn (`AimTurnRate`), crouched turns, the dual dive spread;
+   - attack tokens: the closest enemies should be the dangerous ones;
+   - whether `Land → Loop` errors are gone.
+3. **Small leftovers:**
+   - `AM_Pistol_Crouch_TurnRight_90` length (1.70 s vs the 1.633 s clip):
+     re-drop the segment in the montage editor.
+   - Stale comment on the roll's kneel cut-in ("sliding on the roll's
+     momentum") at `RollComponent.cpp:64` — needs "cut into a kneel".
+   - Optional: stop enemy StateTrees cleanly on death (the `StopLogic`
+     warning spam).
+   - Optional cleanup: `FCrosshairSettings` `MinRadius`/`MaxRadius`,
+     `GetCrosshairSettings`, the reticle materials (unused).
+4. **Next feature:** the user's call. Candidates: harder enemy variants (the
+   multipliers + hit-chance values are ready), more moves, Phase 6's slice.
+5. **Still open from before:** navmesh reverting (parked;
+   `RuntimeGeneration=Dynamic` still in the ini), Kamz bone scales (user),
+   the long-gun wind-up's empty-handed arms, the enemy roster (design),
+   Focus sounds and the rest of 10-10's carry-overs.
+
+---
+
 ## 2026-10-12 / 14
 **Summary:**
 - **The shootdodge list is finished** (steps 6–12 plus tuning).
@@ -179,7 +297,9 @@
   reactions; not being fixed.
 - **Code:** applied by Claude on request, each built with the script.
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-14 (2) / 15. Item 3's dodge roll is done.)*
+
+### (old) RESUME HERE
 1. **Commit (user):** **DONE**, committed and pushed 2026-10-14. The list
    below is kept for reference.
    - `ShootdodgeComponent`, `ProjectBopisAnimInstance`, `EnemyBase`,

@@ -23,7 +23,8 @@ narrative, John Woo action, authored protagonist**. Full canon is in
 
 **Carried, unchanged.** Everything built so far is setting-agnostic systems
 work and stays: `AWeaponBase` + data-driven weapons, the bloom model and its
-parameters, fire-rate cap, full-auto, per-weapon anim selection, ammo
+parameters (replaced by the Max Payne shooting model 2026-10-15), fire-rate
+cap, full-auto, per-weapon anim selection, ammo
 (magazine/reserve/timer reload), `AProjectileBase`, the composable HUD, the
 first-person rig (since replaced by the third-person one, 2026-09-30), the
 rendering target, and every gotcha below. None of it is
@@ -71,86 +72,111 @@ being rewritten, so nothing downstream of it should be planned yet.*
 
 ---
 
-## Combat: bloom accuracy model
+## Combat: the shooting model — Max Payne 1/2 (2026-10-15)
 
-The design rules out ADS-for-accuracy and camera-climb recoil. Accuracy is
-driven entirely by a bloom value.
+**User decision, 2026-10-15:** "I'm happy to rework the whole shooting model,
+those were designed for FPS… make it more to fit a Max Payne 1, 2 type." The
+Halo: Reach bloom model (trigger discipline as the skill) is **retired**; the
+skill is now positioning, Focus and the dodges. Built in four increments, each
+compiled; the values are Claude's proposal, approved by the user, not yet
+playtested.
 
-- Weapon accuracy is driven entirely by bloom, **not** by aim state.
-- Aiming must not touch spread, cone angle, bloom growth/decay, or damage —
-  it is purely a camera/UI state. It may add a centre dot to the reticle and
-  trigger a zoomed FOV *if the weapon has zoom*, but nothing that resolves
-  the shot.
-- The live bloom value (0–1) must drive both the random spread used to
-  resolve a shot **and** the reticle's visual expansion, from the same source
-  number. If those are ever computed separately the reticle can lie about the
-  gun's real accuracy, which breaks the premise.
-- Zoom is a separate per-weapon flag from generic aim, so giving a weapon a
-  scope can't accidentally grant it better accuracy.
+**Unchanged rules:**
+- **Aiming never touches accuracy.** `bIsAiming` is a camera/speed state; zoom
+  is a separate per-weapon flag (`bHasZoom`), so a scope can't grant accuracy.
+- **Enemies don't use any of this.** Their shots are placed by the hit-chance
+  model and fired with `Fire(…, bExact = true)`, which skips the spread (see
+  *Enemy shooting v2*). Their timing comes from the weapon's `AIFiring` (below).
+- **Reticle:** a static 6 px white dot (2026-10-07). `WBP_Reticle` draws a
+  fixed *Rounded Box* brush, 6×6, centre-anchored; the Tick chain is gone.
+  `UReticleWidget::GetCurrentBloom` was **removed** 2026-10-15 (nothing
+  referenced it). Still left, unused: `FCrosshairSettings` (`MinRadius` /
+  `MaxRadius` belong to the old expanding ring), `GetCrosshairSettings`,
+  `M_Reticle` / `M_Reticle_Corners`. A later cleanup can remove them.
 
-**Reticle is now a static dot (user decision, 2026-10-07).** `WBP_Reticle`
-draws a fixed 6 px white circle at screen centre, the same for every weapon. The
-bullet above about the reticle's visual expansion is **suspended**: bloom still
-resolves every shot, but nothing shows it. Implementation:
-- `Image_192`'s brush: no material, *Rounded Box*, 6×6, rounding
-  `HalfHeightRadius` (corner radii 3).
-- Canvas slot: 6×6, centre-anchored.
-- Event Tick chain and `LastCrosshairMaterial` deleted.
+### Firing — hold the trigger (increment 1)
 
-Left in place, now unused, until the accuracy model is settled:
-- `FCrosshairSettings` on the weapons;
-- `UReticleWidget::GetCurrentBloom` / `GetCrosshairSettings`;
-- `M_Reticle` / `M_Reticle_Corners`.
+- **Every weapon fires while the trigger is held**, at its
+  **`TimeBetweenShots`** (the gun's rate of fire; 0 = no limit). Pulling
+  faster gains nothing: `CanFire()` enforces it for taps and holds alike.
+- **Removed:** `EWeaponFireMode` (Semi/Auto), `FireMode`,
+  `IntendedTimeBetweenShots` and the over-cadence bloom penalty.
+- **Input:** `FireAction` `Started` → `DoFire`, `Triggered` → `DoFireHeld`,
+  which now just calls `DoFire` every frame; the weapon paces it. The press
+  frame fires both events; the second is rejected by `CanFire()`.
+- **A held trigger doesn't break into a reload** — `DoFireHeld` returns while
+  the weapon `IsReloading()`. Only a fresh pull (`Started`) interrupts a
+  `PerRound` reload; otherwise a tube-fed shotgun would fire each shell the
+  moment it went in.
+- **Dry fire** still resets `TimeSinceLastShot`, so an empty gun clicks at its
+  rate, not every frame.
 
-If bloom feedback comes back, those are the pieces to re-wire.
+### Accuracy — spread (increment 2)
 
-### Bloom parameters
+A shot goes out in a cone of `AWeaponBase::GetCurrentSpread()` degrees:
 
-| Parameter | What it controls |
+`(Spread + SustainedSpread × burst) × moving × Focus`
+
+| Setting (`Weapon|Accuracy`) | Meaning |
 |---|---|
-| `BaseSpreadAngle` | Accuracy cone at zero bloom (best case). |
-| `MaxSpreadAngle` | Accuracy cone at full bloom (worst case). |
-| `BloomPerShot` | Bloom added per shot fired (0–1 scale). |
-| `BloomDecayRate` | Bloom recovered per second while not firing. |
-| `BloomDecayDelay` | Grace period after the last shot before decay starts. |
-| `IntendedTimeBetweenShots` | Seconds between shots the weapon is "meant" to be fired at — firing sooner adds an extra bloom penalty. Renamed from `IntendedCadence` (shots/sec) on 2026-08-31. |
+| `Spread` | The base cone, degrees. Max Payne's guns are accurate: keep it small. |
+| `MovingSpreadMultiplier` | ×1 standing still → this at `MovingSpreadFullSpeed` (400 cm/s; the run is 500), linear by the holder's 2D speed. **Not while a shootdodge `IsDodging()`**: a dive is as true as standing. |
+| `SustainedSpread` / `SustainedSpreadTime` | Extra cone a long burst wanders to, reached after this long of unbroken fire. 0 for pistols and shotguns. |
+| Focus `FocusSpreadMultiplier` | On the **Focus component** (renamed from `FocusMaxBloomMultiplier`); applies during any Focus, the dive's included. 1 = no effect. |
 
-### Rate-of-fire parameters
+- **Bursts:** `BurstTime` grows by `TimeSinceLastShot` while shots follow
+  within `TimeBetweenShots + BurstBreakTime` (0.15 s, a file-scope constant);
+  a longer gap (the trigger let go) resets it. Computed **before** the shot's
+  spread, so the first shot of a burst is clean.
+- **Pellets:** the spread moves the pattern's centre; `PelletSpreadAngle`
+  fans the pellets around it at a fixed width.
+- **Removed:** `BaseSpreadAngle`, `MaxSpreadAngle`, `BloomPerShot`,
+  `BloomDecayRate`, `BloomDecayDelay`, `CurrentBloom` and its decay in `Tick`.
 
-Two deliberately separate limits:
+### Enemy firing pattern — per weapon (increment 2b)
 
-| Parameter | Meaning |
-|---|---|
-| `TimeBetweenShots` | Hard mechanical cap, in seconds. Enforced by `CanFire()`. Tapping faster does nothing. |
-| `IntendedTimeBetweenShots` | Soft accuracy limit. Firing sooner is allowed but adds bloom. |
+User: enemy timing "should be based on weapon type, ie bursts of very fast
+weapons, but constant shots on others", with room for **harder variants**
+later ("bigger bursts, less pauses").
 
-**These two must differ.** If the hard cap equals the intended interval, the
-bloom cadence penalty becomes unreachable dead code. The gap between them is
-the Reach-style window: fire faster than is comfortable, pay in accuracy, but
-never exceed the mechanical limit.
+- **On the weapon:** `FAIFiringPattern AIFiring` (`Weapon|AI`):
+  `BurstShotsMin/Max` (1–1 = single shots), `ShotInterval` (spacing inside a
+  burst; 0 = the weapon's rate), `BurstPauseMin/Max` (after each burst, or
+  each shot). C++ defaults are the old enemy pattern: 3–5, 0, 0.5–1.5 s.
+- **On the enemy:** `BurstShotsMultiplier` and `BurstPauseMultiplier`
+  (`Enemy|Shooting|Bursts`, both ×1) — the knobs for tougher variants. The
+  burst multiplier is rounded and **only applies when the weapon's
+  `BurstShotsMax` > 1**, so a pistol stays a single-shot gun.
+- **`UpdateShooting`:** pause, then `ShotIntervalLeft`, then a new burst is
+  rolled; after each fired shot, either the pause (× `BurstPauseMultiplier`)
+  or the next interval. A shot still never beats the weapon's own
+  `TimeBetweenShots`.
+- The enemy's own `BurstShotsMin/Max` / `BurstPauseMin/Max` were **removed**
+  (their values on `BP_EnemyBase` / `BP_Enemy_Test` were dropped).
+- For a single-shot weapon the **warning burst** is one shot.
 
-### Configured values
+### Configured values (2026-10-15, written through the bridge)
 
-**Claude-proposed starting values, not design canon.** Chosen to be Halo:
-Reach-accurate in shape — a first shot from full rest is always precise, so
-`BaseSpreadAngle` is `0°` on every weapon. Expected to move once there's
-something to shoot at.
+Damage, magazines, ranges and pellet cones unchanged; Focus ×1.
 
-| Field | Pistol | Close-range rifle | Battle rifle |
-|---|---|---|---|
-| `BaseDamage` | 25 | 15 (+ fragment burst) | 35 |
-| `MaxRange` | 5000 | 2500 | 8000 |
-| `BaseSpreadAngle` | 0° | 0° | 0° |
-| `MaxSpreadAngle` | 3.0° | 6.0° | 4.0° |
-| `BloomPerShot` | 0.12 | 0.08 | 0.18 |
-| `BloomDecayRate` | 0.8 | 0.5 | 0.6 |
-| `BloomDecayDelay` | 0.25 | 0.2 | 0.35 |
-| `TimeBetweenShots` | 0.125 | 0.083 | 0.2 |
-| `IntendedTimeBetweenShots` | 0.2 | 0.1 | 0.286 |
-| `FireMode` | Semi | Auto | Semi |
-| `bHasZoom` | false | false | true (`ZoomedFOV` 30) |
-| `bIsProjectileWeapon` | false | true | false |
-| `AnimType` | Pistol | Rifle | Rifle |
+| Weapon | Rate (s) | Spread | Moving × | Burst wander | Enemy: burst / interval / pause (s) |
+|---|---|---|---|---|---|
+| `BP_Pistol` | 0.22 | 0.4° | 1.5 | — | 1 / — / 0.35–0.8 |
+| `BP_Pistol_EnemyOnly` | 0.22 | 0.4° | 1.5 | — | 1 / — / 0.35–0.8 |
+| `BP_DualPistols` | 0.12 (alternating) | 0.7° | 1.5 | — | 2–4 / rate / 0.5–1.0 |
+| `BP_Shotgun` (semi-auto) | 0.35 | 0.3° (+ 8 × 2°) | 1.5 | — | 1 / — / 0.6–1.1 |
+| `BP_PumpShotgun` | 0.9 | 0.3° (+ 8 × 1.5°) | 1.5 | — | 1 / — / 1.0–1.6 |
+| `BP_BattleRifle` (sniper slot) | 0.6 | 0.15° | 2.0 | — | 1 / — / 1.0–2.0 |
+| `BP_CloseRangeRifle` (assault) | 0.10 | 0.6° | 1.5 | +2° over 1 s | 4–8 / rate / 0.6–1.2 |
+
+Before this pass: pistol 0.30, enemy-only pistol 0.125, duals 0.15, shotgun
+0.30, pump 1.0, battle rifle 0.20, assault rifle 0.12; every `Spread` at the
+0.5° default.
+
+**History:** Phase 2 (2026-08-12) built the Reach model — `BaseSpreadAngle`
+→ `MaxSpreadAngle` by a 0–1 bloom, `BloomPerShot`, decay after a delay, and a
+cadence penalty for firing inside `IntendedTimeBetweenShots` (the "two limits
+must differ" rule). The Phase 2/3 entries in `ProjectPlan.md` describe it.
 
 ### Ammo values
 
@@ -190,8 +216,8 @@ behind.
 4. Checks the muzzle is where it looks — see below.
 5. Fires `Fire(MuzzleLocation, (AimPoint - MuzzleLocation).Normalized)`.
 
-Bloom applies to the handed-in direction, so spread now works off the
-muzzle→aim line for free. Projectiles spawn at `TraceStart`, which is now the
+Spread (bloom until 2026-10-15) applies to the handed-in direction, so it
+works off the muzzle→aim line for free. Projectiles spawn at `TraceStart`, which is now the
 muzzle, so they leave the barrel.
 
 **This does not reintroduce the August muzzle-socket problem.** That revert was
@@ -695,12 +721,12 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
 
 ### Pellets and damage falloff (2026-10-03)
 
-`PelletsPerShot` (default 1) and `PelletSpreadAngle` (default 0). Bloom
-displaces the **pattern centre**; the pellet cone spreads around it at a fixed
-width — width is a property of the gun, bloom stays the measure of
-discipline. One pellet at zero spread skips the second random draw, so
-single-shot weapons are unchanged. Ammo, bloom, sound and animation are
-per shot, not per pellet. `BaseDamage` is per pellet.
+`PelletsPerShot` (default 1) and `PelletSpreadAngle` (default 0). The shot's
+spread (bloom until 2026-10-15) displaces the **pattern centre**; the pellet
+cone spreads around it at a fixed width, a property of the gun. One pellet at
+zero spread skips the second random draw, so single-shot weapons are
+unchanged. Ammo, spread, sound and animation are per shot, not per pellet.
+`BaseDamage` is per pellet.
 
 Range falloff: `FalloffStartRange` → `FalloffEndRange` lerps damage from
 100% to `MinDamageMultiplier`, measured from the muzzle (`TraceStart`).
@@ -1000,6 +1026,11 @@ owned, weapon + rounds if not, duals unlocked by a second single).
   drop flies and hands over to an untouched pickup.
 - **Rounds** follow the pickup's `AmmoMode` (BP default: random, half to full
   magazine). Duals drop as one pickup showing a single pistol mesh.
+- **`DropAsClass` (2026-10-14):** what a weapon turns into when an enemy drops
+  it (`Weapon|Drop`; empty = itself), read through
+  `AWeaponBase::GetDropClass()` by `DropWeapon`. For enemy-only variants:
+  `BP_Pistol_EnemyOnly` (the user's copy, differing only in `AnimType`) drops
+  as `BP_Pistol`.
 - **Per-enemy weapons:** `UWeaponHolderComponent::StartingWeaponClass` is now
   **`EditAnywhere`**. Select a placed enemy → WeaponHolder → Starting Weapon
   Class. The BP value is the default.
@@ -1347,9 +1378,12 @@ camping out with it."
 - **Suppression** shots are near misses around the last known spot.
 - **Leading:** both hits and misses are led by `velocity × flight time ×
   LeadSkill 1.0` for projectile weapons.
-- **No bloom:** `AWeaponBase::Fire(…, bExact = true)` skips the bloom
-  scatter, so a placed shot stays placed. Pellets still fan out; the player's
-  own guns are unchanged.
+- **No spread:** `AWeaponBase::Fire(…, bExact = true)` skips the weapon's
+  spread (bloom, before 2026-10-15), so a placed shot stays placed. Pellets
+  still fan out; the player's own guns are unchanged.
+- **Timing (2026-10-15):** bursts and pauses come from the weapon's
+  `AIFiring`, scaled by the enemy's `BurstShotsMultiplier` /
+  `BurstPauseMultiplier`. See *Combat → Enemy firing pattern*.
 - **Player headshots do normal damage:** the player's constructor removes
   the `head` ×4 from `BoneDamageMultipliers`. Enemies keep ×4.
 
@@ -1368,15 +1402,28 @@ player, shared by all enemies):
 **Attack tokens** (`AProjectBopisGameMode`):
 - **Limits:** `MaxAttackTokens 2`, `AttackTokenHoldTime 3`,
   `AttackTokenCooldown 1.5`.
-- **Requesting:** an enemy calls `RequestAttackToken` each tick while it sees
-  the player. Tokens are first come, first served.
+- **Requesting** *(revised 2026-10-15)*: an enemy calls
+  `RequestAttackToken(this, Distance)` each tick **only while it can use the
+  token**: it sees the player, is within `AttackTokenRange 2500` cm (on the
+  enemy), and its gun is raised, not equipping, not reloading, with no ally in
+  the line of fire (`LineOfFireBlockedTime <= 0`). Otherwise it hands the
+  token straight back. *(Before: every tick in sight, so a reloading or
+  across-the-map enemy could sit on a token while the two in front of the
+  player only fired near misses.)*
+  - **Nearer enemies take precedence:** with every token held, a requester at
+    least `AttackTokenStealMargin 300` cm nearer than the farthest holder takes
+    that holder's token (no cooldown for the one bumped). Holders refresh
+    their stored distance on every request.
   - Expired holds are handed back, with that enemy put on cooldown, during
-    the next request.
-- **Releasing:** `ReleaseAttackToken` on losing sight (no cooldown) and on
-  death.
+    the next request, so tokens still rotate.
+  - **Known one-shot gap:** `LineOfFireBlockedTime` only resets when a shot
+    goes off, so after an ally clears the line the first shot is tokenless
+    (a near miss); the token comes back next tick.
+- **Releasing:** `ReleaseAttackToken` when it can't use it (no cooldown) and
+  on death.
 - **No game mode** (another map's mode): everyone may hit.
-- Token holds are a `TArray` of weak holder + grant time; cooldowns are a
-  `TMap`.
+- Token holds are a `TArray` of weak holder + grant time + distance;
+  cooldowns are a `TMap`.
 
 **Fairness:**
 - **Warning burst:**
@@ -2015,6 +2062,36 @@ visible mesh lags.
   with it on, the montage locked movement input until the turn ended. Rifle
   clips serve every weapon: when raised, the upper body comes from the
   hip-fire layer, so only legs/pelvis show the turn.
+- **Crouched turns (2026-10-15).** "No leg movement when looking around on
+  crouch": crouch was excluded from *can turn*, so the mesh turned rigidly with
+  the capsule.
+  - `CrouchTurnLeftMontage` / `CrouchTurnRightMontage` (Class Defaults → Turn
+    In Place). With both set, *can turn* allows crouch and crouched turns play
+    them; with either empty, crouch behaves as before.
+  - Assets: `Pistol/AM_Pistol_Crouch_TurnLeft_90` / `_TurnRight_90`, made
+    through the bridge by **duplicating** the rifle turn montages and pointing
+    their segment at `MM_Pistol_Crouch_TurnLeft/Right_90` (same `TurnSlot`,
+    blends, curves). The pistol crouch clips serve every weapon.
+  - **The clips came with Enable Root Motion ON** (the rifle turn clips have
+    it off): each step rotated the capsule while the Aiming stance snapped it
+    back and turn-in-place counter-rotated the mesh — a constant re-stepping
+    stutter. Turned off on both clips.
+  - The Right montage's length stayed at the source's 1.70 s (clip 1.633 s):
+    the bridge can't set `SequenceLength`. The overrun sits inside the 0.25 s
+    blend-out; re-dropping the segment in the montage editor fixes it.
+- **Quick turn to aim (2026-10-15).** "When rolling and not facing forward
+  then shooting, there is a snap to face forward, this needs a quick lerp."
+  - Entering the Aiming stance with the body more than 1° off the camera sets
+    `bTurningToAim` and leaves `bUseControllerRotationYaw` off;
+    `UpdateAimTurn` (Tick, after `UpdateMovementStance`) turns the actor
+    `FMath::FixedTurn` at **`AimTurnRate` 1080°/s** (world time), then locks to
+    the camera. 0 = the old snap.
+  - The fire code's instant `SetActorRotation` from the lowered stance was
+    removed; the stance change does the turn. The first shot leaves mid-turn
+    (under 0.17 s); it still goes to the crosshair.
+  - **Turn-in-place sits the turn out:** the anim instance reads
+    `IsTurningToAim()` and *can turn* requires it false. Otherwise it would
+    counter-rotate the mesh and cancel the visible turn.
 
 ### Slots
 `DefaultSlot` (DefaultGroup), **`OffhandSlot` in its own `OffhandGroup`**, and
@@ -2264,11 +2341,13 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
 - **Slow motion** after take-off, off on landing, free of meter cost.
 - **Getting up is the drawback:** no firing during the get-up ("it gives you an
   extended focus but leaves you vulnerable on the ground").
-- **No reload** anywhere in the dive. A reload press while prone gets you up,
-  and the reload runs once you're standing.
+- **No reload** in the dive's flight. ~~A reload press while prone gets you
+  up~~ — superseded 2026-10-14: **reloading prone** happens on the floor (see
+  *Dodge roll and the moves around it → Reloading*).
 - **Focus Max Bloom Multiplier:** a tunable bloom scale during Focus (1
   normal, 0.5 half, 0 none). It replaced a "full accuracy in a shootdodge"
-  request.
+  request. Renamed **`FocusSpreadMultiplier`** 2026-10-15, and a dive is now
+  exempt from the moving-spread penalty.
 
 **Code:**
 - **Direction:** `DiveYaw` = camera yaw + octant × 45°, fixed at take-off.
@@ -2299,13 +2378,18 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   - `IsGettingUp()`: `DoFire` returns early (held fire goes through
     `DoFire`).
   - `RequestGetUp(bool bThenReload)`: `NotifyMoveInput` forwards to it.
-  - `DoReload` while `IsDodging()` calls `RequestGetUp(true)` and returns.
+  - *(Superseded 2026-10-14 by the prone reload: `DoReload` now reloads on
+    the floor while `IsProne()`, and returns without reloading anywhere else
+    in the dive.)* `DoReload` while `IsDodging()` calls `RequestGetUp(true)`
+    and returns.
   - `Finish()` sets the phase to None first, then runs the queued reload via
     `AProjectBopisCharacter::ReloadAfterShootdodge()` (→ `DoReload`), so it
     can't re-queue.
   - An empty-magazine auto-reload while prone also gets you up (it goes
-    through `DoReload`).
-- **Bloom:** `UFocusComponent::FocusMaxBloomMultiplier` (default 1, 0..1).
+    through `DoReload`). *(Superseded the same way: it reloads prone.)*
+- **Bloom** *(superseded 2026-10-15 — now `FocusSpreadMultiplier` /
+  `GetSpreadMultiplier()`, applied in `AWeaponBase::GetCurrentSpread()`)*:
+  `UFocusComponent::FocusMaxBloomMultiplier` (default 1, 0..1).
   - `GetBloomMultiplier()` returns it while active, otherwise 1.
   - `AWeaponBase::GetCurrentBloom()` (moved out of line) returns raw bloom ×
     the holder's multiplier, found with `FindComponentByClass`. It's used by
@@ -2664,6 +2748,146 @@ the rotation-mode toggling), and **whether the right arm crosses the body**
 (the one failure mode of the mirror trick — mirrored frames can clip the
 torso).
 
+### Dodge roll and the moves around it (2026-10-14 / 15)
+
+**The user's ask (2026-10-14):** "more moves for the player", starting with a
+dodge roll. Choices: the **Roll** animation set, its **own key** (`IA_Roll`),
+**evasive** (enemies' ×`EvadingHitMultiplier`), **no firing** during it,
+**no Focus cost**. All compiled; the kneel, the quick aim turn and crouch turns
+are not yet playtested.
+
+**`URollComponent`** (`Gameplay/RollComponent.h/.cpp`, on the player):
+- **`TryRoll`** (from `DoRoll`): on the ground, not rolling, off `Cooldown`
+  0.25 s, not dead, not in a shootdodge. Crouch doesn't block it.
+  - Direction: 8-way from the movement input relative to the camera
+    (`PickDirection`, the shootdodge's `EShootdodgeDirection` octants; no
+    input = forward).
+  - **The body squares up to the camera first** (`SetActorRotation` to the
+    control yaw): the clips are picked camera-relative but play
+    body-relative. *(User: "its rolling relative to the character front
+    direction".)*
+  - Plays a random clip from `Animations[direction].Clips` as a dynamic
+    montage on **`DeathSlot`** (full body), `PlayRate` 1, blend 0.1 in / 0.2
+    out. Root motion carries it; `SetAnimationDrivenRotation(true)` so
+    turning the camera doesn't steer it.
+- **`TickComponent`, in order:**
+  1. **Roll Focus:** at `RollFocusStartAt` 0.3 of the clip, a free Focus
+     (`BeginFreeFocus`, no cost) for `RollFocusDuration` **1 real second**
+     (`FApp::GetDeltaTime`), once per roll; it runs its course even past the
+     roll. *(User: "you cant shoot because you are in a roll, but you can line
+     up shots".)* Skipped if the player's own Focus is on.
+  2. **Kneel cut-in:** roll button still held at `CrouchOutAfter` 0.5 →
+     `EndRoll`, `StartPostRollCrouch`, then `Montage_Stop(CrouchOutBlendTime
+     0.15)` — in that order, so the roll blends out into a body that's already
+     crouched (see the kneel).
+  3. **Move-out:** movement input at `MoveOutAfter` 0.6 → `Montage_Stop
+     (MoveOutBlendTime 0.15)`; with `bCarryMomentum` the velocity is set to
+     full run speed the way the input points. *(User: "I need to be able to
+     move immediately after the roll".)*
+  4. **Played out:** ends as the blend-out starts.
+- **`Cancel`** (death): stops the montage at once, ends the roll's Focus.
+- **Guards** on the character while `IsRolling()`: fire, jump, weapon select,
+  reload, crouch update, shootdodge. `DoRoll` itself clears a kneel and
+  uncrouches first.
+
+**Evasion linger** (`EvadeLingerTime` 2 s, `Combat|Evasion`):
+`IsEvading()` = `IsEvadingNow()` (the dive's flight or a roll) **or** within
+2 s of the last evading frame (`LastEvadingTime`, stamped in Tick). So a
+landed dive and a finished roll stay evasive for 2 s. *(User: "Give a
+timewindow where the effect of the accuracy reduction is maintained".)*
+
+**The kneel — Vanquish's roll into a crouch** (character, `Combat|Roll`):
+- **Trigger:** hold the roll button through the roll. At the roll's
+  `CrouchOutAfter`, `URollComponent` cuts into the kneel. *(First built as
+  "fire held as the roll ends, kneel for 2 s"; the user moved it to the roll
+  button and a cut-in point the same session.)*
+- **On/off:** `bPostRollCrouch`. The cut-in checks `CanPostRollCrouch()`
+  (`bPostRollCrouch` and alive), so with it off a held roll plays out
+  normally instead of being cut short (2026-10-15).
+- **`StartPostRollCrouch`:** with `bPostRollCrouch`, sets
+  `bPostRollCrouching` and calls `Crouch()` **at once** — waiting for the next
+  `UpdateCrouch` let the roll blend into the standing pose first (the "stands
+  up, then crouches" hitch).
+- **Lasts while the roll button is held** — no timer (`PostRollCrouchTime`
+  was removed). `UpdateCrouch` drops it the frame the button is up, and the
+  normal crouch rule takes over (standing, unless crouch was toggled).
+- **`bPostRollCrouchHoldsPosition`:** `DoMove` ignores input while knelt.
+- **`IsRollHeld()`** / private **`IsInputHeld(Action)`**: the live Enhanced
+  Input value (`UEnhancedInputLocalPlayerSubsystem::GetPlayerInput()->
+  GetActionValue`), not the last event.
+- **Camping heat doesn't build while knelt:** `UpdateCampingHeat` pauses the
+  clock at the spot; heat already built holds (no drain).
+- **Evasion:** only the 2 s linger from the roll's end.
+- **Blend tuning (no code):** `CrouchOutAfter` on the roll frame closest to a
+  kneel; `CrouchOutBlendTime` ~0.2–0.3; the AnimBP's stand→crouch transition.
+
+**Crouch combat stance** (2026-10-15, `bCrouchCombatStance`, category
+*Crouch*, on by default): crouched (the kneel included), Tick keeps
+`TimeUntilWeaponLowered` at `LowerWeaponDelay`, so the weapon stays raised —
+the same Aiming stance as the aim button (body locked to the camera, feet
+turning in place), with the hip-fire pose and no aim zoom. The camera eases
+down by **`CrouchCameraOffset` −40 cm** (was 0; only applied in the stance).
+Standing up, the gun lowers after the usual 1.5 s. Off: the old crouch.
+
+**Reloading** (2026-10-14):
+- **Auto-reload** (`bAutoReload`, `AutoReloadDelay` 0.2 s): an empty gun
+  reloads by itself once the player is free to (standing or prone, not
+  mid-dive or mid-roll, not equipping) — `UpdateAutoReload`, through
+  `DoReload`.
+- **Reloading ends Focus** (`bStopFocusOnReload`): a reload that actually
+  starts calls `StopFocus`.
+- **Prone reload:** lying prone after a dive, `DoReload` reloads on the floor
+  instead of getting up; the rest of a dive (wind-up, flight, landing,
+  get-up) refuses it.
+- **AnimBP wiring (bridge):** `Slot_0` (DefaultSlot) → `SaveCachedPose`
+  **"UpperBodySlot"**; `UseCachedPose_1` feeds the standing upper-body layer
+  (`LayeredBoneBlend_0`) as before; a new **`LayeredBoneBlend_8`** (branch
+  filters `clavicle_l` / `clavicle_r`, local space) after the shootdodge
+  branch's `LayeredBoneBlend_7` lays `UseCachedPose_2` over it at
+  **`ProneReloadAlpha`** (the anim instance eases it 0↔1 at
+  `ProneReloadBlendSpeed` 6 on `bReloadAnimating`). Output →
+  `LocalToComponentSpace_3`.
+  - A second `DefaultSlot` node (the first attempt) warned about duplicate
+    slots and made dive fire montages show the two-handed pose; the cached
+    pose replaced it.
+- **No torso bend during a prone reload:** the shootdodge aim correction lets
+  go while `bReloadAnimating` (it was bending the torso to point a gun that's
+  down by the chest at the crosshair).
+- **A held trigger doesn't break into a reload** (2026-10-15; see *Combat →
+  Firing*).
+
+**Dual shootdodge arm spread** (2026-10-15): "the shootdodge duals are mostly
+blocked by the players head or body". Both guns aim at one point, so from
+behind the right shoulder they converge in front of the head and chest.
+- Each arm swings out to its own side of the screen by
+  **`DualDiveSpreadAngle`** 20° (anim instance Class Defaults, `Shootdodge`),
+  about the **camera's up** axis in component space, eased by
+  `ShootdodgeDualAlpha`; the hand turns back by the same, so the gun keeps
+  pointing where it did.
+- Folded into the existing lift rotators: `LiftFor` composes `Spread × Lift`
+  for the arm and its inverse for the hand. No AnimGraph change. Single guns
+  get the identity.
+
+**Shootdodge state machine — Inertialization (2026-10-15):** a sporadic
+`No Inertialization node found for request from transition 'Land' to 'Loop'
+in state machine 'Shootdodge'`. All six Shootdodge transitions are Standard
+Blend (0.2 s); the machine raises the request itself, most likely on a
+Land → Loop re-entry while the Loop → Land crossfade is still running (a bump
+on landing). The only Inertialization node was on the locomotion branch. Fix
+(bridge): **`StateMachine_0` → `Inertialization_1` → `LayeredBoneBlend_6`**.
+
+**Tried and reverted (2026-10-15):**
+- **A slide into the kneel** (`CrouchSlideTime`: the roll's speed easing to a
+  stop by the foot plant). The user preferred to fix the blend instead.
+- **An inertial roll-to-kneel blend** (`Montage_StopWithBlendSettings` with
+  `EMontageBlendMode::Inertialization` + an Inertialization node after
+  `DeathSlot`). Reverted, node removed.
+- **Held roll Focus** (Focus on the meter while the roll button stayed held
+  after the roll). Removed entirely.
+- **Roll hold → prone slide** (the user's first idea): dropped; holding roll
+  now goes into the kneel.
+
+
 ### Prone as a transient state
 
 The dive lands prone, but this does **not** reverse the no-prone decision of
@@ -2906,8 +3130,16 @@ whose axes come from the hand bone — so X/Y/Z are not forward/right/up.
 ## Current state
 
 See [ProgressLog.md](ProgressLog.md) for dated detail and
-[ProjectPlan.md](ProjectPlan.md) for the phase breakdown. Summary as of
-2026-10-05:
+[ProjectPlan.md](ProjectPlan.md) for the phase breakdown.
+
+**Update 2026-10-15:** Phase 5 has enemies that take bullets, die, shoot
+(the hit-chance model, attack tokens) and fight in waves (gunman behaviour v1,
+`AEncounterDirector`). The player has the shootdodge, Focus, death, a dodge
+roll with a held-button kneel, auto/prone reload, crouched turn-in-place, and
+the Max Payne shooting model (hold to fire, small per-weapon spread). Ammo HUD
+and pickups were done 2026-10-08. The summary below is kept as of 2026-10-05.
+
+Summary as of 2026-10-05:
 
 - **Phases 0–3 complete**: project cleanup, weapon foundation, bloom accuracy,
   reticle/aim/zoom.
@@ -3007,10 +3239,38 @@ ones most likely to bite:
   difference from that pose", and pulls a re-authored idle back toward the
   original every shot. Check *Additive Settings → Base Pose* before layering a
   stock additive over a custom pose.
+- **Lyra turn clips differ on root motion** (2026-10-15). The rifle standing
+  turns have *Enable Root Motion* off; the pistol **crouch** turns ship with it
+  **on**. As a turn-in-place montage that rotates the capsule against the
+  Aiming stance → a constant re-stepping stutter. Check the flag on any new
+  turn clip.
+- **A Standard Blend state machine can still request inertialization**
+  (2026-10-15). The Shootdodge machine logged "No Inertialization node found
+  for request from transition 'Land' to 'Loop'" with every transition on
+  Standard Blend — the request comes from the machine itself (likely a
+  re-entry mid-crossfade). An Inertialization node must sit **downstream of
+  that machine**; one on another branch doesn't count.
+- **`grep` on a `.uasset` shows FName bases, not full names** (2026-10-15).
+  `AM_Rifle_TurnLeft_90` appears as `AM_Rifle_TurnLeft` (the `_90` is stored
+  as the FName number), and a name-table entry doesn't tell you a property's
+  value. Confirm through the bridge or the asset's own folder listing.
+- **The bridge can't create montages or set `SequenceLength`** (2026-10-15).
+  Duplicate an existing montage (`AssetTools.duplicate`) and rewrite its
+  `SlotAnimTracks` segment (`animReference`, `animEndTime`,
+  `cachedPlayLength`); the montage's own length stays the source's.
+- **`ObjectTools.set_properties` takes `values` as a JSON string**, and struct
+  fields use the lower-camel names `get_properties` returns (`burstShotsMin`,
+  `slotName`). An unreadable/unsettable property aborts the whole script.
+- **Renaming or removing a `UPROPERTY` drops the values Blueprints stored for
+  it** (2026-10-15: `FireMode`, `IntendedTimeBetweenShots`, the bloom fields,
+  the enemy burst fields, `FocusMaxBloomMultiplier` on `BP_PlayerCharacter`).
+  Read them through the bridge first if they matter (or add a CoreRedirect).
 
 ---
 
 ## Changelog
+
+- 2026-10-15 — **Shooting model reworked to Max Payne 1/2:** hold to fire for every weapon at `TimeBetweenShots` (Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed); spread replaces bloom (`Spread`, moving ×, burst wander, `FocusSpreadMultiplier`); enemy firing pattern per weapon (`FAIFiringPattern AIFiring`) with `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy; all seven weapon BPs retuned. Attack tokens only held while usable, nearer enemies take precedence (`AttackTokenRange`, `AttackTokenStealMargin`). New section *Dodge roll and the moves around it* (roll, roll Focus, evasion linger, the kneel, auto/prone reload, dual dive spread, the Shootdodge Inertialization node, reverted experiments). Turn-in-place: crouched turns, quick turn to aim (`AimTurnRate`). `DropAsClass`. Six new gotchas.
 
 - 2026-10-09 (5) — Bullet time renamed **Focus** (trademark): `UFocusComponent`, `UFocusWidget`, `IA_Focus`, `WBP_Focus`, CoreRedirects. Focus feedback (post-process + pitch drop, optional sounds). Projectile effects hide by default.
 - 2026-10-09 (4) — Bullet time built (`UBulletTimeComponent`, Q toggle, 0.3× world, slowed player, real-time meter with kill refill / passive regen / infinite, HUD widget). Projectiles: splash opt-in, falloff from the source weapon, point damage, hidden at normal speed; `BP_Cal45Bullet` / `BP_RifleProjectile` at 9,000 cm/s, radius 1.

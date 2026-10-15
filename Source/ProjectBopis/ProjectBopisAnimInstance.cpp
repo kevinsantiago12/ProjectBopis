@@ -64,6 +64,8 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateLocomotion(*Character);
 
 	bIsWeaponRaised = Character->IsWeaponRaised();
+	const AProjectBopisCharacter* Hero = Cast<AProjectBopisCharacter>(Character);
+	bTurningToAim = Hero && Hero->IsTurningToAim();
 	bIsCrouched = Character->bIsCrouched;
 	bReloadAnimating = Character->IsReloadAnimating();
 	ProneReloadAlpha = FMath::FInterpConstantTo(ProneReloadAlpha, bReloadAnimating ? 1.0f : 0.0f,
@@ -622,12 +624,13 @@ void UProjectBopisAnimInstance::UpdateTurnInPlace(float ActorYaw, float DeltaSec
 	const float YawDelta = FRotator::NormalizeAxis(ActorYaw - LastActorYaw);
 	LastActorYaw = ActorYaw;
 
-	// The raise frame doesn't count — firing snaps the capsule to the camera on purpose,
-	// and the body should snap with it rather than start a turn.
+	// The raise frame doesn't count, nor the quick turn to the camera that follows it — the
+	// body turns with the capsule on purpose, rather than starting a turn-in-place.
 	const bool bCanTurn = bIsWeaponRaised
 		&& bWasWeaponRaised
+		&& !bTurningToAim
 		&& Speed < TurnInPlaceMaxSpeed
-		&& !bIsCrouched;
+		&& (!bIsCrouched || (CrouchTurnLeftMontage && CrouchTurnRightMontage));
 
 	bWasWeaponRaised = bIsWeaponRaised;
 
@@ -667,8 +670,11 @@ void UProjectBopisAnimInstance::UpdateTurnInPlace(float ActorYaw, float DeltaSec
 		// A turn should close exactly the gap that triggered it, not always 90 degrees.
 		TurnScale = static_cast<float>(FMath::Abs(RootYawOffset) / 90.0);
 
-		// Negative offset: the body lags left of the camera, so it steps right.
-		UAnimMontage* TurnMontage = RootYawOffset < 0.0f ? TurnRightMontage : TurnLeftMontage;
+		// Negative offset: the body lags left of the camera, so it steps right. Crouched,
+		// the crouch's own steps.
+		UAnimMontage* LeftMontage = bIsCrouched ? CrouchTurnLeftMontage : TurnLeftMontage;
+		UAnimMontage* RightMontage = bIsCrouched ? CrouchTurnRightMontage : TurnRightMontage;
+		UAnimMontage* TurnMontage = RootYawOffset < 0.0f ? RightMontage : LeftMontage;
 		if (TurnMontage)
 		{
 			// bStopAllMontages = false, or starting a turn would cancel fire/reload.

@@ -13,12 +13,19 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
+#include "Gameplay/ShootdodgeComponent.h"
 #include "Enemies/EnemyBase.h"
 #include "EngineUtils.h"
 
 
 static TAutoConsoleVariable<bool> CVarShowWeaponTrace(TEXT("Weapon.ShowTrace"),
 	true,TEXT("Draw debug trace lines for weapon fire."),ECVF_Cheat);
+
+namespace
+{
+	/** A gap this much longer than the weapon's rate ends a burst (the trigger let go). */
+	constexpr float BurstBreakTime = 0.15f;
+}
 
 // Sets default values
 AWeaponBase::AWeaponBase()
@@ -201,12 +208,15 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 		FiringMesh->PlayAnimation(FireAnimation, false);
 	}
 
-	const float SpreadAngle = FMath::Lerp(BaseSpreadAngle, MaxSpreadAngle, GetCurrentBloom());
+	// A burst runs while shots follow at the weapon's rate; a longer gap starts a new one.
+	BurstTime = TimeSinceLastShot <= TimeBetweenShots + BurstBreakTime ? BurstTime + TimeSinceLastShot : 0.0f;
+
+	const float SpreadAngle = GetCurrentSpread();
 	const FVector SpreadDirection = bExact
 		? TraceDirection
 		: FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
 
-	// Bloom displaces the pattern centre; the pellets fan out around it. One pellet
+	// The spread moves the pattern's centre; the pellets fan out around it. One pellet
 	// at zero pellet spread skips the second random draw entirely, so every existing
 	// weapon behaves exactly as before.
 	for (int32 Pellet = 0; Pellet < PelletsPerShot; ++Pellet)
@@ -225,15 +235,6 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 		}
 	}
 
-	float BloomToAdd = BloomPerShot;
-
-	if (IntendedTimeBetweenShots > 0.0f && TimeSinceLastShot < IntendedTimeBetweenShots)
-	{
-		const float CadenceViolationRatio = 1.0f - (TimeSinceLastShot / IntendedTimeBetweenShots);
-		BloomToAdd += BloomPerShot * CadenceViolationRatio;
-	}
-
-	CurrentBloom = FMath::Min(1.0f, CurrentBloom + BloomToAdd);
 	TimeSinceLastShot = 0.0f;
 
 	// Record which hand this was before flipping, so the holder can animate the right arm.
@@ -246,13 +247,28 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	return EFireResult::Fired;
 }
 
-float AWeaponBase::GetCurrentBloom() const
+float AWeaponBase::GetCurrentSpread() const
 {
-	// The holder's Focus steadies the hand. The raw bloom still builds and decays as normal;
-	// only its effect is scaled, so leaving Focus brings back whatever has built up.
-	const AActor* Holder = GetOwner();
-	const UFocusComponent* Focus = Holder ? Holder->FindComponentByClass<UFocusComponent>() : nullptr;
-	return CurrentBloom * (Focus ? Focus->GetBloomMultiplier() : 1.0f);
+	const float BurstAlpha = FMath::Clamp(BurstTime / SustainedSpreadTime, 0.0f, 1.0f);
+	float Angle = Spread + SustainedSpread * BurstAlpha;
+
+	if (const AActor* Holder = GetOwner())
+	{
+		// On the move, worse — but a shootdodge flies as true as standing still.
+		const UShootdodgeComponent* Dodge = Holder->FindComponentByClass<UShootdodgeComponent>();
+		if (!(Dodge && Dodge->IsDodging()))
+		{
+			const float MoveAlpha = FMath::Clamp(Holder->GetVelocity().Size2D() / MovingSpreadFullSpeed, 0.0f, 1.0f);
+			Angle *= FMath::Lerp(1.0f, MovingSpreadMultiplier, MoveAlpha);
+		}
+
+		// Focus steadies the hand.
+		if (const UFocusComponent* Focus = Holder->FindComponentByClass<UFocusComponent>())
+		{
+			Angle *= Focus->GetSpreadMultiplier();
+		}
+	}
+	return Angle;
 }
 
 void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection)
@@ -369,11 +385,6 @@ void AWeaponBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TimeSinceLastShot += DeltaTime;
-
-	if (TimeSinceLastShot >= BloomDecayDelay && CurrentBloom > 0.0f)
-	{
-		CurrentBloom = FMath::Max(0.0f, CurrentBloom - BloomDecayRate * DeltaTime);
-	}
 }
 
 

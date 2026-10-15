@@ -173,6 +173,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Turn In Place")
 	TObjectPtr<UAnimMontage> TurnRightMontage;
 
+	/** Crouched turns. Without both, a crouched body doesn't turn in place (it turns
+	    rigidly with the capsule). */
+	UPROPERTY(EditDefaultsOnly, Category = "Turn In Place")
+	TObjectPtr<UAnimMontage> CrouchTurnLeftMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Turn In Place")
+	TObjectPtr<UAnimMontage> CrouchTurnRightMontage;
+
 	/** Lag past which a turn montage plays. Turn clips rotate 90 degrees. */
 	UPROPERTY(EditDefaultsOnly, Category = "Turn In Place")
 	float TurnThreshold = 90.0f;
@@ -493,6 +501,9 @@ private:
 	bool bIsAiming = false;
 	bool bWasWeaponRaised = false;
 	float LastActorYaw = 0.0f;
+
+	/** The character is turning to the camera as the gun comes up: no turn-in-place then. */
+	bool bTurningToAim = false;
 	float PrevTurnYawCurve = 0.0f;
 
 	/** Fraction of a 90-degree turn clip the current turn should cover. */

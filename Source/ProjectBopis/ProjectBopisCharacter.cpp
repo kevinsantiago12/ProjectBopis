@@ -268,8 +268,35 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	}
 	UpdateAutoReload(DeltaSeconds);
 	UpdateCrouch();
+
+	// Crouched in the combat stance, the gun comes up and stays up: facing the camera, ready
+	// to fire, without the aim's zoom. On standing it lowers after the usual delay.
+	if (bCrouchCombatStance && bIsCrouched && !IsDead())
+	{
+		TimeUntilWeaponLowered = FMath::Max(TimeUntilWeaponLowered, LowerWeaponDelay);
+	}
+
 	UpdateMovementStance();
+	UpdateAimTurn(DeltaSeconds);
 	UpdateCameraTransition(DeltaSeconds);
+}
+
+void AProjectBopisCharacter::UpdateAimTurn(float DeltaSeconds)
+{
+	if (!bTurningToAim)
+	{
+		return;
+	}
+
+	// Turning at a fixed rate the short way round; once there, the camera takes over.
+	const float TargetYaw = GetControlRotation().Yaw;
+	const float NewYaw = FMath::FixedTurn(GetActorRotation().Yaw, TargetYaw, AimTurnRate * DeltaSeconds);
+	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
+	if (FMath::Abs(FRotator::NormalizeAxis(TargetYaw - NewYaw)) < 0.5f)
+	{
+		bTurningToAim = false;
+		bUseControllerRotationYaw = true;
+	}
 }
 
 void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
@@ -312,7 +339,7 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 		FollowCamera->FieldOfView, TargetFOV, DeltaSeconds, CameraTransitionSpeed));
 
 	// Eased part: the optional crouch offset, moving at the same speed as the hip/aim move.
-	const float TargetCrouchOffset = bIsCrouched ? CrouchCameraOffset : 0.0f;
+	const float TargetCrouchOffset = (bCrouchCombatStance && bIsCrouched) ? CrouchCameraOffset : 0.0f;
 	CurrentCrouchCameraOffset = FMath::FInterpTo(
 		CurrentCrouchCameraOffset, TargetCrouchOffset, DeltaSeconds, CameraTransitionSpeed);
 
@@ -345,19 +372,24 @@ void AProjectBopisCharacter::ApplyMovementStance(EMovementStance NewStance)
 	{
 	case EMovementStance::FreeRun:
 		// Character turns to face where it's going; camera looks around freely.
+		bTurningToAim = false;
 		bUseControllerRotationYaw = false;
 		Movement->bOrientRotationToMovement = true;
 		Movement->RotationRate = FRotator(0.0f, FreeRunRotationRate, 0.0f);
 		break;
 
 	case EMovementStance::Aiming:
-		// Yaw locked to camera, so movement reads as strafing.
-		bUseControllerRotationYaw = true;
+		// Yaw locked to camera, so movement reads as strafing — after a quick turn to it
+		// (UpdateAimTurn) if the body was facing elsewhere.
 		Movement->bOrientRotationToMovement = false;
+		bTurningToAim = AimTurnRate > 0.0f
+			&& FMath::Abs(FRotator::NormalizeAxis(GetControlRotation().Yaw - GetActorRotation().Yaw)) > 1.0f;
+		bUseControllerRotationYaw = !bTurningToAim;
 		break;
 
 	case EMovementStance::AnimationDriven:
 		// Both off: the montage owns rotation. Reachable once the shootdodge lands.
+		bTurningToAim = false;
 		bUseControllerRotationYaw = false;
 		Movement->bOrientRotationToMovement = false;
 		break;
@@ -429,16 +461,10 @@ void AProjectBopisCharacter::DoFire()
 		return;
 	}
 
-	// A trigger pull from the lowered stance turns the character to the camera
-	// before the shot leaves, so it never fires sideways out of a free-run pose.
-	// Snapped rather than interpolated: the shot is this frame.
+	// A trigger pull from the lowered stance turns the character to the camera (quickly,
+	// see AimTurnRate) so it never stays sideways in a free-run pose.
 	if (Holder->GetEquippedWeapon())
 	{
-		if (!IsWeaponRaised() && !(Shootdodge && Shootdodge->IsDodging()))
-		{
-			SetActorRotation(FRotator(0.0f, GetControlRotation().Yaw, 0.0f));
-		}
-
 		TimeUntilWeaponLowered = LowerWeaponDelay;
 		UpdateMovementStance();
 	}
@@ -805,12 +831,15 @@ void AProjectBopisCharacter::DoFireHeld()
 	}
 
 	AWeaponBase* EquippedWeapon = Holder->GetEquippedWeapon();
-	if (!EquippedWeapon || EquippedWeapon->GetFireMode() != EWeaponFireMode::Auto)
+	// A held trigger doesn't break into a reload — only a fresh pull does. Otherwise a
+	// tube-fed shotgun would fire each shell the moment it went in.
+	if (!EquippedWeapon || EquippedWeapon->IsReloading())
 	{
 		return;
 	}
 
-	// The weapon's own fire-rate cap paces this; Triggered fires every frame the trigger is held.
+	// Every weapon keeps firing while the trigger's held (Max Payne): Triggered comes every
+	// frame, and the weapon's TimeBetweenShots paces it.
 	DoFire();
 }
 

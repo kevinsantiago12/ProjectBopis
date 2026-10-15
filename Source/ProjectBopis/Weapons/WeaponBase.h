@@ -14,11 +14,29 @@ class AProjectileBase;
 class UWeaponHolderComponent;
 class UImpactEffectsData;
 
-UENUM(BlueprintType)
-enum class EWeaponFireMode : uint8
+/** How enemies fire a weapon: a burst of shots at a set spacing, then a pause. */
+USTRUCT(BlueprintType)
+struct FAIFiringPattern
 {
-	Semi,
-	Auto
+	GENERATED_BODY()
+
+	/** Shots per burst (random in range). 1–1: single shots. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Firing", meta = (ClampMin = "1"))
+	int32 BurstShotsMin = 3;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Firing", meta = (ClampMin = "1"))
+	int32 BurstShotsMax = 5;
+
+	/** Seconds between shots within a burst. 0: as fast as the weapon fires (TimeBetweenShots). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Firing", meta = (ClampMin = "0.0"))
+	float ShotInterval = 0.0f;
+
+	/** Pause after each burst (after each shot, for single shots), in seconds (random in range). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Firing", meta = (ClampMin = "0.0"))
+	float BurstPauseMin = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI Firing", meta = (ClampMin = "0.0"))
+	float BurstPauseMax = 1.5f;
 };
 
 /** How a weapon refills. */
@@ -170,9 +188,9 @@ public:
 	/** How fast this weapon's rounds travel (cm/s); 0 for hitscan, which arrives instantly. */
 	float GetProjectileSpeed() const;
 
-	float GetDamageAtDistance(float Distance) const;
+	const FAIFiringPattern& GetAIFiring() const { return AIFiring; }
 
-	EWeaponFireMode GetFireMode() const { return FireMode; }
+	float GetDamageAtDistance(float Distance) const;
 
 	/** Which animation set the holder should use for this weapon. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
@@ -259,8 +277,9 @@ public:
 	    fires, every other enemy — pellets and rounds in flight included. */
 	void GetFriendlyActors(TArray<AActor*>& OutFriends) const;
 
-	/** Bloom as it affects the shot: the raw bloom, scaled down during the holder's Focus. */
-	float GetCurrentBloom() const;
+	/** The cone a shot goes out in right now, in degrees: Spread, widened by a long burst and
+	    by the holder moving, tightened by Focus. */
+	float GetCurrentSpread() const;
 
 protected:
 	// Called when the game starts or when spawned
@@ -289,9 +308,6 @@ protected:
 	USkeletalMeshComponent* GetFiringMesh() const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
-	EWeaponFireMode FireMode = EWeaponFireMode::Semi;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
 
 	/** Number key that selects this weapon (Max Payne style categories). Weapons that share
@@ -318,10 +334,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<AWeaponBase> SingleWieldClass;
 
-	/** Minimum seconds between shots — a hard mechanical cap; tapping faster than this does nothing.
-	    Should be shorter than IntendedTimeBetweenShots, which is the softer accuracy-based limit.
-	    Set to 0 to disable the cap entirely. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	/** Seconds between shots: the weapon's rate of fire. Holding the trigger fires at exactly
+	    this pace, and pulling it faster gets no more out of it (Max Payne). 0: no limit. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
 	float TimeBetweenShots = 0.125f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
@@ -346,6 +361,10 @@ protected:
 	/** How far the shot is heard (cm) — enemies within it are alerted. 0: silent. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|AI", meta = (ClampMin = "0.0"))
 	float NoiseRange = 3000.0f;
+
+	/** How enemies fire this weapon. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|AI")
+	FAIFiringPattern AIFiring;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	bool bHasZoom = false;
@@ -398,30 +417,26 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Impact")
 	TObjectPtr<UImpactEffectsData> ImpactEffects;
 
-	/** Accuracy cone at zero bloom - best-case spread, in degrees. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float BaseSpreadAngle = 0.5f;
+	/** The cone a shot goes out in, in degrees. Max Payne's guns are accurate: keep it small. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "0.0"))
+	float Spread = 0.5f;
 
-	/** Accuracy cont at full bloom - worst-case spread, in degress. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float MaxSpreadAngle = 5.0f;
+	/** Spread multiplier with the holder moving at MovingSpreadFullSpeed and up (×1 standing
+	    still, in between at lower speeds). Not mid-dive: a shootdodge is as true as standing. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "1.0"))
+	float MovingSpreadMultiplier = 1.5f;
 
-	/** Bloom (0-1) added per shot fired. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float BloomPerShot = 0.15f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "1.0"))
+	float MovingSpreadFullSpeed = 400.0f;
 
-	/** Bloom recovered per second while not firing (after the decay delay). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float BloomDecayRate = 0.6f;
+	/** Extra spread (degrees) a long burst wanders to, reached after SustainedSpreadTime of
+	    unbroken fire; letting go of the trigger starts the next burst clean. 0 for pistols
+	    and shotguns. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "0.0"))
+	float SustainedSpread = 0.0f;
 
-	/** Grace period after the last shot before bloom start decaying. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float BloomDecayDelay = 0.3f;
-
-	/** Seconds between shots this weapon is "meant" to be fired at - firing sooner adds extra bloom penalty.
-	    Should be longer than TimeBetweenShots, which is the hard mechanical cap. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Bloom")
-	float IntendedTimeBetweenShots = 0.167f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "0.01"))
+	float SustainedSpreadTime = 1.0f;
 
 	/** Traces fired per shot. 1 for every single-shot weapon; a shotgun's pellet
 	    count. BaseDamage applies per pellet. */
@@ -506,7 +521,8 @@ protected:
 	bool bOffhandFiresNext = false;
 	bool bLastShotWasOffhand = false;
 
-	float CurrentBloom = 0.0f;
+	/** Seconds of unbroken fire so far: how long the current burst has run. */
+	float BurstTime = 0.0f;
 	float TimeSinceLastShot = 0.0f;
 
 

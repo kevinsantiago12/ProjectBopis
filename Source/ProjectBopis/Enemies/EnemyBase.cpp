@@ -198,15 +198,24 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		return;
 	}
 
-	// Bursts: a few shots at the weapon's rate, then a pause.
+	// Bursts in the weapon's own pattern, as this shooter fires it: a burst at the weapon's
+	// spacing, then a pause.
+	const FAIFiringPattern& Pattern = Weapon->GetAIFiring();
 	if (BurstPauseLeft > 0.0f)
 	{
 		BurstPauseLeft -= DeltaSeconds;
 		return;
 	}
+	if (ShotIntervalLeft > 0.0f)
+	{
+		ShotIntervalLeft -= DeltaSeconds;
+		return;
+	}
 	if (BurstShotsLeft <= 0)
 	{
-		BurstShotsLeft = FMath::RandRange(BurstShotsMin, FMath::Max(BurstShotsMin, BurstShotsMax));
+		const int32 Shots = FMath::RandRange(Pattern.BurstShotsMin, FMath::Max(Pattern.BurstShotsMin, Pattern.BurstShotsMax));
+		// A tougher shooter holds the trigger down longer; a single-shot weapon stays single.
+		BurstShotsLeft = Pattern.BurstShotsMax > 1 ? FMath::Max(1, FMath::RoundToInt(Shots * BurstShotsMultiplier)) : 1;
 
 		// A fresh engagement opens with a warning: this whole burst misses. A burst fired
 		// blind (suppressing) doesn't use the warning up.
@@ -249,9 +258,17 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		}
 	}
 
-	if (Weapon->CanFire() && FireAt(Target, bHit) && --BurstShotsLeft <= 0)
+	if (Weapon->CanFire() && FireAt(Target, bHit))
 	{
-		BurstPauseLeft = FMath::FRandRange(BurstPauseMin, FMath::Max(BurstPauseMin, BurstPauseMax));
+		if (--BurstShotsLeft <= 0)
+		{
+			BurstPauseLeft = FMath::FRandRange(Pattern.BurstPauseMin, FMath::Max(Pattern.BurstPauseMin, Pattern.BurstPauseMax))
+				* BurstPauseMultiplier;
+		}
+		else
+		{
+			ShotIntervalLeft = Pattern.ShotInterval;
+		}
 	}
 }
 

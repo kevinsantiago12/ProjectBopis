@@ -66,7 +66,8 @@ void URollComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 		// momentum (Vanquish's slide into the crouch).
 		const FVector Input = Character->GetLastMovementInputVector();
 		const bool bPlaying = AnimInstance && AnimInstance->Montage_IsPlaying(RollMontage);
-		if (bPlaying && Position >= Length * CrouchOutAfter && Character->IsRollHeld())
+		if (bPlaying && Position >= Length * CrouchOutAfter && Character->CanPostRollCrouch()
+			&& Character->IsRollHeld())
 		{
 			EndRoll();
 			Character->StartPostRollCrouch();
