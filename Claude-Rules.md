@@ -97,8 +97,11 @@ list, not just chat.
 - **`push`/`fetch`/`pull` can't authenticate from this sandbox.** Don't retry.
   Prepare locally and hand the user the exact command to run in their own
   terminal.
-- Commit only when asked. Narrate destructive operations (force-push, history
-  rewrites) clearly before handing them off.
+- **The user commits (2026-10-16):** "I will commit from now on." Don't
+  commit; when work is done, say what's uncommitted so they can. Local
+  read-only git (status, diff, log) is still fine.
+- Narrate destructive operations (force-push, history rewrites) clearly before
+  handing them off.
 - Don't commit `.claude/settings.local.json`; it's machine-specific.
 
 ## 7. Design and lore

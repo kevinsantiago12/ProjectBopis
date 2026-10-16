@@ -662,9 +662,18 @@ crime thriller → something is wrong → the criminals are monsters → the
 monsters are institutions — is the **stable** structural input for now, since
 it comes from the newer source and survives whatever the arcs become.*
 
-## Linear levels, mini-sandbox arenas
-Linear navigation, nonlinear combat. Freedom comes from how the player uses
-the geometry within an arena, not from branching routes.
+## Linear levels, mini-sandbox arenas — *settled 2026-10-16*
+**Judged by the user:** "The standard gameplay will be linear and not arena."
+Fights are set up as **room encounters**: a few enemies (3 or 4) waiting in a
+room hold their ground; the player bursts in and uses the moves to take them
+all down. They're set off by being seen or heard, or by the player entering
+the room, and take a brief moment to react. Out of sight, they stay and cover
+the room rather than hunting the player. Some may wait **crouched**. They do
+**not** use cover tactically — no popping up from behind cover to shoot
+(user: "I dont want whack a mole").
+
+*Original entry:* Linear navigation, nonlinear combat. Freedom comes from how
+the player uses the geometry within an arena, not from branching routes.
 
 ## FPS combat philosophy — *settled 2026-10-15*
 **Judged by the user:** replaced by the Max Payne 1 and 2 shooting model (see

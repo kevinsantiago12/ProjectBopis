@@ -47,6 +47,9 @@ AEnemyBase::AEnemyBase()
 	HitBoneWeights.Add(TEXT("calf_l"), 4.0f);
 	HitBoneWeights.Add(TEXT("calf_r"), 4.0f);
 	HitBoneWeights.Add(TEXT("head"), 5.0f);
+
+	// Enemies may crouch (holding a spot crouched, see bCrouchWhileHolding).
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
 void AEnemyBase::Tick(float DeltaSeconds)
@@ -80,6 +83,7 @@ void AEnemyBase::Tick(float DeltaSeconds)
 
 	UpdateAim();
 	UpdateMovementMode();
+	UpdateCrouch();
 	UpdatePatrol(DeltaSeconds);
 	UpdateShooting(DeltaSeconds);
 }
@@ -87,6 +91,8 @@ void AEnemyBase::Tick(float DeltaSeconds)
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	HomeLocation = GetActorLocation();
 
 	if (bStartAlerted)
 	{
@@ -173,6 +179,13 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	const bool bSuppressing = bAlerted && !bSeesPlayer && TimeSinceSeenPlayer <= SuppressFireDuration;
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+
+	// Just alerted: a beat to react before the first shot. It still turns and tracks meanwhile.
+	if (ReactionTimeLeft > 0.0f)
+	{
+		ReactionTimeLeft -= DeltaSeconds;
+		return;
+	}
 
 	if (!bShootAtPlayer || !bAlerted || !(bSeesPlayer || bSuppressing) || !Weapon || !IsWeaponRaised()
 		|| IsEquipAnimating() || Weapon->IsReloading())
@@ -293,6 +306,13 @@ bool AEnemyBase::HasClearShot(const FVector& Eyes, const FVector& Target, const 
 
 bool AEnemyBase::ChooseNextSpot(FVector& OutSpot)
 {
+	// Holding an area: a new spot within reach of its post, never a rush.
+	if (bHoldsPosition)
+	{
+		bPushingIn = false;
+		return FindSpot(OutSpot, PreferredRangeMin, PreferredRangeMax, HomeLocation, HoldRadius);
+	}
+
 	// Now and then, at random, it rushes in: somewhere right up close to where it believes
 	// the player is. Not tactics — a mook charging is a target for a stylish kill.
 	bPushingIn = FMath::FRand() < PushChance
@@ -557,6 +577,24 @@ void AEnemyBase::UpdateAim()
 	}
 }
 
+void AEnemyBase::UpdateCrouch()
+{
+	// Down whenever it's holding its spot; up to move — a crouched body moves slowly, and
+	// a move between spots should read as a dash between covers.
+	const AAIController* AI = Cast<AAIController>(GetController());
+	const bool bMoving = AI && AI->GetMoveStatus() == EPathFollowingStatus::Moving;
+	const bool bWantsCrouch = bHoldsPosition && bCrouchWhileHolding && !bMoving;
+
+	if (bWantsCrouch && !bIsCrouched)
+	{
+		Crouch();
+	}
+	else if (!bWantsCrouch && bIsCrouched)
+	{
+		UnCrouch();
+	}
+}
+
 void AEnemyBase::UpdateMovementMode()
 {
 	UCharacterMovementComponent* Movement = GetCharacterMovement();
@@ -620,6 +658,7 @@ void AEnemyBase::Alert(AActor* Target)
 		return;
 	}
 	bAlerted = true;
+	ReactionTimeLeft = FMath::FRandRange(ReactionTimeMin, FMath::Max(ReactionTimeMin, ReactionTimeMax));
 	AlertTarget = Target;
 	AlertAlliesTimeLeft = AlertAlliesDelay;
 

@@ -124,7 +124,7 @@ A shot goes out in a cone of `AWeaponBase::GetCurrentSpread()` degrees:
 | `Spread` | The base cone, degrees. Max Payne's guns are accurate: keep it small. |
 | `MovingSpreadMultiplier` | ×1 standing still → this at `MovingSpreadFullSpeed` (400 cm/s; the run is 500), linear by the holder's 2D speed. **Not while a shootdodge `IsDodging()`**: a dive is as true as standing. |
 | `SustainedSpread` / `SustainedSpreadTime` | Extra cone a long burst wanders to, reached after this long of unbroken fire. 0 for pistols and shotguns. |
-| Focus `FocusSpreadMultiplier` | On the **Focus component** (renamed from `FocusMaxBloomMultiplier`); applies during any Focus, the dive's included. 1 = no effect. |
+| Focus `FocusSpreadMultiplier` | On the **Focus component** (renamed from `FocusMaxBloomMultiplier`); applies during any Focus, the dive's included. **Default 0 (2026-10-16): dead on in Focus** — the rename had dropped the user's BP value and left 1 (no effect); user: "It should hit where the crosshair is, like previously". |
 
 - **Bursts:** `BurstTime` grows by `TimeSinceLastShot` while shots follow
   within `TimeBetweenShots + BurstBreakTime` (0.15 s, a file-scope constant);
@@ -1443,6 +1443,14 @@ camping out with it."
   *(At the original 0.3 / 0.9, fresh heat, standing / running / mid-dive:
   3 m 69/41/7%, 10 m 30/18/3%, 20 m 16/10/2%.)*
 
+**Enemy aim at the shot point — tried and reverted (2026-10-16).** Planned
+shots (decide each shot ahead: hit + bone or miss + side, odds reconciled at
+the trigger), first aiming the gun at the planned point, then a steady chest
+aim that flicked to each round's point for 0.15 s; plus an
+`ABopisAIController::UpdateControlRotation` override, because the engine
+zeroes the aim's pitch whenever the AI focuses a point instead of a pawn. The
+user reverted all of it; enemies aim and place shots as below.
+
 **Placement (`FireAt(Target, bHit)`):**
 - **Hits** aim at a bone drawn from `HitBoneWeights`:
   - torso 60% (`spine_03` 25, `spine_05` 20, `pelvis` 15);
@@ -1698,6 +1706,42 @@ target point (the furthest one)".
   Roam*, and *On Tick → Go Look if NOT Lead Gone*.
 
 **Gunman behaviour v1 is complete.**
+
+### Room encounters — holding enemies (2026-10-16)
+
+**The user:** "The standard gameplay will be linear and not arena… 3 or 4
+enemies waiting in the room, you jump in and do your moves to kill them all."
+Choices: hold a small area; set off by sight/hearing, a trigger volume, and a
+short reaction beat; out of sight, stay and cover the room.
+
+1. **Holding (`bHoldsPosition`, `Enemy|Behaviour|Hold Position`):**
+   `HomeLocation` is recorded in `BeginPlay`. `ChooseNextSpot` samples
+   within `HoldRadius` 400 cm of home (the usual range/clear-shot/spacing
+   score), never a push. The *Has Lost Player* check is always false for a
+   holder, so `ST_Gunman` never sends it to Search/Roam: it stays in Engage,
+   aims at the last known spot (`UpdateAim`), suppresses briefly, then holds.
+   No StateTree change. Arena gunmen (off) are unchanged.
+2. **Reaction beat (`ReactionTimeMin/Max` 0.3–0.8 s, `Enemy|Awareness`):**
+   `Alert` rolls `ReactionTimeLeft`; `UpdateShooting` returns before the
+   trigger check until it runs out — it still turns, tracks and moves. First
+   alert only (Alert is a no-op once alerted). Applies to every enemy;
+   0–0 fires at once.
+3. **`AEncounterTrigger`** (`Gameplay/EncounterTrigger.h/.cpp`): a
+   `UBoxComponent` (`Trigger` profile, orange, 4 × 4 × 2 m default); the
+   player's begin-overlap calls `Alert(player)` on every enemy in its
+   instance-set `Enemies` list, once (`bTriggerOnce`).
+4. **Crouched holding (`bCrouchWhileHolding`, 2026-10-16):** a holder that
+   crouches whenever its AI isn't moving (`GetMoveStatus() != Moving`) —
+   waiting and fighting crouched — and stands to move between spots
+   (`UpdateCrouch`, after `UpdateMovementMode`). Enemies now have
+   `bCanCrouch`. Sight is from the head, so behind waist-high cover a crouched
+   holder can't see (or shoot) the player. **No cover behaviour (user,
+   2026-10-16):** "I dont want the enemy to explicitly take cover, I dont want
+   whack a mole" — no pop-up shooting, no cover-seeking.
+- **Setting up a room:** place `BP_Enemy_Test`s with `bHoldsPosition` on and
+  `bStartAlerted` off; place an `EncounterTrigger` at the door and add them
+  to its `Enemies`. Sight/hearing still alert them earlier, and
+  `AlertAllies` spreads it.
 
 ### Three families
 
@@ -2065,6 +2109,15 @@ removed unused. Keep `LocomotionPlayRate` ≥ 0.75; below that the stretched
 strides show.
 
 ### Procedural recoil (2026-10-07)
+
+**Fast guns (2026-10-16):** at the assault rifle's 0.1 s the fire montage
+restarted mid-kick and the spring saturated, holding the gun up above where
+the rounds go for a whole burst. `PlayFireAnimation` now plays the fire
+montage at clip length ÷ `TimeBetweenShots` (1–`MaxFireMontageRate` 4×) and
+scales the spring impulse by `TimeBetweenShots ÷ FullKickInterval` (0.25 s;
+clamped 0.25–1) via `AddRecoil(bOffhand, Strength)`. Slow guns unchanged;
+enemies share it. User-confirmed: "works".
+
 **Why:** the fire montage restarts from frame 0 on every shot (`Montage_Play`,
 0.25 s blend-in), so spam fire never reaches the kick — invisible while
 strafing. Setting the fire montages' blend-in to 0 looked worse and was
@@ -2354,6 +2407,22 @@ rollback, below). 131 clips, all `_P` (pistol).
     `DiveLift` 450, both axes overridden. That's ~1.7 m peak, ~1.5 s up.
   - Plays Start from `StartClipOffset` (0.4 s, the push-off frame, in clip
     seconds), then Loop when it ends.
+  - **First-dive bug — fixed 2026-10-16 (user-confirmed):** the very first
+    dive of a session played the Start clip **from 0** — its standing
+    wind-up, slow-motioned into seconds of "standing on one leg, arms out",
+    which read as a hit reaction. The Start blend space reads its Start
+    Position pin **once, when it initializes**, from the last value its
+    exposed inputs saw; later dives inherit the previous dive's (correct)
+    value, but the first saw the anim instance's default 0. The 10-12 attempt
+    (setting the component's `PhaseStartPosition` in `BeginPlay`) couldn't
+    work: the AnimBP initializes before the component's `BeginPlay`, and only
+    copies the value per frame. **Fix:**
+    `UShootdodgeComponent::GetRestStartPosition()` (the Forward clip's
+    push-off, normalised, computed from the `Animations` defaults, so it's
+    valid from construction) is read in the anim instance's
+    `NativeInitializeAnimation` into `ShootdodgeStartPosition`. Found by
+    stepping a screen recording frame by frame with `showdebug animation`
+    on (Start state, P 0.36, body still at standing height).
 - **`NotifyLanded`** (from `ACharacter::Landed`):
   - restores gravity and air braking;
   - **slide:** saves the walking braking settings, then sets
@@ -3339,6 +3408,13 @@ ones most likely to bite:
   `save_actor` / `save_assets` can't save external-actor packages ("Asset does
   not exist"); use the editor's Save All. The `Unable to find RecastNavMesh
   instance … UCrowdManager` warning only appears while a PIE world tears down.
+- **An anim node reads values it uses at initialization from its last update, not
+  this frame's** (2026-10-16). A blend space's Start Position (bound to a
+  variable) is taken when the node initializes — before that frame's exposed
+  inputs are copied — so a branch's first-ever activation sees whatever the
+  variable held at the graph's own start. Seed such variables in
+  `NativeInitializeAnimation` (the AnimBP initializes before actor
+  components' `BeginPlay`). The first-dive bug was this.
 - **A Blueprint that only lost a removed property's value isn't dirty**
   (2026-10-16). Compiling and `save_assets` skip it, so the package keeps its
   old imports (`get_referencers` still lists it). Make any property write to
@@ -3357,6 +3433,10 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-16 (8) — Focus dead on again (`FocusSpreadMultiplier` default 0); fast-gun recoil (fire montage keeps pace, kick scales with fire rate), user-confirmed.
+- 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
+- 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
+- 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
 - 2026-10-16 (4) — Directional hit indicator: `AddHitIndicator`, sector-based flood control, `UHitIndicatorWidget` (code-drawn arcs); Slate/SlateCore added to the module.
 - 2026-10-16 (3) — Shell casings: `AShellCasing` + `UShellCasingSubsystem`, per-weapon `Weapon|Casings` settings, meshes set on all seven weapons.
 - 2026-10-16 (2) — Navmesh reverting solved: `bForceRebuildOnLoad` on `Lvl_Sandbox`'s RecastNavMesh, saved via Save All (gotcha added).

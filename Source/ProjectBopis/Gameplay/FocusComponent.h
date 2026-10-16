@@ -64,9 +64,9 @@ public:
 	float KillRefill = 20.0f;
 
 	/** Scales weapon spread while Focus is on (including a shootdodge's slow motion).
-	    1 is normal, 0.5 half, 0 dead on. */
+	    0 (default): dead on — shots go where the crosshair is. 1: no effect. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Focus", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FocusSpreadMultiplier = 1.0f;
+	float FocusSpreadMultiplier = 0.0f;
 
 	/** The spread multiplier in effect right now: FocusSpreadMultiplier during Focus, else 1. */
 	float GetSpreadMultiplier() const { return bActive ? FocusSpreadMultiplier : 1.0f; }

@@ -348,13 +348,23 @@ in danger.
 
 ## Scope
 
+### How levels play
+
+The game is **linear**, not built from open arenas. You move forward through
+places, and the fights happen in **rooms set up as encounters**: a handful of
+enemies waiting inside, holding their ground. You burst in and use everything
+you have — the dive, the roll, slow motion — to take them all down. They react
+when they see or hear you, or the moment you step into the room, with a beat
+of surprise before they open fire.
+
 ### Under reconsideration
 
 The previous version's structure: a **linear campaign of at least ten
 levels**, built on a repeating and escalating loop of encounter → sequence
 → level → campaign, with **linear navigation and nonlinear combat** —
 mini-sandbox arenas where freedom comes from how you use the geometry rather
-than from branching routes.
+than from branching routes. *(The arenas are settled — see above: linear, room by
+room.)*
 
 None of that is discarded. None of it is confirmed. Each piece gets weighed
 against what a noir story and John Woo action actually need.
@@ -462,3 +472,6 @@ a shooting range.
   fires while the trigger is held, guns are accurate, running costs a little
   accuracy; enemies fire each weapon its own way. The earlier
   trigger-pacing accuracy model is retired.
+- 2026-10-16 — The game is linear, with fights set up as room encounters
+  (enemies waiting in rooms, set off when you enter). Hit indicators and shell
+  casings added to the build.

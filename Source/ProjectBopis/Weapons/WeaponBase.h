@@ -153,6 +153,8 @@ public:
 
 	float GetDamageAtDistance(float Distance) const;
 
+	float GetTimeBetweenShots() const { return TimeBetweenShots; }
+
 	/** Which animation set the holder should use for this weapon. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponAnimType GetAnimType() const { return AnimType; }

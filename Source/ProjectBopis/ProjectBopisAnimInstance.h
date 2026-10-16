@@ -32,7 +32,7 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	/** Kicks the recoil spring. Called by the character for every shot that fires. */
-	void AddRecoil(bool bOffhand);
+	void AddRecoil(bool bOffhand, float Strength = 1.0f);
 
 protected:
 

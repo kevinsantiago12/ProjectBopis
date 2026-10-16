@@ -70,6 +70,29 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness")
 	bool bStartAlerted = false;
 
+	/** On being alerted, a beat before the first shot (random in range, seconds) — time for
+	    the player's entrance. 0–0: fires at once. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
+	float ReactionTimeMin = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
+	float ReactionTimeMax = 0.8f;
+
+	/** Holds an area instead of hunting (room encounters in a linear level): once alerted, it
+	    only moves within HoldRadius of where it was placed, never pushes in, and never leaves
+	    to search or roam — out of sight, it covers the last place it saw the player. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Hold Position")
+	bool bHoldsPosition = false;
+
+	/** How far (cm) from its placed spot a holding enemy may move. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Hold Position", meta = (ClampMin = "0.0", EditCondition = "bHoldsPosition"))
+	float HoldRadius = 400.0f;
+
+	/** A holding enemy that crouches whenever it's at its spot — waiting, and fighting from
+	    the crouch — and stands only to move within its area. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Hold Position", meta = (EditCondition = "bHoldsPosition"))
+	bool bCrouchWhileHolding = false;
+
 	/** An alerted enemy alerts others within this distance (cm)... */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
 	float AlertAlliesRadius = 1500.0f;
@@ -311,6 +334,8 @@ public:
 	/** Alerted, the player lost, and the last known spot searched out: nothing to go on. */
 	bool IsLeadGone() const { return bLeadGone; }
 
+	bool HoldsPosition() const { return bHoldsPosition; }
+
 	/** Where to roam next: the furthest Target Point (RoamToPointChance), or a random
 	    reachable spot within RoamRadius. False if neither was found. */
 	bool ChooseRoamSpot(FVector& OutSpot) const;
@@ -326,6 +351,9 @@ private:
 
 	/** Raised: turn toward the aim and strafe. Lowered: turn toward travel. */
 	void UpdateMovementMode();
+
+	/** Crouched while holding a spot (bCrouchWhileHolding), standing to move. */
+	void UpdateCrouch();
 
 	/** Walks the patrol points: waits at each, then moves to the next. */
 	void UpdatePatrol(float DeltaSeconds);
@@ -384,6 +412,12 @@ private:
 
 	/** The last known spot has been searched out (see LeadGoneAfter). */
 	bool bLeadGone = false;
+
+	/** Where it was placed: the centre of its hold area. */
+	FVector HomeLocation = FVector::ZeroVector;
+
+	/** Seconds left of the reaction beat after being alerted. */
+	float ReactionTimeLeft = 0.0f;
 	float TimeAtLastKnown = 0.0f;
 
 	void AlertAllies();

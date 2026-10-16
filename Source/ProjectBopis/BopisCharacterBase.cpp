@@ -621,19 +621,25 @@ void ABopisCharacterBase::PlayFireAnimation(const AWeaponBase* Weapon)
 	}
 	TryMap(FireMontages);
 
+	// Fast guns: the montage keeps pace, so each shot's kick and return fit before the next
+	// (a montage restarted mid-kick holds the gun up for the whole burst).
+	const float Interval = Weapon->GetTimeBetweenShots();
 	if (FoundMontage)
 	{
 		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 		{
-			AnimInstance->Montage_Play(FoundMontage);
+			const float Length = FoundMontage->GetPlayLength();
+			const float Rate = Interval > 0.0f ? FMath::Clamp(Length / Interval, 1.0f, MaxFireMontageRate) : 1.0f;
+			AnimInstance->Montage_Play(FoundMontage, Rate);
 		}
 	}
 
-	// Procedural kick on top of the montage. It stacks across rapid shots, where the
-	// montage just restarts.
+	// Procedural kick on top, in proportion to the fire rate: full for slow guns, lighter
+	// per shot for fast ones, so a burst shakes the gun instead of holding it up.
 	if (UProjectBopisAnimInstance* BopisAnim = Cast<UProjectBopisAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		BopisAnim->AddRecoil(Weapon->WasLastShotOffhand());
+		const float Strength = Interval > 0.0f ? FMath::Clamp(Interval / FullKickInterval, 0.25f, 1.0f) : 1.0f;
+		BopisAnim->AddRecoil(Weapon->WasLastShotOffhand(), Strength);
 	}
 }
 

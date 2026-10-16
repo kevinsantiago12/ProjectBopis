@@ -112,7 +112,9 @@ bool FGunmanCondition::TestCondition(FStateTreeExecutionContext& Context) const
 			bResult = Enemy->IsAlerted();
 			break;
 		case EGunmanCheck::HasLostPlayer:
-			bResult = Enemy->IsAlerted() && Enemy->GetTimeSinceSeenPlayer() >= Data.LostForSeconds;
+			// A holding enemy never gives up the room to go searching.
+			bResult = Enemy->IsAlerted() && !Enemy->HoldsPosition()
+				&& Enemy->GetTimeSinceSeenPlayer() >= Data.LostForSeconds;
 			break;
 		case EGunmanCheck::LineOfFireBlocked:
 			bResult = Enemy->IsLineOfFireBlocked();

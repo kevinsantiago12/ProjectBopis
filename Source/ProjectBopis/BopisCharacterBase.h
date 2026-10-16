@@ -330,6 +330,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.0"))
 	float ReloadLoopBlendTime = 0.15f;
 
+	/** Fast guns play the fire montage faster, so its kick and return fit between shots
+	    (clip length ÷ the weapon's TimeBetweenShots), at most this many times as fast. */
+	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "1.0"))
+	float MaxFireMontageRate = 4.0f;
+
+	/** The procedural kick is full for guns at least this slow (seconds between shots);
+	    faster guns kick in proportion, so a burst doesn't hold the body tilted up. */
+	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.01"))
+	float FullKickInterval = 0.25f;
+
 	bool bIsAiming = false;
 
 	/** Counts down from LowerWeaponDelay after each trigger pull. Above zero, the

@@ -45,6 +45,17 @@ void UProjectBopisAnimInstance::NativeInitializeAnimation()
 	{
 		LastActorYaw = Pawn->GetActorRotation().Yaw;
 	}
+
+	// The dive's Start blend space reads its start position once, when it first initializes —
+	// before the shootdodge component's BeginPlay, and before any per-frame copy. Without this
+	// it reads 0, and the first dive plays the clip's standing wind-up before the jump.
+	if (const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(TryGetPawnOwner()))
+	{
+		if (const UShootdodgeComponent* Shootdodge = Player->GetShootdodge())
+		{
+			ShootdodgeStartPosition = Shootdodge->GetRestStartPosition();
+		}
+	}
 }
 
 void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -575,10 +586,10 @@ void UProjectBopisAnimInstance::UpdateFreeArmSwing(float DeltaSeconds)
 	FreeArmSwingRotation = FreeArmSwingFull * (FreeArmSwingPhase * SpeedScale);
 }
 
-void UProjectBopisAnimInstance::AddRecoil(bool bOffhand)
+void UProjectBopisAnimInstance::AddRecoil(bool bOffhand, float Strength)
 {
 	FFloatSpringState& Spring = bOffhand ? OffhandRecoilSpring : MainRecoilSpring;
-	Spring.Velocity += RecoilImpulse;
+	Spring.Velocity += RecoilImpulse * Strength;
 }
 
 void UProjectBopisAnimInstance::UpdateRecoil(float DeltaSeconds)

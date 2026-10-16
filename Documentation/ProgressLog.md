@@ -49,21 +49,60 @@
 - **Directional hit indicator (2026-10-16):** red arcs toward whoever hit you,
   grey for off-screen near misses, one per 30° sector, rationed and fading.
   Code-drawn widget `UHitIndicatorWidget`; the user places
-  `WBP_HitIndicator` full-screen in `WBP_PlayerHUD`. Compiled; not yet seen.
+  `WBP_HitIndicator` full-screen in `WBP_PlayerHUD`. Grey markers now come from
+  the round passing within `NearMissRadius` 150 cm (not from fire time —
+  they showed behind walls). User-confirmed: "works".
+- **The user commits from now on** (rule added to `Claude-Rules.md`).
+- **Room encounters (2026-10-16):** the user: standard gameplay is **linear,
+  not arena** — rooms with 3–4 waiting enemies (lore PART 4 settled). Built:
+  holding enemies (`bHoldsPosition`, `HoldRadius` 4 m, never search or
+  roam), a reaction beat on alert (0.3–0.8 s), and `AEncounterTrigger` (walk
+  in → its enemies alert). Compiled; the user is to set up a test room.
+- **The first-dive bug, solved (2026-10-16, user-confirmed):** the very first
+  shootdodge of a session played the Start clip from its beginning (the
+  standing wind-up — "a hit reaction anim"), because the blend space reads
+  its start position only when it first initializes, before the component's
+  `BeginPlay` or any per-frame copy. Now seeded in the anim instance's
+  `NativeInitializeAnimation` from `GetRestStartPosition()`. Diagnosed from
+  the user's screen recording (frames pulled in the built-in browser, since
+  ffmpeg isn't installed). This also closes 10-12's "first-dive look" note.
+- **Enemy aim at the shot point — tried and reverted (2026-10-16):** planned
+  shots with the gun aimed at each round's point, then a steady aim with a
+  per-shot flick, plus an AI-controller pitch fix (the engine levels a point
+  focus). The user reverted all of it; enemies aim as before.
+- **Focus is dead on again (2026-10-16):** `FocusSpreadMultiplier` defaults to
+  0. The 10-15 rename had dropped the user's BP value, so spread had applied
+  in Focus since then. User: "It should hit where the crosshair is".
+- **Rifle full-auto creeping up (2026-10-16):** the fire montage keeps pace
+  with the fire rate (up to 4×) and the procedural kick scales with it
+  (`FullKickInterval` 0.25 s). User-confirmed: "works".
 
 ### ▶ RESUME HERE
-1. **Push (user):** `git push` from your own terminal.
-2. ~~Editor freeze~~ — dropped by the user (2026-10-16).
-3. **Navmesh reverting — fixed (2026-10-16), user-confirmed:** after a
-   restart the navmesh is there without rebuilding. Cause: the navmesh actor's package was never dirtied by
-   Build Paths, so it hadn't been saved since 10-09. Now `bForceRebuildOnLoad`
-   (saved by the user's Save All). Committed.
-4. **Parked:** casing bounce sound (user, 2026-10-16: later, once there are
-   assets — set `CasingImpactSound` per weapon); Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
-   enemy roster (design); Focus sounds and 10-10's other carry-overs.
-5. **Next feature:** the user's call — harder enemy variants (burst/pause
-   multipliers and hit-chance values per enemy are ready), more moves, or
-   Phase 6's slice.
+1. **Commit and push (user).** Uncommitted since "Add Hit Indicator":
+   - Source: `Enemies/EnemyBase.h/.cpp`, `Enemies/GunmanStateTreeNodes.cpp`,
+     new `Gameplay/EncounterTrigger.h/.cpp` (room encounters);
+     `Gameplay/ShootdodgeComponent.h/.cpp`, `ProjectBopisAnimInstance.h/.cpp`
+     (first-dive fix, recoil strength); `Gameplay/FocusComponent.h` (Focus
+     dead on); `BopisCharacterBase.h/.cpp`, `Weapons/WeaponBase.h` (fast-gun
+     recoil);
+   - Content: the user's new `Lvl_Linear`, `ABP_Player`, `BP_PlayerCharacter`,
+     `BP_Kamz`;
+   - docs: spec, progress log, plan, lore notes, GDD (+ html), `Claude-Rules.md`.
+2. **Room encounters — set up and playtest (user):** in `Lvl_Linear`, a room
+   with 3–4 `BP_Enemy_Test` (`bHoldsPosition` on, `bStartAlerted` off, a
+   weapon each) and an `EncounterTrigger` at the door listing them; tune
+   `HoldRadius` and `ReactionTimeMin/Max`. New: `bCrouchWhileHolding` (waits
+   and fights crouched, stands to move). **Playtested by the user
+   (2026-10-16).** No cover behaviour: "I dont want the enemy to explicitly
+   take cover, I dont want whack a mole."
+3. **Parked:** casing bounce sound (once there are assets — set
+   `CasingImpactSound` per weapon); Kamz bone scales (user); the long-gun
+   wind-up's empty-handed arms; the enemy roster (design); Focus sounds and
+   10-10's other carry-overs.
+4. **Next feature:** the user's call — more room-encounter behaviour (e.g.
+   enemies that come through a door when a room starts), harder enemy
+   variants (burst/pause multipliers and hit-chance values per enemy are
+   ready), more moves, or Phase 6's first linear slice.
 
 ---
 

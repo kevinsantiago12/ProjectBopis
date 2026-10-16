@@ -134,6 +134,10 @@ public:
 	    what the Start/Loop/Land blend spaces are keyed on. */
 	float GetDirectionAngle() const;
 
+	/** The Forward clip's push-off point (normalised): the Start blend space's start position
+	    before any dive. Available from construction, so the AnimBP can read it at its own start. */
+	float GetRestStartPosition() const;
+
 	/** Play rate for the current phase's blend space. */
 	float GetPhasePlayRate() const;
 

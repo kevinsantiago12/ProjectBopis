@@ -28,14 +28,20 @@ void UShootdodgeComponent::BeginPlay()
 	// movement update) races the mesh's animation work on another thread, and crashes. The
 	// wall check's trimmed velocity simply takes effect a frame later.
 
-	// The Start blend space captures its start position when it first initializes — at
-	// game start — so hand it the push-off point from the outset, not 0: otherwise the first
-	// dive plays the clip's ground push-off in mid-air.
-	if (const FShootdodgeAnims* Forward = Animations.Find(EShootdodgeDirection::Forward); Forward && Forward->Start)
+	// The Start blend space captures its start position when it first initializes, so it must
+	// be the push-off point from the outset, not 0 (see GetRestStartPosition).
+	PhaseStartPosition = GetRestStartPosition();
+}
+
+float UShootdodgeComponent::GetRestStartPosition() const
+{
+	const FShootdodgeAnims* Forward = Animations.Find(EShootdodgeDirection::Forward);
+	if (!Forward || !Forward->Start || Forward->Start->GetPlayLength() <= 0.0f)
 	{
-		const float Offset = Forward->StartOffset >= 0.0f ? Forward->StartOffset : StartClipOffset;
-		PhaseStartPosition = FMath::Clamp(Offset / Forward->Start->GetPlayLength(), 0.0f, 1.0f);
+		return 0.0f;
 	}
+	const float Offset = Forward->StartOffset >= 0.0f ? Forward->StartOffset : StartClipOffset;
+	return FMath::Clamp(Offset / Forward->Start->GetPlayLength(), 0.0f, 1.0f);
 }
 
 bool UShootdodgeComponent::TryStart()

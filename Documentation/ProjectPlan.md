@@ -439,9 +439,18 @@ archetype-composition idea, not extended from the old classes.
   - [x] 2b. Enemy firing pattern per weapon (`AIFiring`: bursts, interval, pause); `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy for harder variants.
   - [x] 3. All seven weapon BPs retuned through the bridge.
   - [x] 4. Docs.
+- [x] *(Done 2026-10-16, user-confirmed.)* **9. Feedback and fixes:** shell casings (physics, per-weapon `AmmoEject`, pump on the rack, `CasingScale`); directional hit indicator (red hits, grey near misses from rounds that actually pass, flood-controlled); navmesh reverting (`bForceRebuildOnLoad`); first-dive bug (Start blend space seeded in `NativeInitializeAnimation`); Focus dead on again; fast-gun recoil (montage keeps pace, kick scales).
+- [ ] **10. Room encounters** (user, 2026-10-16: "The standard gameplay will be linear and not arena"). See the spec's *Room encounters*.
+  - [x] *(Done 2026-10-16, compiled.)* Holding enemies (`bHoldsPosition`, `HoldRadius`; never search or roam), reaction beat on alert, `AEncounterTrigger`.
+  - [x] *(Done 2026-10-16.)* Crouched holding (`bCrouchWhileHolding`); test room in `Lvl_Linear` playtested by the user. No cover behaviour (user: no whack-a-mole).
+  - Tried and reverted: enemies aiming the gun at each shot's point (planned shots, aim flick, AI pitch override).
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
-## Phase 6 — First playable arena (vertical slice)
+## Phase 6 — First playable slice
+> **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4
+> settled). The slice is a short linear run of rooms in `Lvl_Linear`, not an
+> arena; the items below are to be rewritten against that when this phase starts.
+
 Goal: prove the core combat loop in an actual space, with real weapons and
 real enemies. The "linear navigation, nonlinear combat" pillar this phase was
 written around is *under reconsideration* since the setting change — the
@@ -519,6 +528,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-16 (2) — Phase 5 items 9 (feedback and fixes) and 10 (room encounters) added; Phase 6 noted as a linear slice.
 - 2026-10-16 — Camping to a guaranteed hit, token removal, crouch combat stance, kneel switch; leftovers cleaned up (crosshair code and materials, StateTree stop on death, stale roll comment).
 - 2026-10-15 — Phase 5: attack-token fix; health bar; item 7 (more player moves: roll, move-out, auto/prone reload, evasion linger, roll Focus, kneel, aim turn, crouched turns, dual dive spread) and item 8 (Max Payne shooting model, increments 1–4) ticked. Phase 2 marked superseded.
 - 2026-10-09 (2) — Bullet time ticked; projectile backlog partly done.
