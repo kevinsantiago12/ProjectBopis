@@ -46,6 +46,10 @@
   socket, player and enemies, the pump on the rack (0.4 s), randomised throw;
   64-casing cap; meshes from AmmoSet set on every weapon. Compiled, not yet
   playtested — check size, orientation and throw.
+- **Directional hit indicator (2026-10-16):** red arcs toward whoever hit you,
+  grey for off-screen near misses, one per 30° sector, rationed and fading.
+  Code-drawn widget `UHitIndicatorWidget`; the user places
+  `WBP_HitIndicator` full-screen in `WBP_PlayerHUD`. Compiled; not yet seen.
 
 ### ▶ RESUME HERE
 1. **Push (user):** `git push` from your own terminal.
@@ -54,7 +58,8 @@
    restart the navmesh is there without rebuilding. Cause: the navmesh actor's package was never dirtied by
    Build Paths, so it hadn't been saved since 10-09. Now `bForceRebuildOnLoad`
    (saved by the user's Save All). Committed.
-4. **Parked:** Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
+4. **Parked:** casing bounce sound (user, 2026-10-16: later, once there are
+   assets — set `CasingImpactSound` per weapon); Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
    enemy roster (design); Focus sounds and 10-10's other carry-overs.
 5. **Next feature:** the user's call — harder enemy variants (burst/pause
    multipliers and hit-chance values per enemy are ready), more moves, or

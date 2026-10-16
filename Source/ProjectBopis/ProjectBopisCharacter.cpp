@@ -24,6 +24,8 @@
 #include "Misc/App.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
@@ -241,6 +243,10 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	// The base counts down the lowering timer and drives the reload montage.
 	Super::Tick(DeltaSeconds);
 
+	// Faded markers go, in real time: Focus doesn't make them linger.
+	const float RealNow = GetWorld()->GetRealTimeSeconds();
+	HitIndicators.RemoveAll([RealNow](const FHitIndicator& Marker) { return RealNow - Marker.StartTime >= Marker.Duration; });
+
 	// Dead: no stances, crouch or framing any more — just keep the body in view.
 	if (IsDead())
 	{
@@ -279,6 +285,74 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	UpdateMovementStance();
 	UpdateAimTurn(DeltaSeconds);
 	UpdateCameraTransition(DeltaSeconds);
+}
+
+void AProjectBopisCharacter::AddHitIndicator(const FVector& Source, bool bHit)
+{
+	if (IsDead() || !(bHit ? bShowHitIndicators : bShowNearMissIndicators))
+	{
+		return;
+	}
+	const FVector ToSource = (Source - GetActorLocation()).GetSafeNormal2D();
+	if (ToSource.IsNearlyZero())
+	{
+		return;
+	}
+
+	// A near miss from a shooter on screen says nothing new: you can see him.
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!bHit && bNearMissOnlyOffScreen && PlayerController && PlayerController->PlayerCameraManager)
+	{
+		const APlayerCameraManager* Camera = PlayerController->PlayerCameraManager;
+		const FVector View = Camera->GetCameraRotation().Vector().GetSafeNormal2D();
+		if (FVector::DotProduct(View, ToSource) > FMath::Cos(FMath::DegreesToRadians(Camera->GetFOVAngle() * 0.5f)))
+		{
+			return;
+		}
+	}
+
+	// The direction's sector: one marker of each kind per sector.
+	const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(ToSource.Y, ToSource.X)) + 180.0f;
+	const int32 Sector = FMath::Clamp(FMath::FloorToInt(Yaw / (360.0f / HitIndicatorSectors)), 0, HitIndicatorSectors - 1);
+	const float Now = GetWorld()->GetRealTimeSeconds();
+
+	if (bHit)
+	{
+		// A hit supersedes the grey marker there.
+		HitIndicators.RemoveAll([Sector](const FHitIndicator& Marker) { return !Marker.bHit && Marker.Sector == Sector; });
+	}
+	else
+	{
+		// Near misses stay quiet: not where a hit shows, not too often, not too many.
+		int32 NearMisses = 0;
+		for (const FHitIndicator& Marker : HitIndicators)
+		{
+			if (Marker.Sector == Sector && (Marker.bHit || Now - Marker.StartTime < NearMissIndicatorCooldown))
+			{
+				return;
+			}
+			NearMisses += Marker.bHit ? 0 : 1;
+		}
+		const bool bSectorShown = HitIndicators.ContainsByPredicate(
+			[Sector](const FHitIndicator& Marker) { return !Marker.bHit && Marker.Sector == Sector; });
+		if (!bSectorShown && NearMisses >= MaxNearMissIndicators)
+		{
+			return;
+		}
+	}
+
+	// Refresh the sector's marker, or start one.
+	FHitIndicator* Marker = HitIndicators.FindByPredicate(
+		[Sector, bHit](const FHitIndicator& Existing) { return Existing.bHit == bHit && Existing.Sector == Sector; });
+	if (!Marker)
+	{
+		Marker = &HitIndicators.AddDefaulted_GetRef();
+		Marker->Sector = Sector;
+		Marker->bHit = bHit;
+	}
+	Marker->Source = Source;
+	Marker->StartTime = Now;
+	Marker->Duration = bHit ? HitIndicatorDuration : NearMissIndicatorDuration;
 }
 
 void AProjectBopisCharacter::UpdateAimTurn(float DeltaSeconds)
@@ -553,6 +627,13 @@ float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const&
 	if (Result > 0.0f)
 	{
 		LastHitTakenTime = GetWorld()->GetTimeSeconds();
+
+		// Red marker toward whoever fired it (the shooter's body, else the round itself).
+		const APawn* Shooter = EventInstigator ? EventInstigator->GetPawn() : nullptr;
+		if (Shooter || DamageCauser)
+		{
+			AddHitIndicator(Shooter ? Shooter->GetActorLocation() : DamageCauser->GetActorLocation(), true);
+		}
 	}
 
 	// The killing blow ragdolled a diving body (in Super): it keeps flying the way it was going.

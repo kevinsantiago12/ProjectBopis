@@ -80,6 +80,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Impact")
 	float DecalLifeSpan = 10.0f;
 
+	/** How close (cm) a round must pass the player, without hitting, to show them a near-miss
+	    marker. 0: never. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Near Miss", meta = (ClampMin = "0.0"))
+	float NearMissRadius = 150.0f;
+
 	float Damage = 20.0f;
 
 	/** Actors this projectile must never collide with or damage — the firer and their weapon. */
@@ -89,6 +94,13 @@ protected:
 	TWeakObjectPtr<AWeaponBase> SourceWeapon;
 	FVector SpawnLocation = FVector::ZeroVector;
 	bool bVisualsShown = true;
+
+	/** Last frame's position: the near-miss check looks along the path in between. */
+	FVector LastLocation = FVector::ZeroVector;
+	bool bNearMissReported = false;
+
+	/** Marks the player's HUD once, if this round has just gone past them close enough. */
+	void CheckNearMiss();
 
 public:	
 	// Called every frame

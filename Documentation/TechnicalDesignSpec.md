@@ -721,6 +721,37 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
   false before the rack).
 - Montages without a `Loop` section (magazine reloads) are untouched.
 
+### Directional hit indicator (2026-10-16)
+
+The user: "red on hit, maybe near miss too as grey, but we dont want the
+screen flooded".
+- **Events:** `AProjectBopisCharacter::AddHitIndicator(Source, bHit)`.
+  **Red** from `TakeDamage` (damage > 0) toward the instigator's pawn, else
+  the damage causer. **Grey** from the round itself: `AProjectileBase::CheckNearMiss`
+  (Tick) reports once when someone else's round has **gone past** the player
+  within `NearMissRadius` 150 cm (the closest point of this frame's path lies
+  behind it). A round that hits is gone first (red only); one stopped by cover
+  never comes near. *(First version marked every enemy miss at fire time —
+  it showed behind walls; user: "only show when a bullet actually whizzed
+  past".)*
+- **Flood control** (character, `Combat|Hit Indicators`): directions
+  bucketed into `HitIndicatorSectors` 12; one marker per sector and kind,
+  refreshed rather than stacked; a hit removes the grey one there; grey is
+  skipped where red shows, within `NearMissIndicatorCooldown` 0.5 s of the
+  last, past `MaxNearMissIndicators` 3, and (`bNearMissOnlyOffScreen`) for
+  shooters inside the camera's FOV. Fade: `HitIndicatorDuration` 1 s,
+  `NearMissIndicatorDuration` 0.6 s, **real time**; expired in Tick. Switches:
+  `bShowHitIndicators`, `bShowNearMissIndicators`.
+- **`UHitIndicatorWidget`** (`UI/HitIndicatorWidget.h/.cpp`): `NativePaint`
+  draws each marker as a 9-point arc (`FSlateDrawElement::MakeLines`) on a
+  ring of `Radius` 160 px, `ArcDegrees` 30, `Thickness` 6, at the source's yaw
+  relative to the camera's (recomputed each frame, so markers swing as you
+  turn), alpha × the fade. `HitColor` red 0.9, `NearMissColor` grey 0.5.
+  Needs `Slate`/`SlateCore` in `ProjectBopis.Build.cs` (private) — without
+  them it links-fails on `MakeLines`.
+- **Editor:** `WBP_HitIndicator` (parent `HitIndicatorWidget`), full-screen in
+  `WBP_PlayerHUD`, *Not Hit-Testable*.
+
 ### Shell casings (2026-10-16)
 
 The user's choices: **physics casings** (Max Payne 2), the **pump shotgun
@@ -3326,6 +3357,7 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-16 (4) — Directional hit indicator: `AddHitIndicator`, sector-based flood control, `UHitIndicatorWidget` (code-drawn arcs); Slate/SlateCore added to the module.
 - 2026-10-16 (3) — Shell casings: `AShellCasing` + `UShellCasingSubsystem`, per-weapon `Weapon|Casings` settings, meshes set on all seven weapons.
 - 2026-10-16 (2) — Navmesh reverting solved: `bForceRebuildOnLoad` on `Lvl_Sandbox`'s RecastNavMesh, saved via Save All (gotcha added).
 - 2026-10-16 — Camping now climbs the hit chance to `CampedHitChance` 1.0 at full heat (replaces `CampingHitBonus`; the cap only limits the un-camped chance). Attack tokens removed; `MaxHitChance` 0.5 on both enemy BPs. Crouch combat stance (`bCrouchCombatStance`, `CrouchCameraOffset` −40). Kneel on/off (`CanPostRollCrouch`). Cleanup: crosshair settings + reticle materials removed; enemy StateTree stopped before unpossess. Two new gotchas.

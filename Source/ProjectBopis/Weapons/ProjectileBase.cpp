@@ -10,6 +10,7 @@
 #include "Weapons/WeaponBase.h"
 #include "Weapons/ImpactEffectsData.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "ProjectBopisCharacter.h"
 
 // Sets default values
 float AProjectileBase::GetInitialSpeed() const
@@ -55,6 +56,7 @@ void AProjectileBase::BeginPlay()
 	AddIgnoredActor(GetOwner());
 
 	SpawnLocation = GetActorLocation();
+	LastLocation = SpawnLocation;
 	UpdateVisibility();
 }
 
@@ -84,6 +86,39 @@ void AProjectileBase::Tick(float DeltaTime)
 
 	// Time dilation can change mid-flight (Focus starting), so this is per frame.
 	UpdateVisibility();
+	CheckNearMiss();
+}
+
+void AProjectileBase::CheckNearMiss()
+{
+	const FVector Now = GetActorLocation();
+	const FVector Last = LastLocation;
+	LastLocation = Now;
+	if (bNearMissReported || NearMissRadius <= 0.0f)
+	{
+		return;
+	}
+
+	// Someone else's round only: the player's own shots never mark their HUD.
+	AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (!Player || GetInstigator() == Player)
+	{
+		return;
+	}
+
+	// It counts once it has gone past: the nearest point of this frame's path lies behind where
+	// the round is now. A round that hits the player is gone before that; one stopped by a wall
+	// never comes near.
+	const FVector Body = Player->GetActorLocation();
+	const FVector Closest = FMath::ClosestPointOnSegment(Body, Last, Now);
+	if (Closest.Equals(Now, 0.1f) || FVector::DistSquared(Closest, Body) > FMath::Square(NearMissRadius))
+	{
+		return;
+	}
+
+	bNearMissReported = true;
+	const APawn* Shooter = GetInstigator();
+	Player->AddHitIndicator(Shooter ? Shooter->GetActorLocation() : SpawnLocation, false);
 }
 
 void AProjectileBase::UpdateVisibility()

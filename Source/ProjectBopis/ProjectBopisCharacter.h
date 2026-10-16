@@ -21,6 +21,16 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+/** A direction marker on the HUD: where a shot came from, and whether it hit. */
+struct FHitIndicator
+{
+	FVector Source = FVector::ZeroVector;
+	float StartTime = 0.0f;
+	float Duration = 1.0f;
+	int32 Sector = 0;
+	bool bHit = false;
+};
+
 /** Which rotation/movement rules currently apply. Mutually exclusive by design —
     the underlying flags fight each other if more than one is active. */
 UENUM(BlueprintType)
@@ -139,6 +149,37 @@ protected:
 	    at standing height. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crouch")
 	bool bCrouchCombatStance = true;
+
+	/** Red markers toward whoever just hit you. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators")
+	bool bShowHitIndicators = true;
+
+	/** Grey markers toward shots that crack past. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators")
+	bool bShowNearMissIndicators = true;
+
+	/** Near misses only from shooters off screen — the ones you can see need no marker. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators")
+	bool bNearMissOnlyOffScreen = true;
+
+	/** Real seconds a marker takes to fade out. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators", meta = (ClampMin = "0.1"))
+	float HitIndicatorDuration = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators", meta = (ClampMin = "0.1"))
+	float NearMissIndicatorDuration = 0.6f;
+
+	/** Directions are grouped into this many sectors around you; a new shot from a sector that
+	    already shows a marker refreshes it instead of adding another. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators", meta = (ClampMin = "4", ClampMax = "36"))
+	int32 HitIndicatorSectors = 12;
+
+	/** Most grey markers at once, and how soon one sector can show another. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators", meta = (ClampMin = "0"))
+	int32 MaxNearMissIndicators = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit Indicators", meta = (ClampMin = "0.0"))
+	float NearMissIndicatorCooldown = 0.5f;
 
 	/** Max walk speed when not aiming. */
 	UPROPERTY(EditAnywhere, Category = "Movement")
@@ -418,6 +459,11 @@ public:
 	/** Turning to the camera as the gun comes up (see AimTurnRate). */
 	bool IsTurningToAim() const { return bTurningToAim; }
 
+	/** Marks a shot from Source on the HUD: bHit red, otherwise a grey near miss (rationed). */
+	void AddHitIndicator(const FVector& Source, bool bHit);
+
+	const TArray<FHitIndicator>& GetHitIndicators() const { return HitIndicators; }
+
 	/** Mid-evasion (a shootdodge's flight, a roll) or within EvadeLingerTime after one —
 	    enemies' shots are much less likely to land. */
 	bool IsEvading() const;
@@ -477,6 +523,8 @@ private:
 	void UpdateAimTurn(float DeltaSeconds);
 
 	bool bTurningToAim = false;
+
+	TArray<FHitIndicator> HitIndicators;
 
 	/** Reloads an empty gun by itself, once the player is free to. */
 	void UpdateAutoReload(float DeltaSeconds);
