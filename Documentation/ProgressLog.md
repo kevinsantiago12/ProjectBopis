@@ -95,6 +95,10 @@
    and fights crouched, stands to move). **Playtested by the user
    (2026-10-16).** No cover behaviour: "I dont want the enemy to explicitly
    take cover, I dont want whack a mole."
+- **Camping and the kneel (2026-10-17):** a roll into a kneel was never hit
+  (the kneel paused the camping clock). Now only evasion (and its linger)
+  pauses it; after that it builds as normal. The user's timing: 1 s grace,
+  2 s climb — 100% 5 s after a roll ends. Compiled; not yet seen.
 3. **Parked:** casing bounce sound (once there are assets — set
    `CasingImpactSound` per weapon); Kamz bone scales (user); the long-gun
    wind-up's empty-handed arms; the enemy roster (design); Focus sounds and

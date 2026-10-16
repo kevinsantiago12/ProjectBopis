@@ -2946,8 +2946,14 @@ timewindow where the effect of the accuracy reduction is maintained".)*
 - **`IsRollHeld()`** / private **`IsInputHeld(Action)`**: the live Enhanced
   Input value (`UEnhancedInputLocalPlayerSubsystem::GetPlayerInput()->
   GetActionValue`), not the last event.
-- **Camping heat doesn't build while knelt:** `UpdateCampingHeat` pauses the
-  clock at the spot; heat already built holds (no drain).
+- **Camping heat:** *(revised 2026-10-17)* the clock no longer pauses for the
+  kneel. It waits only **while evading** (`IsEvading()`: a dive or roll and
+  its `EvadeLingerTime` linger), then runs as normal — knelt, crouched or
+  standing. User: "After the linger, regardless if you are crouched or not.
+  Build up camp as per the setting." (Before, a kneel never built heat, so it
+  was never punished.) The user set `CampGraceTime` **1** and
+  `CampTimeToFullHeat` **2** on `BP_PlayerCharacter`: 100% 3 s after stopping,
+  5 s after a roll ends.
 - **Evasion:** only the 2 s linger from the roll's end.
 - **Blend tuning (no code):** `CrouchOutAfter` on the roll frame closest to a
   kneel; `CrouchOutBlendTime` ~0.2–0.3; the AnimBP's stand→crouch transition.

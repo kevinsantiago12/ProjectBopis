@@ -698,9 +698,9 @@ void AProjectBopisCharacter::UpdateCampingHeat(float DeltaSeconds)
 		CampAnchor = GetActorLocation();
 		TimeAtCampAnchor = 0.0f;
 	}
-	// Knelt after a roll: the clock at this spot stops — shooting from the knee doesn't count
-	// as camping. Heat already built holds where it is.
-	if (!bPostRollCrouching)
+	// Evading (a dive or roll, and its linger after): the clock at this spot waits. After
+	// that it runs as normal — knelt, crouched or standing.
+	if (!IsEvading())
 	{
 		TimeAtCampAnchor += DeltaSeconds;
 	}
