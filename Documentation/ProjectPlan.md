@@ -419,7 +419,8 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-14, user-confirmed.)* 4. Encounters: `AEncounterDirector` wave spawner (6 alive at once, 1–3 s replacements, spawn points ≥12 m away and preferably out of view, random weapon from a pool, spawned alerted).
   - [x] *(Done 2026-10-14, user-confirmed.)* 4b. Roaming when the lead goes cold: the furthest Target Point or a random reachable spot; `ST_Gunman` got the Roam state.
   - [x] *(Done 2026-10-14.)* TEMP shooting debug removed (`bDebugShooting`, `bShowHitsTaken`).
-  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Attack tokens only held while usable (in sight, within `AttackTokenRange` 2500, gun up, not reloading, no ally in the line of fire); nearer enemies take a token from the farthest holder (`AttackTokenStealMargin` 300). User: the holders could be off away from the fight while the two in front couldn't kill you.
+  - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Attack tokens only held while usable (in sight, within `AttackTokenRange` 2500, gun up, not reloading, no ally in the line of fire); nearer enemies take a token from the farthest holder (`AttackTokenStealMargin` 300). User: the holders could be off away from the fight while the two in front couldn't kill you. **Then removed entirely the same day** (user): every enemy in sight can hit; `MaxHitChance` 0.5. User-confirmed: "more fair… forces the player to use all the moves and to keep moving".
+  - [x] *(Done 2026-10-16, user: "looks good now".)* Camping climbs to a guaranteed hit (`CampedHitChance` 1.0 at full heat, ~5.5 s standing still).
 - [x] *(Done 2026-10-14, user-confirmed.)* **Placeholder health bar:** `UHealthWidget` + the user's `WBP_Health` in `WBP_PlayerHUD`.
 - [~] **7. More player moves** (user, 2026-10-14). See the spec's *Dodge roll and the moves around it*.
   - [x] *(Done 2026-10-14, user-confirmed.)* Dodge roll: `URollComponent`, own key (`IA_Roll`), 8-way camera-relative, squares up to the camera first, evasive, no firing, no Focus cost.
@@ -430,6 +431,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-15, compiled; not yet playtested.)* The kneel (Vanquish): hold the roll button past `CrouchOutAfter` → cut into a crouch, held as long as the button is; no camping heat while knelt. Blend tuning is the user's (`CrouchOutAfter`, `CrouchOutBlendTime`).
   - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Quick turn to aim (`AimTurnRate` 1080°/s) instead of the snap; crouched turn-in-place (crouch turn montages, root motion off on their clips).
   - [x] *(Done 2026-10-15, compiled; not yet playtested.)* Dual shootdodge arm spread (`DualDiveSpreadAngle` 20°); Inertialization node after the Shootdodge state machine (sporadic Land → Loop error).
+  - [x] *(Done 2026-10-15.)* Kneel on/off (`bPostRollCrouch` now also stops the cut-in); crouch combat stance (weapon up, camera −40, `bCrouchCombatStance`).
   - Dropped: roll hold → prone slide, slide into the kneel, inertial roll-to-kneel blend, held roll Focus.
 - [x] *(Done 2026-10-15, compiled; not yet playtested.)* **8. Shooting model → Max Payne 1/2** (user: "those were designed for FPS"). Supersedes Phase 2's bloom model. See the spec's *Combat: the shooting model*.
   - [x] 1. Hold to fire for every weapon at `TimeBetweenShots`; Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed; a held trigger doesn't break into a reload.
@@ -517,6 +519,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-16 — Camping to a guaranteed hit, token removal, crouch combat stance, kneel switch; leftovers cleaned up (crosshair code and materials, StateTree stop on death, stale roll comment).
 - 2026-10-15 — Phase 5: attack-token fix; health bar; item 7 (more player moves: roll, move-out, auto/prone reload, evasion linger, roll Focus, kneel, aim turn, crouched turns, dual dive spread) and item 8 (Max Payne shooting model, increments 1–4) ticked. Phase 2 marked superseded.
 - 2026-10-09 (2) — Bullet time ticked; projectile backlog partly done.
 - 2026-10-09 — One-handed stance flip + procedural free-arm swing ticked.

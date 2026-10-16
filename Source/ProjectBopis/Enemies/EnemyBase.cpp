@@ -3,6 +3,7 @@
 #include "Enemies/EnemyBase.h"
 #include "Enemies/BopisAIController.h"
 #include "AIController.h"
+#include "BrainComponent.h"
 #include "EngineUtils.h"
 #include "Engine/TargetPoint.h"
 #include "NavigationSystem.h"
@@ -159,10 +160,12 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		: bPlayerDown ? DownHitMultiplier
 		: FMath::Lerp(1.0f, MovingHitMultiplier, FMath::Clamp(PlayerSpeed / MovingSpeedForFullPenalty, 0.0f, 1.0f));
 
-	// Camping: the longer the player has stayed put, the surer every shot.
-	const float CampingFactor = 1.0f + CampingHitBonus * (PlayerHero ? PlayerHero->GetCampingHeat() : 0.0f);
-
-	const float HitChance = FMath::Min(MaxHitChance, BaseHitChance * DistanceFactor * StateFactor * CampingFactor);
+	// Within the cap, by distance; then camping: the longer the player stays put, the surer
+	// the shot, climbing to CampedHitChance at full heat — a target that won't move gets
+	// hit. The player's state comes last, so moving or diving out of it still counts.
+	const float NormalChance = FMath::Min(MaxHitChance, BaseHitChance * DistanceFactor);
+	const float Heat = PlayerHero ? PlayerHero->GetCampingHeat() : 0.0f;
+	const float HitChance = FMath::Lerp(NormalChance, FMath::Max(NormalChance, CampedHitChance), Heat) * StateFactor;
 
 	// The trigger: the player in sight — or only just lost, while it keeps firing at where
 	// they went (SuppressFireDuration) — and the gun up and ready. A sound alone is searched,
@@ -170,27 +173,6 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	const bool bSuppressing = bAlerted && !bSeesPlayer && TimeSinceSeenPlayer <= SuppressFireDuration;
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
-
-	// Attack tokens: only a few enemies at a time really try to hit — the rest keep the
-	// pressure on with near misses. Held only while it can be used — in sight and in range,
-	// gun up and ready, no friend in the line of fire — so nobody sits on one reloading or
-	// from across the map; nearer enemies take precedence.
-	AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>();
-	bool bHasAttackToken = !GameMode;
-	if (GameMode)
-	{
-		const bool bCanUseToken = bShootAtPlayer && bSeesPlayer && Distance <= AttackTokenRange
-			&& Weapon && IsWeaponRaised() && !IsEquipAnimating() && !Weapon->IsReloading()
-			&& LineOfFireBlockedTime <= 0.0f;
-		if (bCanUseToken)
-		{
-			bHasAttackToken = GameMode->RequestAttackToken(this, Distance);
-		}
-		else
-		{
-			GameMode->ReleaseAttackToken(this);
-		}
-	}
 
 	if (!bShootAtPlayer || !bAlerted || !(bSeesPlayer || bSuppressing) || !Weapon || !IsWeaponRaised()
 		|| IsEquipAnimating() || Weapon->IsReloading())
@@ -244,7 +226,7 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	// a miss cracks past the chest — both led, since a round takes time to arrive (hitscan
 	// needs none). Suppressing: near misses around where they were last seen.
 	const bool bInHitGrace = PlayerHero && PlayerHero->IsInHitGrace();
-	const bool bHit = bSeesPlayer && bHasAttackToken && !bInWarningBurst && !bInHitGrace
+	const bool bHit = bSeesPlayer && !bInWarningBurst && !bInHitGrace
 		&& FMath::FRand() < HitChance;
 	FVector Target = LastKnownPlayerLocation + FVector(0.0f, 0.0f, 40.0f);
 	if (bSeesPlayer)
@@ -473,12 +455,17 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 {
 	Super::Die(Killer, ShotDirection);
 
-	if (AProjectBopisGameMode* GameMode = GetWorld()->GetAuthGameMode<AProjectBopisGameMode>())
-	{
-		GameMode->ReleaseAttackToken(this);
-	}
-
 	DropWeapon(ShotDirection);
+
+	// Stop the StateTree while it can still see its pawn: unpossessing first would stop it
+	// with the pawn gone, and it warns ("Context Requirements … failed") on every death.
+	if (const AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* Brain = AIController->GetBrainComponent())
+		{
+			Brain->StopLogic(TEXT("Died"));
+		}
+	}
 
 	// The brain goes with the body: unpossess, and the AI controller is destroyed.
 	DetachFromControllerPendingDestroy();

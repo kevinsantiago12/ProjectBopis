@@ -191,11 +191,11 @@ protected:
 
 	/** This archetype's chance to hit per shot, at MidHitRange against a player standing still. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float BaseHitChance = 0.3f;
+	float BaseHitChance = 0.12f;
 
 	/** No shot is surer than this. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float MaxHitChance = 0.9f;
+	float MaxHitChance = 0.5f;
 
 	/** Distance falloff (cm): ×CloseHitMultiplier within CloseHitRange, ×1 at MidHitRange,
 	    ×FarHitMultiplier from FarHitRange on — straight lines in between. */
@@ -210,11 +210,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
 	float FarHitRange = 2500.0f;
-
-	/** Farther than this (cm) from the player, an enemy doesn't take an attack token: its
-	    shots are all near misses, and the token goes to someone close enough to use it. */
-	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
-	float AttackTokenRange = 2500.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
 	float FarHitMultiplier = 0.4f;
@@ -234,10 +229,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
 	float DownHitMultiplier = 1.0f;
 
-	/** Camping: hit chance × (1 + this × the player's camping heat) — at full heat, 1.5
-	    makes every shot 2.5× as likely to land. */
-	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0"))
-	float CampingHitBonus = 1.5f;
+	/** Hit chance against a player at full camping heat — reached over CampTimeToFullHeat
+	    from the normal chance. 1: a target that won't move gets hit. The player's moving
+	    or evading still scales it down. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CampedHitChance = 1.0f;
 
 	// ---- Shot placement ----
 

@@ -110,46 +110,6 @@ enum class EFireResult : uint8
 	Blocked
 };
 
-/** Per-weapon reticle appearance. Radii are in UV space, where 0.5 is the widget's
-    edge — keep MaxRadius comfortably below that or the ring clips.
-
-    Each weapon may use an entirely different crosshair material. The convention is
-    that any such material exposes the parameters below by name — `Radius`,
-    `Thickness`, `Color` — so bloom can drive it regardless of what it draws.
-    Setting a parameter a material doesn't declare is harmless, so a material is
-    free to ignore any of them. */
-USTRUCT(BlueprintType)
-struct FCrosshairSettings
-{
-	GENERATED_BODY()
-
-	/** The material drawn as the reticle. Leave unset to keep the widget's default. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	TObjectPtr<UMaterialInterface> Material;
-
-	/** Reticle size in pixels; the widget is square, so this is both width and height.
-	    Radius and Thickness are fractions of this, so changing it scales the whole
-	    reticle uniformly — stroke weight included. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	float Size = 100.0f;
-
-	/** Ring radius at zero bloom. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	float MinRadius = 0.12f;
-
-	/** Ring radius at full bloom. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	float MaxRadius = 0.36f;
-
-	/** Stroke width. Constant in pixels regardless of radius, since the ring is
-	    drawn procedurally rather than scaled. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	float Thickness = 0.02f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Crosshair")
-	FLinearColor Color = FLinearColor::White;
-};
-
 UCLASS()
 class PROJECTBOPIS_API AWeaponBase : public AActor
 {
@@ -268,8 +228,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	bool ShouldAutoReloadWhenEmpty() const { return bAutoReloadWhenEmpty; }
 
-	UFUNCTION(BlueprintPure, Category = "Weapon|Feedback")
-	FCrosshairSettings GetCrosshairSettings() const { return Crosshair; }
 	void FireHitscan(const FVector& TraceStart, const FVector& SpreadDirection);
 	void FireProjectile(const FVector& TraceStart, const FVector& SpreadDirection);
 
@@ -399,9 +357,6 @@ protected:
 	/** Played on the weapon's own mesh when firing, if this weapon uses animation-driven feedback. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UAnimSequence> FireAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
-	FCrosshairSettings Crosshair;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UMaterialInterface> HitDecalMaterial;

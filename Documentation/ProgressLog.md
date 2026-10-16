@@ -12,6 +12,49 @@
 
 ---
 
+## 2026-10-15 (2) / 16
+**Summary:**
+- **Kneel switch:** `bPostRollCrouch` off now also stops the roll's cut-in
+  (`CanPostRollCrouch`), so a held roll plays out normally.
+- **Crouch combat stance** (`bCrouchCombatStance`): crouched, the weapon stays
+  raised (the aim's facing, no zoom) and the camera eases down
+  (`CrouchCameraOffset` −40). The user set `LowerWeaponDelay` to **4 s** on
+  `BP_PlayerCharacter` so the gun stays up through corner peeks.
+- **Attack tokens removed** (see 10-15's entry); cap 0.5 on both enemy BPs.
+  User-confirmed fair.
+- **Camping → a guaranteed hit (2026-10-16):** "the mooks seems so stupid
+  right now that they cant hit a non moving target". The chance climbs with
+  heat to `CampedHitChance` 1.0 (replaces `CampingHitBonus`), state factor
+  last. User: "looks good now".
+- **Leftovers cleared (2026-10-16, user: "finish all things in the
+  checklist"):**
+  - the roll's stale "sliding" comment fixed;
+  - enemy StateTrees stopped before unpossess (the `StopLogic` warning spam);
+  - crosshair code removed (`FCrosshairSettings`, `Crosshair`,
+    `GetCrosshairSettings`) and `M_Reticle` / `M_Reticle_Corners` deleted,
+    after re-saving the weapon BPs so nothing referenced them;
+  - the crouch-right turn montage's length already matched its clip.
+  - Shootdodge "No Inertialization node" errors: none in any log since the
+    fix (not deliberately reproduced).
+- **The 10-15 editor freeze** was an AppHang (no crash report, no stack). Earlier
+  hangs on 10-07, 10-09 and 10-13 too. Unresolved: needs a Task Manager dump
+  next time.
+- Committed by Claude at the user's request ("I'll let you do it all"); push
+  is the user's.
+
+### ▶ RESUME HERE
+1. **Push (user):** `git push` from your own terminal.
+2. **If the editor freezes again:** Task Manager → Details → `UnrealEditor.exe`
+   → Create memory dump file, before closing it, and note what was happening.
+3. **Parked:** navmesh reverting (`RuntimeGeneration=Dynamic` is still in the
+   ini); Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
+   enemy roster (design); Focus sounds and 10-10's other carry-overs.
+4. **Next feature:** the user's call — harder enemy variants (burst/pause
+   multipliers and hit-chance values per enemy are ready), more moves, or
+   Phase 6's slice.
+
+---
+
 ## 2026-10-14 (2) / 15
 **Summary:**
 - **More player moves** (RESUME HERE item 3 from 10-14): the dodge roll and
@@ -22,7 +65,8 @@
   designed for FPS"). Bloom and Semi/Auto are gone; every gun fires while
   held, with a small per-weapon spread; enemies fire each weapon in its own
   pattern. All seven weapons retuned.
-- **Attack tokens** fixed so the enemies in front of you can actually kill you.
+- **Attack tokens** were fixed, then **removed** (user: every enemy should be
+  able to hurt you at all times, with lower accuracy instead). Cap 0.5.
 - The user committed "Roll Feature Added" (2026-10-15 00:04); everything
   from the kneel's camping-heat change on is **uncommitted**.
 - Detail in the spec: *Combat: the shooting model*, *Dodge roll and the moves
@@ -75,6 +119,14 @@
   reloading/blocked, first come first served). Now held only while usable
   (`AttackTokenRange` 2500), and a requester 300 cm nearer takes the farthest
   holder's token.
+  - **Then removed entirely** (user, later the same day): a shotgunner
+    point-blank still missed through his token cooldown. "Id rather have them
+    able to do damage to you at all times but reduce the base and max
+    accuracy." Every enemy in sight rolls; `MaxHitChance` 0.75 → **0.5** on
+    `BP_EnemyBase` and `BP_Enemy_Test` (bridge), base stays the user's 0.12.
+    The game mode keeps only the corpse limit.
+  - **User-confirmed in PIE:** "that feels more fair, and it forces the player
+    to use all the moves and to keep moving."
 - **Shooting model → Max Payne 1/2 (2026-10-15):**
   1. Hold to fire for every weapon at `TimeBetweenShots`; Semi/Auto,
      `IntendedTimeBetweenShots` and the cadence penalty removed. A held
@@ -93,7 +145,9 @@
   4. Docs: spec section rewritten, lore PART 4's *FPS combat philosophy*
      settled, the user's decisions recorded in PART 3, GDD (+ html) updated.
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-15 (2) / 16; items 1–3 are done.)*
+
+### (old) RESUME HERE
 1. **Commit (user).** Uncommitted since "Roll Feature Added":
    - Source: `ProjectBopisCharacter.*`, `ProjectBopisAnimInstance.*`,
      `EnemyBase.*`, `WeaponBase.*`, `ProjectBopisGameMode.*`,
@@ -110,7 +164,7 @@
    - the kneel (hold roll) and its blend (`CrouchOutAfter`,
      `CrouchOutBlendTime`, the stand→crouch transition);
    - the quick aim turn (`AimTurnRate`), crouched turns, the dual dive spread;
-   - attack tokens: the closest enemies should be the dangerous ones;
+   - ~~no attack tokens~~ — confirmed fair by the user (base 0.12, cap 0.5);
    - whether `Land → Loop` errors are gone.
 3. **Small leftovers:**
    - `AM_Pistol_Crouch_TurnRight_90` length (1.70 s vs the 1.633 s clip):

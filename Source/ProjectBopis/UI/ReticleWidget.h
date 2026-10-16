@@ -8,15 +8,11 @@
 #include "ReticleWidget.generated.h"
 
 /**
- * Crosshair. Takes its appearance from the equipped weapon's crosshair settings.
+ * Crosshair: a static dot, drawn entirely by WBP_Reticle. Kept as the widget's parent
+ * class so reticle behaviour has a home if it ever needs code again.
  */
 UCLASS()
 class PROJECTBOPIS_API UReticleWidget : public UPlayerHUDElementWidget
 {
 	GENERATED_BODY()
-
-public:
-	/** The equipped weapon's reticle settings, or sane defaults when nothing is held. */
-	UFUNCTION(BlueprintPure, Category = "Reticle")
-	FCrosshairSettings GetCrosshairSettings() const;
 };

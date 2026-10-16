@@ -90,9 +90,11 @@ playtested.
 - **Reticle:** a static 6 px white dot (2026-10-07). `WBP_Reticle` draws a
   fixed *Rounded Box* brush, 6×6, centre-anchored; the Tick chain is gone.
   `UReticleWidget::GetCurrentBloom` was **removed** 2026-10-15 (nothing
-  referenced it). Still left, unused: `FCrosshairSettings` (`MinRadius` /
-  `MaxRadius` belong to the old expanding ring), `GetCrosshairSettings`,
-  `M_Reticle` / `M_Reticle_Corners`. A later cleanup can remove them.
+  referenced it). **Removed 2026-10-16:** `FCrosshairSettings`, the weapons'
+  `Crosshair` property, `AWeaponBase::` / `UReticleWidget::GetCrosshairSettings`
+  and the `M_Reticle` / `M_Reticle_Corners` materials (deleted after the weapon
+  BPs were re-saved and nothing referenced them). `UReticleWidget` stays as an
+  empty parent class for `WBP_Reticle`.
 
 ### Firing — hold the trigger (increment 1)
 
@@ -1345,8 +1347,13 @@ camping out with it."
 - The user caps fights at **about 6 mooks**.
 
 **Each shot rolls to hit** (`AEnemyBase::UpdateShooting` / `FireAt`):
-- `HitChance = min(MaxHitChance 0.9, BaseHitChance 0.3 × DistanceFactor ×
-  StateFactor × CampingFactor)`.
+- `HitChance = Lerp(Normal, max(Normal, CampedHitChance), heat) × StateFactor`,
+  where `Normal = min(MaxHitChance, BaseHitChance × DistanceFactor)`
+  *(2026-10-16; before: `min(MaxHitChance, Base × Distance × State ×
+  (1 + CampingHitBonus × heat))`)*. **Values (2026-10-15):** `BaseHitChance`
+  **0.12**, `MaxHitChance` **0.5** — C++ defaults and both `BP_EnemyBase` and
+  `BP_Enemy_Test` (the user had 0.12 / 0.75; the cap came down when the
+  tokens went). Originally 0.3 / 0.9.
 - **Distance:** ×`CloseHitMultiplier 2.3` within `CloseHitRange 300`, ×1 at
   `MidHitRange 1000`, ×`FarHitMultiplier 0.4` from `FarHitRange 2500`;
   linear in between (`GetMappedRangeValueClamped`).
@@ -1356,14 +1363,23 @@ camping out with it."
   - down after a dive (landing, prone, get-up): ×`DownHitMultiplier 1.0`;
   - otherwise speed: ×1 standing → ×`MovingHitMultiplier 0.6` at
     `MovingSpeedForFullPenalty 500` cm/s.
-- **Camping:** ×(1 + `CampingHitBonus 1.5` × the player's camping heat).
+- **Camping** *(2026-10-16)*: the chance climbs in a straight line with the
+  player's camping heat from `Normal` to **`CampedHitChance` 1.0** — a target
+  that stays put is hit for certain at full heat (1.5 s grace + 4 s, so
+  5.5 s), at any distance. The user: "the mooks seems so stupid right now that
+  they cant hit a non moving target". The state factor comes last, so moving
+  or diving out of the heat still counts; heat drains at 0.5/s after moving.
+  `CampingHitBonus` was removed (its `BP_EnemyBase` value dropped). The cap
+  now only limits the un-camped chance.
 - **A hit also needs:**
   - the enemy can see the player;
-  - it holds an **attack token**;
   - it isn't in a **warning burst**;
   - the player isn't in **hit grace**.
-- **Typical chances** (standing / running / mid-dive, fresh heat): 3 m
-  69/41/7%, 10 m 30/18/3%, 20 m 16/10/2%.
+- **Typical chances** at 0.12 / 0.5, standing still: fresh 3 m 28%, 5 m 23%,
+  10 m 12%, 20 m 7%; at 5 m after 3 s 52%, 4.5 s 81%, 5.5 s+ 100% (every
+  distance reaches 100% at full heat). Running ×0.6, evading ×0.1.
+  *(At the original 0.3 / 0.9, fresh heat, standing / running / mid-dive:
+  3 m 69/41/7%, 10 m 30/18/3%, 20 m 16/10/2%.)*
 
 **Placement (`FireAt(Target, bHit)`):**
 - **Hits** aim at a bone drawn from `HitBoneWeights`:
@@ -1399,31 +1415,15 @@ player, shared by all enemies):
   - heat runs on game time, so it builds slower in slow motion;
   - it's read through `GetCampingHeat()`.
 
-**Attack tokens** (`AProjectBopisGameMode`):
-- **Limits:** `MaxAttackTokens 2`, `AttackTokenHoldTime 3`,
-  `AttackTokenCooldown 1.5`.
-- **Requesting** *(revised 2026-10-15)*: an enemy calls
-  `RequestAttackToken(this, Distance)` each tick **only while it can use the
-  token**: it sees the player, is within `AttackTokenRange 2500` cm (on the
-  enemy), and its gun is raised, not equipping, not reloading, with no ally in
-  the line of fire (`LineOfFireBlockedTime <= 0`). Otherwise it hands the
-  token straight back. *(Before: every tick in sight, so a reloading or
-  across-the-map enemy could sit on a token while the two in front of the
-  player only fired near misses.)*
-  - **Nearer enemies take precedence:** with every token held, a requester at
-    least `AttackTokenStealMargin 300` cm nearer than the farthest holder takes
-    that holder's token (no cooldown for the one bumped). Holders refresh
-    their stored distance on every request.
-  - Expired holds are handed back, with that enemy put on cooldown, during
-    the next request, so tokens still rotate.
-  - **Known one-shot gap:** `LineOfFireBlockedTime` only resets when a shot
-    goes off, so after an ally clears the line the first shot is tokenless
-    (a near miss); the token comes back next tick.
-- **Releasing:** `ReleaseAttackToken` when it can't use it (no cooldown) and
-  on death.
-- **No game mode** (another map's mode): everyone may hit.
-- Token holds are a `TArray` of weak holder + grant time + distance;
-  cooldowns are a `TMap`.
+**Attack tokens — removed 2026-10-15.** The user: "I dont like the token idea
+anymore, Id rather have them able to do damage to you at all times but reduce
+the base and max accuracy." Every enemy in sight now rolls to hit; the cap
+came down to 0.5 to compensate. What they were: `AProjectBopisGameMode`
+handed out `MaxAttackTokens 2` (3 s holds, 1.5 s cooldown); only holders
+could hit, the rest fired near misses. Earlier the same day they were limited
+to enemies able to use them, nearer-first (`AttackTokenRange`,
+`AttackTokenStealMargin`) — but a lone shotgunner point-blank still whiffed
+through his hold cooldown, which is what ended them.
 
 **Fairness:**
 - **Warning burst:**
@@ -2076,9 +2076,9 @@ visible mesh lags.
     it off): each step rotated the capsule while the Aiming stance snapped it
     back and turn-in-place counter-rotated the mesh — a constant re-stepping
     stutter. Turned off on both clips.
-  - The Right montage's length stayed at the source's 1.70 s (clip 1.633 s):
-    the bridge can't set `SequenceLength`. The overrun sits inside the 0.25 s
-    blend-out; re-dropping the segment in the montage editor fixes it.
+  - The Right montage's length first read the source's 1.70 s (clip 1.633 s);
+    by 2026-10-16 it read 1.633 s — the editor recalculated it once the
+    segment had changed. No fix needed.
 - **Quick turn to aim (2026-10-15).** "When rolling and not facing forward
   then shooting, there is a snap to face forward, this needs a quick lerp."
   - Entering the Aiming stance with the body more than 1° off the camera sets
@@ -2827,7 +2827,9 @@ timewindow where the effect of the accuracy reduction is maintained".)*
 the same Aiming stance as the aim button (body locked to the camera, feet
 turning in place), with the hip-fire pose and no aim zoom. The camera eases
 down by **`CrouchCameraOffset` −40 cm** (was 0; only applied in the stance).
-Standing up, the gun lowers after the usual 1.5 s. Off: the old crouch.
+Standing up, the gun lowers after `LowerWeaponDelay` (C++ 1.5 s; the user set
+**4 s** on `BP_PlayerCharacter`, 2026-10-15, so the gun stays up through
+corner peeks). Off: the old crouch.
 
 **Reloading** (2026-10-14):
 - **Auto-reload** (`bAutoReload`, `AutoReloadDelay` 0.2 s): an empty gun
@@ -3261,6 +3263,15 @@ ones most likely to bite:
 - **`ObjectTools.set_properties` takes `values` as a JSON string**, and struct
   fields use the lower-camel names `get_properties` returns (`burstShotsMin`,
   `slotName`). An unreadable/unsettable property aborts the whole script.
+- **A Blueprint that only lost a removed property's value isn't dirty**
+  (2026-10-16). Compiling and `save_assets` skip it, so the package keeps its
+  old imports (`get_referencers` still lists it). Make any property write to
+  dirty it (e.g. set a value to itself), then save.
+- **Stop an AI's StateTree before unpossessing** (2026-10-16). Unpossess
+  stops the brain with the pawn already gone, so `UStateTreeComponent::
+  StopLogic` fails its context requirements and warns on every death.
+  `AEnemyBase::Die` now calls `GetBrainComponent()->StopLogic("Died")` first;
+  the later stop returns early (`bIsRunning` false).
 - **Renaming or removing a `UPROPERTY` drops the values Blueprints stored for
   it** (2026-10-15: `FireMode`, `IntendedTimeBetweenShots`, the bloom fields,
   the enemy burst fields, `FocusMaxBloomMultiplier` on `BP_PlayerCharacter`).
@@ -3270,7 +3281,8 @@ ones most likely to bite:
 
 ## Changelog
 
-- 2026-10-15 — **Shooting model reworked to Max Payne 1/2:** hold to fire for every weapon at `TimeBetweenShots` (Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed); spread replaces bloom (`Spread`, moving ×, burst wander, `FocusSpreadMultiplier`); enemy firing pattern per weapon (`FAIFiringPattern AIFiring`) with `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy; all seven weapon BPs retuned. Attack tokens only held while usable, nearer enemies take precedence (`AttackTokenRange`, `AttackTokenStealMargin`). New section *Dodge roll and the moves around it* (roll, roll Focus, evasion linger, the kneel, auto/prone reload, dual dive spread, the Shootdodge Inertialization node, reverted experiments). Turn-in-place: crouched turns, quick turn to aim (`AimTurnRate`). `DropAsClass`. Six new gotchas.
+- 2026-10-16 — Camping now climbs the hit chance to `CampedHitChance` 1.0 at full heat (replaces `CampingHitBonus`; the cap only limits the un-camped chance). Attack tokens removed; `MaxHitChance` 0.5 on both enemy BPs. Crouch combat stance (`bCrouchCombatStance`, `CrouchCameraOffset` −40). Kneel on/off (`CanPostRollCrouch`). Cleanup: crosshair settings + reticle materials removed; enemy StateTree stopped before unpossess. Two new gotchas.
+- 2026-10-15 — **Shooting model reworked to Max Payne 1/2:** hold to fire for every weapon at `TimeBetweenShots` (Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed); spread replaces bloom (`Spread`, moving ×, burst wander, `FocusSpreadMultiplier`); enemy firing pattern per weapon (`FAIFiringPattern AIFiring`) with `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy; all seven weapon BPs retuned. Attack tokens only held while usable, nearer enemies take precedence — then **removed entirely** the same day (every enemy in sight can hit; `MaxHitChance` 0.5). New section *Dodge roll and the moves around it* (roll, roll Focus, evasion linger, the kneel, auto/prone reload, dual dive spread, the Shootdodge Inertialization node, reverted experiments). Turn-in-place: crouched turns, quick turn to aim (`AimTurnRate`). `DropAsClass`. Six new gotchas.
 
 - 2026-10-09 (5) — Bullet time renamed **Focus** (trademark): `UFocusComponent`, `UFocusWidget`, `IA_Focus`, `WBP_Focus`, CoreRedirects. Focus feedback (post-process + pitch drop, optional sounds). Projectile effects hide by default.
 - 2026-10-09 (4) — Bullet time built (`UBulletTimeComponent`, Q toggle, 0.3× world, slowed player, real-time meter with kill refill / passive regen / infinite, HUD widget). Projectiles: splash opt-in, falloff from the source weapon, point damage, hidden at normal speed; `BP_Cal45Bullet` / `BP_RifleProjectile` at 9,000 cm/s, radius 1.

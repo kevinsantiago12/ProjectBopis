@@ -62,8 +62,8 @@ void URollComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 			}
 		}
 
-		// Roll button still held partway through: cut into a kneel, sliding on the roll's
-		// momentum (Vanquish's slide into the crouch).
+		// Roll button still held partway through: cut into a kneel (Vanquish), if the kneel
+		// is on (the character's bPostRollCrouch).
 		const FVector Input = Character->GetLastMovementInputVector();
 		const bool bPlaying = AnimInstance && AnimInstance->Montage_IsPlaying(RollMontage);
 		if (bPlaying && Position >= Length * CrouchOutAfter && Character->CanPostRollCrouch()
