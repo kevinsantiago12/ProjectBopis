@@ -721,6 +721,37 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
   false before the rack).
 - Montages without a `Loop` section (magazine reloads) are untouched.
 
+### Shell casings (2026-10-16)
+
+The user's choices: **physics casings** (Max Payne 2), the **pump shotgun
+throws its shell on the rack**, **player and enemies** eject, with variety in
+the throw.
+
+- **`AWeaponBase::Fire`**, on every shot that fires (enemies included), calls
+  `EjectCasing(IsOffhandNext())` — duals eject from the gun that fired — at
+  once, or after `CasingEjectDelay` on a timer (pump: 0.4 s).
+- **`EjectCasing`:** from the mesh's **`AmmoEject`** socket (every
+  MilitaryWeapSilver weapon has one). The throw is the gun's right
+  (`Up × barrel`, the barrel from the muzzle socket's X) + up ×
+  `CasingEjectUp` 0.6 − barrel × `CasingEjectBack` 0.2, then randomised:
+  `VRandCone` within `CasingEjectSpread` 15°, speed `CasingEjectSpeed` 250
+  ± `CasingSpeedVariation` 25%, plus the shooter's velocity; spin a random
+  axis × `CasingSpin` 1080°/s × 0.5–1. Spawned along the barrel.
+- **`AShellCasing`** (`Weapons/ShellCasing.h/.cpp`): a `UBoxComponent` body
+  sized to the mesh's bounds (min 0.3 cm; the AmmoSet meshes have no simple
+  collision), `PhysicsActor` profile ignoring Pawn / Camera / Visibility /
+  Projectile / PhysicsBody (like `AWeaponDrop`), **CCD on**, hit events on.
+  `CasingLifeSpan` 10 s. `CasingImpactSound` on up to 3 bounces (> 60 cm/s,
+  0.15 s apart) — none set: the project has no casing sounds.
+- **`UShellCasingSubsystem`** (world subsystem): at most **64** casings
+  (`MaxCasings`), oldest destroyed first.
+- **Meshes (AmmoSet, set via the bridge):** pistols and duals
+  `cal9mm_Cartridge`; both shotguns `cal12Gauge_Used`; assault rifle
+  `cal5_45_Cartrige`; battle rifle `cal__62_Cartrige`. (`_Cartridge` is the
+  case, `_Bullet` the head, `_Full` the round.)
+- **`CasingScale`** (per weapon, default 1, user-confirmed the casings look
+  right): scales the mesh and its physics body together (2026-10-16).
+
 ### Pellets and damage falloff (2026-10-03)
 
 `PelletsPerShot` (default 1) and `PelletSpreadAngle` (default 0). The shot's
@@ -3295,6 +3326,7 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-16 (3) — Shell casings: `AShellCasing` + `UShellCasingSubsystem`, per-weapon `Weapon|Casings` settings, meshes set on all seven weapons.
 - 2026-10-16 (2) — Navmesh reverting solved: `bForceRebuildOnLoad` on `Lvl_Sandbox`'s RecastNavMesh, saved via Save All (gotcha added).
 - 2026-10-16 — Camping now climbs the hit chance to `CampedHitChance` 1.0 at full heat (replaces `CampingHitBonus`; the cap only limits the un-camped chance). Attack tokens removed; `MaxHitChance` 0.5 on both enemy BPs. Crouch combat stance (`bCrouchCombatStance`, `CrouchCameraOffset` −40). Kneel on/off (`CanPostRollCrouch`). Cleanup: crosshair settings + reticle materials removed; enemy StateTree stopped before unpossess. Two new gotchas.
 - 2026-10-15 — **Shooting model reworked to Max Payne 1/2:** hold to fire for every weapon at `TimeBetweenShots` (Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed); spread replaces bloom (`Spread`, moving ×, burst wander, `FocusSpreadMultiplier`); enemy firing pattern per weapon (`FAIFiringPattern AIFiring`) with `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy; all seven weapon BPs retuned. Attack tokens only held while usable, nearer enemies take precedence — then **removed entirely** the same day (every enemy in sight can hit; `MaxHitChance` 0.5). New section *Dodge roll and the moves around it* (roll, roll Focus, evasion linger, the kneel, auto/prone reload, dual dive spread, the Shootdodge Inertialization node, reverted experiments). Turn-in-place: crouched turns, quick turn to aim (`AimTurnRate`). `DropAsClass`. Six new gotchas.

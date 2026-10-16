@@ -41,11 +41,15 @@
   next time.
 - Committed by Claude at the user's request ("I'll let you do it all"); push
   is the user's.
+- **Navmesh fixed** (`bForceRebuildOnLoad`, user-confirmed) and pushed.
+- **Shell casings (2026-10-16):** physics casings from each gun's `AmmoEject`
+  socket, player and enemies, the pump on the rack (0.4 s), randomised throw;
+  64-casing cap; meshes from AmmoSet set on every weapon. Compiled, not yet
+  playtested — check size, orientation and throw.
 
 ### ▶ RESUME HERE
 1. **Push (user):** `git push` from your own terminal.
-2. **If the editor freezes again:** Task Manager → Details → `UnrealEditor.exe`
-   → Create memory dump file, before closing it, and note what was happening.
+2. ~~Editor freeze~~ — dropped by the user (2026-10-16).
 3. **Navmesh reverting — fixed (2026-10-16), user-confirmed:** after a
    restart the navmesh is there without rebuilding. Cause: the navmesh actor's package was never dirtied by
    Build Paths, so it hadn't been saved since 10-09. Now `bForceRebuildOnLoad`

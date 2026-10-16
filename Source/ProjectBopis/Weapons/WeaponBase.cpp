@@ -14,6 +14,7 @@
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
+#include "Weapons/ShellCasing.h"
 #include "Enemies/EnemyBase.h"
 #include "EngineUtils.h"
 
@@ -237,6 +238,22 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	TimeSinceLastShot = 0.0f;
 
+	// The spent casing: out with the shot, or after a delay (a pump-action racks first).
+	if (CasingMesh)
+	{
+		const bool bOffhand = IsOffhandNext();
+		if (CasingEjectDelay > 0.0f)
+		{
+			FTimerHandle CasingTimer;
+			GetWorldTimerManager().SetTimer(CasingTimer,
+				FTimerDelegate::CreateUObject(this, &AWeaponBase::EjectCasing, bOffhand), CasingEjectDelay, false);
+		}
+		else
+		{
+			EjectCasing(bOffhand);
+		}
+	}
+
 	// Record which hand this was before flipping, so the holder can animate the right arm.
 	bLastShotWasOffhand = IsOffhandNext();
 	if (bDualWield)
@@ -387,6 +404,41 @@ void AWeaponBase::Tick(float DeltaTime)
 	TimeSinceLastShot += DeltaTime;
 }
 
+
+void AWeaponBase::EjectCasing(bool bOffhand)
+{
+	USkeletalMeshComponent* Mesh = (bOffhand && OffhandMesh) ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (!CasingMesh || !Mesh || !Mesh->DoesSocketExist(CasingSocketName))
+	{
+		return;
+	}
+
+	// Out to the gun's right, a little up and back: the barrel from the muzzle socket (the
+	// mesh's own axes aren't reliably the barrel), its right from the world's up.
+	const FVector Port = Mesh->GetSocketLocation(CasingSocketName);
+	const FVector Barrel = GetMuzzleTransform(bOffhand).GetUnitAxis(EAxis::X);
+	const FVector Right = FVector::CrossProduct(FVector::UpVector, Barrel).GetSafeNormal();
+	const FVector Up = FVector::CrossProduct(Barrel, Right).GetSafeNormal();
+	const FVector Throw = (Right + Up * CasingEjectUp - Barrel * CasingEjectBack).GetSafeNormal();
+
+	// No two alike: a little off in direction, speed and spin.
+	const FVector Direction = FMath::VRandCone(Throw, FMath::DegreesToRadians(CasingEjectSpread));
+	const float Speed = CasingEjectSpeed * FMath::FRandRange(1.0f - CasingSpeedVariation, 1.0f + CasingSpeedVariation);
+	FVector Velocity = Direction * Speed;
+	if (const AActor* Holder = GetOwner())
+	{
+		Velocity += Holder->GetVelocity();
+	}
+	const FVector Spin = FMath::VRand() * CasingSpin * FMath::FRandRange(0.5f, 1.0f);
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AShellCasing* Casing = GetWorld()->SpawnActor<AShellCasing>(AShellCasing::StaticClass(), Port, Barrel.Rotation(), Params))
+	{
+		Casing->Launch(CasingMesh, CasingScale, CasingImpactSound, Velocity, Spin, CasingLifeSpan);
+	}
+}
 
 USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
 {

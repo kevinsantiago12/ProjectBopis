@@ -13,6 +13,7 @@ class UAnimSequence;
 class AProjectileBase;
 class UWeaponHolderComponent;
 class UImpactEffectsData;
+class UStaticMesh;
 
 /** How enemies fire a weapon: a burst of shots at a set spacing, then a pause. */
 USTRUCT(BlueprintType)
@@ -372,6 +373,52 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Impact")
 	TObjectPtr<UImpactEffectsData> ImpactEffects;
 
+	/** The spent casing this weapon throws from CasingSocketName (AmmoSet: the calibre's
+	    _Cartridge, cal12Gauge_Used for shotguns). Empty: no casings. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	TObjectPtr<UStaticMesh> CasingMesh;
+
+	/** Size of the thrown casing: 1 is the mesh as authored. Its physics body scales with it. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.01"))
+	float CasingScale = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	FName CasingSocketName = TEXT("AmmoEject");
+
+	/** Seconds after the shot the casing comes out. 0: with the shot. A pump-action: as it racks. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.0"))
+	float CasingEjectDelay = 0.0f;
+
+	/** Throw speed, cm/s, out to the gun's right (plus the shooter's own velocity). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.0"))
+	float CasingEjectSpeed = 250.0f;
+
+	/** How much of the throw goes up, and back over the shoulder, against the sideways part. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	float CasingEjectUp = 0.6f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	float CasingEjectBack = 0.2f;
+
+	/** Variety: the throw's direction within this cone (degrees), its speed ± this fraction. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.0"))
+	float CasingEjectSpread = 15.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CasingSpeedVariation = 0.25f;
+
+	/** Tumble: up to this many degrees per second, about a random axis. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.0"))
+	float CasingSpin = 1080.0f;
+
+	/** Seconds a casing stays in the world. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings", meta = (ClampMin = "0.1"))
+	float CasingLifeSpan = 10.0f;
+
+	/** Played on a casing's first few bounces. Empty: silent. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	TObjectPtr<USoundBase> CasingImpactSound;
+
 	/** The cone a shot goes out in, in degrees. Max Payne's guns are accurate: keep it small. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "0.0"))
 	float Spread = 0.5f;
@@ -453,6 +500,9 @@ protected:
 	/** Whether firing on an empty magazine should start a reload by itself. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	bool bAutoReloadWhenEmpty = false;
+
+	/** Throws one spent casing from the ejection port of the main or off-hand gun. */
+	void EjectCasing(bool bOffhand);
 
 	void FinishReload();
 
