@@ -3263,6 +3263,20 @@ ones most likely to bite:
 - **`ObjectTools.set_properties` takes `values` as a JSON string**, and struct
   fields use the lower-camel names `get_properties` returns (`burstShotsMin`,
   `slotName`). An unreadable/unsettable property aborts the whole script.
+- **The World Partition navmesh never saved — it reverted on every restart**
+  (found 2026-10-16). `Lvl_Sandbox`'s `RecastNavMesh-Default` (Dynamic, not
+  world-partitioned, not spatially loaded; external package
+  `__ExternalActors__/ThirdPerson/Lvl_Sandbox/1/AE/8NXSYG2EA3YFUOAUSHUREF`)
+  was last written 10-09. *Build Paths* rebuilt it in memory without dirtying
+  that package, so *Save All* only ever wrote the bounds volume; every load
+  brought back the 10-09 tiles, and neither the editor's auto-update (dirty
+  areas only) nor Dynamic generation (PIE copies the editor navmesh) rebuilt
+  the rest. **Fix:** `bForceRebuildOnLoad` on that actor — a full rebuild at
+  every load, editor and game — then Save All (now dirty, it saved).
+  `RuntimeGeneration=Dynamic` stays in `DefaultEngine.ini`. The bridge's
+  `save_actor` / `save_assets` can't save external-actor packages ("Asset does
+  not exist"); use the editor's Save All. The `Unable to find RecastNavMesh
+  instance … UCrowdManager` warning only appears while a PIE world tears down.
 - **A Blueprint that only lost a removed property's value isn't dirty**
   (2026-10-16). Compiling and `save_assets` skip it, so the package keeps its
   old imports (`get_referencers` still lists it). Make any property write to
@@ -3281,6 +3295,7 @@ ones most likely to bite:
 
 ## Changelog
 
+- 2026-10-16 (2) — Navmesh reverting solved: `bForceRebuildOnLoad` on `Lvl_Sandbox`'s RecastNavMesh, saved via Save All (gotcha added).
 - 2026-10-16 — Camping now climbs the hit chance to `CampedHitChance` 1.0 at full heat (replaces `CampingHitBonus`; the cap only limits the un-camped chance). Attack tokens removed; `MaxHitChance` 0.5 on both enemy BPs. Crouch combat stance (`bCrouchCombatStance`, `CrouchCameraOffset` −40). Kneel on/off (`CanPostRollCrouch`). Cleanup: crosshair settings + reticle materials removed; enemy StateTree stopped before unpossess. Two new gotchas.
 - 2026-10-15 — **Shooting model reworked to Max Payne 1/2:** hold to fire for every weapon at `TimeBetweenShots` (Semi/Auto, `IntendedTimeBetweenShots` and the cadence penalty removed); spread replaces bloom (`Spread`, moving ×, burst wander, `FocusSpreadMultiplier`); enemy firing pattern per weapon (`FAIFiringPattern AIFiring`) with `BurstShotsMultiplier` / `BurstPauseMultiplier` on the enemy; all seven weapon BPs retuned. Attack tokens only held while usable, nearer enemies take precedence — then **removed entirely** the same day (every enemy in sight can hit; `MaxHitChance` 0.5). New section *Dodge roll and the moves around it* (roll, roll Focus, evasion linger, the kneel, auto/prone reload, dual dive spread, the Shootdodge Inertialization node, reverted experiments). Turn-in-place: crouched turns, quick turn to aim (`AimTurnRate`). `DropAsClass`. Six new gotchas.
 

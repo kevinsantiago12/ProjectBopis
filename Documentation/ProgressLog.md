@@ -46,10 +46,13 @@
 1. **Push (user):** `git push` from your own terminal.
 2. **If the editor freezes again:** Task Manager → Details → `UnrealEditor.exe`
    → Create memory dump file, before closing it, and note what was happening.
-3. **Parked:** navmesh reverting (`RuntimeGeneration=Dynamic` is still in the
-   ini); Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
+3. **Navmesh reverting — fixed (2026-10-16), user-confirmed:** after a
+   restart the navmesh is there without rebuilding. Cause: the navmesh actor's package was never dirtied by
+   Build Paths, so it hadn't been saved since 10-09. Now `bForceRebuildOnLoad`
+   (saved by the user's Save All). Committed.
+4. **Parked:** Kamz bone scales (user); the long-gun wind-up's empty-handed arms; the
    enemy roster (design); Focus sounds and 10-10's other carry-overs.
-4. **Next feature:** the user's call — harder enemy variants (burst/pause
+5. **Next feature:** the user's call — harder enemy variants (burst/pause
    multipliers and hit-chance values per enemy are ready), more moves, or
    Phase 6's slice.
 
