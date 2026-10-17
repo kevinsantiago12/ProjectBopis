@@ -46,9 +46,9 @@ void UProjectBopisAnimInstance::NativeInitializeAnimation()
 		LastActorYaw = Pawn->GetActorRotation().Yaw;
 	}
 
-	// The dive's Start blend space reads its start position once, when it first initializes —
-	// before the shootdodge component's BeginPlay, and before any per-frame copy. Without this
-	// it reads 0, and the first dive plays the clip's standing wind-up before the jump.
+	// The dive's blend space players (the Land state's) read their start position once, when they
+	// first initialize — before the shootdodge component's BeginPlay, and before any per-frame
+	// copy. Seed it so that first read isn't 0. (The Start state runs on ShootdodgeStartTime.)
 	if (const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(TryGetPawnOwner()))
 	{
 		if (const UShootdodgeComponent* Shootdodge = Player->GetShootdodge())
@@ -102,6 +102,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateProneDirection(DeltaSeconds);
 	UpdateProneFeet(*Character, DeltaSeconds);
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
+	UpdateHeadLook(*Character, DeltaSeconds);
 }
 
 namespace
@@ -453,9 +454,22 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAim(const ABopisCharacterBase& C
 
 	if (Shootdodge)
 	{
-		ShootdodgeDirection = Shootdodge->GetDirectionAngle();
+		// Most dives follow the live direction outright. After a jog's forward jump it eases round
+		// from the jump to the live one, so the push-off turns into the flight instead of popping.
+		const float TargetDirection = Shootdodge->GetAnimDirectionAngle();
+		if (!bShootdodging || !Shootdodge->EasesAnimDirection() || Shootdodge->IsHoldingForwardJump())
+		{
+			ShootdodgeDirection = TargetDirection;
+		}
+		else
+		{
+			const float Step = ShootdodgeDirectionCatchUpRate * DeltaSeconds;
+			ShootdodgeDirection = FRotator::NormalizeAxis(ShootdodgeDirection
+				+ FMath::Clamp(FMath::FindDeltaAngleDegrees(ShootdodgeDirection, TargetDirection), -Step, Step));
+		}
 		ShootdodgePlayRate = Shootdodge->GetPhasePlayRate();
 		ShootdodgeStartPosition = Shootdodge->GetPhaseStartPosition();
+		ShootdodgeStartTime = Shootdodge->GetStartNormalizedTime();
 	}
 
 	const FRotator Control = Character.GetControlRotation();
@@ -692,4 +706,32 @@ void UProjectBopisAnimInstance::UpdateTurnInPlace(float ActorYaw, float DeltaSec
 			Montage_Play(TurnMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, false);
 		}
 	}
+}
+
+void UProjectBopisAnimInstance::UpdateHeadLook(const ABopisCharacterBase& Character, float DeltaSeconds)
+{
+	FQuat Target = FQuat::Identity;
+	FVector LookAt;
+	const USkeletalMeshComponent* Mesh = Character.GetMesh();
+	if (Mesh && !bShootdodging && Character.GetHeadLookTarget(LookAt))
+	{
+		// From the head, in the mesh's own space (it faces +Y): how far round, and how far up or down.
+		const FVector ToTarget = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
+			(LookAt - Mesh->GetSocketLocation(TEXT("head"))).GetSafeNormal());
+		const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(-ToTarget.X, ToTarget.Y));
+
+		// Behind the shoulder: let go rather than strain. Otherwise turn toward it, held at the limits.
+		if (FMath::Abs(Yaw) <= HeadLookGiveUpAngle)
+		{
+			const float ClampedYaw = FMath::DegreesToRadians(FMath::Clamp(Yaw, -HeadLookMaxYaw, HeadLookMaxYaw));
+			const float MaxPitch = FMath::DegreesToRadians(HeadLookMaxPitch);
+			const float Pitch = FMath::Clamp(FMath::Asin(FMath::Clamp(ToTarget.Z, -1.0f, 1.0f)), -MaxPitch, MaxPitch);
+			const FVector Flat(-FMath::Sin(ClampedYaw), FMath::Cos(ClampedYaw), 0.0f);
+			Target = FQuat::FindBetweenNormals(FVector::YAxisVector, Flat * FMath::Cos(Pitch) + FVector::UpVector * FMath::Sin(Pitch));
+		}
+	}
+
+	// Eased in and out, so the head turns rather than snaps when a target comes or goes.
+	HeadLookTotal = FQuat::Slerp(HeadLookTotal, Target, FMath::Clamp(DeltaSeconds * HeadLookSpeed, 0.0f, 1.0f)).GetNormalized();
+	HeadLookRotation = FQuat::Slerp(FQuat::Identity, HeadLookTotal, 0.5f).Rotator();
 }

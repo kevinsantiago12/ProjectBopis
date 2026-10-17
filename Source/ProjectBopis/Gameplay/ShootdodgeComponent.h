@@ -134,8 +134,23 @@ public:
 	    what the Start/Loop/Land blend spaces are keyed on. */
 	float GetDirectionAngle() const;
 
-	/** The Forward clip's push-off point (normalised): the Start blend space's start position
-	    before any dive. Available from construction, so the AnimBP can read it at its own start. */
+	/** A jog's forward jump is being held: the push-off, before the turn to the aim. */
+	bool IsHoldingForwardJump() const
+	{
+		return bForwardJumpStart && Phase == EShootdodgePhase::Start && PhaseTime < ForwardJumpHoldTime;
+	}
+
+	/** This dive began with a jog's forward jump: its blend space direction eases from the
+	    jump into the real one, rather than following it outright as other dives do. */
+	bool EasesAnimDirection() const { return bForwardJumpStart; }
+
+	/** The direction for the dive's blend spaces: forward while a jog's jump is held, otherwise
+	    the live one. */
+	float GetAnimDirectionAngle() const { return IsHoldingForwardJump() ? 0.0f : GetDirectionAngle(); }
+
+	/** The Forward Start clip's push-off point (normalised): the start position the AnimBP's
+	    blend space players see before any dive (they read it only on first initializing).
+	    Available from construction, so the AnimBP can read it at its own start. */
 	float GetRestStartPosition() const;
 
 	/** Play rate for the current phase's blend space. */
@@ -143,6 +158,21 @@ public:
 
 	/** Where the current phase's blend space starts, normalised 0..1 — the clip offset. */
 	float GetPhaseStartPosition() const { return PhaseStartPosition; }
+
+	/** Where the Start clip is right now, 0..1 of its length: from this dive's start point
+	    (PhaseStartPosition) to the end, over the Start phase; past it, held at the end. For
+	    the AnimBP's Start blend space evaluator — fed every frame, so nothing hangs on when
+	    the node first initializes (a player reads its start position only then, which left
+	    each dive starting from the one before's). */
+	float GetStartNormalizedTime() const
+	{
+		if (Phase != EShootdodgePhase::Start)
+		{
+			return 1.0f;
+		}
+		const float Progress = PhaseDuration > 0.0f ? FMath::Clamp(PhaseTime / PhaseDuration, 0.0f, 1.0f) : 1.0f;
+		return FMath::Lerp(PhaseStartPosition, 1.0f, Progress);
+	}
 
 protected:
 
@@ -200,6 +230,24 @@ protected:
 	/** Default seconds into each Start clip to begin — the push-off frame. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float StartClipOffset = 0.4f;
+
+	/** Back dives (Backward and its diagonals) begin their Start clip this many seconds in
+	    instead of StartOffset / StartClipOffset, early enough to play the crouch and
+	    push-off. Below 0: off (the usual offset). */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge")
+	float BackStartOffset = 0.2f;
+
+	/** From a jog, the Start is the forward jump when the body already faces within this many
+	    degrees of the dive (it's running that way); facing further off (a reversal), the dive's
+	    own direction plays instead, so he never jumps forward while moving backward. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float JogForwardStartMaxAngle = 90.0f;
+
+	/** A jog's forward jump holds for this many seconds from take-off (the push-off) — the
+	    body keeps its facing and the blend spaces show the jump — then the body turns to the
+	    aim and the pose eases into the dive's real direction. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float ForwardJumpHoldTime = 0.1f;
 
 	/** Default seconds into each Land clip to begin — skips its airborne lead-in. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge", meta = (ClampMin = "0.0"))
@@ -283,14 +331,35 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs", meta = (ClampMin = "0.0", EditCondition = "bLandingLegPhysics"))
 	float LandingLegBlendOutTime = 0.25f;
 
-	/** Through the flight (the Loop — the push-off plays as authored), the legs are on physics
-	    with a light hold: they follow the dive but lag and swing with the body's momentum. */
+	/** Through the whole flight (take-off to landing), the legs are on physics with a light
+	    hold: they follow the dive but lag and swing with the body's momentum. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs")
 	bool bFlightLegPhysics = true;
 
 	/** Flight leg motor strength. Lower: looser, more swing; higher: closer to the clip. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (ClampMin = "0.0", EditCondition = "bFlightLegPhysics"))
 	float FlightLegHoldStrength = 800.0f;
+
+	/** Leg motor strength at take-off, easing down to FlightLegHoldStrength over the push-off
+	    (the Start phase). Firm, so legs caught mid-stride are carried into the dive pose
+	    before they're let loose, rather than flopping from wherever the walk had them. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (ClampMin = "0.0", EditCondition = "bFlightLegPhysics"))
+	float FlightLegStartHoldStrength = 6000.0f;
+
+	/** One-handed pistol: the free left arm goes on physics with the legs — held firm at
+	    take-off, easing loose over the push-off to trail with the momentum. Needs
+	    bFlightLegPhysics. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (EditCondition = "bFlightLegPhysics"))
+	bool bFlightLeftArmPhysics = true;
+
+	/** Left arm motor strength at take-off, easing down to FlightArmHoldStrength over the Start phase. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (ClampMin = "0.0", EditCondition = "bFlightLeftArmPhysics"))
+	float FlightArmStartHoldStrength = 3000.0f;
+
+	/** Left arm motor strength through the flight. Low: it trails and swings; the clip's
+	    two-handed clasp is what it's held toward, so too high pulls it back onto the gun. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (ClampMin = "0.0", EditCondition = "bFlightLeftArmPhysics"))
+	float FlightArmHoldStrength = 150.0f;
 
 	/** Slow motion for the flight: on at take-off, off on landing. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus")
@@ -310,6 +379,20 @@ protected:
 	FName SlotName = TEXT("DeathSlot");
 
 private:
+
+	/** Whether the left arm goes on physics with the legs: a one-handed pistol, with it enabled. */
+	bool FreesLeftArm() const;
+
+	/** Backward and its two diagonals. */
+	static bool IsBackDirection(EShootdodgeDirection Direction);
+
+	/** The dive was pressed from a jog (gun lowered): its Start is the forward jump. */
+	bool bFromJog = false;
+
+
+	/** This dive's Start is the jog's forward jump: the body holds its facing through it and
+	    turns to the aim only once the flight proper begins. */
+	bool bForwardJumpStart = false;
 
 	/** The eight-way direction the movement input points, relative to the camera. */
 	EShootdodgeDirection PickDirection() const;

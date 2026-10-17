@@ -12,6 +12,71 @@
 
 ---
 
+## 2026-10-17
+**Summary:**
+- **Camping:** the clock waits only while evading (a dive or roll, plus its
+  linger), then builds as normal, knelt or not. The user's timing is 1 s
+  grace and 2 s climb.
+- **Dive Focus** drains 5 per real second through the flight. Running dry
+  mid-dive holds the slow motion to landing (`SetHoldOnEmpty`).
+- **Flight limbs on physics:** legs on from take-off, firm (6000) easing to
+  loose (800) over the Start, so walk-cycle leg splits no longer flop. With a
+  one-handed pistol, the left arm joins them (3000 → 150). The user edited
+  the back-dive Start clip to open the legs (the motors follow it).
+  User: "looking good now".
+- **Free arm on physics:** with the one-handed pistol raised on foot, the
+  left arm lags, sways and settles.
+- **Roll pickups:** rolling over a gun swaps it in without breaking the roll
+  (no equip montage mid-roll).
+- **Camera flicker:** the camera height is re-applied the moment the capsule
+  resizes (crouch, dive shrink), instead of a frame late.
+- **Dive Start fixes:**
+  - the Start state now runs on a Blend Space Evaluator driven from C++, so
+    every dive starts at its own offset, the first included (the player had
+    used the previous dive's start point);
+  - `BackStartOffset` (user: 0) plays back dives' push-off;
+  - jog dives play the forward jump for 0.1 s, then turn to the aim and ease
+    into the real direction (`ShootdodgeDirectionCatchUpRate`, on the
+    AnimBP's class defaults).
+- **Enemies search with the gun down:** lowered after 4 s out of sight (not
+  holders), jog poses, head turned to the last known spot (look nodes in
+  `ABP_Player`), a reaction beat before firing again.
+- **Tried and dropped:**
+  - hips on physics;
+  - limb physics starting at the push-off frame (it twitched);
+  - turn-to-run, its jog delay, and the strafe back-dive wind-up;
+  - the inertialized locomotion→dive blend;
+  - the two-evaluator crossfade.
+- **Clean-up:** `SpendMeter` and a spare Inertialization node removed. The
+  `StrafeBackStartOffset` redirect retired after re-saving
+  `BP_PlayerCharacter`.
+
+### ▶ RESUME HERE
+1. **Commit and push (user).** Uncommitted:
+   - Source: `BopisCharacterBase.h/.cpp`, `ProjectBopisCharacter.h/.cpp`,
+     `Enemies/EnemyBase.h/.cpp`, `ProjectBopisAnimInstance.h/.cpp`,
+     `Gameplay/ShootdodgeComponent.h/.cpp`, `Gameplay/FocusComponent.h`;
+   - Content: `ABP_Player`, `BP_PlayerCharacter`, `anim_Dodge_Start_Bwd_P`
+     (the user's leg edit), and `BP_Kamz` (not touched by Claude; check it);
+   - docs: spec, progress log, plan.
+2. **Playtest (user):**
+   - the enemy lowered search and head look;
+   - the free arm on foot;
+   - roll pickups;
+   - the camera going from a crouch into a dive;
+   - the dive Focus drain;
+   - camping after the linger;
+   - jog dives (tune `ForwardJumpHoldTime` and `ShootdodgeDirectionCatchUpRate`).
+3. **Optional follow-ups:**
+   - the Land state could get the same evaluator treatment as the Start;
+     then the start-position seed (`GetRestStartPosition`) can go;
+   - hearing gunfire while lowered could raise the gun.
+4. **Parked** (unchanged): casing bounce sound; Kamz bone scales; the long-gun
+   wind-up arms; the enemy roster; Focus sounds.
+5. **Next feature:** the user's call (see 10-16's item 4).
+
+---
+
 ## 2026-10-15 (2) / 16
 **Summary:**
 - **Kneel switch:** `bPostRollCrouch` off now also stops the roll's cut-in
@@ -77,7 +142,9 @@
   with the fire rate (up to 4×) and the procedural kick scales with it
   (`FullKickInterval` 0.25 s). User-confirmed: "works".
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-17.)*
+
+### (old) RESUME HERE
 1. **Commit and push (user).** Uncommitted since "Add Hit Indicator":
    - Source: `Enemies/EnemyBase.h/.cpp`, `Enemies/GunmanStateTreeNodes.cpp`,
      new `Gameplay/EncounterTrigger.h/.cpp` (room encounters);

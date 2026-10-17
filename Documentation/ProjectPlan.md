@@ -444,6 +444,15 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-16, compiled.)* Holding enemies (`bHoldsPosition`, `HoldRadius`; never search or roam), reaction beat on alert, `AEncounterTrigger`.
   - [x] *(Done 2026-10-16.)* Crouched holding (`bCrouchWhileHolding`); test room in `Lvl_Linear` playtested by the user. No cover behaviour (user: no whack-a-mole).
   - Tried and reverted: enemies aiming the gun at each shot's point (planned shots, aim flick, AI pitch override).
+  - [x] *(Done 2026-10-17, compiled; not yet playtested.)* Searching with the gun down: lowered after 4 s out of sight (not holders), head on the last known spot (`neck_01`/`head` look nodes in `ABP_Player`), a reaction beat on raising again.
+- [~] **11. Movement and dive feel** (user, 2026-10-17). See the spec's shootdodge *Refinements (2026-10-17)*, *One-handed pistol* and *Dodge roll*.
+  - [x] *(Done 2026-10-17, compiled.)* Camping waits only while evading (the kneel no longer stalls it); dive Focus drains as it goes and holds to landing.
+  - [x] *(Done 2026-10-17, user: "looking good now".)* Flight limbs on physics: legs firm → loose over the Start, the one-handed pistol's left arm too; the back-dive Start clip edited by the user to open the legs.
+  - [x] *(Done 2026-10-17, compiled.)* Free arm on physics with the one-handed pistol raised, on foot.
+  - [x] *(Done 2026-10-17, compiled.)* Weapon pickup (or slot switch) mid-roll keeps the roll.
+  - [x] *(Done 2026-10-17, compiled.)* Camera height re-applied on capsule resizes (crouch → dive flicker).
+  - [x] *(Done 2026-10-17, compiled.)* The Start state on an evaluator driven from C++ (every dive starts at its own offset, the first included); `BackStartOffset`; jog dives jump forward, then turn and ease into the real direction.
+  - Dropped: hips on physics; late limb physics at the push-off frame; turn-to-run and the strafe back-dive wind-up; the inertialized locomotion→dive blend; the two-evaluator crossfade.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -528,6 +537,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-17 — Phase 5 item 10: searching with the gun down. Item 11 (movement and dive feel) added and ticked.
 - 2026-10-16 (2) — Phase 5 items 9 (feedback and fixes) and 10 (room encounters) added; Phase 6 noted as a linear slice.
 - 2026-10-16 — Camping to a guaranteed hit, token removal, crouch combat stance, kneel switch; leftovers cleaned up (crosshair code and materials, StateTree stop on death, stale roll comment).
 - 2026-10-15 — Phase 5: attack-token fix; health bar; item 7 (more player moves: roll, move-out, auto/prone reload, evasion linger, roll Focus, kneel, aim turn, crouched turns, dual dive spread) and item 8 (Max Payne shooting model, increments 1–4) ticked. Phase 2 marked superseded.

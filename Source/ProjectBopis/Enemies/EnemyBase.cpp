@@ -553,6 +553,22 @@ void AEnemyBase::UpdateAim()
 		return;
 	}
 
+	// Out of sight long enough, and searching rather than holding a spot: the gun comes down.
+	// The lowered stance turns the body to where it's going; the head does the looking.
+	if (LowerGunAfter > 0.0f && !bHoldsPosition && TimeSinceSeenPlayer >= LowerGunAfter)
+	{
+		bGunLowered = true;
+		SetAiming(false);
+		AI->ClearFocus(EAIFocusPriority::Gameplay);
+		return;
+	}
+	if (bGunLowered)
+	{
+		// Coming back up: a beat to react before it fires, as when first alerted.
+		bGunLowered = false;
+		ReactionTimeLeft = FMath::FRandRange(ReactionTimeMin, FMath::Max(ReactionTimeMin, ReactionTimeMax));
+	}
+
 	SetAiming(true);
 	if (TimeSinceSeenPlayer <= TrackThroughCoverTime)
 	{
@@ -575,6 +591,21 @@ void AEnemyBase::UpdateAim()
 		// Standing on the spot itself (searching): look where it's going instead.
 		AI->ClearFocus(EAIFocusPriority::Gameplay);
 	}
+}
+
+bool AEnemyBase::GetHeadLookTarget(FVector& OutLocation) const
+{
+	// Searching with the gun down: eyes on where the player was last seen, until it gets there.
+	// Roaming with nothing to go on, it looks where it's going.
+	if (!bAlerted || IsDead() || IsWeaponRaised() || bLeadGone
+		|| FVector::Dist2D(GetActorLocation(), LastKnownPlayerLocation) < HeadLookMinDistance)
+	{
+		return false;
+	}
+
+	// The last known spot is their capsule centre; up to head height.
+	OutLocation = LastKnownPlayerLocation + FVector(0.0f, 0.0f, 60.0f);
+	return true;
 }
 
 void AEnemyBase::UpdateCrouch()

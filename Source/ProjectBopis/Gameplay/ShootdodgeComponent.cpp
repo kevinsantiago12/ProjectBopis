@@ -28,8 +28,9 @@ void UShootdodgeComponent::BeginPlay()
 	// movement update) races the mesh's animation work on another thread, and crashes. The
 	// wall check's trimmed velocity simply takes effect a frame later.
 
-	// The Start blend space captures its start position when it first initializes, so it must
-	// be the push-off point from the outset, not 0 (see GetRestStartPosition).
+	// A blend space player in the dive (the Land state's) captures its start position when it
+	// first initializes, so start from a sensible point rather than 0 (see GetRestStartPosition).
+	// The Start state itself is driven by GetStartNormalizedTime and doesn't need this.
 	PhaseStartPosition = GetRestStartPosition();
 }
 
@@ -73,6 +74,9 @@ bool UShootdodgeComponent::TryStart()
 		return false;
 	}
 
+	// From a jog the body faces the run: the push-off is the forward jump, then the spin.
+	bFromJog = !Character->IsWeaponRaised();
+
 	// Rotation belongs to the dive from the press: the body turns toward the camera over the
 	// next moments (TickComponent), through the wind-up and the flight.
 	Character->SetAnimationDrivenRotation(true);
@@ -84,6 +88,13 @@ bool UShootdodgeComponent::TryStart()
 		Launch(Direction);
 	}
 	return true;
+}
+
+bool UShootdodgeComponent::IsBackDirection(EShootdodgeDirection Direction)
+{
+	return Direction == EShootdodgeDirection::Backward
+		|| Direction == EShootdodgeDirection::BackwardLeft
+		|| Direction == EShootdodgeDirection::BackwardRight;
 }
 
 UAnimSequenceBase* UShootdodgeComponent::PickWindUp(EShootdodgeDirection Direction) const
@@ -246,7 +257,9 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 
 	// Winding up, flying, landing and lying prone, the body turns to face the aim; the blend
 	// spaces show the dive (and the prone pose) for the flight's direction relative to it.
-	if (Phase == EShootdodgePhase::WindUp || IsBodyDown())
+	// Except through a jog's forward jump, which plays out facing the jump; the turn comes after.
+	const bool bHoldFacing = IsHoldingForwardJump();
+	if ((Phase == EShootdodgePhase::WindUp || IsBodyDown()) && !bHoldFacing)
 	{
 		const FRotator Aim(0.0f, Character->GetControlRotation().Yaw, 0.0f);
 		Character->SetActorRotation(FaceAimSpeed > 0.0f
@@ -264,18 +277,20 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 		break;
 
 	case EShootdodgePhase::Start:
+		// Easing loose: from the take-off's firm hold to the flight's flop by the end of the
+		// push-off.
+		if (bFlightLegPhysics)
+		{
+			const float Alpha = PhaseDuration > 0.0f ? FMath::Clamp(PhaseTime / PhaseDuration, 0.0f, 1.0f) : 1.0f;
+			Character->SetLegHoldStrength(FMath::Lerp(FlightLegStartHoldStrength, FlightLegHoldStrength, Alpha),
+				FMath::Lerp(FlightArmStartHoldStrength, FlightArmHoldStrength, Alpha));
+		}
+
 		if (PhaseTime >= PhaseDuration)
 		{
 			Phase = EShootdodgePhase::Loop;
 			PhaseTime = 0.0f;
 			PhaseStartPosition = 0.0f;
-
-			// Into the flight proper: loose legs, trailing and swinging with the momentum (the
-			// push-off plays as authored; the landing firms them up).
-			if (bFlightLegPhysics)
-			{
-				Character->SimulateLegs(FlightLegHoldStrength);
-			}
 		}
 		break;
 
@@ -298,6 +313,15 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	}
 }
 
+bool UShootdodgeComponent::FreesLeftArm() const
+{
+	// Only the one-handed pistol leaves a hand free; the rest hold their gun with both hands
+	// (or a gun in each).
+	const UWeaponHolderComponent* Holder = Character->GetWeaponHolder();
+	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	return bFlightLeftArmPhysics && Weapon && Weapon->GetAnimType() == EWeaponAnimType::PistolOneHanded;
+}
+
 void UShootdodgeComponent::TakeOff()
 {
 	// Lighter gravity and no air braking for the flight.
@@ -315,14 +339,29 @@ void UShootdodgeComponent::TakeOff()
 		+ FVector::UpVector * DiveLift, true, true);
 
 	// The Start phase lasts as long as the take-off direction's clip has left to play.
-	const FShootdodgeAnims& Anims = Animations.FindChecked(OctantOf(GetDirectionAngle()));
-	const float Offset = Anims.StartOffset >= 0.0f ? Anims.StartOffset : StartClipOffset;
+	// From a jog facing the dive, the Start is the forward jump (a push-off along the run, then
+	// the turn to the aim); otherwise the clip for wherever the dive goes.
+	const bool bForwardJump = bFromJog && FMath::Abs(GetDirectionAngle()) <= JogForwardStartMaxAngle;
+	bForwardJumpStart = bForwardJump;
+	const EShootdodgeDirection Direction = bForwardJump ? EShootdodgeDirection::Forward : OctantOf(GetDirectionAngle());
+	const FShootdodgeAnims& Anims = Animations.FindChecked(Direction);
+	// Back dives start early enough to show their push-off.
+	const float Offset = IsBackDirection(Direction) && BackStartOffset >= 0.0f
+		? BackStartOffset
+		: (Anims.StartOffset >= 0.0f ? Anims.StartOffset : StartClipOffset);
 	const float Length = Anims.Start ? Anims.Start->GetPlayLength() : 0.0f;
 
 	Phase = EShootdodgePhase::Start;
 	PhaseTime = 0.0f;
 	PhaseDuration = PhaseLength(Anims.Start, Offset, StartPlayRate);
 	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
+
+	// The legs go onto physics from the push-off, held firm at first and eased loose by the
+	// flight (the Start phase does the easing; the landing firms them up again).
+	if (bFlightLegPhysics)
+	{
+		Character->SimulateLegs(FlightLegStartHoldStrength, FreesLeftArm(), FlightArmStartHoldStrength);
+	}
 
 	if (UFocusComponent* Focus = Character->GetFocus())
 	{
@@ -428,6 +467,8 @@ void UShootdodgeComponent::ShrinkCapsule()
 	Capsule->SetCapsuleHalfHeight(ShortHalfHeight);
 	Character->AddActorWorldOffset(FVector(0.0, 0.0, -Drop * Capsule->GetShapeScale()));
 	Character->GetMesh()->AddRelativeLocation(FVector(0.0, 0.0, Drop));
+	// Resized after the character's tick: the camera follows this frame, not the next.
+	Character->ApplyCameraHeight();
 	bCapsuleShrunk = true;
 }
 
@@ -457,6 +498,8 @@ bool UShootdodgeComponent::RestoreCapsule()
 	Capsule->SetCapsuleHalfHeight(SavedCapsuleHalfHeight);
 	Character->AddActorWorldOffset(FVector(0.0, 0.0, Drop * Capsule->GetShapeScale()));
 	Character->GetMesh()->AddRelativeLocation(FVector(0.0, 0.0, -Drop));
+	// Resized after the character's tick: the camera follows this frame, not the next.
+	Character->ApplyCameraHeight();
 	bCapsuleShrunk = false;
 	return true;
 }
@@ -499,7 +542,8 @@ void UShootdodgeComponent::NotifyLanded()
 	// Without that, the flight's loose legs go back to the animation.
 	if (bLandingLegPhysics)
 	{
-		Character->SimulateLegs(LandingLegHoldStrength);
+		// The free arm, if any, keeps clear of the floor the same way.
+		Character->SimulateLegs(LandingLegHoldStrength, FreesLeftArm(), LandingLegHoldStrength);
 	}
 	else if (bFlightLegPhysics)
 	{
@@ -525,7 +569,7 @@ void UShootdodgeComponent::FallOffEdge()
 	// Falling again: the flight's loose legs, or (without them) back to the animation.
 	if (bFlightLegPhysics)
 	{
-		Character->SimulateLegs(FlightLegHoldStrength);
+		Character->SimulateLegs(FlightLegHoldStrength, FreesLeftArm(), FlightArmHoldStrength);
 	}
 	else
 	{

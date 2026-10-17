@@ -420,6 +420,11 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	CurrentShootdodgeCameraHeight = FMath::FInterpTo(CurrentShootdodgeCameraHeight,
 		bDodgeCamera ? ShootdodgeCameraHeight : 0.0f, DeltaSeconds, CameraTransitionSpeed);
 
+	ApplyCameraHeight();
+}
+
+void AProjectBopisCharacter::ApplyCameraHeight()
+{
 	// Instant part: crouching shrinks the capsule and lowers its centre by the lost
 	// half-height in a single frame, and the boom rides on the capsule — so lift it by
 	// the same amount, also in a single frame, or the camera dips and floats back.
@@ -430,6 +435,19 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	FVector BoomLocation = CameraBoom->GetRelativeLocation();
 	BoomLocation.Z = BoomBaseHeight + CapsuleDrop + CurrentCrouchCameraOffset + CurrentShootdodgeCameraHeight;
 	CameraBoom->SetRelativeLocation(BoomLocation);
+}
+
+void AProjectBopisCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	// The movement component resizes the capsule in its own tick, after ours: follow it now.
+	ApplyCameraHeight();
+}
+
+void AProjectBopisCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	ApplyCameraHeight();
 }
 
 void AProjectBopisCharacter::ApplyMovementStance(EMovementStance NewStance)
@@ -933,4 +951,18 @@ void AProjectBopisCharacter::DoAimStart()
 void AProjectBopisCharacter::DoAimEnd()
 {
 	bIsAiming = false;
+}
+
+bool AProjectBopisCharacter::WantsFreeArmPhysics() const
+{
+	// Diving, the shootdodge has its own loose arm; rolling, the arm tumbles with the clip.
+	return Super::WantsFreeArmPhysics()
+		&& !(Shootdodge && Shootdodge->IsDodging())
+		&& !(Roll && Roll->IsRolling());
+}
+
+bool AProjectBopisCharacter::ShouldSkipEquipAnimation() const
+{
+	// Rolling over a gun picks it up without breaking the roll.
+	return Roll && Roll->IsRolling();
 }

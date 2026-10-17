@@ -337,6 +337,9 @@ protected:
 
 	virtual void Landed(const FHitResult& Hit) override;
 
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 		AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -442,6 +445,15 @@ public:
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
 	URollComponent* GetRoll() const { return Roll; }
+
+	virtual bool WantsFreeArmPhysics() const override;
+
+	virtual bool ShouldSkipEquipAnimation() const override;
+
+	/** Re-derives the camera boom's height from the capsule's current size, right away. Call
+	    after anything resizes the capsule mid-frame (crouch, a dive), or the camera shows one
+	    frame at the old height. */
+	void ApplyCameraHeight();
 
 	/** Drops into the post-roll kneel until the roll button is let go (the roll calls this
 	    when it's held past its CrouchOutAfter). */

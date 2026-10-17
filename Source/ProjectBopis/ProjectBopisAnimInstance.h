@@ -253,9 +253,15 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	float ShootdodgePlayRate = 1.0f;
 
-	/** Normalised start position (0..1) for the current phase's blend space player. */
+	/** Normalised start position (0..1) for the current phase's blend space player (the Land
+	    state; the Start state uses ShootdodgeStartTime). */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	float ShootdodgeStartPosition = 0.0f;
+
+	/** The Start clip's time, 0..1 (see UShootdodgeComponent::GetStartNormalizedTime): drives
+	    the Start state's blend space evaluator. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ShootdodgeStartTime = 0.0f;
 
 	/** Prone aim: camera yaw relative to the body (−180..180) and camera pitch. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
@@ -362,6 +368,28 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	FRotator ShootdodgeOffhandAimCorrection = FRotator::ZeroRotator;
 
+	/** Head look outside the shootdodge (an enemy searching with its gun down): half the turn
+	    on each of neck_01 and head (component space, added to the pose). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Head Look")
+	FRotator HeadLookRotation = FRotator::ZeroRotator;
+
+	/** Most the head turns toward its target across the ground, in degrees. Past it, it holds at the limit. */
+	UPROPERTY(EditDefaultsOnly, Category = "Head Look", meta = (ClampMin = "0.0", ClampMax = "120.0"))
+	float HeadLookMaxYaw = 70.0f;
+
+	/** Most it tilts up or down toward the target, in degrees. */
+	UPROPERTY(EditDefaultsOnly, Category = "Head Look", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float HeadLookMaxPitch = 30.0f;
+
+	/** A target further round than this (behind the shoulder) isn't looked at: the head comes
+	    back forward rather than straining. */
+	UPROPERTY(EditDefaultsOnly, Category = "Head Look", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float HeadLookGiveUpAngle = 130.0f;
+
+	/** How quickly the head turns to its target, and back. */
+	UPROPERTY(EditDefaultsOnly, Category = "Head Look", meta = (ClampMin = "0.0"))
+	float HeadLookSpeed = 5.0f;
+
 	/** Pistols lying back: the arms' lift (on each upper arm) and the hands' matching turn back
 	    (on each hand), component space — the guns rise off the hips without changing aim. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
@@ -417,6 +445,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
 	float HeadLookMaxAngle = 60.0f;
 
+	/** After the Start, how fast (degrees per second) the dive's blend space direction catches
+	    up from the take-off direction to the live one — a jog's forward jump easing into the
+	    flight's real direction, rather than the blend space snapping round. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "1.0"))
+	float ShootdodgeDirectionCatchUpRate = 720.0f;
+
 	/** Pistols and duals: how far down / up (degrees from level) the dive and prone poses
 	    follow the aim. Past it the guns hold at the limit; the shots still go from the muzzle to
 	    the crosshair's point. */
@@ -467,6 +501,11 @@ private:
 
 	/** Which way the head bone faces, in its own space — from the reference pose, found once. */
 	FVector HeadLocalForward = FVector::ZeroVector;
+
+	/** The whole head turn, eased; HeadLookRotation is half of it. */
+	FQuat HeadLookTotal = FQuat::Identity;
+
+	void UpdateHeadLook(const ABopisCharacterBase& Character, float DeltaSeconds);
 
 	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
 	void UpdateProneDirection(float DeltaSeconds);

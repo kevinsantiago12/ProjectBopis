@@ -1743,6 +1743,32 @@ short reaction beat; out of sight, stay and cover the room.
   to its `Enemies`. Sight/hearing still alert them earlier, and
   `AlertAllies` spreads it.
 
+### Searching with the gun down (2026-10-17)
+
+The user: "when they are in a lowered stance and moving to look for me,
+have their head look at the last known position within reasonable bounds…
+It makes it more plausible."
+- **Lowering:** after `LowerGunAfter` 4 s out of sight (not for holders,
+  which keep covering the room), `UpdateAim` drops the aim and clears the
+  focus. The lowered stance then turns the body to its travel direction at
+  `LoweredSpeed` with the jog poses.
+- **Raising:** seeing the player again raises the gun and rolls a fresh
+  reaction beat (`ReactionTimeMin/Max`) before it can fire (`bGunLowered`).
+- **Head look:**
+  - `AEnemyBase::GetHeadLookTarget` returns the last known spot at head height
+    while it's alerted, lowered and still has a lead, and is further than
+    `HeadLookMinDistance` 3 m from that spot. It's a virtual on
+    `ABopisCharacterBase`; the player returns false.
+  - `UProjectBopisAnimInstance::UpdateHeadLook` turns the head toward it within
+    `HeadLookMaxYaw` 70° and `HeadLookMaxPitch` 30°. A target past
+    `HeadLookGiveUpAngle` 130° isn't looked at. The turn eases at
+    `HeadLookSpeed` 5.
+  - The result goes out as `HeadLookRotation`: half each on `neck_01` and
+    `head`, via two Transform (Modify) Bone nodes (add to existing, component
+    space) at the end of `ABP_Player`'s AnimGraph, after the DeathSlot.
+- **Not yet:** hearing gunfire while lowered moves the search target but
+  doesn't raise the gun.
+
 ### Three families
 
 | Family | Share | Behaviour | Build cost |
@@ -2089,6 +2115,20 @@ How the layer settled:
     or an authored shoulder-forward clip. The plain flip looked better.
   - **A mirror on the top-level lowered-dual idle** flips only duals, since
     that layer is weighted by `DualLoweredAlpha`. It was tried and removed.
+
+**Free arm on physics (2026-10-17):**
+- **When:** with the one-handed pistol raised (not reloading or equipping),
+  the free left arm (`upperarm_l` and below) goes on physics.
+- **Behaviour:** the motors hold it toward the at-side pose and its
+  procedural swing (`FreeArmHoldStrength` 600), so the arm lags turns, sways
+  with strafing and settles after recoil. It blends on and off over
+  `FreeArmBlendTime` 0.2 s.
+- **Code:** `ABopisCharacterBase::UpdateFreeArmPhysics` and
+  `WantsFreeArmPhysics()` (virtual; the player adds "not diving, not
+  rolling"). Settings are under *Animation|Free Arm*, `bFreeArmPhysics`.
+- **Yields:** to a dive's loose arm, a hit reaction, a stagger or death.
+- **Enemies:** they share the base class, so one with a one-handed pistol
+  gets it too.
 
 ### Gait — slower cadence with stride warping (2026-10-07)
 Lyra's locomotion was accurate but read as cartoonish; Max Payne 1–2 is the
@@ -2850,6 +2890,90 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
 **Next:** the shootdodge list is done. Open extra: the long-gun wind-up
 showing empty-handed dash arms.
 
+#### Refinements (2026-10-17)
+
+**Flight limbs on physics:** the legs (`thigh_l/r` and below) go on
+physics from take-off to landing, using the landing legs' `SimulateLegs`
+machinery. Settings are under *Shootdodge|Flight Legs*.
+- **Firm, then loose:** `FlightLegStartHoldStrength` 6000 at take-off eases
+  to `FlightLegHoldStrength` 800 over the Start phase
+  (`ABopisCharacterBase::SetLegHoldStrength`, re-applied each tick). The firm
+  start stops legs caught mid-stride from flopping into a split. The user:
+  "there are some positions in the walk anim where if I trigger the
+  shootdodge, he flops with the leg split".
+- **Landing:** the legs firm up to `LandingLegHoldStrength`. `FallOffEdge`
+  goes back to the flight strength.
+- **One-handed pistol, left arm (`bFlightLeftArmPhysics`):** `upperarm_l` and
+  below join the legs, easing from `FlightArmStartHoldStrength` 3000 to
+  `FlightArmHoldStrength` 150. The motors pull toward the clip's two-handed
+  clasp, so the flight strength stays low. `FreesLeftArm()` checks for
+  `PistolOneHanded`.
+- **Base-class plumbing:**
+  - `SimulateLegs(Hold, bWithLeftArm, ArmHold)` keeps the limb roots in
+    `SimulatedLimbs`, and the fade and stop loop over them
+    (`StartLimb`/`StopLimb`).
+  - `EndHitReactions` resets everything below `spine_01`, so it puts a loose
+    dive arm straight back on.
+- **Tried and dropped (don't retry):**
+  - **Hips on physics:** the pelvis is the root body, so the torso has to be
+    handed back to the animation, and the waist seams. User: "I dont think we
+    can do that".
+  - **Late start at the clip's push-off frame**, for back dives: the physics
+    came on mid-swing and the legs twitched. The user opened the legs in the
+    back-dive Start clip (`anim_Dodge_Start_Bwd_P`) instead. The firm motors
+    follow the authored opening.
+
+**The Start state runs on a Blend Space Evaluator:** a Blend Space Player
+reads its `StartPosition` only when the state initializes, and at that
+moment it still has the value from its last update.
+- **The bug this caused:** every dive started from the previous dive's start
+  point, and the first from the `NativeInitializeAnimation` seed. Before
+  back dives got their own offset, every dive used the same one, so it never
+  showed. Found with a temporary per-frame log (since removed).
+- **The fix:** `BS_Dodge_Start` is now an evaluator in the Start state. Its X
+  comes from `ShootdodgeDirection`; its **Normalized Time** comes from
+  `ShootdodgeStartTime` (`UShootdodgeComponent::GetStartNormalizedTime()`:
+  from `PhaseStartPosition` to 1 over the Start phase, then held at 1).
+  Teleport To Normalized Time is on, so skipped frames fire no notifies.
+  **Loop is off**, or the held 1.0 wraps to frame 0 during the blend into the
+  Loop.
+- **Land still uses a player**, reading `ShootdodgeStartPosition`, so the seed
+  (`GetRestStartPosition`) stays for it.
+
+**Back dives play their push-off:** `BackStartOffset` (Backward and its
+diagonals, from any stance) replaces `StartOffset`/`StartClipOffset` for
+those dives. The user set it to **0**: the whole crouch and push-off. Before,
+the 0.4 s default cut the jump and he seemed to float off the ground.
+
+**Jog dives jump forward, then spin:**
+- **From a jog** (gun lowered, `bFromJog` at the press), with the body facing
+  within `JogForwardStartMaxAngle` 90° of the dive, the Start is the
+  **forward** clip. It plays at the forward offset, along the run.
+- **The hold:** for `ForwardJumpHoldTime` 0.1 s, the body keeps its facing
+  (`IsHoldingForwardJump`, which skips the face-aim turn) and the blend spaces
+  get 0°.
+- **After the hold:** the body turns to the aim, and `ShootdodgeDirection`
+  eases from 0° to the live direction at the anim instance's
+  `ShootdodgeDirectionCatchUpRate` 720°/s. Only after a forward jump
+  (`EasesAnimDirection`); every other dive follows the live direction
+  outright, as before.
+- **A jog reversal** (facing more than 90° off) gets the real direction's
+  Start.
+- **Tried and dropped:**
+  - turn-to-run before strafe back dives, then with a jog delay;
+  - a back-dive wind-up from the strafe stance;
+  - an inertialized locomotion→dive blend (B; it broke nothing, but wasn't
+    needed);
+  - a two-evaluator crossfade in place of the direction ease. The user
+    preferred the ease.
+
+**Camera on capsule resizes:** the boom height is re-applied the moment the
+capsule changes (`AProjectBopisCharacter::ApplyCameraHeight`, called from
+`OnStartCrouch`/`OnEndCrouch` and from `ShrinkCapsule`/`RestoreCapsule`), as
+well as each tick. Both resizes happen after the character's tick, so the
+camera used to show one frame at the old height: a flicker going from a
+crouch into a dive.
+
 #### Original plan (pre-asset)
 
 An asset exists: a **two-handed pistol shootdodge that lands prone, with a
@@ -3035,6 +3159,14 @@ on landing). The only Inertialization node was on the locomotion branch. Fix
 - **Roll hold → prone slide** (the user's first idea): dropped; holding roll
   now goes into the kneel.
 
+
+**Weapon pickup mid-roll (2026-10-17):** rolling over a gun (or switching
+slots mid-roll) no longer cuts the roll with the equip montage. The montage
+shares the roll's slot group. Instead, `PlayEquipAnimation` returns early
+while `ShouldSkipEquipAnimation()` is true (virtual; the player returns
+`IsRolling()`). The gun is in the hand at once, and `IsEquipAnimating()`
+stays false. The user: "just switch the weapon instantly… maintain the
+roll".
 
 ### Prone as a transient state
 
@@ -3340,6 +3472,23 @@ Full list with reproduction detail lives in
 [ProjectPlan.md](ProjectPlan.md)'s "Gotchas learned the hard way" section. The
 ones most likely to bite:
 
+- **A Blend Space (or Sequence) Player reads its `StartPosition` only when
+  its state initializes, and with the value from its last update.** So a
+  start point that changes per use lags one use behind, and the first use
+  gets whatever was there at graph start. Drive the time every frame with an
+  evaluator instead: the shootdodge Start, 2026-10-17.
+- **Capsule resizes after the character's tick show one camera frame at the
+  old height:** crouch (applied in the movement component) and the dive's
+  capsule shrink. Re-apply anything derived from the capsule at the moment
+  it changes (`ApplyCameraHeight`).
+- **The Unreal MCP bridge can't create nodes inside an AnimBP state's graph**
+  ("Cannot cast type 'AnimStateNode' to 'Blueprint'"). Reading, deleting,
+  pin values and wiring there all work. New nodes inside a state are the
+  user's to place.
+- **Physics switched on mid-motion twitches.** The bodies start with none of
+  the animation's speed, lag, then snap back. Start limb physics while the
+  limb is still, or blend its weight in.
+
 - **Bridge edits to a Blueprint's defaults don't reach instances already
   placed in the open level** (2026-10-09). The BP editor propagates; a direct
   CDO write doesn't. Saving the level then bakes the stale value into the
@@ -3452,6 +3601,7 @@ ones most likely to bite:
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
 - 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
+- 2026-10-17 — Shootdodge refinements: flight limbs on physics (legs, plus the left arm with a one-handed pistol, easing from firm to loose); the Start state on a Blend Space Evaluator driven from C++ (`ShootdodgeStartTime`); `BackStartOffset`; jog dives jump forward then spin (`ForwardJumpHoldTime`, `ShootdodgeDirectionCatchUpRate`); dive Focus drains as it goes. Camera height re-applied on capsule resizes. Free arm on physics (one-handed pistol, on foot). Weapon pickup mid-roll keeps the roll. Enemies search with the gun down and the head on the last known spot. Camping waits only while evading. Clean-up: `SpendMeter` and a spare Inertialization node removed. Four new gotchas.
 - 2026-10-16 (4) — Directional hit indicator: `AddHitIndicator`, sector-based flood control, `UHitIndicatorWidget` (code-drawn arcs); Slate/SlateCore added to the module.
 - 2026-10-16 (3) — Shell casings: `AShellCasing` + `UShellCasingSubsystem`, per-weapon `Weapon|Casings` settings, meshes set on all seven weapons.
 - 2026-10-16 (2) — Navmesh reverting solved: `bForceRebuildOnLoad` on `Lvl_Sandbox`'s RecastNavMesh, saved via Save All (gotcha added).

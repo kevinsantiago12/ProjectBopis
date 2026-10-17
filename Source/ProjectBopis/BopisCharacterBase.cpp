@@ -57,13 +57,17 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 		// Ease the legs back into the animation, then let go of physics.
 		LegsFadeLeft -= DeltaSeconds;
 		const float Weight = LegsWeight * FMath::Clamp(LegsFadeLeft / LegsFadeTime, 0.0f, 1.0f);
-		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("thigh_l"), Weight, false, true);
-		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("thigh_r"), Weight, false, true);
+		for (const FName Root : SimulatedLimbs)
+		{
+			GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(Root, Weight, false, true);
+		}
 		if (LegsFadeLeft <= 0.0f)
 		{
 			StopSimulatingLegs();
 		}
 	}
+
+	UpdateFreeArmPhysics(DeltaSeconds);
 
 	if (bIsStaggered)
 	{
@@ -331,31 +335,129 @@ void ABopisCharacterBase::SimulateUpperBody(float HoldStrength)
 	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 1.0f, false, true);
 }
 
-void ABopisCharacterBase::SimulateLegs(float HoldStrength)
+namespace
 {
-	// Same world-space motors as the upper body: the legs keep to the animation unless
-	// something solid — the floor — is in the way.
-	FPhysicalAnimationData Hold;
-	Hold.bIsLocalSimulation = false;
-	Hold.OrientationStrength = HoldStrength;
-	Hold.PositionStrength = HoldStrength;
-	Hold.AngularVelocityStrength = HoldStrength * 0.1f;
-	Hold.VelocityStrength = HoldStrength * 0.1f;
+	/** World-space leg motors at HoldStrength (velocity terms a tenth of it). */
+	FPhysicalAnimationData MakeLegHold(float HoldStrength)
+	{
+		FPhysicalAnimationData Hold;
+		Hold.bIsLocalSimulation = false;
+		Hold.OrientationStrength = HoldStrength;
+		Hold.PositionStrength = HoldStrength;
+		Hold.AngularVelocityStrength = HoldStrength * 0.1f;
+		Hold.VelocityStrength = HoldStrength * 0.1f;
+		return Hold;
+	}
+
+	const FName ThighL(TEXT("thigh_l"));
+	const FName ThighR(TEXT("thigh_r"));
+	const FName LeftArmRoot(TEXT("upperarm_l"));
+}
+
+void ABopisCharacterBase::SimulateLegs(float HoldStrength, bool bWithLeftArm, float ArmHoldStrength)
+{
+	// The left arm left out this time (the gun changed mid-dive, say): back to the animation.
+	if (!bWithLeftArm && SimulatedLimbs.Contains(LeftArmRoot))
+	{
+		StopLimb(LeftArmRoot);
+	}
 
 	// Physics needs physics collision; the living mesh is normally query-only.
-	USkeletalMeshComponent* Body = GetMesh();
-	Body->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	for (const TCHAR* Thigh : { TEXT("thigh_l"), TEXT("thigh_r") })
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	// Same world-space motors as the upper body: the legs keep to the animation unless
+	// something solid — the floor — is in the way.
+	SimulatedLimbs = { ThighL, ThighR };
+	StartLimb(ThighL, MakeLegHold(HoldStrength));
+	StartLimb(ThighR, MakeLegHold(HoldStrength));
+	if (bWithLeftArm)
 	{
-		PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Thigh, Hold, true);
-		Body->SetAllBodiesBelowSimulatePhysics(Thigh, true, true);
-		Body->SetAllBodiesBelowPhysicsBlendWeight(Thigh, 1.0f, false, true);
+		SimulatedLimbs.Add(LeftArmRoot);
+		StartLimb(LeftArmRoot, MakeLegHold(ArmHoldStrength));
+		LeftArmHoldStrength = ArmHoldStrength;
 	}
 
 	bLegsSimulating = true;
 	LegsFadeTime = 0.0f;
 	LegsFadeLeft = 0.0f;
 	LegsWeight = 1.0f;
+}
+
+void ABopisCharacterBase::SetLegHoldStrength(float HoldStrength, float ArmHoldStrength)
+{
+	if (!bLegsSimulating || LegsFadeTime > 0.0f)
+	{
+		return;
+	}
+
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(ThighL, MakeLegHold(HoldStrength), true);
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(ThighR, MakeLegHold(HoldStrength), true);
+	if (SimulatedLimbs.Contains(LeftArmRoot))
+	{
+		PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(LeftArmRoot, MakeLegHold(ArmHoldStrength), true);
+		LeftArmHoldStrength = ArmHoldStrength;
+	}
+}
+
+void ABopisCharacterBase::StartLimb(FName Root, const FPhysicalAnimationData& Hold)
+{
+	USkeletalMeshComponent* Body = GetMesh();
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Root, Hold, true);
+	Body->SetAllBodiesBelowSimulatePhysics(Root, true, true);
+	Body->SetAllBodiesBelowPhysicsBlendWeight(Root, 1.0f, false, true);
+}
+
+void ABopisCharacterBase::StopLimb(FName Root)
+{
+	USkeletalMeshComponent* Body = GetMesh();
+	Body->SetAllBodiesBelowPhysicsBlendWeight(Root, 0.0f, false, true);
+	Body->SetAllBodiesBelowSimulatePhysics(Root, false, true);
+	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Root, FPhysicalAnimationData(), true);
+}
+
+bool ABopisCharacterBase::WantsFreeArmPhysics() const
+{
+	const AWeaponBase* Weapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
+	return bFreeArmPhysics && Weapon && Weapon->GetAnimType() == EWeaponAnimType::PistolOneHanded
+		&& IsWeaponRaised() && !IsReloadAnimating() && !IsEquipAnimating();
+}
+
+void ABopisCharacterBase::UpdateFreeArmPhysics(float DeltaSeconds)
+{
+	// Something else has the arm (a dive's loose limbs, a hit reaction, the ragdoll): leave it
+	// to them. When they let go they reset it, so it starts fresh from here.
+	if (SimulatedLimbs.Contains(LeftArmRoot) || bIsHitReacting || bIsStaggered || bIsDead)
+	{
+		bFreeArmSimulating = false;
+		FreeArmWeight = 0.0f;
+		return;
+	}
+
+	// Eased on and off, so raising or lowering the gun doesn't pop the arm.
+	const float Target = WantsFreeArmPhysics() ? 1.0f : 0.0f;
+	const float Rate = FreeArmBlendTime > 0.0f ? 1.0f / FreeArmBlendTime : 1000.0f;
+	FreeArmWeight = FMath::FInterpConstantTo(FreeArmWeight, Target, DeltaSeconds, Rate);
+
+	if (FreeArmWeight > 0.0f)
+	{
+		if (!bFreeArmSimulating)
+		{
+			// Physics needs physics collision; the living mesh is normally query-only.
+			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			StartLimb(LeftArmRoot, MakeLegHold(FreeArmHoldStrength));
+			bFreeArmSimulating = true;
+		}
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(LeftArmRoot, FreeArmWeight, false, true);
+	}
+	else if (bFreeArmSimulating)
+	{
+		StopLimb(LeftArmRoot);
+		bFreeArmSimulating = false;
+		if (!bLegsSimulating)
+		{
+			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		}
+	}
 }
 
 void ABopisCharacterBase::EndSimulatedLegs(float BlendOutTime)
@@ -387,18 +489,16 @@ void ABopisCharacterBase::StopSimulatingLegs()
 		return;
 	}
 
-	USkeletalMeshComponent* Body = GetMesh();
-	for (const TCHAR* Thigh : { TEXT("thigh_l"), TEXT("thigh_r") })
+	for (const FName Root : SimulatedLimbs)
 	{
-		Body->SetAllBodiesBelowPhysicsBlendWeight(Thigh, 0.0f, false, true);
-		Body->SetAllBodiesBelowSimulatePhysics(Thigh, false, true);
-		PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Thigh, FPhysicalAnimationData(), true);
+		StopLimb(Root);
 	}
+	SimulatedLimbs.Reset();
 
 	// The upper body may still be reacting to a hit, which needs physics collision too.
 	if (!bIsHitReacting && !bIsStaggered)
 	{
-		Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 }
 
@@ -459,6 +559,14 @@ void ABopisCharacterBase::EndHitReactions()
 	Body->SetAllBodiesBelowPhysicsBlendWeight(RiddledRootBone, 0.0f, false, true);
 	Body->SetAllBodiesBelowSimulatePhysics(RiddledRootBone, false, true);
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, FPhysicalAnimationData(), true);
+
+	// The left arm sits under the upper body, so that reset took it too: if a dive had it
+	// loose, it goes straight back on.
+	if (SimulatedLimbs.Contains(LeftArmRoot) && LegsFadeTime <= 0.0f)
+	{
+		StartLimb(LeftArmRoot, MakeLegHold(LeftArmHoldStrength));
+	}
+
 	if (!bLegsSimulating)
 	{
 		Body->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -676,6 +784,13 @@ void ABopisCharacterBase::PlayEquipAnimation(const AWeaponBase* Weapon)
 
 	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 	if (!Weapon || !AnimInstance)
+	{
+		return;
+	}
+
+	// Mid-roll (or anything else that owns the body): the gun is simply in the hand now. The
+	// equip montage shares the slot group, and starting it would cut the move off.
+	if (ShouldSkipEquipAnimation())
 	{
 		return;
 	}

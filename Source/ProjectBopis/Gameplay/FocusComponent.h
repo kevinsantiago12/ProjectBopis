@@ -44,9 +44,6 @@ public:
 
 	float GetMeter() const { return Meter; }
 
-	/** Takes Amount off the meter (nothing while infinite). For one-off costs like a shootdodge. */
-	void SpendMeter(float Amount) { if (!bInfinite) { Meter = FMath::Max(0.0f, Meter - Amount); } }
-
 	/** Slow motion owned by the caller (a shootdodge's flight, a roll's moment): it ignores the
 	    meter's minimum and never stops when the meter runs dry — the caller ends it.
 	    DrainWhileFree: meter drained per real second meanwhile (0: costs nothing). Does

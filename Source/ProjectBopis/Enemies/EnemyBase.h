@@ -106,6 +106,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
 	float TrackThroughCoverTime = 0.3f;
 
+	/** Seconds out of sight before the gun comes down and it searches in the lowered stance:
+	    jogging, turned to where it's going, its head toward the last known spot. Seeing the
+	    player again raises it, after a reaction beat. 0: never lowers. Holders keep theirs up. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
+	float LowerGunAfter = 4.0f;
+
+	/** Lowered and searching, it looks toward the last known spot only while further from it
+	    than this (cm), so it doesn't stare at its own feet once there. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
+	float HeadLookMinDistance = 300.0f;
+
 	/** This archetype's behaviour, run by its controller. Empty: none (it stands, or
 	    patrols while unaware). */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour")
@@ -336,6 +347,8 @@ public:
 
 	bool HoldsPosition() const { return bHoldsPosition; }
 
+	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
+
 	/** Where to roam next: the furthest Target Point (RoamToPointChance), or a random
 	    reachable spot within RoamRadius. False if neither was found. */
 	bool ChooseRoamSpot(FVector& OutSpot) const;
@@ -418,6 +431,9 @@ private:
 
 	/** Seconds left of the reaction beat after being alerted. */
 	float ReactionTimeLeft = 0.0f;
+
+	/** The gun is down from searching too long (LowerGunAfter): raising it again costs a reaction beat. */
+	bool bGunLowered = false;
 	float TimeAtLastKnown = 0.0f;
 
 	void AlertAllies();

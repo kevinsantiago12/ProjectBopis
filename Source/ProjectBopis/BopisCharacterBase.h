@@ -13,6 +13,7 @@ class UPhysicalAnimationComponent;
 class UAnimMontage;
 class UAnimSequenceBase;
 struct FDamageEvent;
+struct FPhysicalAnimationData;
 
 /** Animations picked by which side a hit came from. One is chosen at random per side. */
 USTRUCT(BlueprintType)
@@ -132,6 +133,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Aim")
 	bool IsWeaponRaised() const { return bIsAiming || TimeUntilWeaponLowered > 0.0f; }
 
+	/** A point the head should turn toward, if any (an enemy searching with its gun down). The
+	    AnimBP turns the head within limits; false: it faces where the body does. */
+	virtual bool GetHeadLookTarget(FVector& OutLocation) const { return false; }
+
+	/** Whether the free left arm should be on physics right now: a one-handed pistol raised and
+	    ready (not reloading or equipping). The player adds its own moves on top. */
+	virtual bool WantsFreeArmPhysics() const;
+
 	/** True while a reload montage plays — including its End section, after the weapon
 	    has already finished loading. The AnimBP keeps the left-hand IK off for all of it. */
 	UFUNCTION(BlueprintPure, Category = "Animation")
@@ -139,6 +148,10 @@ public:
 
 	/** Plays the equip montage(s) for a weapon that was just equipped. Called by the holder. */
 	void PlayEquipAnimation(const AWeaponBase* Weapon);
+
+	/** True while a move owns the body and a weapon change shouldn't interrupt it (a roll):
+	    the new gun goes straight into the hand, no equip montage. */
+	virtual bool ShouldSkipEquipAnimation() const { return false; }
 
 	/** An equip montage is playing. Firing waits for it. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
@@ -152,8 +165,14 @@ public:
 
 	/** Puts the legs (each thigh and below) on physics, motors holding them to the animation
 	    in world space — the floor then pushes back on any part of a leg the pose sinks into
-	    it. Used for the shootdodge landing. */
-	void SimulateLegs(float HoldStrength);
+	    it. bWithLeftArm adds the left arm (upperarm_l and below) at its own ArmHoldStrength:
+	    a free hand (one-handed pistol) in a dive. Used for the shootdodge. */
+	void SimulateLegs(float HoldStrength, bool bWithLeftArm = false, float ArmHoldStrength = 0.0f);
+
+	/** Changes how hard the simulating legs (and the left arm, if it's in) are held to the
+	    animation without restarting them (a dive easing them loose). Does nothing unless
+	    they're simulating and not fading out. */
+	void SetLegHoldStrength(float HoldStrength, float ArmHoldStrength);
 
 	/** Fades the legs back to the animation over BlendOutTime, then stops simulating them.
 	    Does nothing if they aren't simulating or are already fading. */
@@ -197,6 +216,19 @@ protected:
 
 	/** Ends a hit reaction or stagger: bones back to the animation, movement back on unless dead. */
 	void EndHitReactions();
+
+	/** One-handed pistol raised: the free left arm on physics, held toward its at-side pose and
+	    swing, so it lags, sways and settles with the body. */
+	UPROPERTY(EditAnywhere, Category = "Animation|Free Arm")
+	bool bFreeArmPhysics = true;
+
+	/** Free arm motor strength. Lower: looser, more lag and sway; higher: closer to the pose. */
+	UPROPERTY(EditAnywhere, Category = "Animation|Free Arm", meta = (ClampMin = "0.0", EditCondition = "bFreeArmPhysics"))
+	float FreeArmHoldStrength = 600.0f;
+
+	/** Seconds the free arm takes to blend onto physics and off again. */
+	UPROPERTY(EditAnywhere, Category = "Animation|Free Arm", meta = (ClampMin = "0.0", EditCondition = "bFreeArmPhysics"))
+	float FreeArmBlendTime = 0.2f;
 
 	/** Hit reaction: seconds the upper body stays on physics after a hit, fading back to the
 	    animation. 0 turns light hit reactions off. */
@@ -358,6 +390,26 @@ private:
 
 	/** Legs straight back to the animation: blend 0, physics and motors off. */
 	void StopSimulatingLegs();
+
+	/** One limb (Root and below) onto physics at Hold, fully blended in. */
+	void StartLimb(FName Root, const FPhysicalAnimationData& Hold);
+
+	/** One limb straight back to the animation: blend 0, physics and motors off. */
+	void StopLimb(FName Root);
+
+	/** The roots of the limbs SimulateLegs has on physics: both thighs, and upperarm_l when
+	    the left arm is in. */
+	TArray<FName> SimulatedLimbs;
+
+	/** The left arm's current motor strength, to put it back after a hit reaction. */
+	float LeftArmHoldStrength = 0.0f;
+
+	/** Puts the free arm on physics and takes it off, blended. */
+	void UpdateFreeArmPhysics(float DeltaSeconds);
+
+	/** The free arm is on physics (UpdateFreeArmPhysics), at this blend weight. */
+	bool bFreeArmSimulating = false;
+	float FreeArmWeight = 0.0f;
 
 	/** The legs are on physics (SimulateLegs), and the fade back out once it's begun. */
 	bool bLegsSimulating = false;
