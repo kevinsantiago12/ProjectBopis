@@ -163,11 +163,6 @@ void UShootdodgeComponent::Launch(EShootdodgeDirection Direction)
 		Movement->BrakingFriction = SavedBrakingFriction;
 	}
 
-	if (UFocusComponent* Focus = Character->GetFocus())
-	{
-		Focus->SpendMeter(FocusCost);
-	}
-
 	// The flight goes this direction's eighth of a turn away from the camera.
 	Character->GetCharacterMovement()->StopMovementImmediately();
 	DiveYaw = Character->GetControlRotation().Yaw + static_cast<int32>(Direction) * 45.0f;
@@ -274,6 +269,13 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 			Phase = EShootdodgePhase::Loop;
 			PhaseTime = 0.0f;
 			PhaseStartPosition = 0.0f;
+
+			// Into the flight proper: loose legs, trailing and swinging with the momentum (the
+			// push-off plays as authored; the landing firms them up).
+			if (bFlightLegPhysics)
+			{
+				Character->SimulateLegs(FlightLegHoldStrength);
+			}
 		}
 		break;
 
@@ -322,11 +324,14 @@ void UShootdodgeComponent::TakeOff()
 	PhaseDuration = PhaseLength(Anims.Start, Offset, StartPlayRate);
 	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
 
-	if (bSlowMotion)
+	if (UFocusComponent* Focus = Character->GetFocus())
 	{
-		if (UFocusComponent* Focus = Character->GetFocus())
+		// The flight's slow motion drains as it goes; running dry mid-dive doesn't cut it (or
+		// the player's own Focus, if that was on) short — it holds until the slow motion ends.
+		Focus->SetHoldOnEmpty(true);
+		if (bSlowMotion)
 		{
-			bOwnsSlowMotion = Focus->BeginFreeFocus();
+			bOwnsSlowMotion = Focus->BeginFreeFocus(FocusDrainPerSecond);
 		}
 	}
 }
@@ -491,9 +496,14 @@ void UShootdodgeComponent::NotifyLanded()
 	PhaseStartPosition = Length > 0.0f ? FMath::Clamp(Offset / Length, 0.0f, 1.0f) : 0.0f;
 
 	// Some landing clips sink the legs into the floor; on physics, the floor pushes them back.
+	// Without that, the flight's loose legs go back to the animation.
 	if (bLandingLegPhysics)
 	{
 		Character->SimulateLegs(LandingLegHoldStrength);
+	}
+	else if (bFlightLegPhysics)
+	{
+		Character->EndSimulatedLegs(LandingLegBlendOutTime);
 	}
 }
 
@@ -512,8 +522,15 @@ void UShootdodgeComponent::FallOffEdge()
 	SavedAirBraking = Movement->BrakingDecelerationFalling;
 	Movement->BrakingDecelerationFalling = DiveAirBraking;
 
-	// The landing's physics legs ease off; the body falls in the flight pose.
-	Character->EndSimulatedLegs(LandingLegBlendOutTime);
+	// Falling again: the flight's loose legs, or (without them) back to the animation.
+	if (bFlightLegPhysics)
+	{
+		Character->SimulateLegs(FlightLegHoldStrength);
+	}
+	else
+	{
+		Character->EndSimulatedLegs(LandingLegBlendOutTime);
+	}
 	Phase = EShootdodgePhase::Loop;
 	PhaseTime = 0.0f;
 	PhaseStartPosition = 0.0f;
@@ -626,9 +643,10 @@ void UShootdodgeComponent::CancelForDeath()
 
 void UShootdodgeComponent::EndSlowMotion()
 {
-	if (bOwnsSlowMotion)
+	if (UFocusComponent* Focus = Character ? Character->GetFocus() : nullptr)
 	{
-		if (UFocusComponent* Focus = Character->GetFocus())
+		Focus->SetHoldOnEmpty(false);
+		if (bOwnsSlowMotion)
 		{
 			Focus->EndFreeFocus();
 		}

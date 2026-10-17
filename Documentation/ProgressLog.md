@@ -99,6 +99,9 @@
   (the kneel paused the camping clock). Now only evasion (and its linger)
   pauses it; after that it builds as normal. The user's timing: 1 s grace,
   2 s climb — 100% 5 s after a roll ends. Compiled; not yet seen.
+- **Dive Focus drains as it goes (2026-10-17):** no upfront cost; the dive's
+  slow motion drains `FocusDrainPerSecond` 5/real s (≈25 a dive), and running
+  dry mid-dive holds it to landing (`SetHoldOnEmpty`). Compiled; not yet seen.
 3. **Parked:** casing bounce sound (once there are assets — set
    `CasingImpactSound` per weapon); Kamz bone scales (user); the long-gun
    wind-up's empty-handed arms; the enemy roster (design); Focus sounds and

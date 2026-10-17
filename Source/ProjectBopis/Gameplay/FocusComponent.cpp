@@ -46,13 +46,19 @@ void UFocusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 	if (bActive)
 	{
-		if (!bInfinite && !bFree)
+		// The player's own Focus drains at DrainPerSecond; a free one at whatever its owner
+		// asked for (often nothing).
+		const float Drain = bFree ? FreeDrainPerSecond : DrainPerSecond;
+		if (!bInfinite && Drain > 0.0f)
 		{
-			Meter = FMath::Max(0.0f, Meter - DrainPerSecond * RealDelta);
-			if (Meter <= 0.0f)
-			{
-				StopFocus();
-			}
+			Meter = FMath::Max(0.0f, Meter - Drain * RealDelta);
+		}
+
+		// Running dry ends the player's own Focus, unless something holds it (a dive in
+		// flight). A free one is ended by its owner.
+		if (!bInfinite && !bFree && !bHoldOnEmpty && Meter <= 0.0f)
+		{
+			StopFocus();
 		}
 	}
 	else if (bPassiveRegen)
@@ -113,6 +119,7 @@ void UFocusComponent::StopFocus()
 
 	bActive = false;
 	bFree = false;
+	FreeDrainPerSecond = 0.0f;
 	ApplyTimeDilation(1.0f);
 
 	UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
@@ -127,7 +134,7 @@ void UFocusComponent::StopFocus()
 	}
 }
 
-bool UFocusComponent::BeginFreeFocus()
+bool UFocusComponent::BeginFreeFocus(float DrainWhileFree)
 {
 	if (bActive)
 	{
@@ -136,6 +143,7 @@ bool UFocusComponent::BeginFreeFocus()
 
 	StartFocus(true);
 	bFree = bActive;
+	FreeDrainPerSecond = bFree ? DrainWhileFree : 0.0f;
 	return bFree;
 }
 

@@ -47,10 +47,16 @@ public:
 	/** Takes Amount off the meter (nothing while infinite). For one-off costs like a shootdodge. */
 	void SpendMeter(float Amount) { if (!bInfinite) { Meter = FMath::Max(0.0f, Meter - Amount); } }
 
-	/** Slow motion that costs nothing and ignores the meter — a shootdodge's flight. Does
+	/** Slow motion owned by the caller (a shootdodge's flight, a roll's moment): it ignores the
+	    meter's minimum and never stops when the meter runs dry — the caller ends it.
+	    DrainWhileFree: meter drained per real second meanwhile (0: costs nothing). Does
 	    nothing if Focus is already on (the player's own Focus carries on). Returns whether
 	    it started, so the caller knows to end it. */
-	bool BeginFreeFocus();
+	bool BeginFreeFocus(float DrainWhileFree = 0.0f);
+
+	/** While held, an empty meter doesn't end Focus — the player's own included — so a dive
+	    in flight keeps its slow motion to the end. */
+	void SetHoldOnEmpty(bool bHold) { bHoldOnEmpty = bHold; }
 
 	/** Ends a free Focus from BeginFreeFocus. Leaves the player's own Focus alone. */
 	void EndFreeFocus();
@@ -142,6 +148,11 @@ private:
 	float Meter = 0.0f;
 	bool bActive = false;
 
-	/** Active on someone else's behalf (a dive): no drain, and ended by them, not the meter. */
+	/** Active on someone else's behalf (a dive): drains at FreeDrainPerSecond, and ended by
+	    them, not the meter. */
 	bool bFree = false;
+	float FreeDrainPerSecond = 0.0f;
+
+	/** An empty meter doesn't end Focus while this is set (a dive in flight). */
+	bool bHoldOnEmpty = false;
 };

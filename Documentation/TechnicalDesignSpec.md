@@ -2353,7 +2353,16 @@ instead of `ReloadMontages` for dual weapons.
 - **Left Shift**, action `IA_Shootdodge` (Shootdodge).
 - Dive **in the movement input's direction relative to the camera**, in any
   stance. The body snaps to the camera first. No input = forward.
-- **Focus:** needs ≥ `MinFocusToDive` (25), spends `FocusCost` (25) once.
+- **Focus:** needs ≥ `MinFocusToDive` (25) to start. *(Revised 2026-10-17; before,
+  it spent `FocusCost` 25 once and the flight's slow motion was free.)* The
+  slow motion now **drains `FocusDrainPerSecond` 5 per real second** from
+  take-off to landing (`UFocusComponent::BeginFreeFocus(DrainWhileFree)`), and
+  **running dry mid-dive doesn't end it**: `TakeOff` sets
+  `Focus->SetHoldOnEmpty(true)`, `EndSlowMotion` clears it — which also keeps
+  the player's own Focus (if it was on) from cutting out mid-dive. The user:
+  "it drains continuous as the shootdodge is happening… running out will not
+  stop the shootdodge focus". The roll's free moment and the death slow motion
+  stay free (drain 0).
   Slow motion on after take-off and off on landing comes in step 2; a Focus
   already running stays on.
 - Fire and aim freely; no supernatural speed-up of anything.

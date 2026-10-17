@@ -283,6 +283,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Landing Legs", meta = (ClampMin = "0.0", EditCondition = "bLandingLegPhysics"))
 	float LandingLegBlendOutTime = 0.25f;
 
+	/** Through the flight (the Loop — the push-off plays as authored), the legs are on physics
+	    with a light hold: they follow the dive but lag and swing with the body's momentum. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs")
+	bool bFlightLegPhysics = true;
+
+	/** Flight leg motor strength. Lower: looser, more swing; higher: closer to the clip. */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Flight Legs", meta = (ClampMin = "0.0", EditCondition = "bFlightLegPhysics"))
+	float FlightLegHoldStrength = 800.0f;
+
 	/** Slow motion for the flight: on at take-off, off on landing. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus")
 	bool bSlowMotion = true;
@@ -291,9 +300,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus", meta = (ClampMin = "0.0"))
 	float MinFocusToDive = 25.0f;
 
-	/** Focus spent per dive. */
+	/** Focus drained per real second while the dive's slow motion runs (take-off to landing).
+	    Running dry mid-dive doesn't end it. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Focus", meta = (ClampMin = "0.0"))
-	float FocusCost = 25.0f;
+	float FocusDrainPerSecond = 5.0f;
 
 	/** Full-body AnimGraph slot the get-up plays in. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge")
