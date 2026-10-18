@@ -721,6 +721,45 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
   false before the rack).
 - Montages without a `Loop` section (magazine reloads) are untouched.
 
+**Reload upgrades (2026-10-17/18, user-confirmed):**
+- **Through a roll:** at a roll's start, `HoldReloadForRoll` decides what
+  happens to a reload in progress.
+  - **Magazine reloads** at least `RollReloadKeepFraction` (1/3) done
+    (`AWeaponBase::GetReloadProgress`) are cancelled and held. When the roll
+    ends, `Reload()` + `CompleteReloadNow()` fill the magazine through the
+    normal `FinishReload`, with no animation. Less than 1/3 done: cancelled.
+  - **Per-round weapons** (shotgun): the cycle under way goes in after the
+    roll (`CompleteReloadNow` loads `RoundsPerLoad` rounds), then loading
+    stops.
+  - The held reload belongs to the gun in hand (`RollHeldReloadWeapon`). A gun
+    picked up mid-roll drops it.
+- **Quick reload in the air:**
+  - During a dive's flight (`IsAirborne()`), reload runs at `AirReloadSpeed`
+    3×. `Reload(Speed)` divides the timers, and
+    `PlayReloadAnimation(Weapon, PlayRate)` plays the montage(s) at the same
+    rate (`ActiveReloadPlayRate`, kept for the Loop restarts).
+  - It doesn't end the dive's slow motion (`bStopFocusOnReload` is skipped in
+    the air).
+  - Auto-reload works in the air too (`bAirAutoReload`).
+  - The user found 3× readable. At 5× the montage blends, which don't scale
+    with play rate, washed it out. Scaling the blends is noted for anything
+    faster.
+- **Quick draw in the air:** the virtual `GetEquipPlayRate()` returns
+  `AirEquipSpeed` (3×) mid-flight. `PlayEquipAnimation` plays the equip
+  montage(s) at that rate, and firing waits only on `IsEquipAnimating()`, so
+  the gun is live as soon as it ends.
+- **Seen in the dive branch:**
+  - `ProneReloadAlpha` (the dive branch's upper-body montage layer) now
+    rises for an equip as well as a reload.
+  - The dive's aim correction lets go during either.
+  - With duals, the left arm takes the **mirrored off-hand montage** there
+    too. See *Dual pistols in the dive: off-hand montages and recoil*.
+- **The left arm follows the gun mid-dive:** each frame of the flight and the
+  landing, `SetLeftArmSimulating(FreesLeftArm(), …)` takes the loose left
+  arm off physics when you switch to a two-handed gun, and puts it on for the
+  one-handed pistol.
+- Settings: `BP_PlayerCharacter`, *Combat|Reload*.
+
 ### Directional hit indicator (2026-10-16)
 
 The user: "red on hit, maybe near miss too as grey, but we dont want the
@@ -2385,6 +2424,28 @@ torso (authored for a two-handed reload). User judged it minor. If it's ever
 revisited: a no-spine copy of the clip plus a `DualReloadMontages` map used
 instead of `ReloadMontages` for dual weapons.
 
+### Dual pistols in the dive: off-hand montages and recoil (2026-10-18, user-confirmed)
+
+- **The off-hand montage reaches the dive branch:** the standing chain is
+  Off-hand Slot → off-hand aim offset → `Mirror_0`, now saved as the cached
+  pose **`OffhandMirror`**. It's read twice:
+  - by the standing left-arm layer (`LayeredBoneBlend_1`, from `clavicle_l`);
+  - by a new dive-branch layer, `LayeredBoneBlend_9`. It sits after the
+    upper-body reload layer (`_8`), filters from `clavicle_l` with mesh-space
+    rotation, and is weighted by `ProneDualOffhandAlpha`
+    (`ProneReloadAlpha` while dual-wielding, else 0).
+  - So dual reloads and draws in the air and prone mirror the right hand, not
+    the two-handed pistol's left half.
+- **Standing left-gun kick:** the duals' left-arm recoil (`ModifyBone_3`,
+  `lowerarm_l`, weighted by `OffhandArmRecoilAlpha`) was before `_1` and got
+  overwritten by the mirrored arm. It now sits after `_1` (L2C → recoil →
+  C2L → `_4`), as the dive branch's `ModifyBone_8` already did.
+- **Bridge limits hit here:**
+  - a second Slot node with the same name is rejected ("SLOTNODE: 'OffhandSlot'
+    … already exists"), and its montage never plays;
+  - the bridge can create a Save Cached Pose, but not a Use Cached Pose for a
+    new cache. The user placed those.
+
 ### Shootdodge
 
 #### Built — step 1, the dive (2026-10-10, user-confirmed in PIE)
@@ -3485,6 +3546,18 @@ ones most likely to bite:
   ("Cannot cast type 'AnimStateNode' to 'Blueprint'"). Reading, deleting,
   pin values and wiring there all work. New nodes inside a state are the
   user's to place.
+- **"Array index out of bounds: 71/72 from an array of size 0" crashes:**
+  the mesh's physics was changed while its animation was being evaluated on a
+  worker thread. The changes in question: collision (QueryOnly ↔
+  QueryAndPhysics can rebuild the bodies), simulate, blend weight, motors.
+  Seen 2026-10-17 at 21:16 and 00:07, after the free arm and the
+  limb-physics work added more such changes.
+  - Every function that changes the mesh's physics now calls
+    `ABopisCharacterBase::WaitForAnimEvaluation()` first
+    (`HandleExistingParallelEvaluationTask(true, true)`). That's the limbs,
+    the free arm, the left-arm switch, and hit reactions and staggers.
+  - Keep doing that for anything new. Not proven fixed (sporadic, no call
+    stack); watch `Saved/Crashes`.
 - **Physics switched on mid-motion twitches.** The bodies start with none of
   the animation's speed, lag, then snap back. Start limb physics while the
   limb is still, or blend its weight in.
@@ -3601,6 +3674,7 @@ ones most likely to bite:
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
 - 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
+- 2026-10-18 — Reload upgrades: carried through a roll (1/3 rule; the shotgun's cycle), quick reload and quick draw mid-dive (3×, shown over the dive pose), the left arm follows mid-dive gun switches. Duals: the standing left-gun recoil fixed (node order), the mirrored off-hand montage in the dive branch (`OffhandMirror` cache, `LayeredBoneBlend_9`, `ProneDualOffhandAlpha`). Crash guard `WaitForAnimEvaluation` before mesh physics changes; gotcha added.
 - 2026-10-17 — Shootdodge refinements: flight limbs on physics (legs, plus the left arm with a one-handed pistol, easing from firm to loose); the Start state on a Blend Space Evaluator driven from C++ (`ShootdodgeStartTime`); `BackStartOffset`; jog dives jump forward then spin (`ForwardJumpHoldTime`, `ShootdodgeDirectionCatchUpRate`); dive Focus drains as it goes. Camera height re-applied on capsule resizes. Free arm on physics (one-handed pistol, on foot). Weapon pickup mid-roll keeps the roll. Enemies search with the gun down and the head on the last known spot. Camping waits only while evading. Clean-up: `SpendMeter` and a spare Inertialization node removed. Four new gotchas.
 - 2026-10-16 (4) — Directional hit indicator: `AddHitIndicator`, sector-based flood control, `UHitIndicatorWidget` (code-drawn arcs); Slate/SlateCore added to the module.
 - 2026-10-16 (3) — Shell casings: `AShellCasing` + `UShellCasingSubsystem`, per-weapon `Weapon|Casings` settings, meshes set on all seven weapons.

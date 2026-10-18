@@ -153,6 +153,10 @@ public:
 	    the new gun goes straight into the hand, no equip montage. */
 	virtual bool ShouldSkipEquipAnimation() const { return false; }
 
+	/** Play rate for the equip montage(s) right now: faster mid-move (a dive's flight), so
+	    the new gun is ready sooner. 1 = as authored. */
+	virtual float GetEquipPlayRate() const { return 1.0f; }
+
 	/** An equip montage is playing. Firing waits for it. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	bool IsEquipAnimating() const;
@@ -161,7 +165,7 @@ public:
 	void PlayFireAnimation(const AWeaponBase* Weapon);
 
 	/** Plays the reload montage(s) for a reload the weapon just started. */
-	void PlayReloadAnimation(const AWeaponBase* Weapon);
+	void PlayReloadAnimation(const AWeaponBase* Weapon, float PlayRate = 1.0f);
 
 	/** Puts the legs (each thigh and below) on physics, motors holding them to the animation
 	    in world space — the floor then pushes back on any part of a leg the pose sinks into
@@ -173,6 +177,10 @@ public:
 	    animation without restarting them (a dive easing them loose). Does nothing unless
 	    they're simulating and not fading out. */
 	void SetLegHoldStrength(float HoldStrength, float ArmHoldStrength);
+
+	/** While the legs simulate, adds the left arm (at ArmHoldStrength) or takes it back to the
+	    animation — the gun changed mid-dive (one-handed <-> two-handed). */
+	void SetLeftArmSimulating(bool bSimulate, float ArmHoldStrength);
 
 	/** Fades the legs back to the animation over BlendOutTime, then stops simulating them.
 	    Does nothing if they aren't simulating or are already fading. */
@@ -382,6 +390,9 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveReloadMontage;
 
+	/** The running reload montage's play rate, kept for its Loop restarts. */
+	float ActiveReloadPlayRate = 1.0f;
+
 	/** The equip montage started by the last weapon change, while it plays. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveEquipMontage;
@@ -396,6 +407,11 @@ private:
 
 	/** One limb straight back to the animation: blend 0, physics and motors off. */
 	void StopLimb(FName Root);
+
+	/** Waits for this frame's worker-thread animation evaluation of the mesh (if any) to finish
+	    before its physics bodies are changed — changing them mid-evaluation crashes the engine
+	    (an empty body array read by the worker; see the spec's gotchas). */
+	void WaitForAnimEvaluation();
 
 	/** The roots of the limbs SimulateLegs has on physics: both thighs, and upperarm_l when
 	    the left arm is in. */

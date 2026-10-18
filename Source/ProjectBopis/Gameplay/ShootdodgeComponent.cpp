@@ -267,6 +267,14 @@ void UShootdodgeComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 			: Aim);
 	}
 
+	// The gun can change mid-dive: the free left arm follows it — loose with a one-handed
+	// pistol, back on the grip with anything else. (Only while the dive's limbs are loose;
+	// SetLeftArmSimulating does nothing otherwise.)
+	if (bFlightLegPhysics && (IsAirborne() || Phase == EShootdodgePhase::Land))
+	{
+		Character->SetLeftArmSimulating(FreesLeftArm(), IsAirborne() ? FlightArmHoldStrength : LandingLegHoldStrength);
+	}
+
 	switch (Phase)
 	{
 	case EShootdodgePhase::WindUp:

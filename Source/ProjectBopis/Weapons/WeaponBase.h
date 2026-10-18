@@ -213,14 +213,24 @@ public:
 	/** The pool this weapon reloads from. Set by the holder when the weapon is added. */
 	void SetReserveSource(UWeaponHolderComponent* Source) { ReserveSource = Source; }
 
-	/** Starts a reload. Returns false if one is already running, the magazine is
-	    full, or there's nothing in reserve. */
+	/** Starts a reload, Speed times as fast (timers divided by it; 1 = as tuned). Returns
+	    false if one is already running, the magazine is full, or there's nothing in reserve. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
-	bool Reload();
+	bool Reload(float Speed = 1.0f);
 
 	/** Aborts an in-progress reload without transferring ammo. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Ammo")
 	void CancelReload();
+
+	/** How far through the current reload, 0..1 (0 if none). Per-round reloads count the
+	    wind-up and each round as they come; it's only used for magazine reloads. */
+	float GetReloadProgress() const;
+
+	/** Finishes a reload on the spot: a magazine fills now; a per-round weapon gets the cycle
+	    that was under way. (A roll that carried the reload through.) */
+	void CompleteReloadNow();
+
+	bool IsMagazineReload() const { return ReloadStyle == EReloadStyle::Magazine; }
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	bool CanReload() const;
@@ -524,6 +534,9 @@ protected:
 
 	bool bIsReloading = false;
 	FTimerHandle ReloadTimerHandle;
+
+	/** The running reload's speed (see Reload). */
+	float ReloadSpeed = 1.0f;
 
 	bool bOffhandFiresNext = false;
 	bool bLastShotWasOffhand = false;

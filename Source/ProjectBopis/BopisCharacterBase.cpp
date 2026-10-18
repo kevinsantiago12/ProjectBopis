@@ -320,6 +320,8 @@ UAnimMontage* ABopisCharacterBase::PlayDirectionalAnimation(const FDirectionalAn
 
 void ABopisCharacterBase::SimulateUpperBody(float HoldStrength)
 {
+	WaitForAnimEvaluation();
+
 	// Motors pull each simulated bone toward where the animation has it — world space, so
 	// the body holds its place rather than just its shape.
 	FPhysicalAnimationData Hold;
@@ -356,6 +358,8 @@ namespace
 
 void ABopisCharacterBase::SimulateLegs(float HoldStrength, bool bWithLeftArm, float ArmHoldStrength)
 {
+	WaitForAnimEvaluation();
+
 	// The left arm left out this time (the gun changed mid-dive, say): back to the animation.
 	if (!bWithLeftArm && SimulatedLimbs.Contains(LeftArmRoot))
 	{
@@ -399,8 +403,31 @@ void ABopisCharacterBase::SetLegHoldStrength(float HoldStrength, float ArmHoldSt
 	}
 }
 
+void ABopisCharacterBase::SetLeftArmSimulating(bool bSimulate, float ArmHoldStrength)
+{
+	if (!bLegsSimulating || LegsFadeTime > 0.0f || bSimulate == SimulatedLimbs.Contains(LeftArmRoot))
+	{
+		return;
+	}
+	WaitForAnimEvaluation();
+
+	if (bSimulate)
+	{
+		SimulatedLimbs.Add(LeftArmRoot);
+		StartLimb(LeftArmRoot, MakeLegHold(ArmHoldStrength));
+		LeftArmHoldStrength = ArmHoldStrength;
+	}
+	else
+	{
+		StopLimb(LeftArmRoot);
+		SimulatedLimbs.Remove(LeftArmRoot);
+	}
+}
+
 void ABopisCharacterBase::StartLimb(FName Root, const FPhysicalAnimationData& Hold)
 {
+	WaitForAnimEvaluation();
+
 	USkeletalMeshComponent* Body = GetMesh();
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Root, Hold, true);
 	Body->SetAllBodiesBelowSimulatePhysics(Root, true, true);
@@ -409,10 +436,20 @@ void ABopisCharacterBase::StartLimb(FName Root, const FPhysicalAnimationData& Ho
 
 void ABopisCharacterBase::StopLimb(FName Root)
 {
+	WaitForAnimEvaluation();
+
 	USkeletalMeshComponent* Body = GetMesh();
 	Body->SetAllBodiesBelowPhysicsBlendWeight(Root, 0.0f, false, true);
 	Body->SetAllBodiesBelowSimulatePhysics(Root, false, true);
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Root, FPhysicalAnimationData(), true);
+}
+
+void ABopisCharacterBase::WaitForAnimEvaluation()
+{
+	if (USkeletalMeshComponent* Body = GetMesh())
+	{
+		Body->HandleExistingParallelEvaluationTask(true, true);
+	}
 }
 
 bool ABopisCharacterBase::WantsFreeArmPhysics() const
@@ -443,6 +480,7 @@ void ABopisCharacterBase::UpdateFreeArmPhysics(float DeltaSeconds)
 		if (!bFreeArmSimulating)
 		{
 			// Physics needs physics collision; the living mesh is normally query-only.
+			WaitForAnimEvaluation();
 			GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			StartLimb(LeftArmRoot, MakeLegHold(FreeArmHoldStrength));
 			bFreeArmSimulating = true;
@@ -480,6 +518,8 @@ void ABopisCharacterBase::EndSimulatedLegs(float BlendOutTime)
 
 void ABopisCharacterBase::StopSimulatingLegs()
 {
+	WaitForAnimEvaluation();
+
 	bLegsSimulating = false;
 	LegsFadeTime = 0.0f;
 
@@ -504,6 +544,8 @@ void ABopisCharacterBase::StopSimulatingLegs()
 
 void ABopisCharacterBase::StartHitReaction(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
 {
+	WaitForAnimEvaluation();
+
 	if (HitReactDuration <= 0.0f)
 	{
 		return;
@@ -526,6 +568,8 @@ void ABopisCharacterBase::StartHitReaction(const FHitResult& Hit, const FVector&
 
 void ABopisCharacterBase::StartStagger(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
 {
+	WaitForAnimEvaluation();
+
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	// Looser motors than a hit reaction, so the body reels. Restarting refreshes everything.
@@ -545,6 +589,8 @@ void ABopisCharacterBase::StartStagger(const FHitResult& Hit, const FVector& Sho
 
 void ABopisCharacterBase::EndHitReactions()
 {
+	WaitForAnimEvaluation();
+
 	if (!bIsHitReacting && !bIsStaggered)
 	{
 		return;
@@ -751,7 +797,7 @@ void ABopisCharacterBase::PlayFireAnimation(const AWeaponBase* Weapon)
 	}
 }
 
-void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon)
+void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon, float PlayRate)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (!Weapon || !AnimInstance)
@@ -763,8 +809,9 @@ void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon)
 
 	if (TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(AnimType); FoundMontage && *FoundMontage)
 	{
-		AnimInstance->Montage_Play(*FoundMontage);
+		AnimInstance->Montage_Play(*FoundMontage, PlayRate);
 		ActiveReloadMontage = *FoundMontage;
+		ActiveReloadPlayRate = PlayRate;
 	}
 
 	// Dual wield reloads both guns in one beat: the off hand plays its own montage in its
@@ -773,7 +820,7 @@ void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon)
 	{
 		if (TObjectPtr<UAnimMontage>* FoundOffhand = OffhandReloadMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
 		{
-			AnimInstance->Montage_Play(*FoundOffhand);
+			AnimInstance->Montage_Play(*FoundOffhand, PlayRate);
 		}
 	}
 }
@@ -796,20 +843,21 @@ void ABopisCharacterBase::PlayEquipAnimation(const AWeaponBase* Weapon)
 	}
 
 	const EWeaponAnimType AnimType = Weapon->GetAnimType();
+	const float PlayRate = GetEquipPlayRate();
 
 	if (const TObjectPtr<UAnimMontage>* Found = EquipMontages.Find(AnimType); Found && *Found)
 	{
 		// Same slot group as fire/reload, so this also cuts off whatever the previous
 		// weapon was still playing.
 		ActiveEquipMontage = *Found;
-		AnimInstance->Montage_Play(ActiveEquipMontage);
+		AnimInstance->Montage_Play(ActiveEquipMontage, PlayRate);
 	}
 
 	if (Weapon->IsDualWield())
 	{
 		if (const TObjectPtr<UAnimMontage>* FoundOffhand = OffhandEquipMontages.Find(AnimType); FoundOffhand && *FoundOffhand)
 		{
-			AnimInstance->Montage_Play(*FoundOffhand);
+			AnimInstance->Montage_Play(*FoundOffhand, PlayRate);
 		}
 	}
 }
@@ -866,6 +914,6 @@ void ABopisCharacterBase::UpdateReloadMontage()
 		// the copy we're replacing — blending it out over the new copy's blend-in. That
 		// is the crossfade. (False would leave the old copy looping underneath.)
 		AnimInstance->Montage_PlayWithBlendIn(ActiveReloadMontage, FAlphaBlendArgs(ReloadLoopBlendTime),
-			1.0f, EMontagePlayReturnType::MontageLength, LoopStart, true);
+			ActiveReloadPlayRate, EMontagePlayReturnType::MontageLength, LoopStart, true);
 	}
 }

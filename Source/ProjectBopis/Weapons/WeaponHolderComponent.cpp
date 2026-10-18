@@ -276,9 +276,9 @@ void UWeaponHolderComponent::AttachWeaponToHand()
 	EquippedWeapon->SetOwner(OwningCharacter);
 }
 
-bool UWeaponHolderComponent::ReloadEquippedWeapon()
+bool UWeaponHolderComponent::ReloadEquippedWeapon(float Speed)
 {
-	return EquippedWeapon ? EquippedWeapon->Reload() : false;
+	return EquippedWeapon ? EquippedWeapon->Reload(Speed) : false;
 }
 
 EFireResult UWeaponHolderComponent::FireEquippedWeapon()

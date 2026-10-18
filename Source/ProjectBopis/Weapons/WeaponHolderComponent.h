@@ -54,7 +54,7 @@ public:
 
 	/** Reloads the equipped weapon. Returns false if it couldn't start. */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
-	bool ReloadEquippedWeapon();
+	bool ReloadEquippedWeapon(float Speed = 1.0f);
 
 	/** Rounds of Type in the shared reserve. Every carried weapon that takes Type reloads
 	    from this one pool, so single and dual pistols share their rounds (Max Payne style). */

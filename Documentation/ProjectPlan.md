@@ -453,6 +453,12 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-17, compiled.)* Camera height re-applied on capsule resizes (crouch → dive flicker).
   - [x] *(Done 2026-10-17, compiled.)* The Start state on an evaluator driven from C++ (every dive starts at its own offset, the first included); `BackStartOffset`; jog dives jump forward, then turn and ease into the real direction.
   - Dropped: hips on physics; late limb physics at the push-off frame; turn-to-run and the strafe back-dive wind-up; the inertialized locomotion→dive blend; the two-evaluator crossfade.
+- [x] *(Done 2026-10-18, user: "works".)* **12. Reload upgrades** (user, 2026-10-17). See the spec's *Reload upgrades* and *Dual pistols in the dive*.
+  - [x] Reload carried through a roll: magazine guns at ≥1/3 are reloaded at the roll's end, else cancelled; the shotgun's cycle in progress goes in after the roll.
+  - [x] Quick reload mid-dive (3×, auto-reload too, the dive's slow motion kept); quick draw mid-dive (3×, fire as soon as it ends); both shown over the dive pose.
+  - [x] The left arm follows mid-dive gun switches (loose for the one-handed pistol, on the grip otherwise).
+  - [x] Duals: standing left-gun recoil (node order fixed); mirrored off-hand reload/draw in the air and prone (`OffhandMirror` cache, new dive layer).
+  - [x] Crash guard: mesh physics changes wait for the worker-thread animation evaluation.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -537,6 +543,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-18 — Phase 5 item 12 (reload upgrades) added and ticked.
 - 2026-10-17 — Phase 5 item 10: searching with the gun down. Item 11 (movement and dive feel) added and ticked.
 - 2026-10-16 (2) — Phase 5 items 9 (feedback and fixes) and 10 (room encounters) added; Phase 6 noted as a linear slice.
 - 2026-10-16 — Camping to a guaranteed hit, token removal, crouch combat stance, kneel switch; leftovers cleaned up (crosshair code and materials, StateTree stop on death, stale roll comment).

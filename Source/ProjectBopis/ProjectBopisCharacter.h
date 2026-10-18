@@ -407,6 +407,26 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
 	bool bStopFocusOnReload = true;
 
+	/** Rolling mid-reload: with at least this much of a magazine reload done, it's carried
+	    through and the gun is reloaded when the roll ends; with less, it's cancelled. (A
+	    shotgun's shell in progress always goes in after the roll.) */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RollReloadKeepFraction = 1.0f / 3.0f;
+
+	/** Reloading mid-dive (the flight) runs this many times as fast, timer and montage
+	    together: a quick reload in the air instead of flying on dry. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
+	float AirReloadSpeed = 3.0f;
+
+	/** An empty gun quick-reloads itself mid-dive too (with auto-reload on). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
+	bool bAirAutoReload = true;
+
+	/** Switching weapons mid-dive (the flight): the equip montage plays this many times as
+	    fast, and the gun can fire as soon as it ends. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
+	float AirEquipSpeed = 3.0f;
+
 	/** How quickly the camera catches up with the falling body. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float DeathCameraFollowSpeed = 8.0f;
@@ -449,6 +469,8 @@ public:
 	virtual bool WantsFreeArmPhysics() const override;
 
 	virtual bool ShouldSkipEquipAnimation() const override;
+
+	virtual float GetEquipPlayRate() const override;
 
 	/** Re-derives the camera boom's height from the capsule's current size, right away. Call
 	    after anything resizes the capsule mid-frame (crouch, a dive), or the camera shows one
@@ -495,6 +517,13 @@ public:
 	void ReloadAfterShootdodge() { DoReload(); }
 
 private:
+
+	/** At a roll's start: a reload far enough along is held for the roll's end, the rest
+	    cancelled. */
+	void HoldReloadForRoll();
+
+	/** The gun whose reload a roll is carrying (cleared when it's done or the gun changes). */
+	TWeakObjectPtr<AWeaponBase> RollHeldReloadWeapon;
 
 	/** Dead: the camera boom rides the body (pelvis) instead of the capsule left behind. */
 	void FollowBodyWithCamera(float DeltaSeconds);

@@ -272,6 +272,17 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	{
 		LastEvadingTime = GetWorld()->GetTimeSeconds();
 	}
+	// A roll carrying a reload: once it's over, the gun is reloaded — if it's still the gun in
+	// hand (one picked up mid-roll drops the carried reload).
+	if (RollHeldReloadWeapon.IsValid() && !(Roll && Roll->IsRolling()))
+	{
+		UWeaponHolderComponent* Holder = GetWeaponHolder();
+		if (Holder && Holder->GetEquippedWeapon() == RollHeldReloadWeapon.Get() && RollHeldReloadWeapon->Reload())
+		{
+			RollHeldReloadWeapon->CompleteReloadNow();
+		}
+		RollHeldReloadWeapon = nullptr;
+	}
 	UpdateAutoReload(DeltaSeconds);
 	UpdateCrouch();
 
@@ -608,7 +619,10 @@ void AProjectBopisCharacter::DoRoll()
 	{
 		UnCrouch();
 	}
-	Roll->TryRoll();
+	if (Roll->TryRoll())
+	{
+		HoldReloadForRoll();
+	}
 }
 
 void AProjectBopisCharacter::StartPostRollCrouch()
@@ -800,6 +814,23 @@ void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 	}
 }
 
+void AProjectBopisCharacter::HoldReloadForRoll()
+{
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	if (!Weapon || !Weapon->IsReloading())
+	{
+		return;
+	}
+
+	// A magazine reload far enough along is done by the time the roll is; a shotgun's shell in
+	// progress goes in after it. Both are held and finished at the roll's end; anything else
+	// is cancelled.
+	const bool bKeep = !Weapon->IsMagazineReload() || Weapon->GetReloadProgress() >= RollReloadKeepFraction;
+	Weapon->CancelReload();
+	RollHeldReloadWeapon = bKeep ? Weapon : nullptr;
+}
+
 void AProjectBopisCharacter::DoReload()
 {
 	if (Roll && Roll->IsRolling())
@@ -807,25 +838,28 @@ void AProjectBopisCharacter::DoReload()
 		return;
 	}
 
-	// Lying prone after a dive, it reloads on the floor; the rest of a dive (wind-up, flight,
-	// landing, getting up) has no time for it.
-	if (Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne())
+	// Lying prone after a dive, it reloads on the floor; in the air it quick-reloads. The rest
+	// of a dive (wind-up, landing, getting up) has no time for it.
+	const bool bInAir = Shootdodge && Shootdodge->IsAirborne();
+	if (Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne() && !bInAir)
 	{
 		return;
 	}
+	const float Speed = bInAir ? AirReloadSpeed : 1.0f;
 
 	// The montage only plays if a reload actually started, so mashing the key on a
 	// full magazine does nothing rather than replaying the animation.
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
-	if (!Holder || !Holder->ReloadEquippedWeapon())
+	if (!Holder || !Holder->ReloadEquippedWeapon(Speed))
 	{
 		return;
 	}
 
-	PlayReloadAnimation(Holder->GetEquippedWeapon());
+	PlayReloadAnimation(Holder->GetEquippedWeapon(), Speed);
 
-	// Reloading breaks the moment: slow motion ends.
-	if (bStopFocusOnReload && Focus && Focus->IsFocusActive())
+	// Reloading breaks the moment: slow motion ends — but not mid-dive, where it would end the
+	// dive's own slow motion with it.
+	if (bStopFocusOnReload && !bInAir && Focus && Focus->IsFocusActive())
 	{
 		Focus->StopFocus();
 	}
@@ -833,11 +867,13 @@ void AProjectBopisCharacter::DoReload()
 
 void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 {
-	// An empty gun reloads itself once the player is free to — standing or lying prone, not
-	// mid-dive or mid-roll — after a beat, so the last shot reads.
+	// An empty gun reloads itself once the player is free to — standing, lying prone, or (with
+	// bAirAutoReload) mid-flight, not mid-roll — after a beat, so the last shot reads.
 	const UWeaponHolderComponent* Holder = GetWeaponHolder();
 	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
-	const bool bInDive = Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne();
+	const bool bInAir = Shootdodge && Shootdodge->IsAirborne();
+	const bool bInDive = Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne()
+		&& !(bInAir && bAirAutoReload);
 	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating();
 	if (!bAutoReload || !Weapon || !bFreeToReload || Weapon->GetAmmoInMagazine() > 0 || !Weapon->CanReload())
 	{
@@ -965,4 +1001,10 @@ bool AProjectBopisCharacter::ShouldSkipEquipAnimation() const
 {
 	// Rolling over a gun picks it up without breaking the roll.
 	return Roll && Roll->IsRolling();
+}
+
+float AProjectBopisCharacter::GetEquipPlayRate() const
+{
+	// Mid-dive, a swap is a quick draw: the gun's up (and firing) in a fraction of the time.
+	return Shootdodge && Shootdodge->IsAirborne() ? AirEquipSpeed : 1.0f;
 }

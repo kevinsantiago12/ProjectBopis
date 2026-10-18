@@ -233,10 +233,16 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	bool bShootdodging = false;
 
-	/** Weight of the reload montage's arms over the prone pose (the AnimGraph's prone-branch
-	    layered blend, from the clavicles down): eased in while a reload plays, out after. */
+	/** Weight of the dive branch's upper-body montage layer (reload or equip) over the dive and
+	    prone poses (the AnimGraph's layered blend, from the clavicles down): eased in while
+	    either plays, out after. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	float ProneReloadAlpha = 0.0f;
+
+	/** Duals: weight of the mirrored off-hand montage on the left arm in the dive branch (the
+	    standing branch's mirrored off-hand pose) — ProneReloadAlpha while dual-wielding, else 0. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	float ProneDualOffhandAlpha = 0.0f;
 
 	/** How fast ProneReloadAlpha eases in and out (per second; 6 ≈ 0.17 s). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.1"))

@@ -79,8 +79,12 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bTurningToAim = Hero && Hero->IsTurningToAim();
 	bIsCrouched = Character->bIsCrouched;
 	bReloadAnimating = Character->IsReloadAnimating();
-	ProneReloadAlpha = FMath::FInterpConstantTo(ProneReloadAlpha, bReloadAnimating ? 1.0f : 0.0f,
+	// The dive branch's upper-body layer (the reload/equip montages over the dive and prone
+	// poses) is up for either — a mid-air quick reload or quick draw.
+	const bool bUpperBodyMontage = bReloadAnimating || Character->IsEquipAnimating();
+	ProneReloadAlpha = FMath::FInterpConstantTo(ProneReloadAlpha, bUpperBodyMontage ? 1.0f : 0.0f,
 		DeltaSeconds, ProneReloadBlendSpeed);
+	ProneDualOffhandAlpha = bIsDualWield ? ProneReloadAlpha : 0.0f;
 	bIsAiming = Character->IsAiming();
 
 	if (Weapon)
@@ -159,9 +163,9 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	FQuat ArmTarget = FQuat::Identity;
 	FQuat HeadTarget = FQuat::Identity;
 
-	// Reloading, the gun isn't being aimed: the correction lets go (it would bend the torso to
-	// point a gun at the crosshair that's down by the chest), and comes back once it's done.
-	if (bShootdodging && Mesh && Weapon && PlayerController && !bReloadAnimating)
+	// Reloading or drawing, the gun isn't being aimed: the correction lets go (it would bend the
+	// torso to point a gun at the crosshair that's down by the chest), and comes back once done.
+	if (bShootdodging && Mesh && Weapon && PlayerController && !bReloadAnimating && !Character.IsEquipAnimating())
 	{
 		// Where the crosshair is looking: the camera's view, out to whatever it hits.
 		FVector ViewLocation;

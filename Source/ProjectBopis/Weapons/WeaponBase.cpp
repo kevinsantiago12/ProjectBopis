@@ -72,7 +72,7 @@ bool AWeaponBase::CanAcceptRound() const
 		&& (bInfiniteReserve || GetReserveAmmo() > 0);
 }
 
-bool AWeaponBase::Reload()
+bool AWeaponBase::Reload(float Speed)
 {
 	if (!CanReload())
 	{
@@ -80,17 +80,18 @@ bool AWeaponBase::Reload()
 	}
 
 	bIsReloading = true;
+	ReloadSpeed = FMath::Max(Speed, 0.01f);
 
 	if (ReloadStyle == EReloadStyle::PerRound)
 	{
 		// First round lands after the wind-up; LoadRound re-arms itself for the rest.
 		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
-			&AWeaponBase::LoadRound, ReloadStartDelay + TimePerRound, false);
+			&AWeaponBase::LoadRound, (ReloadStartDelay + TimePerRound) / ReloadSpeed, false);
 	}
 	else
 	{
 		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
-			&AWeaponBase::FinishReload, ReloadDuration, false);
+			&AWeaponBase::FinishReload, ReloadDuration / ReloadSpeed, false);
 	}
 
 	return true;
@@ -108,7 +109,7 @@ void AWeaponBase::LoadRound()
 	if (CanAcceptRound())
 	{
 		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
-			&AWeaponBase::LoadRound, TimePerRound, false);
+			&AWeaponBase::LoadRound, TimePerRound / ReloadSpeed, false);
 	}
 	else
 	{
@@ -135,6 +136,40 @@ void AWeaponBase::CancelReload()
 
 	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
 	bIsReloading = false;
+}
+
+float AWeaponBase::GetReloadProgress() const
+{
+	if (!bIsReloading)
+	{
+		return 0.0f;
+	}
+	const FTimerManager& Timers = GetWorldTimerManager();
+	const float Rate = Timers.GetTimerRate(ReloadTimerHandle);
+	return Rate > 0.0f ? FMath::Clamp(Timers.GetTimerElapsed(ReloadTimerHandle) / Rate, 0.0f, 1.0f) : 0.0f;
+}
+
+void AWeaponBase::CompleteReloadNow()
+{
+	if (!bIsReloading)
+	{
+		return;
+	}
+	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
+	if (ReloadStyle == EReloadStyle::Magazine)
+	{
+		FinishReload();
+	}
+	else
+	{
+		// The cycle under way when it was cut off goes in (a shell carried through a roll),
+		// then loading stops.
+		for (int32 Loaded = 0; Loaded < RoundsPerLoad && CanAcceptRound(); ++Loaded)
+		{
+			CurrentAmmoInMagazine += TakeReserve(1);
+		}
+		bIsReloading = false;
+	}
 }
 
 float AWeaponBase::GetProjectileSpeed() const

@@ -12,6 +12,53 @@
 
 ---
 
+## 2026-10-18
+**Summary:**
+- **Reload upgrades (user: "works"):**
+  - a reload at least 1/3 done carries through a roll and finishes at its end
+    (less is cancelled); the shotgun's shell in progress goes in after the roll;
+  - mid-dive, reload and weapon switch run at 3× (`AirReloadSpeed`,
+    `AirEquipSpeed`), with auto-reload in the air;
+  - both show over the dive pose, and the gun fires as soon as the draw ends.
+  - User: 3× "looks ok"; 5× washed out, because the montage blends don't
+    scale with play rate.
+- **The left arm follows mid-dive gun switches:** it goes back on the grip for
+  two-handed guns.
+- **Duals (user: "works"):**
+  - the standing left gun kicks again: its recoil node was before the mirrored
+    left-arm layer;
+  - reloads and draws in the air and prone mirror the right hand. A new
+    cached pose, `OffhandMirror`, is read by both branches; the user placed
+    the Use Cached Pose nodes, which the bridge can't create.
+- **Crash guard:** two "array index out of bounds: 71/72 of size 0" crashes
+  (10-17, 21:16 and 00:07). Mesh physics changes now wait for the
+  worker-thread animation evaluation (`WaitForAnimEvaluation`). Not proven
+  fixed; watch `Saved/Crashes`.
+- **Asked about:** procedural animation cost. The bone tweaks are cheap; the
+  physics limbs are moderate. The free arm on enemies is the first thing to cut
+  if needed.
+
+### ▶ RESUME HERE
+1. **Commit and push (user).** Uncommitted:
+   - Source: `BopisCharacterBase.h/.cpp`, `ProjectBopisCharacter.h/.cpp`,
+     `ProjectBopisAnimInstance.h/.cpp`, `Gameplay/ShootdodgeComponent.cpp`,
+     `Weapons/WeaponBase.h/.cpp`, `Weapons/WeaponHolderComponent.h/.cpp`;
+   - Content: `ABP_Player`, `BP_PlayerCharacter`, and `BP_GameMode` (not
+     touched by Claude; check it);
+   - docs: spec, progress log, plan.
+2. **Watch for the crash** (`Saved/Crashes`). If it returns, note the time and
+   what was happening.
+3. **Playtest still open from 10-17:** the enemy lowered search; the free arm on
+   foot; roll pickups; the crouch → dive camera; the dive Focus drain; camping.
+4. **Next:** the bladed strafe stance (A: mirror the lower body only; B: a
+   procedural hip turn and spine counter-twist), the user's pick. Optional:
+   blend times that scale with reload speed (for anything above 3×); Land on an
+   evaluator.
+5. **Parked** (unchanged): the casing sound; Kamz bone scales; the long-gun
+   wind-up arms; the enemy roster; Focus sounds.
+
+---
+
 ## 2026-10-17
 **Summary:**
 - **Camping:** the clock waits only while evading (a dive or roll, plus its
@@ -51,7 +98,9 @@
   `StrafeBackStartOffset` redirect retired after re-saving
   `BP_PlayerCharacter`.
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-18.)*
+
+### (old) RESUME HERE
 1. **Commit and push (user).** Uncommitted:
    - Source: `BopisCharacterBase.h/.cpp`, `ProjectBopisCharacter.h/.cpp`,
      `Enemies/EnemyBase.h/.cpp`, `ProjectBopisAnimInstance.h/.cpp`,
