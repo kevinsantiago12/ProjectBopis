@@ -2169,6 +2169,61 @@ How the layer settled:
 - **Enemies:** they share the base class, so one with a one-handed pistol
   gets it too.
 
+**Bladed stance (2026-10-18, user: "looks good"):** a moderate one-hand
+blade, right hand forward, for the one-handed pistol raised. The reference was
+Chow Yun-fat's one-hand stance, less side-on, and it has to work while
+strafing.
+- **Why it's needed:** the one-handed pistol's raised strafe is
+  **`BS_Rifle_Strafe`** (the Move state's `EWeaponAnimType` blend, slot 4),
+  bladed to the *right*. A right-hand-forward blade would twist the torso
+  about 90°.
+- **Lower body (mirrored):** at the top level, a second `BS_Rifle_Strafe`
+  player is fed `CardinalDirectionMirrored` (= −`CardinalDirection`), so the
+  mirrored feet step the way you're moving. Its Y is `Speed`, its play rate a
+  fixed 0.75 (the ABP's `LocomotionPlayRate`; the pin isn't exposed). It goes
+  through a Mirror (`MDT_Mannequin`), then **`LayeredBoneBlend_10`**: filter
+  `pelvis`, weight `StrafeBladeAlpha`.
+  - It reads the existing `Loco` cache as its base and feeds the upper-body
+    layer `_0`. That layer blends from `spine_01` in **mesh space**, so the
+    torso keeps its orientation over the mirrored hips.
+  - `StrafeBladeAlpha` eases in with the one-handed pistol raised, standing,
+    not diving. Switch it off with `bBladeStance`.
+  - Known gap: the mirrored copy skips the Orientation and Stride Warping,
+    which run before `Loco`.
+- **Upper body (`UpdateBlade`):** weighted `StrafeBladeAlpha × (1 −
+  ProneReloadAlpha)`, so it's off for reloads and draws.
+  - **Chest:** `BladeAngle` (35°) about the vertical, half each on
+    `spine_03`/`spine_05` (`BladeSpineTurn`).
+  - **Head:** turns back by the same, half each on `neck_01`/`head`
+    (`BladeHeadTurn`).
+  - **Arm:** `upperarm_r` turns so the shoulder-to-hand line points at the
+    camera-traced aim point (`BladeArmTurn`, cap `BladeArmMaxAngle` 60°).
+  - **Hand:** `hand_r` then lines the barrel up with the crosshair
+    (`BladeHandTurn`, cap `BladeHandMaxAngle` 45°).
+  - Both corrections are worked out fresh each frame, with their own turn
+    taken back out, as for the dive. They're Transform (Modify) Bone nodes on
+    the standing branch (add, component space) after `LocalToComponentSpace_1`
+    and before the spine recoil.
+- **Tried and dropped:**
+  - the arm turned from the shoulder to aim the *muzzle*: the hand stayed at
+    the chest and the body hid the arm;
+  - Two Bone IK on `hand_r` along the shoulder line: the arm didn't follow;
+  - the hand turn alone, without the arm turn.
+- **Left arm:** still the free-arm pose `MM_Pistol_Idle_OneHanded`, which the
+  user re-authored for the blade. An unused `_Bladed` copy from 10-09 was
+  deleted.
+- **Equip:** the free arm now eases out for equip montages too
+  (`bEquipAnimating`), so the one-handed draw plays its own left arm.
+
+**Backsteps (2026-10-18):** `UpdateLocomotion` picks the strafe clip with
+hysteresis (`CardinalSwitchAngle` 55°). Strafing right and then moving
+back-right kept the forward-facing side clip, and Orientation Warping twisted
+it about 45° toward the back: the torso over-twisted.
+- Now travel at or past **`BackstepMinAngle`** (105°) from forward always
+  picks the 180° backstep, whichever way the strafe came from. It stays there
+  until the travel is `BackstepHysteresis` (10°) further forward.
+- It covers every weapon's strafe, and the mirrored blade copy too.
+
 ### Gait — slower cadence with stride warping (2026-10-07)
 Lyra's locomotion was accurate but read as cartoonish; Max Payne 1–2 is the
 reference. Every locomotion/idle clip player runs at `LocomotionPlayRate`
@@ -3674,6 +3729,7 @@ ones most likely to bite:
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
 - 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
+- 2026-10-18 (2) — Bladed stance for the one-handed pistol (mirrored `BS_Rifle_Strafe` lower body via `LayeredBoneBlend_10`; chest, head, arm-from-shoulder and hand turns in `UpdateBlade`). Backsteps for any backward strafe (`BackstepMinAngle`). One-handed equip plays its own left arm. Orphaned `MM_Pistol_Idle_OneHanded_Bladed` deleted.
 - 2026-10-18 — Reload upgrades: carried through a roll (1/3 rule; the shotgun's cycle), quick reload and quick draw mid-dive (3×, shown over the dive pose), the left arm follows mid-dive gun switches. Duals: the standing left-gun recoil fixed (node order), the mirrored off-hand montage in the dive branch (`OffhandMirror` cache, `LayeredBoneBlend_9`, `ProneDualOffhandAlpha`). Crash guard `WaitForAnimEvaluation` before mesh physics changes; gotcha added.
 - 2026-10-17 — Shootdodge refinements: flight limbs on physics (legs, plus the left arm with a one-handed pistol, easing from firm to loose); the Start state on a Blend Space Evaluator driven from C++ (`ShootdodgeStartTime`); `BackStartOffset`; jog dives jump forward then spin (`ForwardJumpHoldTime`, `ShootdodgeDirectionCatchUpRate`); dive Focus drains as it goes. Camera height re-applied on capsule resizes. Free arm on physics (one-handed pistol, on foot). Weapon pickup mid-roll keeps the roll. Enemies search with the gun down and the head on the last known spot. Camping waits only while evading. Clean-up: `SpendMeter` and a spare Inertialization node removed. Four new gotchas.
 - 2026-10-16 (4) — Directional hit indicator: `AddHitIndicator`, sector-based flood control, `UHitIndicatorWidget` (code-drawn arcs); Slate/SlateCore added to the module.

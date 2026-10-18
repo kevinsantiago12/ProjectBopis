@@ -12,6 +12,44 @@
 
 ---
 
+## 2026-10-18 (2)
+**Summary:**
+- **Bladed one-handed pistol stance (user: "looks good"; tuned by the user):**
+  - **Lower body:** a mirrored copy of the one-handed pistol's strafe
+    (`BS_Rifle_Strafe`, fed the negated direction so the steps go the way
+    you move), layered over the pelvis and legs.
+  - **Upper body:** the chest turned 35°, the head back on the target, the gun
+    arm turned from the shoulder at the aim, and the hand lining the barrel up.
+  - **Tried and dropped:** turning the arm to aim the muzzle (the arm was
+    hidden behind the body) and Two Bone IK (the arm didn't follow).
+  - The user re-authored the free left arm (`MM_Pistol_Idle_OneHanded`).
+    The orphaned `MM_Pistol_Idle_OneHanded_Bladed` copy from 10-09 was deleted
+    through the bridge.
+- **Backsteps:** any backward strafe past 105° now uses the backstep clips,
+  whichever way you came from. Before, a back-diagonal could keep the side
+  clip and over-twist the torso. All weapons.
+- **One-handed equip** plays its own left arm; the free arm eases out for it.
+- **New rule:** "apply and run" also approves the bridge calls that change
+  needs (`Claude-Rules.md` §3).
+
+### ▶ RESUME HERE
+1. **Commit and push (user).** Uncommitted: the deletion of
+   `MM_Pistol_Idle_OneHanded_Bladed` and the docs (spec, plan, progress log).
+   The code, `ABP_Player` and `Claude-Rules.md` were already pushed.
+2. **Watch for the crash** (`Saved/Crashes`).
+3. **Playtest still open from 10-17:** the enemy lowered search; the free arm on
+   foot; roll pickups; the crouch → dive camera; the dive Focus drain; camping.
+4. **Optional:**
+   - the mirrored blade legs skip the orientation and stride warping (on
+     diagonals the feet face the nearest 90°);
+   - blend times that scale with reload speed;
+   - the Land state on an evaluator.
+5. **Next feature:** the user's call.
+6. **Parked** (unchanged): the casing sound; Kamz bone scales; the long-gun
+   wind-up arms; the enemy roster; Focus sounds.
+
+---
+
 ## 2026-10-18
 **Summary:**
 - **Reload upgrades (user: "works"):**
@@ -38,7 +76,9 @@
   physics limbs are moderate. The free arm on enemies is the first thing to cut
   if needed.
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-18 (2).)*
+
+### (old) RESUME HERE
 1. **Committed and pushed by the user (2026-10-18).** Only this RESUME HERE
    update is uncommitted.
 2. **Watch for the crash** (`Saved/Crashes`). If it returns, note the time and

@@ -459,6 +459,10 @@ archetype-composition idea, not extended from the old classes.
   - [x] The left arm follows mid-dive gun switches (loose for the one-handed pistol, on the grip otherwise).
   - [x] Duals: standing left-gun recoil (node order fixed); mirrored off-hand reload/draw in the air and prone (`OffhandMirror` cache, new dive layer).
   - [x] Crash guard: mesh physics changes wait for the worker-thread animation evaluation.
+- [x] *(Done 2026-10-18, user: "looks good".)* **13. Bladed one-handed pistol stance** (user, 2026-10-18). See the spec's *Bladed stance* and *Backsteps*.
+  - [x] Mirrored lower body for the strafe (negated direction, so the steps go the right way).
+  - [x] Chest turn, head back to target, arm from the shoulder at the aim, hand turn for the barrel; left arm re-authored by the user.
+  - [x] Backsteps for any backward strafe, all weapons; the one-handed equip plays its own left arm.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -543,6 +547,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-18 (2) — Phase 5 item 13 (bladed one-handed pistol stance) added and ticked.
 - 2026-10-18 — Phase 5 item 12 (reload upgrades) added and ticked.
 - 2026-10-17 — Phase 5 item 10: searching with the gun down. Item 11 (movement and dive feel) added and ticked.
 - 2026-10-16 (2) — Phase 5 items 9 (feedback and fixes) and 10 (room encounters) added; Phase 6 noted as a linear slice.
