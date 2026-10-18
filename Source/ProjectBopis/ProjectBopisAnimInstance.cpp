@@ -79,6 +79,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bTurningToAim = Hero && Hero->IsTurningToAim();
 	bIsCrouched = Character->bIsCrouched;
 	bReloadAnimating = Character->IsReloadAnimating();
+	bEquipAnimating = Character->IsEquipAnimating();
 	// The dive branch's upper-body layer (the reload/equip montages over the dive and prone
 	// poses) is up for either — a mid-air quick reload or quick draw.
 	const bool bUpperBodyMontage = bReloadAnimating || Character->IsEquipAnimating();
@@ -114,6 +115,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateProneFeet(*Character, DeltaSeconds);
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
 	UpdateHeadLook(*Character, DeltaSeconds);
+	UpdateBlade(*Character, Weapon, DeltaSeconds);
 }
 
 namespace
@@ -583,9 +585,9 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 
 	// One-handed pistol: the raised pistol poses are two-handed, so while raised the free
 	// left arm is overridden with the at-side pose. It follows the raised layer, and eases
-	// out for reload montages (and back in after) so the two-handed reload blends in.
+	// out for reload and equip montages (and back in after) so their own left arm plays.
 	FreeArmReloadBlend = FMath::FInterpTo(
-		FreeArmReloadBlend, bReloadAnimating ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
+		FreeArmReloadBlend, (bReloadAnimating || bEquipAnimating) ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
 	const bool bOneHanded = CurrentAnimType == EWeaponAnimType::PistolOneHanded;
 	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;}
@@ -754,4 +756,56 @@ void UProjectBopisAnimInstance::UpdateHeadLook(const ABopisCharacterBase& Charac
 	// Eased in and out, so the head turns rather than snaps when a target comes or goes.
 	HeadLookTotal = FQuat::Slerp(HeadLookTotal, Target, FMath::Clamp(DeltaSeconds * HeadLookSpeed, 0.0f, 1.0f)).GetNormalized();
 	HeadLookRotation = FQuat::Slerp(FQuat::Identity, HeadLookTotal, 0.5f).Rotator();
+}
+
+void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
+{
+	// The one-handed pistol's bladed upper body, off while a reload or draw owns the arms.
+	const float Alpha = StrafeBladeAlpha * (1.0f - ProneReloadAlpha);
+
+	// Chest turned about the vertical so the right shoulder leads; the head turns back by the same.
+	const float HalfTurn = 0.5f * BladeAngle * Alpha;
+	BladeSpineTurn = FRotator(0.0f, -HalfTurn, 0.0f);
+	BladeHeadTurn = FRotator(0.0f, HalfTurn, 0.0f);
+
+	// Gun arm: turned from the shoulder so the arm's line (shoulder to hand) points at the aim point;
+	// the arm keeps the pose's shape and the hand its grip. Fresh each frame from the arm as the
+	// pose holds it (this turn taken back out), as for the dive.
+	FQuat Target = FQuat::Identity;
+	FQuat HandTarget = FQuat::Identity;
+	const USkeletalMeshComponent* Mesh = Character.GetMesh();
+	const APlayerController* PlayerController = Cast<APlayerController>(Character.GetController());
+	if (Alpha > KINDA_SMALL_NUMBER && Mesh && Weapon && PlayerController)
+	{
+		FVector ViewLocation;
+		FRotator ViewRotation;
+		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(BladeAim), false, &Character);
+		Params.AddIgnoredActor(Weapon);
+		FHitResult Hit;
+		const FVector AimPoint = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, ViewEnd, ECC_Visibility, Params)
+			? Hit.ImpactPoint : ViewEnd;
+
+		const FTransform& ToComponent = Mesh->GetComponentTransform();
+		const FVector Shoulder = Mesh->GetSocketLocation(TEXT("upperarm_r"));
+		const FVector Hand = Mesh->GetSocketLocation(TEXT("hand_r"));
+		const FVector ArmLine = ToComponent.InverseTransformVectorNoScale((Hand - Shoulder).GetSafeNormal());
+		const FVector Wanted = ToComponent.InverseTransformVectorNoScale((AimPoint - Shoulder).GetSafeNormal());
+		Target = ClampTurn(FQuat::FindBetweenNormals(BladeArmTotal.UnrotateVector(ArmLine), Wanted), BladeArmMaxAngle);
+		Target = FQuat::Slerp(FQuat::Identity, Target, Alpha);
+
+		// Then the hand: the barrel lined up with the crosshair. The gun as held already includes
+		// both turns; only the hand's own is taken back out (it applies after the arm's).
+		const FTransform Muzzle = Weapon->GetMuzzleTransform();
+		const FVector GunDirection = ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
+		const FVector GunWanted = ToComponent.InverseTransformVectorNoScale((AimPoint - Muzzle.GetLocation()).GetSafeNormal());
+		HandTarget = ClampTurn(FQuat::FindBetweenNormals(BladeHandTotal.UnrotateVector(GunDirection), GunWanted), BladeHandMaxAngle);
+		HandTarget = FQuat::Slerp(FQuat::Identity, HandTarget, Alpha);
+	}
+	BladeArmTotal = FQuat::Slerp(BladeArmTotal, Target, FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f)).GetNormalized();
+	BladeArmTurn = BladeArmTotal.Rotator();
+	BladeHandTotal = FQuat::Slerp(BladeHandTotal, HandTarget, FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f)).GetNormalized();
+	BladeHandTurn = BladeHandTotal.Rotator();
 }

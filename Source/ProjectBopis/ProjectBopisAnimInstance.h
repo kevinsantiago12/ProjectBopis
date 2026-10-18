@@ -63,6 +63,38 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade")
 	bool bBladeStance = true;
 
+	/** Bladed stance: how far the chest turns about the vertical (degrees) so the right shoulder
+	    leads; half on spine_03, half on spine_05. The head turns back by the same. Negative turns
+	    the other way. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "-90.0", ClampMax = "90.0"))
+	float BladeAngle = 35.0f;
+
+	/** Most the gun arm turns from the shoulder (degrees) to point at the aim. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.0", ClampMax = "120.0"))
+	float BladeArmMaxAngle = 60.0f;
+
+	/** Half the chest turn, for each of spine_03 and spine_05 (component space, added). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	FRotator BladeSpineTurn = FRotator::ZeroRotator;
+
+	/** Half the head's turn back to the target, for each of neck_01 and head (component space, added). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	FRotator BladeHeadTurn = FRotator::ZeroRotator;
+
+	/** The gun arm's turn (upperarm_r, component space, added): the shoulder-to-hand line pointed at
+	    the aim point, the arm held as the pose has it. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	FRotator BladeArmTurn = FRotator::ZeroRotator;
+
+	/** The gun hand's turn (hand_r, component space, added), after the arm's: lines the barrel up
+	    with the crosshair. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	FRotator BladeHandTurn = FRotator::ZeroRotator;
+
+	/** Most the gun hand turns (degrees) to line the barrel up. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.0", ClampMax = "90.0"))
+	float BladeHandMaxAngle = 45.0f;
+
 	/** Travel further than this from forward (degrees) always plays the backstep clips, however
 	    the strafe got there — a side clip warped round past it twists the torso. */
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion", meta = (ClampMin = "90.0", ClampMax = "180.0"))
@@ -537,6 +569,14 @@ private:
 
 	void UpdateHeadLook(const ABopisCharacterBase& Character, float DeltaSeconds);
 
+	void UpdateBlade(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	/** The gun arm's whole turn, eased; BladeArmTurn is it as a rotator. */
+	FQuat BladeArmTotal = FQuat::Identity;
+
+	/** The gun hand's whole turn, eased; BladeHandTurn is it as a rotator. */
+	FQuat BladeHandTotal = FQuat::Identity;
+
 	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
 	void UpdateProneDirection(float DeltaSeconds);
 	void UpdateProneFeet(const ABopisCharacterBase& Character, float DeltaSeconds);
@@ -565,6 +605,9 @@ private:
 	    prone branch borrows the upper-body slot's arms. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	bool bReloadAnimating = false;
+
+	/** An equip montage is playing (the pull-out): the free arm eases out for it, as for a reload. */
+	bool bEquipAnimating = false;
 
 	/** Aim button held (ADS) — not hip-fire raises. The left-hand IK only runs while aiming. */
 	bool bIsAiming = false;

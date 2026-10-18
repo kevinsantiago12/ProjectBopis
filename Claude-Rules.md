@@ -67,6 +67,10 @@ hands-on practice.
   beyond that one call is pre-approved. *(2026-10-03)*
 - A request to make something through the bridge (e.g. "make a BP_Shotgun")
   approves the calls that task needs, not later tasks.
+- **"Apply and run" includes the bridge (2026-10-18):** when the user says
+  "apply and run" for a presented change, that also approves the bridge calls
+  the change needs (AnimBP/Blueprint edits, compile, save), unless they
+  explicitly say not to use it. It still covers only that presented change.
 
 ## 4. Checklist and progress
 
