@@ -39,22 +39,42 @@
   if needed.
 
 ### ▶ RESUME HERE
-1. **Commit and push (user).** Uncommitted:
-   - Source: `BopisCharacterBase.h/.cpp`, `ProjectBopisCharacter.h/.cpp`,
-     `ProjectBopisAnimInstance.h/.cpp`, `Gameplay/ShootdodgeComponent.cpp`,
-     `Weapons/WeaponBase.h/.cpp`, `Weapons/WeaponHolderComponent.h/.cpp`;
-   - Content: `ABP_Player`, `BP_PlayerCharacter`, and `BP_GameMode` (not
-     touched by Claude; check it);
-   - docs: spec, progress log, plan.
+1. **Committed and pushed by the user (2026-10-18).** Only this RESUME HERE
+   update is uncommitted.
 2. **Watch for the crash** (`Saved/Crashes`). If it returns, note the time and
    what was happening.
 3. **Playtest still open from 10-17:** the enemy lowered search; the free arm on
    foot; roll pickups; the crouch → dive camera; the dive Focus drain; camping.
-4. **Next:** the bladed strafe stance (A: mirror the lower body only; B: a
-   procedural hip turn and spine counter-twist), the user's pick. Optional:
-   blend times that scale with reload speed (for anything above 3×); Land on an
-   evaluator.
-5. **Parked** (unchanged): the casing sound; Kamz bone scales; the long-gun
+4. **Next: the bladed pistol stance (agreed 2026-10-18, start here).**
+   - **The goal:** a moderate one-hand blade, right hand forward, shoulders
+     about 30–45° off the target, gun arm extended. The user's reference is
+     Chow Yun-fat's one-hand stance, but less side-on, and it must work while
+     strafing in every direction.
+   - **The problem:** the pistol strafe clips are bladed to the *right*. Moving
+     left plays a right-facing back-step, so a right-hand-forward blade would
+     twist the torso about 90°.
+   - **Plan:**
+     1. **Lower body.** A top-level copy of the pistol strafe blend space,
+        fed the **negated** direction (`StrafeDirectionMirrored`, C++), so the
+        mirrored feet step the actual way you're moving. It goes through a
+        Mirror (`MDT_Mannequin`), then a Layered Blend Per Bone over the
+        Locomotion state machine's output for the pelvis and legs, weighted by
+        a C++ `StrafeBladeAlpha` (one-handed pistol raised). The torso follows
+        the mirrored hips.
+     2. **Upper body.** A small spine turn (`BladeAngle`), the gun arm extended
+        at the crosshair (Two Bone IK on `hand_r`, slight bend kept,
+        `BladeArmStraightness`), and the head on the target. Off for reloads,
+        draws, dives, rolls and crouch.
+     3. **Tuning.** The angle, the arm bend, and the camera shoulder offset.
+   - **Defaults:** the one-handed pistol only; hip-fire and aiming both; player
+     only.
+   - **First action:** with the user's OK, read through the bridge where the
+     pistol strafe blend space lives (likely inside Locomotion → Move) and
+     what feeds it. All new nodes go at the top level: the bridge can't create
+     nodes inside states.
+5. **Optional:** blend times that scale with reload speed (for anything above
+   3×); Land on an evaluator.
+6. **Parked** (unchanged): the casing sound; Kamz bone scales; the long-gun
    wind-up arms; the enemy roster; Focus sounds.
 
 ---

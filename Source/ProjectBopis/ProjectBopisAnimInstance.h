@@ -49,6 +49,30 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	double CardinalDirection = 0.0;
 
+	/** CardinalDirection negated: what the mirrored strafe copy is fed, so its mirrored feet
+	    step the way the character is actually moving. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	double CardinalDirectionMirrored = 0.0;
+
+	/** Weight of the bladed (mirrored) lower body: one-handed pistol, raised, standing; eased. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	float StrafeBladeAlpha = 0.0f;
+
+	/** The one-handed pistol's raised stance blades the other way: hips and feet mirrored,
+	    right hand forward. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade")
+	bool bBladeStance = true;
+
+	/** Travel further than this from forward (degrees) always plays the backstep clips, however
+	    the strafe got there — a side clip warped round past it twists the torso. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion", meta = (ClampMin = "90.0", ClampMax = "180.0"))
+	float BackstepMinAngle = 105.0f;
+
+	/** Once backstepping, stays so until the travel comes this much further forward than
+	    BackstepMinAngle — no flicker at the edge. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float BackstepHysteresis = 10.0f;
+
 	/** What orientation warping rotates the legs by: Direction minus CardinalDirection. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion")
 	double WarpAngle = 0.0;

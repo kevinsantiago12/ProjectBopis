@@ -96,6 +96,13 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	bDualSpread = bIsDualWield && !bIsAiming;
 
+	// The one-handed pistol's bladed stance: the mirrored strafe copy reads the negated direction,
+	// and fades in with the raised stance (standing, not diving).
+	CardinalDirectionMirrored = -CardinalDirection;
+	const bool bBlade = bBladeStance && CurrentAnimType == EWeaponAnimType::PistolOneHanded
+		&& bIsWeaponRaised && !bIsCrouched && !bShootdodging;
+	StrafeBladeAlpha = FMath::FInterpTo(StrafeBladeAlpha, bBlade ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
+
 	UpdateUpperBody(DeltaSeconds);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
@@ -492,8 +499,17 @@ void UProjectBopisAnimInstance::UpdateLocomotion(const ABopisCharacterBase& Char
 		? FRotator::NormalizeAxis(Velocity.Rotation().Yaw - Character.GetActorRotation().Yaw)
 		: 0.0f;
 
-	// Hysteresis stops the strafe clip flickering between two cardinals on a diagonal.
-	if (FMath::Abs(FRotator::NormalizeAxis(Direction - CardinalDirection)) > CardinalSwitchAngle)
+	// Moving backward plays the backsteps whichever way the strafe came from: a side clip held
+	// on into a back diagonal and warped round twists the torso. Otherwise, hysteresis stops
+	// the strafe clip flickering between two cardinals on a diagonal.
+	const double AbsDirection = FMath::Abs(Direction);
+	const bool bBackstepping = FMath::Abs(CardinalDirection) > 179.0;
+	if (AbsDirection >= BackstepMinAngle || (bBackstepping && AbsDirection >= BackstepMinAngle - BackstepHysteresis))
+	{
+		CardinalDirection = 180.0;
+	}
+	else if (FMath::Abs(FRotator::NormalizeAxis(Direction - CardinalDirection)) > CardinalSwitchAngle
+		|| bBackstepping)
 	{
 		CardinalDirection = FMath::GridSnap(Direction, 90.0);
 	}
