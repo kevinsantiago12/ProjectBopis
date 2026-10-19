@@ -568,6 +568,23 @@ SMG are for weapons not built yet. Set on the Blueprints 2026-10-08. Anim type
 and ammo type are independent (`BP_Pistol` is `PistolOneHanded`, duals `Dual`,
 both Pistol ammo).
 
+**MAC-11 placeholder (2026-10-19).** `BP_MAC11` (`PistolOneHanded`) and
+`BP_DualMAC11` (`Dual`), the first SMG-ammo weapons; an Uzi replaces them in
+production. Mesh `/Game/FPS_Weapon_Bundle/.../SMG11/SK_SMG11_Nostock_Y` with
+user-placed `MuzzleFlash`/`AmmoEject` sockets (X forward). Single 0.06 s,
+12 damage, 32 rounds, reload 2.0, spread 1.2 → 1.5; dual 0.05 s, 64, 2.4,
+1.6 → 1.8; reserve 128; AI bursts 4–8 / 6–12, pauses 0.6–1.2.
+`BP_AmmoPickup_SMG` gives 32.
+
+**Gunfire concurrency (2026-10-19).** Fire sounds have long tails (SMG 5.9 s,
+sniper 5.3, shotgun 4.3), so rapid fire from several enemies ran out of voices.
+Each fire sound overrides concurrency on the asset: `MaxCount` 3,
+`bLimitToOwner` (the weapon actor, so a dual pair shares 3), `StopOldest`,
+`VoiceStealReleaseTime` 0.05. A new weapon's fire sound needs the same.
+Open: the player's own shots play 3D from the muzzle and shift as the camera
+moves; likely 2D for the locally controlled player. **Gotcha:** the pack's sockets need the X axis
+down the barrel; the bladed hand turn and the casings steer by the muzzle's X.
+
 **Starting loadout (2026-10-10):** on `UWeaponHolderComponent`.
 - `StartingWeaponClass` is spawned and equipped first.
 - `StartingLoadout` (array) is added after it, hidden. Classes already carried
@@ -2170,7 +2187,10 @@ How the layer settled:
   gets it too.
 
 **Bladed stance (2026-10-18, user: "looks good"):** a moderate one-hand
-blade, right hand forward, for the one-handed pistol raised. The reference was
+blade, right hand forward, for the one-handed pistol raised. **Player only
+(2026-10-19):** the arm turn aims at the camera's crosshair, so AI got the chest
+turn without the correction and aimed left; the condition now includes
+`IsPlayerControlled()`. The reference was
 Chow Yun-fat's one-hand stance, less side-on, and it has to work while
 strafing.
 - **Why it's needed:** the one-handed pistol's raised strafe is
@@ -3729,6 +3749,7 @@ ones most likely to bite:
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
 - 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
+- 2026-10-19 — MAC-11 placeholder (single + dual, SMG ammo, `BP_AmmoPickup_SMG`); bladed stance player-only.
 - 2026-10-18 (2) — Bladed stance for the one-handed pistol (mirrored `BS_Rifle_Strafe` lower body via `LayeredBoneBlend_10`; chest, head, arm-from-shoulder and hand turns in `UpdateBlade`). Backsteps for any backward strafe (`BackstepMinAngle`). One-handed equip plays its own left arm. Orphaned `MM_Pistol_Idle_OneHanded_Bladed` deleted.
 - 2026-10-18 — Reload upgrades: carried through a roll (1/3 rule; the shotgun's cycle), quick reload and quick draw mid-dive (3×, shown over the dive pose), the left arm follows mid-dive gun switches. Duals: the standing left-gun recoil fixed (node order), the mirrored off-hand montage in the dive branch (`OffhandMirror` cache, `LayeredBoneBlend_9`, `ProneDualOffhandAlpha`). Crash guard `WaitForAnimEvaluation` before mesh physics changes; gotcha added.
 - 2026-10-17 — Shootdodge refinements: flight limbs on physics (legs, plus the left arm with a one-handed pistol, easing from firm to loose); the Start state on a Blend Space Evaluator driven from C++ (`ShootdodgeStartTime`); `BackStartOffset`; jog dives jump forward then spin (`ForwardJumpHoldTime`, `ShootdodgeDirectionCatchUpRate`); dive Focus drains as it goes. Camera height re-applied on capsule resizes. Free arm on physics (one-handed pistol, on foot). Weapon pickup mid-roll keeps the roll. Enemies search with the gun down and the head on the last known spot. Camping waits only while evading. Clean-up: `SpendMeter` and a spare Inertialization node removed. Four new gotchas.

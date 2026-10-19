@@ -100,7 +100,8 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	// The one-handed pistol's bladed stance: the mirrored strafe copy reads the negated direction,
 	// and fades in with the raised stance (standing, not diving).
 	CardinalDirectionMirrored = -CardinalDirection;
-	const bool bBlade = bBladeStance && CurrentAnimType == EWeaponAnimType::PistolOneHanded
+	const bool bBlade = bBladeStance && Character->IsPlayerControlled()
+		&& CurrentAnimType == EWeaponAnimType::PistolOneHanded
 		&& bIsWeaponRaised && !bIsCrouched && !bShootdodging;
 	StrafeBladeAlpha = FMath::FInterpTo(StrafeBladeAlpha, bBlade ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 

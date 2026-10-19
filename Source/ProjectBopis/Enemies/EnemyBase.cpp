@@ -124,6 +124,7 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	{
 		LastKnownPlayerLocation = Player->GetActorLocation();
 		TimeSinceSeenPlayer = 0.0f;
+		bSeenSinceAlert = true;
 		bLeadGone = false;
 		TimeAtLastKnown = 0.0f;
 	}
@@ -176,7 +177,7 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	// The trigger: the player in sight — or only just lost, while it keeps firing at where
 	// they went (SuppressFireDuration) — and the gun up and ready. A sound alone is searched,
 	// not shot at.
-	const bool bSuppressing = bAlerted && !bSeesPlayer && TimeSinceSeenPlayer <= SuppressFireDuration;
+	const bool bSuppressing = bAlerted && bSeenSinceAlert && !bSeesPlayer && TimeSinceSeenPlayer <= SuppressFireDuration;
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
 
@@ -696,6 +697,7 @@ void AEnemyBase::Alert(AActor* Target)
 	// Heard, not seen: the noise is where to look.
 	LastKnownPlayerLocation = Target->GetActorLocation();
 	TimeSinceSeenPlayer = 0.0f;
+	bSeenSinceAlert = false;
 }
 
 void AEnemyBase::HearPlayer(const FVector& Location)

@@ -12,6 +12,50 @@
 
 ---
 
+## 2026-10-19
+**Summary:**
+- **MAC-11 placeholder (SMG), single and dual** (user: placeholder, an Uzi
+  replaces it in production; enemies use it too). Made through the bridge:
+  - `BP_MAC11` (`PistolOneHanded`, `DualWieldClass` `BP_DualMAC11`) and
+    `BP_DualMAC11` (`Dual`, single/drop `BP_MAC11`), duplicated from the
+    pistols. Single: 0.06 s, 12 damage, 32 rounds, reload 2.0, spread
+    1.2 → 1.5, AI bursts 4–8. Dual: 0.05 s, 64, reload 2.4, spread 1.6 → 1.8,
+    AI bursts 6–12. SMG ammo (its own pool, not the pistol's), reserve 128.
+    Sound: Real_Recorded_Guns `SMG_Single_Shot_Combo_Cue`.
+  - Mesh `FPS_Weapon_Bundle` `SK_SMG11_Nostock_Y`. **The user set it up**:
+    picked the `_Y` mesh, placed `MuzzleFlash` and `AmmoEject` by hand
+    (pasted sockets faced down; rotated so X/red points forward) and tuned the
+    grip. My socket and grip attempts (bone sockets, `_X` swap, yaw −93,
+    barrel-tip socket) were all reverted.
+  - `BP_AmmoPickup_SMG` (32 SMG rounds; still the pistol's .45 box mesh).
+- **Bladed stance is player-only:** enemies with a one-handed gun turned the
+  chest but had no arm correction (that needs the camera), so they aimed left.
+  `IsPlayerControlled()` added to the blade condition. User: "pose is fixed".
+- **Gunfire voice limit:** the SMG shot is 5.9 s long (tail), so one MAC-11 on
+  auto stacked ~95 voices and several enemies broke the audio. All five fire
+  sounds (SMG combo cue, `PistolA_Fire02`, Rifle/Sniper/Shotgun `_Fire_Cue`) now
+  override concurrency: 3 per gun (limit to owner), stop oldest, 0.05 s steal
+  fade. Saved; not yet heard in play. **Parked by the user:** the player's own
+  gun sound shifting as they move (spatialization; likely play it 2D for the
+  local player).
+
+### ▶ RESUME HERE
+1. **Commit and push (user).** Uncommitted: the two packs
+   (`Content/FPS_Weapon_Bundle/`, `Content/Real_Recorded_Guns/`, best as their
+   own commit), `BP_MAC11`, `BP_DualMAC11`, `BP_AmmoPickup_SMG`, the
+   one-line `ProjectBopisAnimInstance.cpp` change, the 10-18 (2) leftovers
+   and these docs.
+2. **MAC-11 placement:** give it to enemies; place weapon/ammo pickups.
+3. **Next: grenades (step 2).** Player only (enemy grenades only in scripted
+   sets, e.g. shooting one mid-air); 5 max; throwable mid-dive; slow motion
+   when an explosion kills; the existing additive toss animation; mesh
+   `SM_G67_Thrown` from the new pack. Plan to be presented first.
+4. **Watch for the crash** (`Saved/Crashes`); 10-17 playtest items still open.
+5. **Then Phase 6** (graybox slice).
+6. **Optional / parked:** unchanged from 2026-10-18 (2).
+
+---
+
 ## 2026-10-18 (2)
 **Summary:**
 - **Bladed one-handed pistol stance (user: "looks good"; tuned by the user):**
@@ -32,7 +76,9 @@
 - **New rule:** "apply and run" also approves the bridge calls that change
   needs (`Claude-Rules.md` §3).
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-19.)*
+
+### (old) RESUME HERE
 1. **Commit and push (user).** Uncommitted: the deletion of
    `MM_Pistol_Idle_OneHanded_Bladed` and the docs (spec, plan, progress log).
    The code, `ABP_Player` and `Claude-Rules.md` were already pushed.

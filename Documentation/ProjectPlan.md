@@ -463,6 +463,11 @@ archetype-composition idea, not extended from the old classes.
   - [x] Mirrored lower body for the strafe (negated direction, so the steps go the right way).
   - [x] Chest turn, head back to target, arm from the shoulder at the aim, hand turn for the barrel; left arm re-authored by the user.
   - [x] Backsteps for any backward strafe, all weapons; the one-handed equip plays its own left arm.
+- [x] *(Done 2026-10-19, user-set-up.)* **14. MAC-11 placeholder SMG** (user, 2026-10-18; an Uzi replaces it in production). See the spec's *MAC-11 placeholder*.
+  - [x] `BP_MAC11` (one-handed) and `BP_DualMAC11`, SMG ammo, `BP_AmmoPickup_SMG`; mesh, sockets and grip set by the user.
+  - [x] Bladed stance limited to the player (enemies aimed left).
+  - [ ] Give it to enemies; place pickups.
+- [ ] **15. Grenades** (user, 2026-10-18): player only (scripted enemy throws later, shootable mid-air), 5 max, throwable mid-dive, slow motion on explosion kills, the existing additive toss animation.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice

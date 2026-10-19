@@ -410,6 +410,10 @@ private:
 	FVector LastKnownPlayerLocation = FVector::ZeroVector;
 	float TimeSinceSeenPlayer = 0.0f;
 
+	/** Seen the player since being alerted. Suppressing fire needs a sighting to lose; an alert
+	    from a sound (or an ally, or the level) is searched, not shot at. */
+	bool bSeenSinceAlert = false;
+
 
 	/** Nothing but the player between Eyes and Target. */
 	bool HasClearShot(const FVector& Eyes, const FVector& Target, const APawn* Player) const;
