@@ -3,6 +3,8 @@
 
 #include "UI/AmmoWidget.h"
 #include "Weapons/WeaponBase.h"
+#include "ProjectBopisCharacter.h"
+#include "Weapons/WeaponHolderComponent.h"
 
 int32 UAmmoWidget::GetAmmoInMagazine() const
 {
@@ -20,4 +22,11 @@ bool UAmmoWidget::IsReloading() const
 {
 	AWeaponBase* Weapon = GetEquippedWeapon();
 	return Weapon ? Weapon->IsReloading() : false;
+}
+
+int32 UAmmoWidget::GetGrenadeCount() const
+{
+	const AProjectBopisCharacter* Player = GetPlayerCharacter();
+	const UWeaponHolderComponent* Holder = Player ? Player->GetWeaponHolder() : nullptr;
+	return Holder ? Holder->GetReserveAmmo(EAmmoType::Grenade) : 0;
 }

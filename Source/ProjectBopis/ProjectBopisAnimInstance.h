@@ -58,6 +58,19 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
 	float StrafeBladeAlpha = 0.0f;
 
+	/** Weight of a grenade toss: the blade's upper-body turns ease out under it (not the legs). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	float ThrowAlpha = 0.0f;
+
+	/** Weight of the hand turn that points a two-handed pistol at the crosshair from the hip
+	    (the blade's hand turn, without its chest and arm turns). Eased. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
+	float HipAimHandAlpha = 0.0f;
+
+	/** How fast (per second) the blade's turns ease out for a throw, and back after. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.1"))
+	float ThrowBladeBlendSpeed = 8.0f;
+
 	/** The one-handed pistol's raised stance blades the other way: hips and feet mirrored,
 	    right hand forward. */
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade")
@@ -608,6 +621,9 @@ private:
 
 	/** An equip montage is playing (the pull-out): the free arm eases out for it, as for a reload. */
 	bool bEquipAnimating = false;
+
+	/** The owner is turning to throw or mid-toss (see AProjectBopisCharacter::IsThrowingGrenade). */
+	bool bThrowingGrenade = false;
 
 	/** Aim button held (ADS) — not hip-fire raises. The left-hand IK only runs while aiming. */
 	bool bIsAiming = false;

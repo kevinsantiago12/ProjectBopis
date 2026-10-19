@@ -26,4 +26,8 @@ public:
 	/** Whether the equipped weapon is mid-reload. */
 	UFUNCTION(BlueprintPure, Category = "Ammo")
 	bool IsReloading() const;
+
+	/** Hand grenades carried (the Grenade ammo pool), or 0 with no holder. */
+	UFUNCTION(BlueprintPure, Category = "Ammo")
+	int32 GetGrenadeCount() const;
 };

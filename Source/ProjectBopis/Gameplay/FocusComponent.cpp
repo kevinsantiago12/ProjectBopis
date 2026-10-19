@@ -44,6 +44,17 @@ void UFocusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	const float GlobalDilation = UGameplayStatics::GetGlobalTimeDilation(this);
 	const float RealDelta = GlobalDilation > KINDA_SMALL_NUMBER ? DeltaTime / GlobalDilation : DeltaTime;
 
+	// A kill's slow motion runs out on its own, in real time.
+	if (KillSlowMotionLeft > 0.0f)
+	{
+		KillSlowMotionLeft -= RealDelta;
+		if (KillSlowMotionLeft <= 0.0f)
+		{
+			KillSlowMotionLeft = 0.0f;
+			EndFreeFocus();
+		}
+	}
+
 	if (bActive)
 	{
 		// The player's own Focus drains at DrainPerSecond; a free one at whatever its owner
@@ -76,6 +87,7 @@ void UFocusComponent::Toggle()
 	if (bActive && bFree)
 	{
 		bFree = false;
+		KillSlowMotionLeft = 0.0f;
 		return;
 	}
 
@@ -120,6 +132,7 @@ void UFocusComponent::StopFocus()
 	bActive = false;
 	bFree = false;
 	FreeDrainPerSecond = 0.0f;
+	KillSlowMotionLeft = 0.0f;
 	ApplyTimeDilation(1.0f);
 
 	UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
@@ -138,6 +151,13 @@ bool UFocusComponent::BeginFreeFocus(float DrainWhileFree)
 {
 	if (bActive)
 	{
+		// A kill's slow motion is handed over: the caller (a dive, a roll) owns it from here.
+		if (bFree && KillSlowMotionLeft > 0.0f)
+		{
+			KillSlowMotionLeft = 0.0f;
+			FreeDrainPerSecond = DrainWhileFree;
+			return true;
+		}
 		return false;
 	}
 
@@ -152,6 +172,18 @@ void UFocusComponent::EndFreeFocus()
 	if (bActive && bFree)
 	{
 		StopFocus();
+	}
+}
+
+void UFocusComponent::PlayKillSlowMotion(float RealDuration)
+{
+	if (bActive || RealDuration <= 0.0f)
+	{
+		return;
+	}
+	if (BeginFreeFocus())
+	{
+		KillSlowMotionLeft = RealDuration;
 	}
 }
 

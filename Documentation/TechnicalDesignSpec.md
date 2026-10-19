@@ -870,6 +870,73 @@ character's montage maps need an entry for it like any anim type.
 
 ---
 
+## Explosives (2026-10-19)
+Player only for now; enemy grenades are for scripted sets (e.g. shooting one
+out of the air), which `AGrenade` already supports.
+- **`AExplosion`** (`BP_Explosion`): spawned where something goes off, with
+  its Instigator. Overlaps all dynamic objects in `Radius` (600); full
+  `Damage` (250) inside `FullDamageRadius` (200), down to
+  `EdgeDamageFraction` (0.2) at the edge; walls block (Visibility trace from
+  20 cm up, everything caught ignored). Each victim gets point damage aimed out
+  and up from the blast, so `TakeDamage`'s overkill/`LaunchBody` flings bodies.
+  Loose physics gets a radial impulse. Full self-damage. Effects
+  `P_Grenade_Explosion_01`, `GrenadeLauncher_Explosion_Cue`, optional camera
+  shake. A kill by the player's blast: `PlayKillSlowMotion(1.5)`.
+- **Kill slow motion:** `UFocusComponent::PlayKillSlowMotion(RealDuration)` is
+  a free Focus on a real-time timer; ignored if slow motion is already on. A
+  later `BeginFreeFocus` (dive, roll) takes it over; pressing Focus claims it.
+- **`AGrenade`** (on `AProjectileBase`; `OnHit` is virtual): `FuseTime`
+  (0 = none), `bExplodeOnImpact`, bounce sound above `MinBounceSoundSpeed`.
+  Shot: goes off now and the shooter becomes the Instigator. Caught in a blast:
+  goes off after `ChainDelay` (0.15 s). `Launch(Velocity)` for throws.
+  `BP_Grenade_Thrown` (2.5 s fuse, bounces) and `BP_Grenade_Launched`
+  (impact, 2500 cm/s, gravity 0.5).
+- **Thrown grenades:** quick throw (not a weapon slot). `DoThrowGrenade` (G,
+  `IA_Grenade`) works standing, prone and in the air, not mid-roll, reload or
+  draw; `GrenadeThrowCooldown` 0.9 s. From the lowered stance it raises the gun
+  and waits for the turn to the camera (`GrenadeFacingTolerance` 20°, at most
+  `GrenadeMaxTurnWait` 0.35 s), then plays `AM_GrenadeToss` (additive, slot
+  `Additive`, just before the Output Pose) and releases at
+  `GrenadeReleaseTime` 0.35 s from `hand_l`. Max Payne 2 arc: control
+  rotation lofted `GrenadeLoftAngle` (12°) × `GrenadeThrowSpeed` (1400) +
+  `GrenadeInheritVelocity` (0.5) × the thrower's velocity.
+  `IsThrowingGrenade()` (turning or mid-toss) keeps the free arm off physics,
+  eases the blade's upper-body turns out (`ThrowAlpha`, legs stay) and brings
+  the one-handed left arm back to the hand-forward hold (the toss is authored
+  from it).
+- **Count:** grenades are ammo, `EAmmoType::Grenade` (cap 5 in
+  `MaxAmmoByType`, `StartingGrenades` 3), so ammo pickups refill them
+  (`BP_AmmoPickup_Grenade`, 1). HUD: `UAmmoWidget::GetGrenadeCount`.
+- **`BP_GrenadeLauncher`:** rifle hold, slot 6 (`IA_WeaponSlot6`, key 6;
+  explosives), `LauncherGrenade` ammo (cap 12), 6 rounds + 6, 0.8 s, 3.0 s
+  reload, fires `BP_Grenade_Launched`, no spread or casings, its own
+  `LeftHandGrip`. Pickups `BP_GrenadeLauncher_Pickup`,
+  `BP_AmmoPickup_LauncherGrenade` (3).
+
+**Revolver (2026-10-19).** `BP_Revolver`: `Pistol` (two-handed) hold, slot 2,
+no duals, `HighPowerPistol` (cap 60), 6 + 24, 60 damage, 0.45 s, 2.6 s
+speedloader reload, no casings. Mesh `_357Revolver_Rig`: its bones carry a 100×
+scale, so its sockets (`MuzzleFlash`, `LeftHandGrip`) are scaled 0.01. Grip
+pitch 8 / yaw −93 (the mesh runs along X, the pistol family along Y).
+
+**Hands (2026-10-19):**
+- Left-hand IK (`TwoBoneIK_0`, on `ik_hand_l` moved to the `LeftHandGrip`
+  socket) runs for every two-handed hold whenever the gun is up (aimed or
+  raised for hip-fire), not for the one-handed pistol or duals, and lets go for
+  reloads, draws and throws. It keeps the pose's hand rotation
+  (`bTakeRotationFromEffectorSpace` off, `bMaintainEffectorRelRot` on): the
+  rifle turn clips otherwise rolled the hand palm-up.
+- Hip aim: for two-handed holds at the hip, the blade's hand turn (`hand_r`)
+  points the barrel at the crosshair (`HipAimHandAlpha`; capped at
+  `BladeHandMaxAngle`).
+- `UpdateBlade` takes `RootYawOffset` back out of what it measures
+  (`RotateRootBone` comes after its turns in the graph).
+
+**Gotchas (2026-10-19):** the player pawn is `BP_Kamz`, a child of
+`BP_PlayerCharacter`; set player defaults on it (parent values set through the
+bridge didn't carry over). The bridge's `set_socket_transform` resets the
+fields you leave out.
+
 ## Enemies
 
 Rewritten 2026-09-30 for the Aswang direction. Lore in
@@ -3749,6 +3816,7 @@ ones most likely to bite:
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).
 - 2026-10-16 (5) — Room encounters: `bHoldsPosition` + `HoldRadius`, reaction beat (`ReactionTimeMin/Max`), `AEncounterTrigger`.
+- 2026-10-19 (2) — Explosives (AExplosion, AGrenade, kill slow motion, quick throw, grenade launcher, grenade ammo and HUD count); revolver; two-handed left-hand IK at hip, hip aim hand turn, blade turns minus the root offset; bSeenSinceAlert.
 - 2026-10-19 — MAC-11 placeholder (single + dual, SMG ammo, `BP_AmmoPickup_SMG`); bladed stance player-only.
 - 2026-10-18 (2) — Bladed stance for the one-handed pistol (mirrored `BS_Rifle_Strafe` lower body via `LayeredBoneBlend_10`; chest, head, arm-from-shoulder and hand turns in `UpdateBlade`). Backsteps for any backward strafe (`BackstepMinAngle`). One-handed equip plays its own left arm. Orphaned `MM_Pistol_Idle_OneHanded_Bladed` deleted.
 - 2026-10-18 — Reload upgrades: carried through a roll (1/3 rule; the shotgun's cycle), quick reload and quick draw mid-dive (3×, shown over the dive pose), the left arm follows mid-dive gun switches. Duals: the standing left-gun recoil fixed (node order), the mirrored off-hand montage in the dive branch (`OffhandMirror` cache, `LayeredBoneBlend_9`, `ProneDualOffhandAlpha`). Crash guard `WaitForAnimEvaluation` before mesh physics changes; gotcha added.

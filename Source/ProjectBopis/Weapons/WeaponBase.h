@@ -93,7 +93,9 @@ enum class EAmmoType : uint8
 	Rifle,
 	Sniper,
 	AutoShotgun,
-	PumpShotgun
+	PumpShotgun,
+	Grenade,
+	LauncherGrenade
 };
 
 /** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited

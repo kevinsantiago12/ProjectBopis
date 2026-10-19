@@ -105,6 +105,20 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		&& bIsWeaponRaised && !bIsCrouched && !bShootdodging;
 	StrafeBladeAlpha = FMath::FInterpTo(StrafeBladeAlpha, bBlade ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
+	// A grenade toss takes the upper body: the blade's turns ease out under it; the legs stay.
+	bThrowingGrenade = Hero && Hero->IsThrowingGrenade();
+	ThrowAlpha = FMath::FInterpConstantTo(ThrowAlpha, bThrowingGrenade ? 1.0f : 0.0f,
+		DeltaSeconds, ThrowBladeBlendSpeed);
+
+	// Two-handed holds at the hip (pistol, rifles, shotguns, the launcher): their poses don't
+	// point the barrel at the crosshair, so the hand is turned to it as the blade does. Aimed
+	// (ADS), the sight poses already line up.
+	const bool bTwoHandedHold = !bIsDualWield && CurrentAnimType != EWeaponAnimType::PistolOneHanded;
+	const bool bHipAimHand = Character->IsPlayerControlled() && bTwoHandedHold
+		&& bIsWeaponRaised && !bIsAiming && !bShootdodging
+		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade;
+	HipAimHandAlpha = FMath::FInterpTo(HipAimHandAlpha, bHipAimHand ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
+
 	UpdateUpperBody(DeltaSeconds);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
@@ -573,12 +587,16 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		? (1.0 - UpperBodyAlpha) * (1.0 - DualCrouchBlend)
 		: 0.0;
 
-	// Left-hand IK: long guns only, and only while aiming (ADS). Every other pose —
-	// lowered, hip-fire raised, moving, pistols — keeps its hand-authored left hand.
-	// Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l. Off while
-	// reload-animating. Eases on, snaps off.
-	const bool bLongGun = !IsPistolAnimType(CurrentAnimType);
-	const double IKTarget = (bIsAiming && bLongGun && !bIsDualWield && !bReloadAnimating) ? 1.0 : 0.0;
+	// Left-hand IK: two-handed holds (long guns and the two-handed pistol), whenever the gun is
+	// up (aimed, or raised for hip-fire), so the hand stays on the grip at any pitch — the aim
+	// offsets' arm poses don't match every raised or fire pose under them. Not the one-handed
+	// pistol (free arm) or duals (a gun in each hand); off while a reload, draw or grenade toss
+	// uses the hand. Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l.
+	// Eases on, snaps off.
+	const bool bTwoHanded = !bIsDualWield && CurrentAnimType != EWeaponAnimType::PistolOneHanded;
+	const bool bGunUp = bIsAiming || bIsWeaponRaised;
+	const double IKTarget = (bGunUp && bTwoHanded
+		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade) ? 1.0 : 0.0;
 
 	LeftHandIKAlpha = IKTarget < LeftHandIKAlpha
 		? IKTarget
@@ -586,9 +604,10 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 
 	// One-handed pistol: the raised pistol poses are two-handed, so while raised the free
 	// left arm is overridden with the at-side pose. It follows the raised layer, and eases
-	// out for reload and equip montages (and back in after) so their own left arm plays.
-	FreeArmReloadBlend = FMath::FInterpTo(
-		FreeArmReloadBlend, (bReloadAnimating || bEquipAnimating) ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
+	// out for reload, equip and grenade montages (and back in after) so their own left arm
+	// plays — the toss is authored from a hand-forward hold, not one at the side.
+	FreeArmReloadBlend = FMath::FInterpTo(FreeArmReloadBlend,
+		(bReloadAnimating || bEquipAnimating || bThrowingGrenade) ? 0.0f : 1.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
 	const bool bOneHanded = CurrentAnimType == EWeaponAnimType::PistolOneHanded;
 	FreeArmAlpha = bOneHanded ? UpperBodyAlpha * FreeArmReloadBlend : 0.0;}
@@ -761,8 +780,8 @@ void UProjectBopisAnimInstance::UpdateHeadLook(const ABopisCharacterBase& Charac
 
 void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
 {
-	// The one-handed pistol's bladed upper body, off while a reload or draw owns the arms.
-	const float Alpha = StrafeBladeAlpha * (1.0f - ProneReloadAlpha);
+	// The one-handed pistol's bladed upper body, off while a reload, draw or grenade toss owns the arms.
+	const float Alpha = StrafeBladeAlpha * (1.0f - ProneReloadAlpha) * (1.0f - ThrowAlpha);
 
 	// Chest turned about the vertical so the right shoulder leads; the head turns back by the same.
 	const float HalfTurn = 0.5f * BladeAngle * Alpha;
@@ -774,9 +793,10 @@ void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character
 	// pose holds it (this turn taken back out), as for the dive.
 	FQuat Target = FQuat::Identity;
 	FQuat HandTarget = FQuat::Identity;
+	const float HandAlpha = FMath::Max(Alpha, HipAimHandAlpha);
 	const USkeletalMeshComponent* Mesh = Character.GetMesh();
 	const APlayerController* PlayerController = Cast<APlayerController>(Character.GetController());
-	if (Alpha > KINDA_SMALL_NUMBER && Mesh && Weapon && PlayerController)
+	if (HandAlpha > KINDA_SMALL_NUMBER && Mesh && Weapon && PlayerController)
 	{
 		FVector ViewLocation;
 		FRotator ViewRotation;
@@ -790,20 +810,30 @@ void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character
 			? Hit.ImpactPoint : ViewEnd;
 
 		const FTransform& ToComponent = Mesh->GetComponentTransform();
-		const FVector Shoulder = Mesh->GetSocketLocation(TEXT("upperarm_r"));
-		const FVector Hand = Mesh->GetSocketLocation(TEXT("hand_r"));
-		const FVector ArmLine = ToComponent.InverseTransformVectorNoScale((Hand - Shoulder).GetSafeNormal());
-		const FVector Wanted = ToComponent.InverseTransformVectorNoScale((AimPoint - Shoulder).GetSafeNormal());
-		Target = ClampTurn(FQuat::FindBetweenNormals(BladeArmTotal.UnrotateVector(ArmLine), Wanted), BladeArmMaxAngle);
-		Target = FQuat::Slerp(FQuat::Identity, Target, Alpha);
+
+		// Turning in place, the whole pose is counter-rotated at the root (RotateRootBone, by
+		// RootYawOffset) after these turns in the graph, but the bones read here already
+		// include it. Everything is brought back to the frame the turns apply in.
+		const FQuat PreRoot = FRotator(0.0f, RootYawOffset, 0.0f).Quaternion().Inverse();
+
+		// The arm turn is the blade's alone.
+		if (Alpha > KINDA_SMALL_NUMBER)
+		{
+			const FVector Shoulder = Mesh->GetSocketLocation(TEXT("upperarm_r"));
+			const FVector Hand = Mesh->GetSocketLocation(TEXT("hand_r"));
+			const FVector ArmLine = PreRoot * ToComponent.InverseTransformVectorNoScale((Hand - Shoulder).GetSafeNormal());
+			const FVector Wanted = PreRoot * ToComponent.InverseTransformVectorNoScale((AimPoint - Shoulder).GetSafeNormal());
+			Target = ClampTurn(FQuat::FindBetweenNormals(BladeArmTotal.UnrotateVector(ArmLine), Wanted), BladeArmMaxAngle);
+			Target = FQuat::Slerp(FQuat::Identity, Target, Alpha);
+		}
 
 		// Then the hand: the barrel lined up with the crosshair. The gun as held already includes
 		// both turns; only the hand's own is taken back out (it applies after the arm's).
 		const FTransform Muzzle = Weapon->GetMuzzleTransform();
-		const FVector GunDirection = ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
-		const FVector GunWanted = ToComponent.InverseTransformVectorNoScale((AimPoint - Muzzle.GetLocation()).GetSafeNormal());
+		const FVector GunDirection = PreRoot * ToComponent.InverseTransformVectorNoScale(Muzzle.GetUnitAxis(EAxis::X));
+		const FVector GunWanted = PreRoot * ToComponent.InverseTransformVectorNoScale((AimPoint - Muzzle.GetLocation()).GetSafeNormal());
 		HandTarget = ClampTurn(FQuat::FindBetweenNormals(BladeHandTotal.UnrotateVector(GunDirection), GunWanted), BladeHandMaxAngle);
-		HandTarget = FQuat::Slerp(FQuat::Identity, HandTarget, Alpha);
+		HandTarget = FQuat::Slerp(FQuat::Identity, HandTarget, HandAlpha);
 	}
 	BladeArmTotal = FQuat::Slerp(BladeArmTotal, Target, FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f)).GetNormalized();
 	BladeArmTurn = BladeArmTotal.Rotator();

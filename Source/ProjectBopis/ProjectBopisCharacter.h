@@ -17,6 +17,7 @@ class UFocusComponent;
 class UShootdodgeComponent;
 class URollComponent;
 class UPostProcessComponent;
+class AGrenade;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -130,6 +131,10 @@ protected:
 	/** Dodge roll Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* RollAction;
+
+	/** Grenade throw Input Action **/
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* GrenadeAction;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -311,6 +316,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoRoll();
 
+	/** Throws a grenade from input. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoThrowGrenade();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -422,6 +431,53 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
 	bool bAirAutoReload = true;
 
+	/** What a throw spawns. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade")
+	TSubclassOf<AGrenade> GrenadeClass;
+
+	/** The toss: an additive montage on the Additive slot, so it plays over any pose (the dive too). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade")
+	TObjectPtr<UAnimMontage> GrenadeTossMontage;
+
+	/** Seconds into the toss that the grenade leaves the hand. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0"))
+	float GrenadeReleaseTime = 0.35f;
+
+	/** Seconds from one throw until the next is allowed. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0"))
+	float GrenadeThrowCooldown = 0.9f;
+
+	/** The bone it leaves from. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade")
+	FName GrenadeHandSocket = TEXT("hand_l");
+
+	/** How hard it's thrown (cm/s), along the camera's aim: look higher and it flies further
+	    (Max Payne 2). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0"))
+	float GrenadeThrowSpeed = 1400.0f;
+
+	/** Degrees above the aim it leaves at, so a level look still lobs it. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float GrenadeLoftAngle = 12.0f;
+
+	/** How much of the thrower's own velocity it carries: thrown from a dive, it flies further. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GrenadeInheritVelocity = 0.5f;
+
+	/** From free-run the character turns to the camera first, as for a trigger pull; the toss
+	    waits until it faces within this many degrees... */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0"))
+	float GrenadeFacingTolerance = 20.0f;
+
+	/** ...or this many seconds at most. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0.0"))
+	float GrenadeMaxTurnWait = 0.35f;
+
+	/** Grenades carried at the start. They live in the ammo pool (EAmmoType::Grenade), so the
+	    holder's MaxAmmoByType caps them and ammo pickups refill them. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0"))
+	int32 StartingGrenades = 3;
+
 	/** Switching weapons mid-dive (the flight): the equip montage plays this many times as
 	    fast, and the gun can fire as soon as it ends. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
@@ -461,6 +517,9 @@ public:
 	UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	UFocusComponent* GetFocus() const { return Focus; }
+
+	/** Turning to throw or mid-toss: the free arm stays off physics and the blade's turns ease out. */
+	bool IsThrowingGrenade() const;
 
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
@@ -517,6 +576,21 @@ public:
 	void ReloadAfterShootdodge() { DoReload(); }
 
 private:
+
+	/** The toss's release point: the grenade leaves the hand for the crosshair. */
+	void ReleaseGrenade();
+
+	/** The toss proper: the montage, then the release timer. */
+	void StartToss();
+
+	/** A throw waiting for the turn to the camera; starts the toss once facing. */
+	void UpdatePendingThrow(float DeltaSeconds);
+
+	bool bThrowPending = false;
+	float ThrowPendingTime = 0.0f;
+
+	FTimerHandle GrenadeReleaseTimer;
+	float LastGrenadeThrowTime = -1000.0f;
 
 	/** At a roll's start: a reload far enough along is held for the roll's end, the rest
 	    cancelled. */

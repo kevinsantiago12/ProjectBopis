@@ -467,7 +467,16 @@ archetype-composition idea, not extended from the old classes.
   - [x] `BP_MAC11` (one-handed) and `BP_DualMAC11`, SMG ammo, `BP_AmmoPickup_SMG`; mesh, sockets and grip set by the user.
   - [x] Bladed stance limited to the player (enemies aimed left).
   - [ ] Give it to enemies; place pickups.
-- [ ] **15. Grenades** (user, 2026-10-18): player only (scripted enemy throws later, shootable mid-air), 5 max, throwable mid-dive, slow motion on explosion kills, the existing additive toss animation.
+- [x] *(Done 2026-10-19, user: "works" / "looks ok for now".)* **15. Grenades and the grenade launcher** (user, 2026-10-18): player only (scripted enemy throws later, shootable mid-air), 5 max, throwable mid-dive, slow motion on explosion kills, the existing additive toss animation. See the spec's *Explosives*.
+  - [x] 1. Kill slow motion (`PlayKillSlowMotion`).
+  - [x] 2. `AExplosion` / `BP_Explosion`.
+  - [x] 3. `AGrenade`, thrown and launched rounds.
+  - [x] 4. Quick throw on G (turn first, Max Payne 2 arc, additive toss, free arm and blade handled).
+  - [x] 5. `BP_GrenadeLauncher` (slot 6, key 6).
+  - [x] 6. Pickups, HUD grenade count.
+- [x] *(Done 2026-10-19.)* **16. Revolver** (.357, two-handed, `HighPowerPistol` ammo, speedloader).
+- [x] *(Done 2026-10-19.)* **17. Hand fixes:** left-hand IK for two-handed holds at the hip; hip aim hand turn for two-handed holds; blade turns corrected for the turn-in-place offset; IK keeps the pose's hand rotation.
+- [x] *(Done 2026-10-19.)* Enemies no longer suppress blind on alerts they never saw (`bSeenSinceAlert`).
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice

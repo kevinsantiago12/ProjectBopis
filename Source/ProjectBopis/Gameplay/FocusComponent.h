@@ -39,6 +39,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Focus")
 	void AddMeter(float Amount);
 
+	/** A short burst of slow motion (real seconds), e.g. when an explosion kills. Free, no meter.
+	    Does nothing if slow motion is already on (Focus or a dive); a dive taking off during
+	    it takes it over. */
+	UFUNCTION(BlueprintCallable, Category = "Focus")
+	void PlayKillSlowMotion(float RealDuration);
+
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	bool IsFocusActive() const { return bActive; }
 
@@ -149,6 +155,9 @@ private:
 	    them, not the meter. */
 	bool bFree = false;
 	float FreeDrainPerSecond = 0.0f;
+
+	/** Real seconds left of a kill's slow motion; 0 when none is running. */
+	float KillSlowMotionLeft = 0.0f;
 
 	/** An empty meter doesn't end Focus while this is set (a dive in flight). */
 	bool bHoldOnEmpty = false;

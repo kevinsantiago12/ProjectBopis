@@ -17,6 +17,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/PlayerHUDWidget.h"
 #include "Weapons/WeaponBase.h"
+#include "Weapons/Grenade.h"
 #include "Gameplay/HealthComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/Engine.h"
@@ -110,6 +111,12 @@ void AProjectBopisCharacter::BeginPlay()
 			HUDWidget->AddToViewport();
 		}
 	}
+
+	// Grenades share the ammo pool, capped by the holder's MaxAmmoByType.
+	if (UWeaponHolderComponent* Holder = GetWeaponHolder(); Holder && StartingGrenades > 0)
+	{
+		Holder->AddAmmo(EAmmoType::Grenade, StartingGrenades);
+	}
 }
 
 void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -168,6 +175,12 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this,
 			&AProjectBopisCharacter::DoRoll);
+
+		if (GrenadeAction)
+		{
+			EnhancedInputComponent->BindAction(GrenadeAction, ETriggerEvent::Started, this,
+				&AProjectBopisCharacter::DoThrowGrenade);
+		}
 
 	}
 	else
@@ -284,6 +297,7 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 		RollHeldReloadWeapon = nullptr;
 	}
 	UpdateAutoReload(DeltaSeconds);
+	UpdatePendingThrow(DeltaSeconds);
 	UpdateCrouch();
 
 	// Crouched in the combat stance, the gun comes up and stays up: facing the camera, ready
@@ -865,6 +879,126 @@ void AProjectBopisCharacter::DoReload()
 	}
 }
 
+void AProjectBopisCharacter::DoThrowGrenade()
+{
+	if (IsDead() || !GrenadeClass || (Roll && Roll->IsRolling()))
+	{
+		return;
+	}
+
+	// Like a reload: standing, prone or in the air, not the dive's wind-up, landing or getting up.
+	const bool bInAir = Shootdodge && Shootdodge->IsAirborne();
+	if (Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne() && !bInAir)
+	{
+		return;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastGrenadeThrowTime < GrenadeThrowCooldown)
+	{
+		return;
+	}
+
+	// Not while the hands are busy with the gun.
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	if (!Holder || IsEquipAnimating() || (Weapon && Weapon->IsReloading()))
+	{
+		return;
+	}
+
+	// One from the pool, or there's nothing to throw.
+	if (Holder->TakeAmmo(EAmmoType::Grenade, 1) <= 0)
+	{
+		return;
+	}
+
+	LastGrenadeThrowTime = Now;
+
+	// From the lowered stance it turns to the camera first, as a trigger pull does, and the
+	// toss waits for it. Already facing (or diving): straight away.
+	TimeUntilWeaponLowered = FMath::Max(TimeUntilWeaponLowered, LowerWeaponDelay);
+	UpdateMovementStance();
+	bThrowPending = true;
+	ThrowPendingTime = 0.0f;
+	UpdatePendingThrow(0.0f);
+}
+
+void AProjectBopisCharacter::UpdatePendingThrow(float DeltaSeconds)
+{
+	if (!bThrowPending)
+	{
+		return;
+	}
+	ThrowPendingTime += DeltaSeconds;
+
+	// Diving or prone, the animation owns the facing: no turn to wait for.
+	const bool bTurning = CurrentStance != EMovementStance::AnimationDriven;
+	const float OffAim = FMath::Abs(FRotator::NormalizeAxis(GetControlRotation().Yaw - GetActorRotation().Yaw));
+	if (bTurning && OffAim > GrenadeFacingTolerance && ThrowPendingTime < GrenadeMaxTurnWait)
+	{
+		return;
+	}
+
+	bThrowPending = false;
+	StartToss();
+}
+
+void AProjectBopisCharacter::StartToss()
+{
+	if (IsDead())
+	{
+		return;
+	}
+
+	const float TossLength = GrenadeTossMontage ? PlayAnimMontage(GrenadeTossMontage) : 0.0f;
+
+	// The gun stays up through the toss.
+	TimeUntilWeaponLowered = FMath::Max(TimeUntilWeaponLowered, TossLength);
+
+	GetWorldTimerManager().SetTimer(GrenadeReleaseTimer, this, &AProjectBopisCharacter::ReleaseGrenade,
+		FMath::Max(GrenadeReleaseTime, 0.01f), false);
+}
+
+bool AProjectBopisCharacter::IsThrowingGrenade() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	return bThrowPending
+		|| (GrenadeTossMontage && AnimInstance && AnimInstance->Montage_IsPlaying(GrenadeTossMontage));
+}
+
+void AProjectBopisCharacter::ReleaseGrenade()
+{
+	if (IsDead() || !GrenadeClass)
+	{
+		return;
+	}
+
+	const USkeletalMeshComponent* Body = GetMesh();
+	const FVector Hand = (Body && Body->DoesSocketExist(GrenadeHandSocket))
+		? Body->GetSocketLocation(GrenadeHandSocket)
+		: GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+
+	const UWeaponHolderComponent* Holder = GetWeaponHolder();
+	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+
+	// Max Payne 2: a set throw along the aim, lofted a little; where it lands is up to gravity
+	// and how high you look. Some of your own momentum goes with it.
+	FRotator ThrowRotation = GetControlRotation();
+	ThrowRotation.Pitch = FMath::Clamp(FRotator::NormalizeAxis(ThrowRotation.Pitch) + GrenadeLoftAngle, -89.0f, 89.0f);
+	const FVector Velocity = ThrowRotation.Vector() * GrenadeThrowSpeed + GetVelocity() * GrenadeInheritVelocity;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AGrenade* Grenade = GetWorld()->SpawnActor<AGrenade>(GrenadeClass, Hand, Velocity.Rotation(), SpawnParams))
+	{
+		Grenade->AddIgnoredActor(Weapon);
+		Grenade->Launch(Velocity);
+	}
+}
+
 void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 {
 	// An empty gun reloads itself once the player is free to — standing, lying prone, or (with
@@ -994,7 +1128,8 @@ bool AProjectBopisCharacter::WantsFreeArmPhysics() const
 	// Diving, the shootdodge has its own loose arm; rolling, the arm tumbles with the clip.
 	return Super::WantsFreeArmPhysics()
 		&& !(Shootdodge && Shootdodge->IsDodging())
-		&& !(Roll && Roll->IsRolling());
+		&& !(Roll && Roll->IsRolling())
+		&& !IsThrowingGrenade();
 }
 
 bool AProjectBopisCharacter::ShouldSkipEquipAnimation() const

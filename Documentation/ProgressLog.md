@@ -12,6 +12,81 @@
 
 ---
 
+## 2026-10-19 (2)
+**Summary:**
+- **Enemy suppression fix:** an alert from a sound, an ally or the level reset
+  `TimeSinceSeenPlayer`, so every alert fired a 2 s blind suppression burst
+  through walls (also the arena's On Start). New `bSeenSinceAlert`:
+  suppression needs a real sighting to lose.
+- **Revolver (.357):** `BP_Revolver` (two-handed `Pistol` hold, slot 2, no
+  duals), `HighPowerPistol` ammo, 6 rounds / 24 reserve, 60 damage, 0.45 s,
+  2.6 s speedloader reload, no casings, `Revolver_Single_Shot_Cue`.
+  `BP_Revolver_Pickup`, `BP_AmmoPickup_357` (speedloader, 6). The rig's
+  bones carry a 100× scale: its sockets need scale 0.01 (else the muzzle flash
+  spawns 100× big). Grip yaw −93 / pitch 8. The user placed `MuzzleFlash` and
+  `LeftHandGrip`. MAC-11s moved to slot 4.
+- **Grenades and the grenade launcher (user: works; throw "looks ok for
+  now"):**
+  - `UFocusComponent::PlayKillSlowMotion` (1.5 s, free; a dive taking off
+    takes it over).
+  - `AExplosion` / `BP_Explosion`: radius 600, full 250 inside 200, line of
+    sight, point damage away from the blast (bodies flung by the existing
+    overkill), full self-damage, chains grenades, kill slow motion.
+  - `AGrenade` (on `AProjectileBase`, `OnHit` now virtual): fuse or impact,
+    bounces, shootable (the shooter owns the blast), chain delay 0.15 s.
+    `BP_Grenade_Thrown` (`SM_G67_Thrown`, 2.5 s) and `BP_Grenade_Launched`.
+  - Quick throw on G (`IA_Grenade`): turns to strafe first, Max Payne 2 arc
+    (1400 along the aim, 12° loft, half your momentum), mid-dive too.
+    `AM_GrenadeToss` (user-made from the additive clip) on a new `Additive`
+    slot before the Output Pose. During a throw: free arm off physics, the
+    blade's upper-body turns out, the one-handed left arm back to the
+    hand-forward hold.
+  - Grenades are ammo (`EAmmoType::Grenade`, cap 5, 3 to start;
+    `LauncherGrenade` cap 12). HUD count (`GetGrenadeCount`, `WBP_Ammo`, by
+    the user).
+  - `BP_GrenadeLauncher` (rifle hold, slot 6 on a new `IA_WeaponSlot6`/key 6,
+    6 rounds, on-impact rounds), pickups for the launcher, launcher rounds (3)
+    and grenades (1). The user placed its `LeftHandGrip`.
+- **Hands:**
+  - Left-hand IK now for every two-handed hold whenever the gun is up (was
+    ADS only): the hip poses' aim offsets let the hand slide off the grip as
+    you look up/down (on Manny too).
+  - The IK keeps the pose's hand rotation (`bTakeRotationFromEffectorSpace`
+    off, `bMaintainEffectorRelRot` on): the rifle turn-in-place clips rolled
+    the hand palm-up under a pistol.
+  - Hip aim: the hand turns the barrel onto the crosshair for every two-handed
+    hold (`HipAimHandAlpha`), as the blade's hand turn does.
+  - The blade's turns now take the turn-in-place root counter-rotation
+    (`RootYawOffset`) back out (the right hand was off while the feet lagged).
+  - Tried and rolled back: turn threshold 20° and a 1.6× turn play rate.
+    Threshold stays 45°. Also tried: IK stretching (no help, off again).
+- **Gotchas found:** the player pawn is **`BP_Kamz`** (a child of
+  `BP_PlayerCharacter`); parent defaults set through the bridge didn't reach
+  it, so set player defaults on `BP_Kamz`. The bridge's `set_socket_transform`
+  resets fields left out (despite its docs). It can't create sound concurrency
+  assets or montages (per-sound overrides used instead).
+
+### ▶ RESUME HERE
+1. **Commit and push (user).** Uncommitted: all of today's code (Focus,
+   Explosion, Grenade, ProjectileBase, character, anim instance, AmmoWidget,
+   EnemyBase), the new Blueprints and pickups, `IMC_Default` (+ backup),
+   `IA_Grenade`, `IA_WeaponSlot6`, `AM_GrenadeToss`, `ABP_Player`,
+   `BP_Kamz`, `BP_PlayerCharacter`, the edited pack sounds/meshes,
+   `Content/_357Revolver/` and these docs. Delete
+   `IMC_Default_BACKUP_2026_10_19` once G and 6 are confirmed.
+2. **Playtest open:** explosions on enemies (kill slow motion, flung bodies,
+   chains), a launcher dive, rifle/shotgun hip aim, the throw's release time
+   (0.35 s), pickup sounds (copied ones still play).
+3. **Parked:** spatialization of the player's own gun sound; casing sound
+   concurrency (suggested: 6, StopQuietest, retrigger 0.03–0.05); pistol turn
+   clips (the steps use the rifle's); the left hand still moves a little in
+   turn steps (accepted).
+4. **Then Phase 6** (graybox slice). Enemy grenades only in scripted sets.
+5. **Older open items:** the crash watch; 10-17 playtests; 10-18 (2)
+   optional list.
+
+---
+
 ## 2026-10-19
 **Summary:**
 - **MAC-11 placeholder (SMG), single and dual** (user: placeholder, an Uzi
@@ -39,7 +114,9 @@
   gun sound shifting as they move (spatialization; likely play it 2D for the
   local player).
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-19 (2).)*
+
+### (old) RESUME HERE
 1. **Commit and push (user).** Uncommitted: the two packs
    (`Content/FPS_Weapon_Bundle/`, `Content/Real_Recorded_Guns/`, best as their
    own commit), `BP_MAC11`, `BP_DualMAC11`, `BP_AmmoPickup_SMG`, the
