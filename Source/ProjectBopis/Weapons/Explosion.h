@@ -45,6 +45,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion", meta = (ClampMin = "0.0"))
 	float KillSlowMotionDuration = 1.5f;
 
+	/** Bodies it kills (or already dead in it) are thrown: outward speed (cm/s) at the centre... */
+	UPROPERTY(EditDefaultsOnly, Category = "Explosion", meta = (ClampMin = "0.0"))
+	float ThrowSpeed = 900.0f;
+
+	/** ...and upward (cm/s). Both fall off with distance like the damage. */
+	UPROPERTY(EditDefaultsOnly, Category = "Explosion", meta = (ClampMin = "0.0"))
+	float LiftSpeed = 800.0f;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion|Effects")
 	TObjectPtr<UParticleSystem> ExplosionEffect;
 

@@ -35,6 +35,9 @@
   - `AGrenade` (on `AProjectileBase`, `OnHit` now virtual): fuse or impact,
     bounces, shootable (the shooter owns the blast), chain delay 0.15 s.
     `BP_Grenade_Thrown` (`SM_G67_Thrown`, 2.5 s) and `BP_Grenade_Launched`.
+  - Blasts throw bodies (user: "works now, and tuned"): killed or already
+    dead bodies go limp and get `ThrowSpeed` out + `LiftSpeed` up
+    (`BlastLaunch`); the capped bullet launch alone barely moved them.
   - Quick throw on G (`IA_Grenade`): turns to strafe first, Max Payne 2 arc
     (1400 along the aim, 12° loft, half your momentum), mid-dive too.
     `AM_GrenadeToss` (user-made from the additive clip) on a new `Additive`

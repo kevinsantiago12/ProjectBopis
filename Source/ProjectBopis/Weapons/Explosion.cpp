@@ -84,11 +84,18 @@ void AExplosion::Detonate()
 		const FVector Direction = ((Target - Center).GetSafeNormal2D() + FVector::UpVector * 0.5f).GetSafeNormal();
 		const FHitResult Hit(Victim, nullptr, Target, -Direction);
 
-		const ABopisCharacterBase* Body = Cast<ABopisCharacterBase>(Victim);
+		ABopisCharacterBase* Body = Cast<ABopisCharacterBase>(Victim);
 		const bool bWasAlive = Body && !Body->IsDead();
 
 		UGameplayStatics::ApplyPointDamage(Victim, Damage * Scale, Direction, Hit,
 			GetInstigatorController(), this, UDamageType::StaticClass());
+
+		// Killed by it, or already down: thrown clear, out and up.
+		if (Body && Body->IsDead())
+		{
+			const FVector Out = (Target - Center).GetSafeNormal2D();
+			Body->BlastLaunch(Out * (ThrowSpeed * Scale) + FVector::UpVector * (LiftSpeed * Scale));
+		}
 
 		if (bWasAlive && Body->IsDead() && Victim != InstigatorPawn)
 		{

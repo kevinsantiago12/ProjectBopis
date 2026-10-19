@@ -879,7 +879,11 @@ out of the air), which `AGrenade` already supports.
   `EdgeDamageFraction` (0.2) at the edge; walls block (Visibility trace from
   20 cm up, everything caught ignored). Each victim gets point damage aimed out
   and up from the blast, so `TakeDamage`'s overkill/`LaunchBody` flings bodies.
-  Loose physics gets a radial impulse. Full self-damage. Effects
+  Loose physics gets a radial impulse. Full self-damage. Bodies it kills (or
+  already dead in it) are thrown at once: `ABopisCharacterBase::BlastLaunch`
+  goes limp and adds a velocity change of `ThrowSpeed` out + `LiftSpeed` up,
+  scaled like the damage (bullet launches are capped per hit, so blasts need
+  their own; tuned on `BP_Explosion` by the user). Effects
   `P_Grenade_Explosion_01`, `GrenadeLauncher_Explosion_Cue`, optional camera
   shake. A kill by the player's blast: `PlayKillSlowMotion(1.5)`.
 - **Kill slow motion:** `UFocusComponent::PlayKillSlowMotion(RealDuration)` is

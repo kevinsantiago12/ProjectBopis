@@ -692,6 +692,21 @@ void ABopisCharacterBase::KickBone(FName BoneName, const FVector& ShotDirection,
 	Body->AddImpulse(ShotDirection.GetSafeNormal() * Speed * Scale, BoneName, true);
 }
 
+void ABopisCharacterBase::BlastLaunch(const FVector& Velocity)
+{
+	if (!bIsDead)
+	{
+		return;
+	}
+	if (!bIsRagdoll)
+	{
+		// Out of the death animation or the riddled stage at once: a blast doesn't wait.
+		WaitForAnimEvaluation();
+		StartRagdoll(FHitResult(), FVector::ZeroVector, 0.0f);
+	}
+	GetMesh()->AddImpulseToAllBodiesBelow(Velocity, NAME_None, true, true);
+}
+
 void ABopisCharacterBase::StartRagdoll(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
 {
 	if (bIsRagdoll)

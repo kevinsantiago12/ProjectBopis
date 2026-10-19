@@ -115,6 +115,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Health")
 	bool IsDead() const { return bIsDead; }
 
+	/** Thrown by a blast: goes limp now (if not already) and the whole body gets this velocity
+	    change (cm/s), on top of whatever the damage did. Dead bodies only. */
+	void BlastLaunch(const FVector& Velocity);
+
 	/** Staggered: upper body on physics and rooted to the spot, wide open to more fire. */
 	UFUNCTION(BlueprintPure, Category = "Health|Hit Reactions")
 	bool IsStaggered() const { return bIsStaggered; }
