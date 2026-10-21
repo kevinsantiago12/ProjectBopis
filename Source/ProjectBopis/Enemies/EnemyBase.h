@@ -8,6 +8,8 @@
 
 class AWeaponPickup;
 class UStateTree;
+class UBarkVoice;
+enum class EBarkType : uint8;
 
 /**
  *  An enemy: the shared humanoid (weapon, montages, AnimBP) driven by an AI controller
@@ -78,6 +80,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
 	float ReactionTimeMax = 0.8f;
 
+	/** Its voice for barks (call-outs in a fight). Empty: it never speaks. A trigger spawn can
+	    give it another. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Barks")
+	TObjectPtr<UBarkVoice> BarkVoice;
+
+	/** Its death is called out by the nearest ally in the fight within this (cm) who can see it. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Barks", meta = (ClampMin = "0.0"))
+	float AllyDownRadius = 1500.0f;
+
 	/** Holds an area instead of hunting (room encounters in a linear level): once alerted, it
 	    only moves within HoldRadius of where it was placed, never pushes in, and never leaves
 	    to search or roam — out of sight, it covers the last place it saw the player. */
@@ -92,6 +103,20 @@ protected:
 	    the crouch — and stands only to move within its area. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Hold Position", meta = (EditCondition = "bHoldsPosition"))
 	bool bCrouchWhileHolding = false;
+
+	/** Where it goes the moment its trigger fires: out of its room, round the corner. A holder
+	    then holds there. None: it starts from where it stands. */
+	UPROPERTY(EditInstanceOnly, Category = "Enemy|Behaviour|Ambush")
+	TObjectPtr<AActor> AmbushPoint;
+
+	/** Set off by its trigger (and no AmbushPoint), its first move is a charge straight at the player. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Ambush")
+	bool bRushOnTrigger = false;
+
+	/** How close (cm) to its AmbushPoint counts as arrived, measured to its centre: 0–30 puts it
+	    right on the point. Every other move uses the StateTree move's own radius. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Ambush", meta = (ClampMin = "0.0"))
+	float AmbushAcceptanceRadius = 20.0f;
 
 	/** An alerted enemy alerts others within this distance (cm)... */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
@@ -183,6 +208,10 @@ protected:
 	/** Max walk speed with the weapon lowered. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
 	float LoweredSpeed = 300.0f;
+
+	/** Max walk speed while patrolling (not alerted, with PatrolPoints): a walk, not a jog. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
+	float PatrolSpeed = 180.0f;
 
 	/** Max walk speed with the weapon raised. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
@@ -347,6 +376,70 @@ public:
 
 	bool HoldsPosition() const { return bHoldsPosition; }
 
+	/** Waiting in ambush for its encounter trigger: blind and deaf to the player (and to allies'
+	    alerts) until the trigger sets it off. Being shot still wakes it. Set by AEncounterTrigger. */
+	void SetWaitingForTrigger(bool bWait) { bWaitingForTrigger = bWait; }
+
+	/** Settings for an enemy spawned by a trigger (placed ones are set in the level). */
+	void SetAmbush(AActor* Point, bool bRush, float AcceptanceRadius)
+	{
+		AmbushPoint = Point;
+		bRushOnTrigger = bRush;
+		AmbushAcceptanceRadius = AcceptanceRadius;
+	}
+
+	/** The move just chosen is the trip to the AmbushPoint: its arrival radius (centre-measured).
+	    False for any other move. Asking clears it. */
+	bool ConsumeAmbushAcceptance(float& OutRadius)
+	{
+		if (PendingAmbushAcceptance < 0.0f)
+		{
+			return false;
+		}
+		OutRadius = PendingAmbushAcceptance;
+		PendingAmbushAcceptance = -1.0f;
+		return true;
+	}
+
+	void SetHold(bool bHold, float Radius, bool bCrouch)
+	{
+		bHoldsPosition = bHold;
+		HoldRadius = Radius;
+		bCrouchWhileHolding = bCrouch;
+	}
+
+	void SetPatrolPoints(const TArray<TObjectPtr<AActor>>& Points) { PatrolPoints = Points; }
+
+	void SetBarkVoice(UBarkVoice* Voice) { BarkVoice = Voice; }
+
+	/** A scripted event walks (or runs) it to Target while it's calm; patrolling waits until the
+	    event lets it go (EndScripted). False if it can't (alerted, dead, no path). */
+	bool ScriptedMoveTo(AActor* Target, bool bRun, float AcceptanceRadius);
+
+	/** The scripted move is over: arrived, or given up. */
+	bool IsScriptedMoveDone() const;
+
+	/** A scripted event turns it toward where Target is now (body, then head), and it keeps
+	    facing that spot while calm and standing, even if Target moves off. None: stops. */
+	void SetFaceTarget(AActor* Target);
+
+	/** The event is over: back to its own business (patrolling, standing). */
+	void EndScripted();
+
+	/** Calls out, if the level's bark coordinator lets it through (UBarkSubsystem). */
+	bool Bark(EBarkType Type);
+
+	/** For the editor's link lines. */
+	AActor* GetAmbushPoint() const { return AmbushPoint; }
+	const TArray<TObjectPtr<AActor>>& GetPatrolPoints() const { return PatrolPoints; }
+
+	/** A move couldn't be made (no path): says so in the log, at most every few seconds, so a
+	    hole in the NavMesh shows up instead of an enemy silently standing still. */
+	void ReportUnreachable(const FVector& Destination);
+
+	/** Set off by its encounter trigger: wakes, alerts, and makes its ambush move first. */
+	void TriggerAmbush(AActor* Target);
+
 	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
 
 	/** Where to roam next: the furthest Target Point (RoamToPointChance), or a random
@@ -362,6 +455,9 @@ private:
 	/** Alerted: focuses the player and raises the weapon. Otherwise lets go. */
 	void UpdateAim();
 
+	/** Has the nearest ally who saw it die call it out. */
+	void BarkAllyDown();
+
 	/** Raised: turn toward the aim and strafe. Lowered: turn toward travel. */
 	void UpdateMovementMode();
 
@@ -370,6 +466,17 @@ private:
 
 	/** Walks the patrol points: waits at each, then moves to the next. */
 	void UpdatePatrol(float DeltaSeconds);
+
+	/** Calm and standing, with a FaceTarget: turns to it. */
+	void UpdateFacing(float DeltaSeconds);
+
+	/** In a scripted event's hands: a Move To, so it doesn't patrol off. */
+	bool bScriptedMove = false;
+	bool bScriptedRun = false;
+
+	/** Where a scripted event has it facing: the spot, and the height its eyes rest at. */
+	bool bHasFacePoint = false;
+	FVector FacePoint = FVector::ZeroVector;
 
 	int32 PatrolIndex = 0;
 	float PatrolWaitRemaining = 0.0f;
@@ -413,6 +520,21 @@ private:
 	/** Seen the player since being alerted. Suppressing fire needs a sighting to lose; an alert
 	    from a sound (or an ally, or the level) is searched, not shot at. */
 	bool bSeenSinceAlert = false;
+
+	/** This sighting has been called out ("there he is"): once per alert, and again after
+	    losing the player long enough for a fresh engagement. */
+	bool bSightingCalled = false;
+
+	bool bWaitingForTrigger = false;
+
+	/** The trigger has fired and the ambush move (AmbushPoint or charge) hasn't been made yet. */
+	bool bAmbushMovePending = false;
+
+	/** Set when ChooseNextSpot picks the AmbushPoint; read once by the move task. Below 0: none. */
+	float PendingAmbushAcceptance = -1.0f;
+
+	/** World time of the last unreachable-move warning (ReportUnreachable). */
+	float LastUnreachableReportTime = -1000.0f;
 
 
 	/** Nothing but the player between Eyes and Target. */

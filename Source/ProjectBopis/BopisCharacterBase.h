@@ -137,6 +137,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Aim")
 	bool IsWeaponRaised() const { return bIsAiming || TimeUntilWeaponLowered > 0.0f; }
 
+	/** The raised gun would be in a wall: it's shown lowered, and it won't fire. */
+	bool IsWeaponBlocked() const { return bWeaponBlocked; }
+
 	/** A point the head should turn toward, if any (an enemy searching with its gun down). The
 	    AnimBP turns the head within limits; false: it faces where the body does. */
 	virtual bool GetHeadLookTarget(FVector& OutLocation) const { return false; }
@@ -160,6 +163,17 @@ public:
 	/** Play rate for the equip montage(s) right now: faster mid-move (a dive's flight), so
 	    the new gun is ready sooner. 1 = as authored. */
 	virtual float GetEquipPlayRate() const { return 1.0f; }
+
+	/** True when a weapon change should swap the gun without its equip montage, but take the
+	    montage's time anyway (lying face-down, where the draw would go through the floor). */
+	virtual bool ShouldSilentEquip() const { return false; }
+
+	/** A silent swap is under way: the gun is in the hand but not ready yet. Firing waits for
+	    it, and the pose eases over from the old gun's in the same time. */
+	bool IsSilentEquipping() const { return SilentEquipTimeLeft > 0.0f; }
+
+	/** How long the current (or last) silent swap takes: the equip montage's length. */
+	float GetSilentEquipDuration() const { return SilentEquipDuration; }
 
 	/** An equip montage is playing. Firing waits for it. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
@@ -370,6 +384,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat", meta = (ClampMin = "0.0"))
 	float LowerWeaponDelay = 1.5f;
 
+	/** How far ahead of the chest, along the aim, a raised long gun needs clear (cm). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Wall", meta = (ClampMin = "0.0"))
+	float LongGunWallDistance = 90.0f;
+
+	/** The same for pistols (single, one-handed, duals). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Wall", meta = (ClampMin = "0.0"))
+	float PistolWallDistance = 55.0f;
+
+	/** Extra room needed before a blocked gun comes back up, so it doesn't flicker at the edge. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Wall", meta = (ClampMin = "0.0"))
+	float WallClearMargin = 15.0f;
+
 	/** Crossfade time when a reload Loop section restarts (its first and last poses don't match). */
 	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.0"))
 	float ReloadLoopBlendTime = 0.15f;
@@ -401,6 +427,9 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveEquipMontage;
 
+	float SilentEquipTimeLeft = 0.0f;
+	float SilentEquipDuration = 0.0f;
+
 private:
 
 	/** Legs straight back to the animation: blend 0, physics and motors off. */
@@ -429,6 +458,9 @@ private:
 
 	/** The free arm is on physics (UpdateFreeArmPhysics), at this blend weight. */
 	bool bFreeArmSimulating = false;
+
+	void UpdateWeaponBlocked();
+	bool bWeaponBlocked = false;
 	float FreeArmWeight = 0.0f;
 
 	/** The legs are on physics (SimulateLegs), and the fade back out once it's begun. */

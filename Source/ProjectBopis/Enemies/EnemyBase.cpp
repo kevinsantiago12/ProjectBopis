@@ -2,6 +2,7 @@
 
 #include "Enemies/EnemyBase.h"
 #include "Enemies/BopisAIController.h"
+#include "Enemies/BarkSubsystem.h"
 #include "AIController.h"
 #include "BrainComponent.h"
 #include "EngineUtils.h"
@@ -85,6 +86,7 @@ void AEnemyBase::Tick(float DeltaSeconds)
 	UpdateMovementMode();
 	UpdateCrouch();
 	UpdatePatrol(DeltaSeconds);
+	UpdateFacing(DeltaSeconds);
 	UpdateShooting(DeltaSeconds);
 }
 
@@ -124,6 +126,12 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 	{
 		LastKnownPlayerLocation = Player->GetActorLocation();
 		TimeSinceSeenPlayer = 0.0f;
+		// First sight of them: call it out.
+		if (!bSightingCalled)
+		{
+			bSightingCalled = true;
+			Bark(EBarkType::Spotted);
+		}
 		bSeenSinceAlert = true;
 		bLeadGone = false;
 		TimeAtLastKnown = 0.0f;
@@ -135,6 +143,12 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		// Lost them long enough: finding them again is a fresh engagement.
 		if (TimeSinceSeenPlayer >= WarningBurstResetTime)
 		{
+			// Lost them for good: a taunt (once, and only if he'd actually seen them).
+			if (bSightingCalled && !(PlayerBody && PlayerBody->IsDead()))
+			{
+				Bark(EBarkType::LostSight);
+			}
+			bSightingCalled = false;
 			bWarningBurstPending = true;
 		}
 	}
@@ -228,6 +242,7 @@ void AEnemyBase::UpdateShooting(float DeltaSeconds)
 		if (Holder->ReloadEquippedWeapon())
 		{
 			PlayReloadAnimation(Weapon);
+			Bark(EBarkType::Reloading);
 		}
 		else
 		{
@@ -307,6 +322,25 @@ bool AEnemyBase::HasClearShot(const FVector& Eyes, const FVector& Target, const 
 
 bool AEnemyBase::ChooseNextSpot(FVector& OutSpot)
 {
+	// Set off by its trigger: the first move is the ambush's — out to its point, or a charge.
+	if (bAmbushMovePending)
+	{
+		bAmbushMovePending = false;
+		if (AmbushPoint)
+		{
+			OutSpot = AmbushPoint->GetActorLocation();
+			HomeLocation = OutSpot;
+			bPushingIn = false;
+			PendingAmbushAcceptance = AmbushAcceptanceRadius;
+			return true;
+		}
+		if (bRushOnTrigger && FindSpot(OutSpot, PushRangeMin, PushRangeMax, LastKnownPlayerLocation, PushRangeMax))
+		{
+			bPushingIn = true;
+			return true;
+		}
+	}
+
 	// Holding an area: a new spot within reach of its post, never a rush.
 	if (bHoldsPosition)
 	{
@@ -410,6 +444,10 @@ FName AEnemyBase::PickHitBone(const USkeletalMeshComponent* PlayerMesh) const
 
 bool AEnemyBase::FireAt(const FVector& Target, bool bHit)
 {
+	if (IsWeaponBlocked())
+	{
+		return false;
+	}
 	AWeaponBase* Weapon = GetWeaponHolder()->GetEquippedWeapon();
 	const FVector Muzzle = Weapon->GetMuzzleLocation();
 	const FVector Aim = (Target - Muzzle).GetSafeNormal();
@@ -475,6 +513,9 @@ bool AEnemyBase::FireAt(const FVector& Target, bool bHit)
 void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 {
 	Super::Die(Killer, ShotDirection);
+
+	Bark(EBarkType::Death);
+	BarkAllyDown();
 
 	DropWeapon(ShotDirection);
 
@@ -596,6 +637,13 @@ void AEnemyBase::UpdateAim()
 
 bool AEnemyBase::GetHeadLookTarget(FVector& OutLocation) const
 {
+	// In a scripted event, calm: eyes on the spot it's been turned to face.
+	if (!bAlerted && !IsDead() && bHasFacePoint)
+	{
+		OutLocation = FacePoint;
+		return true;
+	}
+
 	// Searching with the gun down: eyes on where the player was last seen, until it gets there.
 	// Roaming with nothing to go on, it looks where it's going.
 	if (!bAlerted || IsDead() || IsWeaponRaised() || bLeadGone
@@ -641,13 +689,66 @@ void AEnemyBase::UpdateMovementMode()
 	Movement->bUseControllerDesiredRotation = bRaised;
 	Movement->bOrientRotationToMovement = !bRaised;
 	Movement->RotationRate = FRotator(0.0f, TurnRate, 0.0f);
-	Movement->MaxWalkSpeed = bPushingIn ? PushSpeed : (bRaised ? RaisedSpeed : LoweredSpeed);
+	const bool bPatrolling = !bAlerted && PatrolPoints.Num() > 0;
+	Movement->MaxWalkSpeed = bPushingIn ? PushSpeed
+		: bRaised ? RaisedSpeed
+		: bScriptedMove ? (bScriptedRun ? LoweredSpeed : PatrolSpeed)
+		: bPatrolling ? PatrolSpeed
+		: LoweredSpeed;
+}
+
+void AEnemyBase::BarkAllyDown()
+{
+	AEnemyBase* Witness = nullptr;
+	float Nearest = AllyDownRadius;
+	for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+	{
+		AEnemyBase* Ally = *It;
+		const float Distance = FVector::Dist(Ally->GetActorLocation(), GetActorLocation());
+		if (Ally == this || Ally->IsDead() || !Ally->IsAlerted() || Distance > Nearest)
+		{
+			continue;
+		}
+		// Saw it: nothing between their eyes.
+		FHitResult Hit;
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(AllyDownSight), false, this);
+		Params.AddIgnoredActor(Ally);
+		if (!GetWorld()->LineTraceSingleByChannel(Hit, Ally->GetPawnViewLocation(), GetPawnViewLocation(),
+			ECC_Visibility, Params))
+		{
+			Witness = Ally;
+			Nearest = Distance;
+		}
+	}
+	if (Witness)
+	{
+		Witness->Bark(EBarkType::AllyDown);
+	}
+}
+
+bool AEnemyBase::Bark(EBarkType Type)
+{
+	UWorld* World = GetWorld();
+	UBarkSubsystem* Barks = World ? World->GetSubsystem<UBarkSubsystem>() : nullptr;
+	return Barks && BarkVoice && Barks->TryBark(this, BarkVoice, Type);
+}
+
+void AEnemyBase::ReportUnreachable(const FVector& Destination)
+{
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastUnreachableReportTime < 3.0f)
+	{
+		return;
+	}
+	LastUnreachableReportTime = Now;
+	UE_LOG(LogProjectBopis, Warning, TEXT("%s can't reach %s from %s: no path. Is the NavMesh (P in the editor) covering both?"),
+		*GetName(), *Destination.ToCompactString(), *GetActorLocation().ToCompactString());
 }
 
 void AEnemyBase::UpdatePatrol(float DeltaSeconds)
 {
 	AAIController* AI = Cast<AAIController>(GetController());
-	if (!AI || PatrolPoints.Num() == 0 || bAlerted)
+	if (!AI || PatrolPoints.Num() == 0 || bAlerted || bScriptedMove)
 	{
 		return;
 	}
@@ -683,13 +784,79 @@ void AEnemyBase::UpdatePatrol(float DeltaSeconds)
 	}
 }
 
+bool AEnemyBase::ScriptedMoveTo(AActor* Target, bool bRun, float AcceptanceRadius)
+{
+	AAIController* AI = Cast<AAIController>(GetController());
+	if (!AI || !Target || bAlerted || IsDead())
+	{
+		return false;
+	}
+	// Walking: faces where it's going, not what it was looking at.
+	bHasFacePoint = false;
+	bScriptedMove = true;
+	bScriptedRun = bRun;
+	if (AI->MoveToActor(Target, AcceptanceRadius) == EPathFollowingRequestResult::Failed)
+	{
+		ReportUnreachable(Target->GetActorLocation());
+		bScriptedMove = false;
+		return false;
+	}
+	return true;
+}
+
+bool AEnemyBase::IsScriptedMoveDone() const
+{
+	const AAIController* AI = Cast<AAIController>(GetController());
+	return !AI || bAlerted || IsDead() || AI->GetMoveStatus() == EPathFollowingStatus::Idle;
+}
+
+void AEnemyBase::EndScripted()
+{
+	bScriptedMove = false;
+	bScriptedRun = false;
+	bHasFacePoint = false;
+}
+
+void AEnemyBase::SetFaceTarget(AActor* Target)
+{
+	bHasFacePoint = Target != nullptr;
+	if (!Target)
+	{
+		return;
+	}
+	// The spot it's at now, at its eye height (a pawn) or ours (a point on the floor).
+	const APawn* FacePawn = Cast<APawn>(Target);
+	FacePoint = FacePawn ? FacePawn->GetPawnViewLocation()
+		: FVector(Target->GetActorLocation().X, Target->GetActorLocation().Y, GetPawnViewLocation().Z);
+}
+
+void AEnemyBase::UpdateFacing(float DeltaSeconds)
+{
+	const AAIController* AI = Cast<AAIController>(GetController());
+	if (!bHasFacePoint || bAlerted || !AI || AI->GetMoveStatus() == EPathFollowingStatus::Moving)
+	{
+		return;
+	}
+	const FVector ToFace = FacePoint - GetActorLocation();
+	if (ToFace.SizeSquared2D() < 1.0f)
+	{
+		return;
+	}
+	// Standing, so the movement component isn't turning it: a steady turn, half the combat rate.
+	const FRotator Wanted(0.0f, ToFace.Rotation().Yaw, 0.0f);
+	SetActorRotation(FMath::RInterpConstantTo(GetActorRotation(), Wanted, DeltaSeconds, TurnRate * 0.5f));
+}
+
 void AEnemyBase::Alert(AActor* Target)
 {
-	if (bAlerted || IsDead() || !Target)
+	if (bAlerted || IsDead() || !Target || bWaitingForTrigger)
 	{
 		return;
 	}
 	bAlerted = true;
+
+	// Whatever a scripted event had it doing is over: the fight takes it.
+	EndScripted();
 	ReactionTimeLeft = FMath::FRandRange(ReactionTimeMin, FMath::Max(ReactionTimeMin, ReactionTimeMax));
 	AlertTarget = Target;
 	AlertAlliesTimeLeft = AlertAlliesDelay;
@@ -698,6 +865,18 @@ void AEnemyBase::Alert(AActor* Target)
 	LastKnownPlayerLocation = Target->GetActorLocation();
 	TimeSinceSeenPlayer = 0.0f;
 	bSeenSinceAlert = false;
+	bSightingCalled = false;
+}
+
+void AEnemyBase::TriggerAmbush(AActor* Target)
+{
+	// Only the first time: walking back into a repeat trigger doesn't replay the ambush.
+	if (bWaitingForTrigger)
+	{
+		bWaitingForTrigger = false;
+		bAmbushMovePending = AmbushPoint || bRushOnTrigger;
+	}
+	Alert(Target);
 }
 
 void AEnemyBase::HearPlayer(const FVector& Location)
@@ -772,7 +951,14 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	const float Result = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	if (EventInstigator && EventInstigator->GetPawn())
 	{
+		bWaitingForTrigger = false;
 		Alert(EventInstigator->GetPawn());
+	}
+
+	// Hit and still standing (a killing hit gets the death bark instead).
+	if (Result > 0.0f && !IsDead())
+	{
+		Bark(EBarkType::Hurt);
 	}
 	return Result;
 }

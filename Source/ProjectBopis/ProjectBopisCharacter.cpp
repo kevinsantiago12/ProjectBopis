@@ -256,6 +256,8 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	// The base counts down the lowering timer and drives the reload montage.
 	Super::Tick(DeltaSeconds);
 
+	SubtitleTimeLeft = FMath::Max(0.0f, SubtitleTimeLeft - DeltaSeconds);
+
 	// Faded markers go, in real time: Focus doesn't make them linger.
 	const float RealNow = GetWorld()->GetRealTimeSeconds();
 	HitIndicators.RemoveAll([RealNow](const FHitIndicator& Marker) { return RealNow - Marker.StartTime >= Marker.Duration; });
@@ -565,8 +567,9 @@ void AProjectBopisCharacter::DoFire()
 		return;
 	}
 
-	// Mid-equip the gun isn't up yet; the trigger waits for the animation.
-	if (IsEquipAnimating())
+	// Mid-equip the gun isn't up yet; the trigger waits for the animation (or the silent swap's
+	// same time, face-down).
+	if (IsEquipAnimating() || IsSilentEquipping())
 	{
 		return;
 	}
@@ -584,6 +587,12 @@ void AProjectBopisCharacter::DoFire()
 	{
 		TimeUntilWeaponLowered = LowerWeaponDelay;
 		UpdateMovementStance();
+	}
+
+	// Up against a wall: the gun's down, nothing fires until there's room.
+	if (IsWeaponBlocked())
+	{
+		return;
 	}
 
 	// Only a real shot animates. RateLimited and Reloading must stay silent, and
@@ -902,7 +911,7 @@ void AProjectBopisCharacter::DoThrowGrenade()
 	// Not while the hands are busy with the gun.
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
-	if (!Holder || IsEquipAnimating() || (Weapon && Weapon->IsReloading()))
+	if (!Holder || IsEquipAnimating() || IsSilentEquipping() || (Weapon && Weapon->IsReloading()))
 	{
 		return;
 	}
@@ -1008,7 +1017,7 @@ void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 	const bool bInAir = Shootdodge && Shootdodge->IsAirborne();
 	const bool bInDive = Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne()
 		&& !(bInAir && bAirAutoReload);
-	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating();
+	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating() && !IsSilentEquipping();
 	if (!bAutoReload || !Weapon || !bFreeToReload || Weapon->GetAmmoInMagazine() > 0 || !Weapon->CanReload())
 	{
 		EmptyGunTime = 0.0f;
@@ -1136,6 +1145,13 @@ bool AProjectBopisCharacter::ShouldSkipEquipAnimation() const
 {
 	// Rolling over a gun picks it up without breaking the roll.
 	return Roll && Roll->IsRolling();
+}
+
+bool AProjectBopisCharacter::ShouldSilentEquip() const
+{
+	// Lying face-down, the draw would sweep the arms through the floor.
+	return Shootdodge && Shootdodge->IsProne()
+		&& FMath::Abs(Shootdodge->GetDirectionAngle()) <= SilentEquipFaceDownAngle;
 }
 
 float AProjectBopisCharacter::GetEquipPlayRate() const

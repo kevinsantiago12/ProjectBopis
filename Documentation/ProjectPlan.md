@@ -477,12 +477,24 @@ archetype-composition idea, not extended from the old classes.
 - [x] *(Done 2026-10-19.)* **16. Revolver** (.357, two-handed, `HighPowerPistol` ammo, speedloader).
 - [x] *(Done 2026-10-19.)* **17. Hand fixes:** left-hand IK for two-handed holds at the hip; hip aim hand turn for two-handed holds; blade turns corrected for the turn-in-place offset; IK keeps the pose's hand rotation.
 - [x] *(Done 2026-10-19.)* Enemies no longer suppress blind on alerts they never saw (`bSeenSinceAlert`).
+- [x] *(Done 2026-10-20, user-played.)* **18. Encounter triggers for the slice:** waiting enemies, ambush points, chargers, holders, patrollers, spawn-ahead lines; markers, labels, link lines, an Encounter tab in Place Actors, failed-move warnings.
+- [x] *(Done 2026-10-21.)* **19. Polish from playtests:** patrol walk (walk/jog blend spaces), guns lowered against walls, body-shaped dive collision, prone reload fixes (flip on a side, forearm reload face-down, long-gun arm raise), silent face-down swaps.
+- [x] *(Done 2026-10-21; stage 2 compiled, not yet playtested.)* **20. Scripted events** (Max Payne overheard conversations). See the spec's *Scripted events*.
+  - [x] Stage 1: Say Line, Wait, subtitles, interrupt with a reaction line.
+  - [x] Spawned speakers by tag; talking/gesture montages looping for the step.
+  - [x] Stage 2: Move To, Face To, Set Off Encounter, Start Event, finished/interrupted chains.
+  - [ ] Playtest stage 2.
+- [x] *(Done 2026-10-21, user: "functional".)* **21. Enemy barks:** seven types, per-language voice sets, level-wide coordinator. See the spec's *Enemy barks*.
+  - [ ] Polish: mono clips, more lines, tuning, Tagalog set.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4
 > settled). The slice is a short linear run of rooms in `Lvl_Linear`, not an
 > arena; the items below are to be rewritten against that when this phase starts.
+>
+> **2026-10-19:** draft brief in [Phase6_SliceBrief.md](Phase6_SliceBrief.md) (six beats,
+> encounter table, build order) — awaiting the user's cut.
 
 Goal: prove the core combat loop in an actual space, with real weapons and
 real enemies. The "linear navigation, nonlinear combat" pillar this phase was
@@ -561,6 +573,7 @@ planning further than that now would be guessing.
 
 ## Changelog
 
+- 2026-10-21 — Phase 5 items 20 (scripted events) and 21 (enemy barks) added and ticked.
 - 2026-10-18 (2) — Phase 5 item 13 (bladed one-handed pistol stance) added and ticked.
 - 2026-10-18 — Phase 5 item 12 (reload upgrades) added and ticked.
 - 2026-10-17 — Phase 5 item 10: searching with the gun down. Item 11 (movement and dive feel) added and ticked.

@@ -74,7 +74,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	UpdateLocomotion(*Character);
 
-	bIsWeaponRaised = Character->IsWeaponRaised();
+	bIsWeaponRaised = Character->IsWeaponRaised() && !Character->IsWeaponBlocked();
 	const AProjectBopisCharacter* Hero = Cast<AProjectBopisCharacter>(Character);
 	bTurningToAim = Hero && Hero->IsTurningToAim();
 	bIsCrouched = Character->bIsCrouched;
@@ -85,8 +85,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	const bool bUpperBodyMontage = bReloadAnimating || Character->IsEquipAnimating();
 	ProneReloadAlpha = FMath::FInterpConstantTo(ProneReloadAlpha, bUpperBodyMontage ? 1.0f : 0.0f,
 		DeltaSeconds, ProneReloadBlendSpeed);
-	ProneDualOffhandAlpha = bIsDualWield ? ProneReloadAlpha : 0.0f;
-	bIsAiming = Character->IsAiming();
+	bIsAiming = Character->IsAiming() && !Character->IsWeaponBlocked();
 
 	if (Weapon)
 	{
@@ -127,6 +126,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
 	UpdateShootdodgeAim(*Character, DeltaSeconds);
 	UpdateProneDirection(DeltaSeconds);
+	UpdateProneReloadLayers(DeltaSeconds);
 	UpdateProneFeet(*Character, DeltaSeconds);
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
 	UpdateHeadLook(*Character, DeltaSeconds);
@@ -172,13 +172,21 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	// more lift than the pistol arms, so for them the turn is split: the chest takes the yaw
 	// and only a little tilt, the arms the rest of the tilt, and the head looks at the target.
 	const bool bLongGunDive = bShootdodging && Weapon && !bIsPistolHold;
-	ShootdodgeLongGunAlpha = FMath::FInterpTo(ShootdodgeLongGunAlpha, bLongGunDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
-	ShootdodgeLeftHandAlpha = ShootdodgeLongGunAlpha * LeftHandGripAlpha;
+	// A silent swap (face-down) changes the hold over the swap's own time instead of snapping.
+	const float SilentSwapRate = Character.IsSilentEquipping()
+		? 1.0f / FMath::Max(Character.GetSilentEquipDuration(), 0.05f) : 0.0f;
+	ShootdodgeLongGunAlpha = SilentSwapRate > 0.0f
+		? FMath::FInterpConstantTo(ShootdodgeLongGunAlpha, bLongGunDive ? 1.0 : 0.0, DeltaSeconds, SilentSwapRate)
+		: FMath::FInterpTo(ShootdodgeLongGunAlpha, bLongGunDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
+	// The hold lets go while a reload, draw or toss has the left hand (it used to stay pinned).
+	ShootdodgeLeftHandAlpha = ShootdodgeLongGunAlpha * LeftHandGripAlpha * (1.0 - ProneReloadAlpha) * (1.0 - ThrowAlpha);
 
 	// Duals: the dive's two-handed pistol arms would clasp the left gun to the right one, so
 	// the left arm takes a mirrored one-handed hold instead (the AnimGraph's left-arm layer).
 	const bool bDualDive = bShootdodging && Weapon && bIsDualWield;
-	ShootdodgeDualAlpha = FMath::FInterpTo(ShootdodgeDualAlpha, bDualDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
+	ShootdodgeDualAlpha = SilentSwapRate > 0.0f
+		? FMath::FInterpConstantTo(ShootdodgeDualAlpha, bDualDive ? 1.0 : 0.0, DeltaSeconds, SilentSwapRate)
+		: FMath::FInterpTo(ShootdodgeDualAlpha, bDualDive ? 1.0 : 0.0, DeltaSeconds, 10.0f);
 	FQuat OffhandTarget = FQuat::Identity;
 
 	const USkeletalMeshComponent* Mesh = Character.GetMesh();
@@ -360,6 +368,44 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	ShootdodgeHeadCorrection = FQuat::Slerp(FQuat::Identity, HeadCorrectionTotal, 0.5f).Rotator();
 }
 
+void UProjectBopisAnimInstance::UpdateProneReloadLayers(float DeltaSeconds)
+{
+	// Face-down, the whole-arm reload would sweep the arms down through the floor: there only
+	// the forearms and hands take it, the upper arms staying out in front. Everywhere else (the
+	// air, a side, the back) the whole arms do, as before.
+	const bool bFaceDown = ShootdodgePhase == EShootdodgePhase::Prone
+		&& FMath::Abs(ShootdodgeDirection) <= ProneFrontMaxAngle;
+	ProneFrontAlpha = FMath::FInterpTo(ProneFrontAlpha, bFaceDown ? 1.0f : 0.0f, DeltaSeconds, ProneDualReloadSwapSpeed);
+
+	ProneArmReloadAlpha = ProneReloadAlpha * (1.0f - ProneFrontAlpha);
+	ProneForearmReloadAlpha = ProneReloadAlpha * ProneFrontAlpha;
+	ProneDualOffhandAlpha = bIsDualWield ? ProneArmReloadAlpha : 0.0f;
+	ProneForearmDualAlpha = bIsDualWield ? ProneForearmReloadAlpha : 0.0f;
+
+	// Long guns face-down: even forearms-only, a rifle reload brings the gun down into the floor.
+	// So both upper arms raise about the shoulders' line, lifting the forearms and gun with them.
+	const float RaiseAlpha = bIsPistolHold ? 0.0f : ProneForearmReloadAlpha;
+	ProneLongGunArmRaise = FRotator::ZeroRotator;
+	const USkeletalMeshComponent* Mesh = GetSkelMeshComponent();
+	if (RaiseAlpha > KINDA_SMALL_NUMBER && Mesh && Mesh->DoesSocketExist(TEXT("upperarm_r")))
+	{
+		const FTransform& ToComponent = Mesh->GetComponentTransform();
+		auto Bone = [Mesh, &ToComponent](const TCHAR* Name)
+		{
+			return ToComponent.InverseTransformPosition(Mesh->GetSocketLocation(Name));
+		};
+		const FVector Across = (Bone(TEXT("upperarm_r")) - Bone(TEXT("upperarm_l"))).GetSafeNormal();
+		const FVector Arm = Bone(TEXT("lowerarm_r")) - Bone(TEXT("upperarm_r"));
+		if (!Across.IsNearlyZero())
+		{
+			// Whichever way round the shoulders' line lifts the elbows rather than lowering them.
+			const float Lift = FVector::CrossProduct(Across, Arm).Z >= 0.0f ? 1.0f : -1.0f;
+			const float Angle = FMath::DegreesToRadians(ProneLongGunArmRaiseAngle) * RaiseAlpha * Lift;
+			ProneLongGunArmRaise = FQuat(Across, Angle).Rotator();
+		}
+	}
+}
+
 void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)
 {
 	if (ShootdodgePhase != EShootdodgePhase::Prone)
@@ -370,6 +416,7 @@ void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)
 		bProneHoldingSide = FMath::Abs(ShootdodgeDirection) - 90.0f < ProneSideSnapAngle;
 		ProneBodyTurn = FRotator::ZeroRotator;
 		ProneSpineCounterTurn = FRotator::ZeroRotator;
+		ProneNeutralAlpha = 0.0f;
 		return;
 	}
 
@@ -402,16 +449,31 @@ void UProjectBopisAnimInstance::UpdateProneDirection(float DeltaSeconds)
 
 	// Eased along the shorter way round: across straight back the direction wraps from +180
 	// to −180, and easing the plain number would sweep the pose through the front instead.
+	// Duals and long guns reloading on a side: the lower shoulder leaves that arm no room, so the
+	// body goes over onto its back (the back-prone pose) for the reload, and back once it's done.
+	// Face-down and on the back they reload where they lie, as do the single pistols.
+	const bool bSideDualReload = (bIsDualWield || !bIsPistolHold) && bReloadAnimating
+		&& AbsDirection > ProneFrontMaxAngle && AbsDirection < ProneSideMaxAngle;
+	if (bSideDualReload)
+	{
+		PoseDirection = 180.0f;
+	}
+	const float SwapSpeed = bSideDualReload ? ProneDualReloadSwapSpeed : PronePoseSwapSpeed;
+	ProneNeutralAlpha = FMath::FInterpTo(ProneNeutralAlpha, bSideDualReload ? 1.0f : 0.0f, DeltaSeconds, ProneDualReloadSwapSpeed);
+
 	const float Remaining = FRotator::NormalizeAxis(PoseDirection - ProneBlendDirection);
 	ProneBlendDirection = FRotator::NormalizeAxis(
-		ProneBlendDirection + FMath::FInterpTo(0.0f, Remaining, DeltaSeconds, PronePoseSwapSpeed));
+		ProneBlendDirection + FMath::FInterpTo(0.0f, Remaining, DeltaSeconds, SwapSpeed));
 
 	// The pose shows the body lying a little off the real direction: turn the whole body by
 	// the difference so it lies where the dive put it, and the spine back by the same (half
 	// on each of two bones) so the gun still points at the aim.
 	const float Difference = FRotator::NormalizeAxis(ShootdodgeDirection - ProneBlendDirection);
 	ProneBodyTurn = FRotator(0.0f, Difference, 0.0f);
-	ProneSpineCounterTurn = FRotator(0.0f, -0.5f * Difference, 0.0f);
+	// Under the side-prone dual reload the aim is ignored: no counter-turn (and no pitch), so
+	// the body lies as the back pose has it, looking along the legs, until it's done.
+	ProneSpineCounterTurn = FRotator(0.0f, -0.5f * Difference * (1.0f - ProneNeutralAlpha), 0.0f);
+	ShootdodgeAimPitch *= 1.0f - ProneNeutralAlpha;
 }
 
 void UProjectBopisAnimInstance::UpdateProneFeet(const ABopisCharacterBase& Character, float DeltaSeconds)

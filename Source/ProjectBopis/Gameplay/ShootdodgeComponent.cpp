@@ -385,15 +385,58 @@ void UShootdodgeComponent::TakeOff()
 
 void UShootdodgeComponent::GetBodyShape(FVector& OutCentre, FQuat& OutRotation, float& OutRadius, float& OutHalfHeight) const
 {
-	// The body lies along the line it launched on and never turns from it: a capsule laid flat
-	// along the dive's direction, centred on the character, resting on the main capsule's
-	// bottom — the same shape from take-off until standing up.
+	// Laid flat, resting just above the main capsule's bottom, and along the body as it is now
+	// (feet to head, so it follows the turn to the aim in flight and however it lies prone):
+	// long enough to take in the feet, head, hands and the gun's muzzle.
 	const UCapsuleComponent* Capsule = Character->GetCapsuleComponent();
+	const FVector Base = Character->GetActorLocation();
 	OutRadius = BodyCapsuleRadius;
-	OutHalfHeight = FMath::Max(BodyCapsuleRadius, BodyCapsuleHalfLength);
-	OutCentre = Character->GetActorLocation()
-		+ FVector(0.0f, 0.0f, BodyCapsuleRadius - Capsule->GetScaledCapsuleHalfHeight());
-	OutRotation = FRotationMatrix::MakeFromZ(FRotator(0.0f, DiveYaw, 0.0f).Vector()).ToQuat();
+	const float Height = BodyCapsuleRadius - Capsule->GetScaledCapsuleHalfHeight();
+
+	FVector Axis = FRotator(0.0f, DiveYaw, 0.0f).Vector();
+	float Back = -BodyCapsuleHalfLength;
+	float Front = BodyCapsuleHalfLength;
+
+	// The bones are written by the worker-thread animation evaluation: wait for it before
+	// reading them (as the limb physics does), and use the fixed shape if there are none yet.
+	USkeletalMeshComponent* Mesh = Character->GetMesh();
+	if (Mesh)
+	{
+		Mesh->HandleExistingParallelEvaluationTask(true, true);
+	}
+	if (Mesh && Mesh->GetComponentSpaceTransforms().Num() > 0
+		&& Mesh->DoesSocketExist(TEXT("head")) && Mesh->DoesSocketExist(TEXT("foot_l")) && Mesh->DoesSocketExist(TEXT("foot_r")))
+	{
+		const FVector Head = Mesh->GetSocketLocation(TEXT("head"));
+		const FVector Feet = (Mesh->GetSocketLocation(TEXT("foot_l")) + Mesh->GetSocketLocation(TEXT("foot_r"))) * 0.5f;
+		const FVector Along = FVector(Head.X - Feet.X, Head.Y - Feet.Y, 0.0f).GetSafeNormal();
+		if (!Along.IsNearlyZero())
+		{
+			Axis = Along;
+			TArray<FVector, TInlineAllocator<6>> Points = { Head, Feet,
+				Mesh->GetSocketLocation(TEXT("hand_l")), Mesh->GetSocketLocation(TEXT("hand_r")) };
+			const UWeaponHolderComponent* Holder = Character->GetWeaponHolder();
+			if (const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr)
+			{
+				Points.Add(Weapon->GetMuzzleLocation());
+			}
+
+			Back = MAX_flt;
+			Front = -MAX_flt;
+			for (const FVector& Point : Points)
+			{
+				const float Distance = FVector::DotProduct(Point - Base, Axis);
+				Back = FMath::Min(Back, Distance);
+				Front = FMath::Max(Front, Distance);
+			}
+			Back -= BodyEndMargin;
+			Front += BodyEndMargin;
+		}
+	}
+
+	OutHalfHeight = FMath::Max(BodyCapsuleRadius, (Front - Back) * 0.5f);
+	OutCentre = Base + Axis * ((Front + Back) * 0.5f) + FVector(0.0f, 0.0f, Height);
+	OutRotation = FRotationMatrix::MakeFromZ(Axis).ToQuat();
 }
 
 void UShootdodgeComponent::KeepBodyOutOfWalls(float DeltaTime)

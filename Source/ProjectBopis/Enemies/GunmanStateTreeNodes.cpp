@@ -39,10 +39,20 @@ EStateTreeRunStatus FGunmanMoveTask::EnterState(FStateTreeExecutionContext& Cont
 
 	// Strafing keeps the focus on the player: it faces (and fires at) them on the way.
 	// The last known position can be off the navmesh (mid-dive), so it's projected onto it.
+	// The trip to an ambush point is to the point itself: its own radius, measured to the centre
+	// (no stopping as soon as the capsule's edge is in range).
+	float Acceptance = Data.AcceptanceRadius;
+	bool bStopOnOverlap = true;
+	if (Data.Goal == EGunmanMoveGoal::EngageSpot && Enemy->ConsumeAmbushAcceptance(Acceptance))
+	{
+		bStopOnOverlap = false;
+	}
+
 	Data.Destination = Destination;
-	const EPathFollowingRequestResult::Type Result = AI->MoveToLocation(Destination, Data.AcceptanceRadius, true, true, true, true);
+	const EPathFollowingRequestResult::Type Result = AI->MoveToLocation(Destination, Acceptance, bStopOnOverlap, true, true, true);
 	if (Result == EPathFollowingRequestResult::Failed)
 	{
+		Enemy->ReportUnreachable(Destination);
 		return EStateTreeRunStatus::Failed;
 	}
 

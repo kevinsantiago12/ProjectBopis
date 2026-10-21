@@ -312,6 +312,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "1.0", EditCondition = "bBodyCollision"))
 	float BodyCapsuleHalfLength = 90.0f;
 
+	/** Added beyond the furthest of feet, head, hands and muzzle along the body (cm). */
+	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "0.0", EditCondition = "bBodyCollision"))
+	float BodyEndMargin = 10.0f;
+
 	/** Most the body is pushed back out of a wall it's already in, per frame (cm) — eases out
 	    rather than popping. */
 	UPROPERTY(EditAnywhere, Category = "Shootdodge|Body Collision", meta = (ClampMin = "0.0", EditCondition = "bBodyCollision"))

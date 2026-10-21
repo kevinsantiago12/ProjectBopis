@@ -3,6 +3,7 @@
 #include "BopisCharacterBase.h"
 #include "ProjectBopisAnimInstance.h"
 #include "Weapons/WeaponHolderComponent.h"
+#include "Weapons/WeaponBase.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequenceBase.h"
@@ -49,6 +50,8 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
+	SilentEquipTimeLeft = FMath::Max(0.0f, SilentEquipTimeLeft - DeltaSeconds);
+	UpdateWeaponBlocked();
 
 	UpdateReloadMontage();
 
@@ -442,6 +445,45 @@ void ABopisCharacterBase::StopLimb(FName Root)
 	Body->SetAllBodiesBelowPhysicsBlendWeight(Root, 0.0f, false, true);
 	Body->SetAllBodiesBelowSimulatePhysics(Root, false, true);
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(Root, FPhysicalAnimationData(), true);
+}
+
+void ABopisCharacterBase::UpdateWeaponBlocked()
+{
+	const AWeaponBase* Weapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
+	if (!Weapon || bIsDead || !IsWeaponRaised())
+	{
+		bWeaponBlocked = false;
+		return;
+	}
+
+	// From the chest along the aim, judged on the aim alone (not where the gun is drawn), so
+	// lowering it can't clear the wall and bring it straight back up.
+	// The bones are written by the worker-thread animation evaluation: wait for it before reading.
+	WaitForAnimEvaluation();
+	const USkeletalMeshComponent* Body = GetMesh();
+	const FVector Chest = (Body && Body->GetComponentSpaceTransforms().Num() > 0 && Body->DoesSocketExist(TEXT("spine_05")))
+		? Body->GetSocketLocation(TEXT("spine_05"))
+		: GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+	const FVector Aim = Controller ? GetControlRotation().Vector() : GetActorForwardVector();
+	const float Reach = (IsPistolAnimType(Weapon->GetAnimType()) ? PistolWallDistance : LongGunWallDistance)
+		+ (bWeaponBlocked ? WallClearMargin : 0.0f);
+
+	// Walls and props only: someone standing close isn't a reason to lower the gun.
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(WeaponWall), false, this);
+	Params.AddIgnoredActor(Weapon);
+	// Everything along the line, kept only if it's solid to bullets and sight (not a trigger box,
+	// not a casing) and faces the gun rather than up (a wall, not the floor you're aiming at).
+	TArray<FHitResult> Hits;
+	GetWorld()->LineTraceMultiByObjectType(Hits, Chest, Chest + Aim * Reach, Objects, Params);
+	bWeaponBlocked = Hits.ContainsByPredicate([](const FHitResult& Hit)
+	{
+		const UPrimitiveComponent* Component = Hit.GetComponent();
+		return Component && Component->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block
+			&& Hit.ImpactNormal.Z < 0.7f;
+	});
 }
 
 void ABopisCharacterBase::WaitForAnimEvaluation()
@@ -859,6 +901,16 @@ void ABopisCharacterBase::PlayEquipAnimation(const AWeaponBase* Weapon)
 
 	const EWeaponAnimType AnimType = Weapon->GetAnimType();
 	const float PlayRate = GetEquipPlayRate();
+
+	// Face-down (or wherever the draw has no room): the gun's simply in the hand, but it takes
+	// the draw's time to be ready, and the pose eases over in that time.
+	if (ShouldSilentEquip())
+	{
+		const TObjectPtr<UAnimMontage>* Found = EquipMontages.Find(AnimType);
+		SilentEquipDuration = (Found && *Found) ? (*Found)->GetPlayLength() / FMath::Max(PlayRate, 0.01f) : 0.5f;
+		SilentEquipTimeLeft = SilentEquipDuration;
+		return;
+	}
 
 	if (const TObjectPtr<UAnimMontage>* Found = EquipMontages.Find(AnimType); Found && *Found)
 	{

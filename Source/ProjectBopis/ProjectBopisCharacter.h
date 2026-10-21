@@ -530,6 +530,12 @@ public:
 	virtual bool ShouldSkipEquipAnimation() const override;
 
 	virtual float GetEquipPlayRate() const override;
+	virtual bool ShouldSilentEquip() const override;
+
+	/** Lying within this of face-down (degrees from straight ahead), weapon swaps are silent:
+	    no equip montage (it would draw through the floor), the same time to be ready. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Equip", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float SilentEquipFaceDownAngle = 45.0f;
 
 	/** Re-derives the camera boom's height from the capsule's current size, right away. Call
 	    after anything resizes the capsule mid-frame (crouch, a dive), or the camera shows one
@@ -554,6 +560,16 @@ public:
 
 	/** Marks a shot from Source on the HUD: bHit red, otherwise a grey near miss (rationed). */
 	void AddHitIndicator(const FVector& Source, bool bHit);
+
+	/** Puts a line of dialogue on the HUD for this many seconds (empty, or 0, clears it). */
+	void ShowSubtitle(const FText& Line, float Seconds)
+	{
+		CurrentSubtitle = Line;
+		SubtitleTimeLeft = Seconds;
+	}
+
+	/** The subtitle showing now, or empty. */
+	FText GetSubtitle() const { return SubtitleTimeLeft > 0.0f ? CurrentSubtitle : FText::GetEmpty(); }
 
 	const TArray<FHitIndicator>& GetHitIndicators() const { return HitIndicators; }
 
@@ -591,6 +607,9 @@ private:
 
 	FTimerHandle GrenadeReleaseTimer;
 	float LastGrenadeThrowTime = -1000.0f;
+
+	FText CurrentSubtitle;
+	float SubtitleTimeLeft = 0.0f;
 
 	/** At a roll's start: a reload far enough along is held for the roll's end, the rest
 	    cancelled. */

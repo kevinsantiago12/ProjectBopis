@@ -412,6 +412,13 @@ character. Working today:
   the weapon or its ammunition
 - Bullet impacts that match what was hit (dust, sparks, splinters, bullet
   holes), muzzle flash, weapon sound
+- Scripted moments: enemies you overhear talking before they know you are
+  there — they speak, gesture, walk and turn to each other, and either play
+  the scene out or break off the moment they spot you; a scene can also start
+  the fight on a line of dialogue
+- Enemies that call out in a fight — spotting you, reloading, hurt, a friend
+  down, a grenade at their feet — kept from talking over each other, with
+  room for a Tagalog voice set alongside the English placeholders
 
 All of it was built under the old premise, and all of it is **implementation
 state rather than canon** — the test bed the new direction gets evaluated
@@ -475,3 +482,5 @@ a shooting range.
 - 2026-10-16 — The game is linear, with fights set up as room encounters
   (enemies waiting in rooms, set off when you enter). Hit indicators and shell
   casings added to the build.
+- 2026-10-21 — Overheard enemy conversations (scripted scenes that can break
+  off or start the fight) and enemy combat call-outs added to the build.

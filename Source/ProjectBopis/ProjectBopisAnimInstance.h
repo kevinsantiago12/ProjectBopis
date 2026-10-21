@@ -313,6 +313,30 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	float ProneDualOffhandAlpha = 0.0f;
 
+	/** Weight of the whole-arm dive/prone reload layer (LayeredBoneBlend_8): ProneReloadAlpha
+	    less the face-down part, which takes only the forearms. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge|Prone")
+	float ProneArmReloadAlpha = 0.0f;
+
+	/** Face-down reloads: only the forearms and hands take the reload, the upper arms stay out
+	    in front as the prone pose has them (the forearm layer)... */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge|Prone")
+	float ProneForearmReloadAlpha = 0.0f;
+
+	/** ...and, for duals, the left forearm takes the off-hand's mirrored reload. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge|Prone")
+	float ProneForearmDualAlpha = 0.0f;
+
+	/** Long guns reloading face-down: both upper arms raised (about the shoulders' line), so the
+	    forearm reload and the gun come up off the floor. On upperarm_l and upperarm_r
+	    (component space, added). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge|Prone")
+	FRotator ProneLongGunArmRaise = FRotator::ZeroRotator;
+
+	/** How far the upper arms raise for a face-down long-gun reload (degrees). */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge|Prone", meta = (ClampMin = "0.0", ClampMax = "80.0"))
+	float ProneLongGunArmRaiseAngle = 30.0f;
+
 	/** How fast ProneReloadAlpha eases in and out (per second; 6 ≈ 0.17 s). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tuning", meta = (ClampMin = "0.1"))
 	float ProneReloadBlendSpeed = 6.0f;
@@ -380,6 +404,25 @@ protected:
 	    Lower is slower. */
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
 	float PronePoseSwapSpeed = 5.0f;
+
+	/** Duals and long guns reloading prone on a side: the lower arm has no room, so the pose
+	    goes to the back-prone one for the reload (at this speed) and returns after. Face-down
+	    and on the back they reload where they lie, as do the single pistols. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.1"))
+	float ProneDualReloadSwapSpeed = 8.0f;
+
+	/** Prone directions within this of straight ahead (degrees) are face-down: no flip there
+	    (the roll from the front was too big a move)... */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float ProneFrontMaxAngle = 45.0f;
+
+	/** ...and this far from straight ahead or more are on the back already. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float ProneSideMaxAngle = 150.0f;
+
+	/** The back-pose reload's weight (eased): the aim is ignored under it — no spine
+	    counter-turn, no pitch — so the reload plays looking along the legs. */
+	float ProneNeutralAlpha = 0.0f;
 
 	/** Component-space foot IK targets mid-swap across the front: each foot as animated,
 	    raised with the hips and above the floor. */
@@ -592,6 +635,12 @@ private:
 
 	void UpdateShootdodgeAim(const ABopisCharacterBase& Character, float DeltaSeconds);
 	void UpdateProneDirection(float DeltaSeconds);
+
+	/** Splits the prone reload between the whole-arm and the face-down forearm layers. */
+	void UpdateProneReloadLayers(float DeltaSeconds);
+
+	/** Face-down prone, eased (0 elsewhere): how much of the reload is forearms-only. */
+	float ProneFrontAlpha = 0.0f;
 	void UpdateProneFeet(const ABopisCharacterBase& Character, float DeltaSeconds);
 
 	/** How far Point sits below the floor plus Clearance (cm), 0 if it's clear or there's no floor. */

@@ -936,10 +936,171 @@ pitch 8 / yaw −93 (the mesh runs along X, the pistol family along Y).
 - `UpdateBlade` takes `RootYawOffset` back out of what it measures
   (`RotateRootBone` comes after its turns in the graph).
 
+**Guns against walls (2026-10-20):** a raised gun whose space ahead is taken
+(`ABopisCharacterBase::UpdateWeaponBlocked`: a WorldStatic/WorldDynamic trace
+from `spine_05` along the control rotation, `LongGunWallDistance` 90 /
+`PistolWallDistance` 55, +`WallClearMargin` 15 to unblock) is **blocked**: the
+anim instance treats it as lowered and not aimed, the player's `DoFire` and the
+enemy's `FireAt` don't fire. The raise timer keeps running, so it comes straight
+back up. The trace ignores the gun's pose, so lowering can't un-block it.
+Only hits that **block Visibility** and face sideways (`ImpactNormal.Z < 0.7`)
+count: trigger boxes (WorldDynamic, overlap-only) and the floor when aiming
+down made it lower constantly at first.
+Dives are untouched.
+
+**Prone reloads (2026-10-21):** lying on a side, the lower shoulder pinned an
+arm in the dual reload, and face-down the arms went into the floor. **Duals and
+long guns** reloading prone on a side (|direction| between `ProneFrontMaxAngle`
+45 and `ProneSideMaxAngle` 150; face-down was tried and looked jarring) send the prone pose to the back-prone one (`PoseDirection` 180, at `ProneDualReloadSwapSpeed` 8) for the
+reload; it returns at the normal swap speed after. The single pistols reload
+where they lie. Under it the aim is ignored (`ProneNeutralAlpha`, eased at the same
+speed): no spine counter-turn and no pitch, so it reloads looking along the
+legs, then goes back to the aim. The dive branch's mirrored off-hand layer
+(`LayeredBoneBlend_9`) now blends in **local** space (`bMeshSpaceRotationBlend`
+off): in mesh space the left arm kept the standing reload's absolute angle and
+twisted when lying down. **Face-down** (|direction| ≤ `ProneFrontMaxAngle`, eased into
+`ProneFrontAlpha`) only the forearms and hands take the reload, the upper arms
+staying forward: `LayeredBoneBlend_11` (`UpperBodySlot` from `lowerarm_l`/`_r`,
+`ProneForearmReloadAlpha`) and `_12` (`OffhandMirror` from `lowerarm_l`,
+`ProneForearmDualAlpha`) sit between `_7` and `_8`; `_8`/`_9` take
+`ProneArmReloadAlpha`/`ProneDualOffhandAlpha` = the rest. Use Cached Pose nodes
+`_3`/`_4` were placed by the user. Long guns face-down still reached the floor, so both upper arms
+raise about the shoulders' line (`ProneLongGunArmRaise`,
+`ProneLongGunArmRaiseAngle` 30, sign picked so the elbows rise) on
+`upperarm_l`/`upperarm_r` (`ModifyBone_34/35`, between `_11` and `_22`). An
+upper-back arch was tried first and rolled back.
+
+**Silent swaps face-down (2026-10-21):** within `SilentEquipFaceDownAngle` (45)
+of face-down while prone, `PlayEquipAnimation` plays no montage
+(`ShouldSilentEquip`); `SilentEquipTimeLeft` runs for the montage's length (at the
+equip play rate) instead. Firing, throws and auto-reload wait for it
+(`IsSilentEquipping`), and the dive branch's long-gun and dual holds
+(`ShootdodgeLongGunAlpha`, `ShootdodgeDualAlpha`) ease over in that same time. (A procedural chest roll was tried first and
+dropped.) Long guns'
+dive/prone left-hand hold (`ShootdodgeLeftHandAlpha`) now lets go for reloads,
+draws and tosses.
+
 **Gotchas (2026-10-19):** the player pawn is `BP_Kamz`, a child of
 `BP_PlayerCharacter`; set player defaults on it (parent values set through the
 bridge didn't carry over). The bridge's `set_socket_transform` resets the
 fields you leave out.
+
+## Encounter triggers, ambushes and spawning (2026-10-19)
+User's use cases: enemies charging round a corner, or pouring out of the room
+at the end of a hallway when the player is halfway down it; and enemies
+spawned as the player goes rather than all placed up front.
+- **Waiting:** `AEncounterTrigger::bEnemiesWaitForTrigger` (default on)
+  makes its `Enemies` blind and deaf to the player and to allies' alerts
+  (`AEnemyBase::bWaitingForTrigger`, checked in `Alert`) until it fires.
+  Being shot still wakes one. Off: the old "make sure" trigger.
+- **Ambush move** (`AEnemyBase`, Ambush category): `AmbushPoint` (run there
+  first; a holder then holds there, `HomeLocation` moves) or
+  `bRushOnTrigger` (first move is a push at the player). Made by the first
+  `ChooseNextSpot` after `TriggerAmbush`. They move at once; the reaction
+  beat only delays the first shot.
+- **Spawns** (`FEncounterSpawn` list on the trigger, first firing only):
+  class (or the trigger's `DefaultEnemyClass`), `SpawnPoint`, `Weapon`,
+  `AmbushPoint`, `bRushOnTrigger`, `bHoldsPosition`, `Delay`. Spawned
+  deferred (gun chosen before BeginPlay), stood on the point, skipped if the
+  point is blocked. With `WaitForTrigger` set, the enemy spawns asleep and
+  joins that trigger (`AddEnemy`; if it already fired, set off at once):
+  the **spawn-ahead line**. Without it, it comes in set off.
+- **Markers:** `AEncounterPoint` (a Target Point with `PointRole` Spawn/Ambush), as
+  `BP_EnemySpawnPoint` (red) and `BP_AmbushPoint` (yellow) in
+  `ThirdPerson/Blueprints/Encounter/`. Points and triggers carry an editor-only
+  `UTextRenderComponent` label (role or TRIGGER, Outliner name, trigger counts),
+  refreshed in `OnConstruction`; hidden in game, stripped from builds. (`Role`
+  is taken by `AActor`, hence `PointRole`.)
+- **Spawn entries also set** `HoldRadius` and `bCrouchWhileHolding` (holders), and
+  `PatrolPoints`. An entry with no ambush point, no rush and no hold is a
+  **patroller**: it spawns unalerted, senses on, walking its route (or standing).
+  With `WaitForTrigger` it joins that trigger awake (`AddEnemy(Enemy, false)`), so
+  the trigger still sets it off. Patrol stops are `BP_PatrolPoint` (green,
+  `PointRole` Patrol).
+- Triggers have an editor-only `S_Trigger` icon at their centre to click.
+- **Ambush arrival:** `AmbushAcceptanceRadius` (enemy and spawn entry, 20 cm),
+  measured to the centre (stop-on-overlap off) for the trip to the AmbushPoint
+  only; `ChooseNextSpot` leaves it for the move task (`ConsumeAmbushAcceptance`).
+  Other moves keep the StateTree task's 50 cm with stop-on-overlap.
+- **Editor tools (2026-10-20):** a `ProjectBopisEditor` module (Editor type,
+  PostEngineInit) registers an **Encounter** tab in Place Actors (trigger + the
+  three point Blueprints). Triggers draw link lines in the editor viewport
+  (`bDrawLinks`; enemies orange, spawn red, ambush yellow, patrol green, the
+  awaited trigger a cyan arrow) by ticking in the editor only
+  (`ShouldTickIfViewportsOnly`; tick off in play). Failed moves log a warning
+  (`AEnemyBase::ReportUnreachable`, every 3 s at most).
+- **Patrol speed:** `PatrolSpeed` 180 while unalerted with patrol points. The
+  lowered Move poses are single jog clips (no walk), so a walk needs the
+  ABP's lowered sequence players swapped for a walk/jog blend space by Speed
+  (`BS_MM_Unarmed_Jog_Walk` exists: walk 200, jog 400).
+- Not built: removing enemies behind the player (with level streaming, later).
+
+**Scripted events, stage 1 (2026-10-21):** `AEncounterEvent` (Encounter tab;
+editor label + note icon; purple lines to its speakers, and from triggers that
+start it). Ordered `Steps` (`FEncounterEventStep`): **SayLine** (speaker enemy,
+optional speaker name, sound, subtitle; length = `Duration` or the sound's, else a
+reading time 1 s + 0.06 s/char; `PauseAfter` 0.3) and **Wait**. Started by a
+trigger's `EventsToStart` (first firing) or `bStartOnBeginPlay`; runs once.
+Voices play from the speaker's `head` with an attenuation override
+(`VoiceFullRange` 400, `VoiceFalloff` 2500), so no attenuation asset is needed.
+Subtitles via `AProjectBopisCharacter::ShowSubtitle` / `GetSubtitle` and the
+`USubtitleWidget` HUD base (user-built widget), only within `SubtitleRange`
+(3000; 0 = always). Any speaker alerted or killed stops it: the voice fades,
+the subtitle clears, and an alerted (living) one says `InterruptSound` /
+`InterruptSubtitle`. Speakers should keep their senses on (not on a waiting
+trigger). **Spawned speakers:** a spawn entry's `Tag` goes on the enemy as an
+actor tag; a Say Line with no `Speaker` uses `SpeakerTag` (the living enemy with
+that tag, looked up when its line comes). A trigger spawns its immediate spawns
+before starting its events. **Animations (2026-10-21):** a step's `Animation`
+(montage on `DefaultSlot`, same as reloads) plays on the speaker — with a Say
+Line it loops (its last section set to run into itself via
+`Montage_SetNextSection`) until the line ends; a **PlayAnim** step plays one
+without a line (`bWaitForAnim`: the next step waits for it, else runs
+alongside; a set `Duration` loops it that long, 0 = plays once). An interrupt stops every
+step's montage on every speaker.
+
+**Scripted events, stage 2 (2026-10-21):** new step types —
+**MoveTo** (`Target` actor, `bRun`, `AcceptanceRadius` 50, `bWaitForArrival`;
+`AEnemyBase::ScriptedMoveTo` sets `bScriptedMove`, which pauses `UpdatePatrol`
+and picks walk = `PatrolSpeed` / run = `LoweredSpeed`; the wait ends when the
+AI's move goes Idle, then `PauseAfter`), **FaceTo** (`Target` or `TargetTag`;
+`SetFaceTarget` snapshots a fixed `FacePoint` — the target's eyes if a pawn,
+else its spot at own eye height — so a speaker who walks off isn't tracked;
+calm and standing, the actor turns at `TurnRate`×0.5 and `GetHeadLookTarget`
+aims the head at that point; empty = stop; instant step), **SetOffEncounter** (`Encounter`; calls the
+new `AEncounterTrigger::Fire()`, which the overlap now goes through; sets
+`bSetOff`, so speakers alerted afterwards *finish* the event instead of
+interrupting it), **StartEvent** (`Event`; instant). Chains:
+`EventsOnFinished` / `EventsOnInterrupted`. Ending either way (`EndRun`) stops
+the event's montages and calls `EndScripted()` on living speakers (patrol
+resumes, facing cleared); `Alert` also calls it. An interrupt with no
+`InterruptSound`/subtitle falls back to the noticer's Spotted bark. Event voices
+now play through `UBarkSubsystem::PlayVoice`. Link lines: speakers purple,
+move/face targets green, set-off trigger orange, started/chained events white
+(interrupted chain red). Not built: a Play Sound step.
+
+**Enemy barks (2026-10-21):** seven types (`EBarkType`: Spotted, LostSight,
+Reloading, Hurt, AllyDown, Grenade, Death). Data: `UBarkSet` (one voice, one
+language: per type `FBarkLines` = sounds, `Chance`, `Cooldown`) grouped by
+language code in a `UBarkVoice` (`Languages` map, falls back to `en`). An enemy's
+`BarkVoice` (class default; a trigger spawn's `Voice` overrides). `UBarkSubsystem`
+(world subsystem) gates every `AEnemyBase::Bark(Type)`: player within
+`HearingRange` 3000 (out of earshot doesn't spend the cooldown), level-wide
+per-type cooldown, chance, one bark per speaker (Death cuts it off), at most
+`MaxConcurrent` 2 at once (Death always plays), no line twice running.
+`SetLanguage(FName)` swaps language. No subtitles. Voice plays via the shared
+static `UBarkSubsystem::PlayVoice` (head, 3D, 400/2500 falloff). Clips: mono
+WAV, 48 kHz 16-bit, silence trimmed. Hooks built: Spotted (first sight after an
+alert, re-armed after `WarningBurstResetTime` unseen; flag set even when the
+coordinator drops it), Hurt (non-lethal damage), Death (`Die`), Reloading
+(enemy reload start), LostSight (the moment the Spotted flag re-arms, only if
+it had seen the player and the player isn't dead), AllyDown (`Die` → nearest
+alerted ally within `AllyDownRadius` 1500 with eye-to-eye line of sight),
+Grenade (a fused grenade's first bounce → nearest alerted enemy within
+`AGrenade::WarnRadius` 800; impact rounds never warn). Barks are voice only;
+no behaviour reacts to them. Test set: `/Game/Audio/ThugTest_BarkSet` +
+`ThugTest_BarkVoice` on `BP_EnemyBase` (clips currently stereo; mix to mono
+for proper 3D).
 
 ## Enemies
 
@@ -3035,6 +3196,14 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
 - **Body shape (queries only, no component):** `GetBodyShape` gives a capsule
   laid flat along `DiveYaw`, centred on the actor, resting on the main
   capsule's bottom (`BodyCapsuleRadius` 18, `BodyCapsuleHalfLength` 90).
+  **2026-10-21:** shaped from the body each frame instead: laid along feet→head
+  (flattened), spanning the furthest of feet, head, hands and the muzzle along
+  that line + `BodyEndMargin` 10, so turned bodies and outstretched guns are
+  covered. The fixed length is the fallback without bones. Reading bones on the game thread
+  crashed ("index 71 from an array of size 0", as on 10-18): it now waits for the
+  parallel evaluation first (`HandleExistingParallelEvaluationTask`) and checks
+  the bone buffer isn't empty; `UpdateWeaponBlocked` does the same. **Rule: any
+  game-thread read of bone/socket positions outside the anim instance waits first.**
   - The body never turns from the dive line, so it's one fixed shape until
     standing (user's call: no pose sampling, no turn checks).
   - `KeepBodyOutOfWalls`, while `IsBodyDown()`:

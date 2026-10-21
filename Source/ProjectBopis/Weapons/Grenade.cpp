@@ -1,6 +1,9 @@
 #include "Weapons/Grenade.h"
 
 #include "Components/SphereComponent.h"
+#include "EngineUtils.h"
+#include "Enemies/BarkSet.h"
+#include "Enemies/EnemyBase.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -63,6 +66,28 @@ void AGrenade::OnBounce(const FHitResult& ImpactResult, const FVector& ImpactVel
 	if (BounceSound && ImpactVelocity.Size() >= MinBounceSoundSpeed)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, BounceSound, ImpactResult.ImpactPoint);
+	}
+
+	// First landing of a fused grenade: the nearest enemy in the fight shouts a warning.
+	if (bWarned || bExplodeOnImpact)
+	{
+		return;
+	}
+	bWarned = true;
+	AEnemyBase* Nearest = nullptr;
+	float NearestDistance = WarnRadius;
+	for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+	{
+		const float Distance = FVector::Dist(It->GetActorLocation(), GetActorLocation());
+		if (!It->IsDead() && It->IsAlerted() && Distance <= NearestDistance)
+		{
+			Nearest = *It;
+			NearestDistance = Distance;
+		}
+	}
+	if (Nearest)
+	{
+		Nearest->Bark(EBarkType::Grenade);
 	}
 }
 

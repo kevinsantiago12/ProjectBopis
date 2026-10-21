@@ -11,5 +11,6 @@ public class ProjectBopisEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		ExtraModuleNames.Add("ProjectBopis");
+		ExtraModuleNames.Add("ProjectBopisEditor");
 	}
 }

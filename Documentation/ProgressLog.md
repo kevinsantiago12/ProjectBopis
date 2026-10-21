@@ -12,6 +12,109 @@
 
 ---
 
+## 2026-10-21 (2)
+**Summary:**
+- **Scripted events** (`AEncounterEvent`, Encounter tab), Max Payne-style
+  overheard conversations. Details in the spec's *Scripted events*.
+  - Stage 1: Say Line (voice from the head, subtitle within range), Wait,
+    interrupt when a speaker is alerted or killed (reaction line). Subtitles
+    via `ShowSubtitle` + `USubtitleWidget` (user-built `WBP_Subtitle`).
+  - Spawned speakers: a spawn entry's `Tag` → step `SpeakerTag`. Talkers
+    spawned by a spawn-ahead trigger must have no `WaitForTrigger`, ambush,
+    rush or hold, or they come in set off.
+  - Animations: a step's montage (`DefaultSlot`) loops for the line
+    (`Montage_SetNextSection` on its last section); Play Anim step. The user
+    retargeted a UE4 dialogue pack (`Content/Dialogue_Anims`) themselves
+    (the bridge can't retarget).
+  - Stage 2: Move To, Face To (faces a fixed spot — tracking a speaker who
+    walked off looked odd), Set Off Encounter (`AEncounterTrigger::Fire`;
+    ends the event as finished), Start Event, `EventsOnFinished` /
+    `EventsOnInterrupted` chains, Spotted-bark fallback on interrupt.
+    Compiled; **stage 2 not yet playtested**.
+- **Enemy barks** (user: "functional"): seven types; `UBarkSet` per voice and
+  language, `UBarkVoice` maps language codes (falls back to `en`);
+  `UBarkSubsystem` coordinates (earshot 3000, per-type level cooldown, one
+  per speaker, max 2, no repeats). No subtitles. Test assets
+  `/Game/Audio/ThugTest_BarkSet` / `ThugTest_BarkVoice` on `BP_EnemyBase`,
+  one clip per type (user-generated; **stereo** — mix to mono).
+
+### ▶ RESUME HERE
+1. **Commit (user)** — the user is pushing this session's code.
+2. **Playtest stage 2 events:** Move To, Face To, Set Off Encounter, chains.
+   Face To has no turn animation (feet may slide); hook to turn-in-place if it
+   looks bad.
+3. **Bark polish:** mono clips, more lines per type, tune chances/cooldowns;
+   Tagalog set when it exists (`tl` entry on the voice). Barks don't drive
+   behaviour (no grenade dodge, no body checks) — a separate AI job if wanted.
+4. **Phase 6** — the slice brief ([Phase6_SliceBrief.md](Phase6_SliceBrief.md)),
+   awaiting the user's cut; then blockout with the encounter and event tools.
+5. **Open/optional** (from 10-20/21): dives into walls with the gun sideways;
+   mid-air dual reload check; leftover getter in `ABP_Player`; lowered-rifle
+   walk/jog mid-speed look; a Play Sound event step.
+6. **Parked** (unchanged): player gun spatialization; casing concurrency;
+   pistol turn clips.
+
+---
+
+## 2026-10-20 / 21
+**Summary:**
+- **Encounter tools** (on top of the 10-19 triggers, all played and working):
+  failed-move warnings in the log; link lines from each trigger in the editor
+  viewport; an **Encounter** tab in Place Actors (new editor-only module
+  `ProjectBopisEditor`); `AmbushAcceptanceRadius` (20 cm, centre-measured).
+  Both "enemy never moved" reports were NavMesh bounds not covering new rooms.
+- **Patrol walking:** `PatrolSpeed` 180. The lowered Move poses were jog clips
+  only; the user swapped them for walk/jog blend spaces
+  (`BS_MM_Unarmed_Jog_Walk`, new `BS_Rifle_Lowered_Jog_Walk` with the shotgun
+  pack's relaxed walk, playrate tweaked by the user). Gotcha: a Blend Space
+  *Evaluator* freezes on a constant NormalizedTime; use a *Player*.
+- **Guns against walls:** a raised gun whose space ahead is blocked (90 cm long
+  guns, 55 cm pistols, +15 cm to clear) shows lowered and won't fire, player and
+  enemies. Only Visibility-blocking, non-floor hits count (trigger boxes and the
+  floor made it lower constantly at first). User: works.
+- **Dive/prone body collision** shaped from the body each frame (feet→head,
+  spanning head, feet, hands and muzzle). It crashed at first reading bones
+  mid-evaluation ("index 71 from an array of size 0"); it and the wall check now
+  wait for the evaluation. User: works, no crash.
+- **Prone reloads:**
+  - duals and long guns on a side flip to the back-prone pose for the reload,
+    looking along the legs (aim ignored), then return;
+  - face-down: no flip (jarring); forearms-only reload with the upper arms
+    forward (new layers `LayeredBoneBlend_11/12` on user-placed Use Cached Pose
+    nodes); long guns also raise the upper arms 30°;
+  - the off-hand mirror layer (`_9`) blends in local space now; the long-gun
+    left-hand hold lets go for reloads, draws and tosses.
+  - Tried and dropped: a procedural chest roll; an upper-back arch.
+- **Silent swaps face-down:** no equip montage, the same time before the gun is
+  ready, the prone holds blend over that time. User: "will work for now".
+
+### ▶ RESUME HERE
+1. **Commit (user).** Uncommitted: all of the above (character, anim instance,
+   enemy, move task, encounter trigger/point, shootdodge), the new
+   `Source/ProjectBopisEditor/` module (+ `.uproject`,
+   `ProjectBopisEditor.Target.cs`), `Content/ThirdPerson/Blueprints/Encounter/`,
+   `BS_Rifle_Lowered_Jog_Walk`, `ABP_Player`, `BP_Kamz`, `Lvl_Linear`,
+   `Pistols_A_Skeleton` (check that one — not touched by Claude), and the docs.
+2. **Next session: scripted events** (Max Payne-style overheard conversations).
+   Plan agreed in principle: an `EncounterEvent` actor with ordered steps, started
+   by a trigger / level start / another event. Stage 1 = **Say line** (speaker
+   enemy, 3D sound from the head, HUD subtitle), **Wait**, interrupt when a
+   speaker is alerted or dies (optional reaction line), trigger field "Start
+   event". Stage 2 = set off encounter, move enemy, chaining. Stage 3 = talking
+   idle anims. Speakers keep their senses on. **Open question for the user:**
+   subtitles always, or only for nearby lines? Line content/language/VO are
+   design-owned; subtitle-only lines for testing.
+3. **Phase 6** — the slice brief ([Phase6_SliceBrief.md](Phase6_SliceBrief.md)),
+   awaiting the user's cut; then blockout with the encounter tools.
+4. **Open/optional:** dives into walls with the gun pointed sideways (could use
+   the wall block); a mid-air dual reload check; an unconnected leftover getter
+   in `ABP_Player` (old `_8` weight) to delete; lowered-rifle walk/jog blend
+   mid-speed look.
+5. **Parked** (unchanged): player gun spatialization; casing concurrency;
+   pistol turn clips.
+
+---
+
 ## 2026-10-19 (2)
 **Summary:**
 - **Enemy suppression fix:** an alert from a sound, an ally or the level reset
@@ -63,29 +166,53 @@
     (`RootYawOffset`) back out (the right hand was off while the feet lagged).
   - Tried and rolled back: turn threshold 20° and a 1.6× turn play rate.
     Threshold stays 45°. Also tried: IK stretching (no help, off again).
+- **Encounter triggers rebuilt** for ambushes (user's cases: a charge round a
+  corner, a room at the hallway's end pouring out): enemies wait for their
+  trigger (blind/deaf until it fires), make an ambush move (`AmbushPoint` or
+  `bRushOnTrigger`), and triggers can **spawn** enemies, set off at once or
+  asleep for a later trigger (spawn-ahead lines). Spawn entries also set hold
+  radius, crouch and patrol points (no ambush/rush/hold = a patroller, senses
+  on). Editor-only labels on points and triggers, a clickable trigger icon,
+  `BP_EnemySpawnPoint` (red), `BP_AmbushPoint` (yellow), `BP_PatrolPoint`
+  (green) on a new `AEncounterPoint`. `AmbushAcceptanceRadius` (20 cm,
+  centre-measured) for the trip to an ambush point. **Played 2026-10-20 (user
+  recording):** spawn-ahead rooms, ambushers, chargers (rush the player's
+  position, as intended) and patrollers all work. Both "never moved" reports
+  were NavMesh bounds not covering the new spaces.
 - **Gotchas found:** the player pawn is **`BP_Kamz`** (a child of
   `BP_PlayerCharacter`); parent defaults set through the bridge didn't reach
   it, so set player defaults on `BP_Kamz`. The bridge's `set_socket_transform`
   resets fields left out (despite its docs). It can't create sound concurrency
   assets or montages (per-sound overrides used instead).
 
-### ▶ RESUME HERE
-1. **Commit and push (user).** Uncommitted: all of today's code (Focus,
-   Explosion, Grenade, ProjectileBase, character, anim instance, AmmoWidget,
-   EnemyBase), the new Blueprints and pickups, `IMC_Default` (+ backup),
-   `IA_Grenade`, `IA_WeaponSlot6`, `AM_GrenadeToss`, `ABP_Player`,
-   `BP_Kamz`, `BP_PlayerCharacter`, the edited pack sounds/meshes,
-   `Content/_357Revolver/` and these docs. Delete
-   `IMC_Default_BACKUP_2026_10_19` once G and 6 are confirmed.
-2. **Playtest open:** explosions on enemies (kill slow motion, flung bodies,
+*(RESUME HERE moved to 2026-10-20 / 21.)*
+
+### (old) RESUME HERE
+1. **Commit (user).** The grenades/launcher/revolver work was pushed. Still
+   uncommitted: the encounter-trigger work (`EnemyBase`, `EncounterTrigger`,
+   new `EncounterPoint`), `Content/ThirdPerson/Blueprints/Encounter/` (spawn,
+   ambush and patrol points), `Lvl_Linear`, `Phase6_SliceBrief.md` and the
+   docs. Delete `IMC_Default_BACKUP_2026_10_19` once G and 6 are confirmed.
+2. **Test the encounter triggers tomorrow (user)** — compiled, never played;
+   every slice room uses them. In `Lvl_Linear`:
+   - the hallway case: spawn-ahead Trigger A (spawns with `WaitForTrigger` =
+     B, red spawn points in the end room, yellow ambush points at its door),
+     Trigger B halfway down; they should stay quiet until B, then pour out;
+   - a charge round a corner (`bRushOnTrigger`, staggered `Delay`);
+   - placed enemies waiting on a doorway trigger (not woken by sight or a
+     near miss; woken by a hit);
+   - holders (radius, crouch) and patrollers (green points, senses on).
+   Then the Phase 6 brief ([Phase6_SliceBrief.md](Phase6_SliceBrief.md)),
+   awaiting the user's cut.
+3. **Playtest open:** explosions on enemies (kill slow motion, flung bodies,
    chains), a launcher dive, rifle/shotgun hip aim, the throw's release time
    (0.35 s), pickup sounds (copied ones still play).
-3. **Parked:** spatialization of the player's own gun sound; casing sound
+4. **Parked:** spatialization of the player's own gun sound; casing sound
    concurrency (suggested: 6, StopQuietest, retrigger 0.03–0.05); pistol turn
    clips (the steps use the rifle's); the left hand still moves a little in
    turn steps (accepted).
-4. **Then Phase 6** (graybox slice). Enemy grenades only in scripted sets.
-5. **Older open items:** the crash watch; 10-17 playtests; 10-18 (2)
+5. **Then Phase 6** (graybox slice). Enemy grenades only in scripted sets.
+6. **Older open items:** the crash watch; 10-17 playtests; 10-18 (2)
    optional list.
 
 ---

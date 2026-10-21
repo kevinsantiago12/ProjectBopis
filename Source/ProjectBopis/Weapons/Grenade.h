@@ -62,7 +62,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade|Sound", meta = (ClampMin = "0.0"))
 	float MinBounceSoundSpeed = 150.0f;
 
+	/** On first landing, the nearest enemy in the fight within this (cm) shouts a warning. */
+	UPROPERTY(EditDefaultsOnly, Category = "Grenade", meta = (ClampMin = "0.0"))
+	float WarnRadius = 800.0f;
+
 private:
 	bool bExploded = false;
+	bool bWarned = false;
 	FTimerHandle FuseTimer;
 };
