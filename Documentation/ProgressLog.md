@@ -12,6 +12,65 @@
 
 ---
 
+## 2026-10-21 (3) — CC2 integration, branch `feature/CC2_Integration`
+**Summary** (done by Claude while the user was away; nothing playtested by the
+user yet):
+- **CharacterCustomizer2 analysed** (the user's purchase + apparel pack). The
+  part we use is CCMH: male/female body + head, 35 head shape targets (19 face
+  sliders, 4 ethnicity head shapes ×3 incl. `asian`/`mixed`), 5 skin-tone
+  sets, mesh hair/beards (no strand grooms), ~85 male apparel items with
+  colour/print options, 25 outfit definitions; a character = one
+  `CC_Saved_Variables` struct; `CharacterCustomizer` component applies it
+  (Randomize All, Random Outfit, save/load). Light: a dressed CC character is
+  ~30k verts at LOD0 (Manny alone 48.7k), 4–5 LODs per part, ~12 draw calls.
+- **User decision: Option B** — the CC body *is* the gameplay mesh (runs
+  `ABP_Player`), not a skin over a hidden Manny. And keep CC's customizer for
+  hero characters.
+- **Migrated by disk copy** (same `/Game/CharacterCustomizer/...` paths):
+  1,842 files, 1.6 GB — CCMH, CC core (incl. customizer pawn/widgets),
+  Base_Materials, and the Components/Misc pieces they reference. Not copied:
+  CC2's demo levels, architecture, MetaHuman example. Plugins enabled in the
+  `.uproject`: **HairStrands** (CC's component uses the groom component type)
+  and **FullBodyIK** (one CC Control Rig).
+- **Skeleton:** CCMH has every UE5 Manny bone **except the `ik_` bones**.
+  `CCMH_Skeleton` lists SK_Mannequin + the four anim packs' skeletons as
+  compatible; SK_Mannequin lists CCMH_Skeleton back (**`SK_Mannequin.uasset`
+  modified**).
+- **Physics:** `/Game/Characters/CC/PA_CCMH_Bopis` (copy of our tuned
+  `PA_Mannequin`) assigned to `CCMH_Body_Male` / `_Female`.
+- **Test enemy `/Game/ThirdPerson/Blueprints/CC/BP_Enemy_CC`** (child of
+  BP_EnemyBase): mesh = `CCMH_Body_Male` tagged `Character`, `ABP_Player`;
+  `Preset` variable (default `CCMH_Preset_Male_01`); construction script →
+  `BuildCCCharacter`: adds CC's QualityLevel + CharacterCustomizer + a head
+  (`CC_SkelMesh` tagged `Head`, `CCMH_Head_AnimBP` copies the body's pose),
+  skin MIDs, then applies the preset's default look. Verified: builds in the
+  editor viewport (head, hair, underwear) and runs in PIE with a clean log.
+
+### ▶ RESUME HERE
+0a. **Player + apparel (10-21, late):** `BP_Player_CC` (child of `BP_Kamz`, CC body, `PA_Kamz` physics) plays in `Lvl_Sandbox`; not the default pawn yet. The pack's clothing was missing from the creator because the six stock presets used the base tables — switched to the `+` tables; PH preset added to the customizer's preset list. `Lvl_Linear.umap` shows modified (not Claude).
+0. **Update (later 10-21):** `ik_` bones done (user); grip sockets copied (guns were at the feet — enemies use `HandGrip_R/L`, not `hand_r`); neck-seam fix (head ticks after body) — re-check in motion; random looks (`RandomizeLook`, `CCMH_Preset_PH_Male`, `DT_Outfits_PH_M`, role BPs `BP_Enemy_CC_Thug`/`_Goon`); creator level `/Game/Characters/CC/Lvl_CharacterCreator` + hero copy/paste workflow (spec). Deck test deferred (user). Items 1–4 below are done except the female body; review the placeholder outfits.
+1. **Manual step (user, ~5 min): add the `ik_` bones to `CCMH_Body_Male`**
+   (bridge can't add bones). Skeletal Mesh Editor → Skeleton Editing tool:
+   `ik_foot_root` (parent `root`, at origin) → `ik_foot_l`, `ik_foot_r` (at
+   the feet); `ik_hand_root` (parent `root`) → `ik_hand_gun` (at `hand_r`) →
+   `ik_hand_l`, `ik_hand_r` (at the hands). Apply, save. Same for the female
+   body if used. Without them: no left-hand grip IK and no prone floor fix.
+2. **Playtest `BP_Enemy_CC`:** locomotion/aim on CC proportions (stretched
+   bones → set those bones to Skeleton translation retargeting), weapon grip
+   offsets, death ragdoll and staggers on `PA_CCMH_Bopis` (bodies may need
+   resizing), hit reactions.
+3. **Deck perf test:** 8–10 `BP_Enemy_CC` vs Manny enemies in one room.
+4. **Then:** hero looks (a `CC_Saved_Variables` "Look" variable per
+   Blueprint, customize-in-editor), the creator level (CC's customizer pawn
+   compiles now), random rules (Filipino look, per-role outfit lists — design
+   input needed on roles/outfits), body proportion sliders (CC does them in its
+   own body AnimBP, which Option B doesn't run).
+5. **Commit (user):** the branch; consider Git LFS before adding 1.6 GB.
+6. Earlier items (stage 2 events playtest, bark polish, Phase 6) unchanged —
+   see the 10-21 (2) list below.
+
+---
+
 ## 2026-10-21 (2)
 **Summary:**
 - **Scripted events** (`AEncounterEvent`, Encounter tab), Max Payne-style

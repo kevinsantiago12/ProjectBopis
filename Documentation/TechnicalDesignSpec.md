@@ -1102,6 +1102,95 @@ no behaviour reacts to them. Test set: `/Game/Audio/ThugTest_BarkSet` +
 `ThugTest_BarkVoice` on `BP_EnemyBase` (clips currently stereo; mix to mono
 for proper 3D).
 
+## NPC characters (CC2)
+
+*(2026-10-21, branch `feature/CC2_Integration`.)* NPC looks come from
+CharacterCustomizer2's **CCMH** set, migrated under `/Game/CharacterCustomizer/`.
+**Option B (user):** the CC body is the gameplay mesh itself — `ABP_Player`,
+hit bones, physics and weapon attachment all run on it.
+
+- **Assembly** (`BP_Enemy_CC.BuildCCCharacter`, from the construction script):
+  body = the character Mesh (`CCMH_Body_Male`, component tag **`Character`** —
+  CC finds meshes by tag); adds CC's `QualityLevel` (CC's apparel/hair lookup
+  returns nothing without one) and `CharacterCustomizer`; adds a head
+  (`CC_SkelMesh`, tag **`Head`**, attached to the body, `CCMH_Head_AnimBP` =
+  CopyPoseFromMesh from the attached parent + face poses); creates MIDs for
+  head then body materials into the customizer's `Character Materials`; then
+  `ApplyVariablesToCharacter(Preset.DefaultOptions)`. Apparel and hair
+  components are created by CC (`Apparel_<slot>` / `Hair_<slot>` tags,
+  leader-posed to the body). A property read on a literal object in a BP graph
+  reads `self` — the preset must be a variable (`Preset`).
+- **Skeleton:** `CCMH_Skeleton` ⊇ UE5 Manny's bones except `ik_*` (to add on
+  the body meshes by hand). Compatible both ways with `SK_Mannequin`; CCMH also
+  lists the Shotgun, Dodge, Dodge-Prone and Kamz pack skeletons
+  (compatibility isn't transitive).
+- **Sockets:** enemies attach guns to `HandGrip_R` / `HandGrip_L` (Manny mesh
+  sockets, not `hand_r`); copied onto `CCMH_Body_Male` with Manny's transforms
+  (+ `foot_l/r_Socket`). Without them the gun sits at the mesh origin (feet).
+  `ik_*` bones added to `CCMH_Body_Male` by the user (2026-10-21).
+- **Physics:** `PA_CCMH_Bopis` = copy of `PA_Mannequin` (bone names match).
+  CC's own `CCMH_Body_Physics` kept as a fallback.
+- **Looks** (`BuildCCCharacter` → one of three): `bUseSavedLook` + `Look`
+  (a `CC_Saved_Variables`, for heroes); `bRandomizeLook` → `RandomizeLook`;
+  else `Preset.DefaultOptions`. The head ticks after the body
+  (`AddTickPrerequisiteComponent`) so its copied pose doesn't lag a frame (the
+  neck seam in motion).
+- **Random rules** (`RandomizeLook`): CC's `RandomizeAll` (face sliders
+  N(0,0.2), freckles, skin tint, lips), then all `shp_head_*` cleared → one
+  `shp_head_asian_0[1-3]` at 1−m plus one `shp_head_mixed_0[1-3]` at m (m ≤
+  `MixedShapeMax` 0.35); a skin set from the preset's `color Textures`; eye/hair
+  colour from the preset's random picks; hair/brows from `Hairstyles` /
+  `Eyebrows`, a beard from `Beards` at `BeardChance` 0.3; an outfit from
+  `Outfits` (rows of the preset's outfit table) via CC's `RandomOutfit`.
+  A **role = a child Blueprint** with its own defaults: `BP_Enemy_CC_Thug`
+  (`PH_Street_Thug`), `BP_Enemy_CC_Goon` (`PH_Goon`).
+- **Preset `CCMH_Preset_PH_Male`** (`/Game/Characters/CC/Presets/`): Asian;
+  skin tones 03 (light tan) + 02 (medium brown) of the five; the apparel pack's
+  `+` tables; hair blacklist (afros, bobs, female long/ponytail, `Short_01`);
+  outfits `DT_Outfits_PH_M` = Formal, Police_Officer, Manual_Labor,
+  Retail_Worker + placeholder `PH_Street_Thug` / `PH_Goon` (design to tune).
+- **Creator level `/Game/Characters/CC/Lvl_CharacterCreator`** (from CC2's
+  apparel demo level): GameMode override `CC_GameMode`, a TargetPoint tagged
+  **`CC Start`** on the floor (z 50, yaw 0) where CC spawns its customizer pawn;
+  `CC_Customizer_Pawn`'s Default Preset = the PH preset (CDO changed). Hero
+  workflow: play it, customize, then (still playing) select *CC Customizable
+  Character* → *Character Customizer* → right-click *CC Saved Variables* →
+  Copy; stop; in the hero Blueprint set `bUseSavedLook`, paste into `Look`.
+  (CC's own save slot is keyed by platform user / player id — one per user.)
+- **Player `BP_Player_CC`** (child of `BP_PlayerCharacter`; Kamz is being
+  retired, so his overrides were copied: Focus `MinMeterToActivate` 20,
+  Shootdodge `DiveLift` 375, Roll `CrouchOutAfter` 0.475, Health `MaxHealth`
+  150, WeaponHolder pistol start + 5-gun loadout, `bStartWithFullAmmo` off;
+  no actor-level differences): mesh `CCMH_Body_Male` tagged `Character`,
+  `PhysicsAssetOverride` = `/Game/Characters/CC/PA_CCMH_Player` (copy of
+  `PA_Kamz`; its editor preview mesh still names `SKM_Kamz` — set it to
+  `CCMH_Body_Male` in the Physics Asset editor); same `BuildCCCharacter` /
+  `RandomizeLook` as the enemy; placeholder random look (`PH_Goon`, beard 50%)
+  until the protagonist's `Look` is authored. Played in `Lvl_Sandbox`, clean.
+  Not the default pawn — set `BP_GameMode` DefaultPawnClass to use it.
+- **Skin through clothing:** CC hides the body under clothes by pushing skin
+  inward (WPO) via per-slot `ApparelMask_<slot>` textures from each apparel
+  row's `Mask` (open footwear has none). Our animations push poses further than
+  CC's own, so `MI_Skin_Body_CCMH` push strengths were raised: **the head mesh has its own copy** (`MI_Skin_Face_CCMH` — the head
+  carries the neck, upper chest and upper back, and gets the same masks), so
+  both must be raised: Upper Body_Mask_Mult 3 → **7** on both; body Lower 3 →
+  7, Footwear 1 → 2 (2026-10-21). The value is roughly cm of inward push: at
+  15 the shoulders cross through and balloon out (tested live); keep ≤ ~8. `Tank_Top_01` / `Gym_Top_01` had no mask (skin through the
+  tank top on ragdolls): now `T_ApparelMask_Top` (male `+` and base tables). Too high dents
+  the skin at sleeve/hem edges.
+- **Apparel pack everywhere:** all six stock CC presets now use the pack's `+`
+  apparel/outfit tables (the `+` apparel tables are supersets of the base ones;
+  the base outfit rows Casual1–4/Formal2–4 are not in `+`). The customizer's
+  Apparel menu lists the preset's `DT Apparel`. `CC_Customizable_Character`
+  Presets list starts with `CCMH_Preset_PH_Male`.
+- **Not yet:** body proportion sliders (CC drives them with ModifyBone in its
+  `CCMH_Body_AnimBP`, unused under Option B); female NPCs (`ik_*` on the female
+  body, a female preset, and the head mesh is hard-wired to male in
+  `BuildCCCharacter`).
+- **Cost:** dressed character ≈ 30k verts LOD0 (body 7.3k, head 4.9k, items
+  2.5–5.3k), 4–5 LODs per part, ~12 draw calls (head has 6 sections), 35 head
+  shape targets; skin textures 4K (cap to 1–2K for the Deck).
+
 ## Enemies
 
 Rewritten 2026-09-30 for the Aswang direction. Lore in
