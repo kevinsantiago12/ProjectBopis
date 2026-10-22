@@ -492,6 +492,10 @@ archetype-composition idea, not extended from the old classes.
   - [x] Grips playtested (user: looks ok). Neck seam: head ticks after the body (not yet re-checked).
   - [x] Hero looks (`bUseSavedLook` + `Look`, copy/paste from the creator) + creator level `Lvl_CharacterCreator`.
   - [x] Random rules: `RandomizeLook`, PH preset, role Blueprints Thug/Goon (outfit rows are placeholders for design).
+  - [x] Player on CC (`BP_Player_CC`, child of `BP_PlayerCharacter`); apparel pack in the creator.
+  - [x] Skin through clothing: head + body depth bias in `M_Skin_CCMH` (user: "close enough", 2026-10-22).
+  - [x] Bladed strafe waist twist spread over `spine_01`–`03` (user: "looks better").
+  - [ ] Pants still poke slightly through shirt hems (bladed strafe) — next session.
   - [ ] Female NPCs: `ik_` bones on the female body (user), female preset, head mesh per gender.
   - [ ] Body proportion sliders under Option B.
   - [ ] Deck perf test — deferred to much later (user, 2026-10-21).

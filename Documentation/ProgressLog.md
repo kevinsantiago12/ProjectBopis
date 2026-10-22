@@ -31,15 +31,21 @@
   strafing bladed was the anim — the whole hips-vs-torso twist sat on the
   pelvis → `spine_01` joint. `ABP_Player` now spreads it over
   `spine_01`–`03` while bladed (`LayeredBoneBlend_13` + `TwoWayBlend_0`, spec
-  *Bladed stance*). Compiled and saved; user to check.
-- **Pants over shirts (other cases):** not done. Proposal: a "Waist Shrink" WPO on CC's
-  apparel master (`M_Base_Material_Apparel`, default 0) turned on for the
-  lower-body slot from `BuildCCCharacter`; awaits the user's OK (shared
-  material). Risk: tucked shirts. The depth trick could also be applied here.
+  *Bladed stance*). User: "looks better, pants still poke a bit".
 
 ### ▶ RESUME HERE
-1. **Commit (user):** skin master + both skin MIs + backup + docs.
-2. Pants-over-shirts fix (above) — needs the user's OK.
+1. **Commit (user):** `ABP_Player`, `M_Skin_CCMH` + both skin MIs + backup
+   `Content/Characters/CC/Backup/`, docs.
+2. **Pants still poke a bit through the shirt hem** (bladed strafe; user:
+   "we fix it tomorrow"). Options, cheapest first:
+   - `LayeredBoneBlend_13` blend depth 3 → 4 (spreads the twist further);
+   - depth trick on clothing: a PixelDepthOffset parameter on CC's apparel
+     master `M_Base_Material_Apparel` (default 0), set > 0 on the lower-body
+     slot from `BuildCCCharacter` so shirts win close calls — no holes;
+   - "Waist Shrink" WPO on the same master for lower-body items (risk:
+     tucked shirts poking out).
+   The apparel master is shared by all clothing — the auto-mode check blocked
+   an edit to it once, so get the user's explicit OK first.
 3. Git LFS: when wanted, one deliberate `git add --renormalize .` commit from
    a terminal; decline GitKraken's LFS prompts until then.
 4. Remaining CC2 items from the 10-21 (3) list below (female body, placeholder
