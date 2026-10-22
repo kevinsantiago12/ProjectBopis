@@ -1178,6 +1178,27 @@ hit bones, physics and weapon attachment all run on it.
   15 the shoulders cross through and balloon out (tested live); keep ≤ ~8. `Tank_Top_01` / `Gym_Top_01` had no mask (skin through the
   tank top on ragdolls): now `T_ApparelMask_Top` (male `+` and base tables). Too high dents
   the skin at sleeve/hem edges.
+- **Head skin pushed behind clothing by depth (2026-10-22):** most visible
+  clipping is the head mesh below the neck (collarbones, upper chest/back).
+  `M_Skin_CCMH` now runs its attributes through a Break → Make passthrough and
+  adds **`Clothing Depth Bias`** (scalar, group Apparel, default 0) ×
+  `Neck_Mask`.R to PixelDepthOffset: those pixels depth-test as if that many
+  cm further from the camera, so cloth within that distance wins; nothing is
+  hidden, so open collars can't show holes. `MI_Skin_Face_CCMH` = 2,
+  `MI_Skin_Body_CCMH` = 0 explicitly (it inherits from the face MI, and the
+  neck mask means nothing on the body's UVs). The body has its own term,
+  **`Body Clothing Depth Bias`** × max(`Depth Region`, `ApparelMask_0/1/2`):
+  `Depth Region` is a texture parameter defaulting to CC's
+  `T_ApparelMask_TShirt` (torso + shoulder caps), so the torso is covered
+  whatever is worn — tank tops included, whose own mask is near-empty — and
+  the worn items' masks add legs/feet/sleeves. Body MI = 2, face MI = 0.
+  Hands are deliberately outside it (a held gun would draw over the fingers).
+  Backup:
+  `/Game/Characters/CC/Backup/M_Skin_CCMH_Original`.
+  **Rejected — hiding skin under clothing** (masked opacity from the apparel
+  masks on the body / `Neck_Mask` × `Neck Shrink` on the head; tried and
+  rolled back 2026-10-22): `neck Shrink` is per item on/off, so open-collar
+  tops lost chest skin, and the body masks cut holes at tank-top armholes.
 - **Apparel pack everywhere:** all six stock CC presets now use the pack's `+`
   apparel/outfit tables (the `+` apparel tables are supersets of the base ones;
   the base outfit rows Casual1–4/Formal2–4 are not in `+`). The customizer's
@@ -2531,6 +2552,14 @@ strafing.
     not diving. Switch it off with `bBladeStance`.
   - Known gap: the mirrored copy skips the Orientation and Stride Warping,
     which run before `Loco`.
+  - **Waist twist spread (2026-10-22):** with `_0` taking over at `spine_01`,
+    the whole hips-vs-torso difference sat on the pelvis → `spine_01` joint,
+    which on CC characters swung the jeans' waistband out from under the shirt
+    hem. `LayeredBoneBlend_13` is a copy of `_0` (same base, same
+    `UpperBodyAlpha`, mesh-space rotation) with `spine_01` **blend depth 3**,
+    so the torso fades in over `spine_01`/`02`/`03`; `TwoWayBlend_0` picks
+    between `_0` (A) and `_13` (B) by `StrafeBladeAlpha` and feeds
+    `RotationOffsetBlendSpace_0`. Other stances are untouched.
 - **Upper body (`UpdateBlade`):** weighted `StrafeBladeAlpha × (1 −
   ProneReloadAlpha)`, so it's off for reloads and draws.
   - **Chest:** `BladeAngle` (35°) about the vertical, half each on

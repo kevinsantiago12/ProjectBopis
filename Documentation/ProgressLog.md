@@ -12,6 +12,41 @@
 
 ---
 
+## 2026-10-22 — CC2 skin clipping
+**Summary:**
+- **Skin through clothes — fixed by depth, not hiding.** `M_Skin_CCMH`
+  (CC's skin master, backup `/Game/Characters/CC/Backup/M_Skin_CCMH_Original`)
+  adds two PixelDepthOffset terms: `Clothing Depth Bias` × `Neck_Mask` (head
+  MI = 2 cm — the head mesh's collarbones/upper chest/back were most of the
+  clipping) and `Body Clothing Depth Bias` × max(`Depth Region` = CC's
+  T-shirt mask, worn apparel masks) (body MI = 2 cm). User: "close enough".
+  Details in the spec's *NPC characters (CC2)*.
+- **Tried and rolled back:** hiding skin under clothing (masked opacity). Body
+  masks cut holes at tank-top armholes; head hiding (`neck Shrink` is on/off
+  per item) removed chest skin under open collars. Two custom tank-top masks
+  also dropped. The user hard-reset the branch to `5429704d`; GitKraken had
+  frozen on an untracked `.gitattributes` (LFS for all assets) and staged all
+  24,889 assets as LFS pointers — `.gitattributes` deleted, index reset.
+- **Bladed strafe waist twist:** the jeans showing over the shirt hem while
+  strafing bladed was the anim — the whole hips-vs-torso twist sat on the
+  pelvis → `spine_01` joint. `ABP_Player` now spreads it over
+  `spine_01`–`03` while bladed (`LayeredBoneBlend_13` + `TwoWayBlend_0`, spec
+  *Bladed stance*). Compiled and saved; user to check.
+- **Pants over shirts (other cases):** not done. Proposal: a "Waist Shrink" WPO on CC's
+  apparel master (`M_Base_Material_Apparel`, default 0) turned on for the
+  lower-body slot from `BuildCCCharacter`; awaits the user's OK (shared
+  material). Risk: tucked shirts. The depth trick could also be applied here.
+
+### ▶ RESUME HERE
+1. **Commit (user):** skin master + both skin MIs + backup + docs.
+2. Pants-over-shirts fix (above) — needs the user's OK.
+3. Git LFS: when wanted, one deliberate `git add --renormalize .` commit from
+   a terminal; decline GitKraken's LFS prompts until then.
+4. Remaining CC2 items from the 10-21 (3) list below (female body, placeholder
+   outfits, PA_CCMH_Player preview mesh, Deck test deferred).
+
+---
+
 ## 2026-10-21 (3) — CC2 integration, branch `feature/CC2_Integration`
 **Summary** (done by Claude while the user was away; nothing playtested by the
 user yet):
