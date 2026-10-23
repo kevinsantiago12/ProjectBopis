@@ -76,6 +76,44 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade")
 	bool bBladeStance = true;
 
+	/** Lean into turns while walking or jogging with the gun lowered — never raised — on
+	    the ground, out of dives, rolls and crouch: the torso banks by the turn rate. From the
+	    actor's own turning, so enemies lean too. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean")
+	bool bLeanIntoTurns = true;
+
+	/** Degrees of lean per degree-per-second of turning, at full speed. 0.1: a 90°/s turn
+	    leans 9°. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean", meta = (ClampMin = "0.0"))
+	float LeanPerYawRate = 0.1f;
+
+	/** Most the torso leans (degrees). */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean", meta = (ClampMin = "0.0", ClampMax = "45.0"))
+	float MaxLeanAngle = 15.0f;
+
+	/** Speed (cm/s) at and above which the lean is full; it scales down linearly toward a
+	    standstill, so a walk leans less than a jog. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean", meta = (ClampMin = "1.0"))
+	float LeanFullSpeed = 500.0f;
+
+	/** How quickly the lean follows the turn (interp speed). */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean", meta = (ClampMin = "0.1"))
+	float LeanInterpSpeed = 6.0f;
+
+	/** Rotation per degree of lean, component space, for a bank to the character's right:
+	    about the body's forward axis, which is the component's Y (pitch). Flip the sign or
+	    move it to another axis if it banks the wrong way. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Lean")
+	FRotator LeanPerDegree = FRotator(1.0, 0.0, 0.0);
+
+	/** Current lean, degrees, positive to the character's right. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Lean")
+	float LeanAngle = 0.0f;
+
+	/** A third of the lean for each of spine_01–03 (component space, added). */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Lean")
+	FRotator LeanSpineRotation = FRotator::ZeroRotator;
+
 	/** Bladed stance: how far the chest turns about the vertical (degrees) so the right shoulder
 	    leads; half on spine_03, half on spine_05. The head turns back by the same. Negative turns
 	    the other way. */
@@ -626,6 +664,34 @@ private:
 	void UpdateHeadLook(const ABopisCharacterBase& Character, float DeltaSeconds);
 
 	void UpdateBlade(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	void UpdateLean(const ABopisCharacterBase& Character, float DeltaSeconds);
+
+	/** Foot plants are read off the pose: a foot that rose at least FootLiftHeight above its
+	    rest height and comes back within FootPlantHeight of it has planted. Every clip, mirrored
+	    or stride-warped, without touching the animations (the Lyra clips' FootPlant_* names are
+	    sync markers, not notifies, and their FootFX notifies are a Lyra class we don't have).
+	    Heights in cm above the foot bone's reference-pose height. */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Footsteps", meta = (ClampMin = "0.5"))
+	float FootLiftHeight = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Footsteps", meta = (ClampMin = "0.0"))
+	float FootPlantHeight = 2.0f;
+
+	void UpdateFootsteps(const ABopisCharacterBase& Character);
+
+	/** A plant: the character steps if it's a real one (on the ground, moving, not diving). */
+	void OnFootPlant(bool bLeft);
+
+	/** The foot bones' reference-pose heights (component space), per mesh. */
+	TWeakObjectPtr<USkeletalMesh> FootRestMesh;
+	float LeftFootRestHeight = 0.0f;
+	float RightFootRestHeight = 0.0f;
+	bool bLeftFootLifted = false;
+	bool bRightFootLifted = false;
+
+	/** The actor's yaw last update, for the turn rate. */
+	float LeanLastYaw = 0.0f;
 
 	/** The gun arm's whole turn, eased; BladeArmTurn is it as a rotator. */
 	FQuat BladeArmTotal = FQuat::Identity;

@@ -11,6 +11,8 @@ class UWeaponHolderComponent;
 class UHealthComponent;
 class UPhysicalAnimationComponent;
 class UAnimMontage;
+class UPhysicsAsset;
+class UFootstepEffectsData;
 class UAnimSequenceBase;
 struct FDamageEvent;
 struct FPhysicalAnimationData;
@@ -185,6 +187,13 @@ public:
 	/** Plays the reload montage(s) for a reload the weapon just started. */
 	void PlayReloadAnimation(const AWeaponBase* Weapon, float PlayRate = 1.0f);
 
+	/** A foot has just planted (the AnimBP reads plants off the pose): a step on whatever is
+	    under that foot. */
+	void PlayFootstep(bool bLeft);
+
+	FName GetLeftFootBone() const { return LeftFootBone; }
+	FName GetRightFootBone() const { return RightFootBone; }
+
 	/** Puts the legs (each thigh and below) on physics, motors holding them to the animation
 	    in world space — the floor then pushes back on any part of a leg the pose sinks into
 	    it. bWithLeftArm adds the left arm (upperarm_l and below) at its own ArmHoldStrength:
@@ -326,6 +335,30 @@ protected:
 	    Everything below stays animated, so the body keeps its feet. */
 	UPROPERTY(EditAnywhere, Category = "Health|Riddled")
 	FName RiddledRootBone = TEXT("spine_01");
+
+	/** Physics asset the corpse ragdolls on, if different from the mesh's own (which keeps
+	    serving hits, staggers, the riddled upper body and the dive's limbs). Swapped in as the
+	    ragdoll starts. Empty: the mesh keeps its asset. */
+	UPROPERTY(EditAnywhere, Category = "Health|Riddled")
+	TObjectPtr<UPhysicsAsset> RagdollPhysicsAsset;
+
+	/** Footstep sounds by surface. Empty: silent feet. */
+	UPROPERTY(EditDefaultsOnly, Category = "Footsteps")
+	TObjectPtr<UFootstepEffectsData> FootstepEffects;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Footsteps")
+	FName LeftFootBone = TEXT("foot_l");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Footsteps")
+	FName RightFootBone = TEXT("foot_r");
+
+	/** How far below the foot bone the ground may be (cm) for a step to count. */
+	UPROPERTY(EditDefaultsOnly, Category = "Footsteps", meta = (ClampMin = "1.0"))
+	float FootstepTraceDistance = 40.0f;
+
+	/** The previous step's sound, so the next differs. */
+	UPROPERTY(Transient)
+	TObjectPtr<USoundBase> LastFootstepSound;
 
 	/** How hard the motors pull the simulated bones back to the animated pose. Lower is floppier. */
 	UPROPERTY(EditAnywhere, Category = "Health|Riddled", meta = (ClampMin = "0.0"))

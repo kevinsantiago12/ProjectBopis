@@ -1,5 +1,13 @@
 # Phase 6 — Graybox slice brief (draft, 2026-10-19)
 
+> **2026-10-23:** to-scale blockout plan of these six beats in
+> [Phase6_SliceLayout.html](Phase6_SliceLayout.html) (top-down plan, room 4/5
+> sections, escalation chart). Still a draft for the user to cut.
+> The same layout dressed for the settled setting, **Filipino slum alleyways**
+> (user, 2026-10-23), is in
+> [Design Document/Phase6_SliceLayout_Alleys.html](../Design%20Document/Phase6_SliceLayout_Alleys.html):
+> eskinita, wash yard, covered alley, half-court, row-house yard, shanty stack.
+
 Draft for the user to cut, reorder or replace. Gameplay layout only: the
 slice's location, story beat and enemy identity are design-owned and left
 open (see *Not decided here*).
@@ -116,10 +124,9 @@ New code the slice needs: only the **exit trigger** (small). Optional: the
 proves too punishing at 5–8 minutes.
 
 ## Not decided here (design-owned)
-- **Where this is.** The slice's place in Philippines 2002 (a building type,
-  a district) and whether it maps to a story arc. The arc mapping is currently
-  blocked (lore *Campaign structure*). Graybox needs none of it, so it stays
-  abstract until design picks.
+- **Where this is.** *Partly settled 2026-10-23:* Filipino slum alleyways
+  (user). The district and whether it maps to a story arc are still open; the
+  arc mapping is blocked (lore *Campaign structure*).
 - **Who the enemies are.** The enemy composition is `[UNDECIDED]` since the
   Aswang were dropped (2026-10-09). The slice uses the existing human
   gunmen as placeholders.

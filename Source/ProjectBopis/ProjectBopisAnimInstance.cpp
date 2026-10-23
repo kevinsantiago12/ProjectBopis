@@ -4,9 +4,12 @@
 #include "BopisCharacterBase.h"
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/ShootdodgeComponent.h"
+#include "Gameplay/RollComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "AnimationRuntime.h"
@@ -131,6 +134,89 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
 	UpdateHeadLook(*Character, DeltaSeconds);
 	UpdateBlade(*Character, Weapon, DeltaSeconds);
+	UpdateLean(*Character, DeltaSeconds);
+	UpdateFootsteps(*Character);
+}
+
+void UProjectBopisAnimInstance::UpdateFootsteps(const ABopisCharacterBase& Character)
+{
+	const USkeletalMeshComponent* Body = GetSkelMeshComponent();
+	USkeletalMesh* MeshAsset = Body ? Body->GetSkeletalMeshAsset() : nullptr;
+	if (!MeshAsset)
+	{
+		return;
+	}
+
+	// Rest heights from the reference pose, once per mesh (Manny and the CC bodies differ).
+	if (FootRestMesh.Get() != MeshAsset)
+	{
+		const FReferenceSkeleton& RefSkeleton = MeshAsset->GetRefSkeleton();
+		auto RestHeight = [&](FName Bone)
+		{
+			const int32 Index = RefSkeleton.FindBoneIndex(Bone);
+			return Index != INDEX_NONE ? FAnimationRuntime::GetComponentSpaceTransformRefPose(RefSkeleton, Index).GetLocation().Z : 0.0f;
+		};
+		LeftFootRestHeight = RestHeight(Character.GetLeftFootBone());
+		RightFootRestHeight = RestHeight(Character.GetRightFootBone());
+		FootRestMesh = MeshAsset;
+		bLeftFootLifted = bRightFootLifted = false;
+	}
+
+	// Last frame's final pose: lifted past the threshold, then back near the floor = a plant.
+	auto Check = [&](FName Bone, float Rest, bool& bLifted, bool bLeft)
+	{
+		const float Height = Body->GetSocketTransform(Bone, RTS_Component).GetLocation().Z - Rest;
+		if (Height > FootLiftHeight)
+		{
+			bLifted = true;
+		}
+		else if (bLifted && Height < FootPlantHeight)
+		{
+			bLifted = false;
+			OnFootPlant(bLeft);
+		}
+	};
+	Check(Character.GetLeftFootBone(), LeftFootRestHeight, bLeftFootLifted, true);
+	Check(Character.GetRightFootBone(), RightFootRestHeight, bRightFootLifted, false);
+}
+
+void UProjectBopisAnimInstance::OnFootPlant(bool bLeft)
+{
+	// Only real steps: on the ground and moving. Idles, turns in place, the dive's legs in
+	// the air and the prone poses all carry plants we don't want to hear.
+	ABopisCharacterBase* Character = Cast<ABopisCharacterBase>(TryGetPawnOwner());
+	const UCharacterMovementComponent* Movement = Character ? Character->GetCharacterMovement() : nullptr;
+	if (!Character || !Movement || !Movement->IsMovingOnGround() || bShootdodging || Speed <= StationarySpeed)
+	{
+		return;
+	}
+	Character->PlayFootstep(bLeft);
+}
+
+void UProjectBopisAnimInstance::UpdateLean(const ABopisCharacterBase& Character, float DeltaSeconds)
+{
+	// Turn rate from the actor's yaw: the free run turns the body to the movement direction.
+	const float Yaw = Character.GetActorRotation().Yaw;
+	const float YawRate = DeltaSeconds > KINDA_SMALL_NUMBER
+		? FRotator::NormalizeAxis(Yaw - LeanLastYaw) / DeltaSeconds : 0.0f;
+	LeanLastYaw = Yaw;
+
+	// Walking or jogging with the gun down, on the ground; not diving, rolling or crouched.
+	const UCharacterMovementComponent* Movement = Character.GetCharacterMovement();
+	const AProjectBopisCharacter* Hero = Cast<AProjectBopisCharacter>(&Character);
+	const bool bRolling = Hero && Hero->GetRoll() && Hero->GetRoll()->IsRolling();
+	const float SpeedNow = static_cast<float>(Speed);
+	const bool bLean = bLeanIntoTurns && !bIsWeaponRaised && !bIsCrouched && !bShootdodging && !bRolling
+		&& Movement && Movement->IsMovingOnGround() && SpeedNow > StationarySpeed;
+
+	float Target = 0.0f;
+	if (bLean)
+	{
+		const float SpeedScale = FMath::Clamp(SpeedNow / LeanFullSpeed, 0.0f, 1.0f);
+		Target = FMath::Clamp(YawRate * LeanPerYawRate * SpeedScale, -MaxLeanAngle, MaxLeanAngle);
+	}
+	LeanAngle = FMath::FInterpTo(LeanAngle, Target, DeltaSeconds, LeanInterpSpeed);
+	LeanSpineRotation = LeanPerDegree * (LeanAngle / 3.0f);
 }
 
 namespace

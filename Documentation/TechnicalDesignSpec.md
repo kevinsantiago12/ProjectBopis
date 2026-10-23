@@ -588,6 +588,60 @@ says which sound, the weapon plays it.**
   quick-reload bunching, pack loudness. The weapon models are to be
   replaced later, so no further asset polish now.
 
+### Footsteps (2026-10-23)
+
+Surface-aware steps for everyone on `ABP_Player`, driven by the notifies the
+Lyra clips already carry.
+
+- **Detection:** every Lyra locomotion clip (walk, jog, strafes, crouch
+  walks, the Kamz pack) has `FootPlant_Left` / `FootPlant_Right` name
+  notifies (no class); the engine calls `AnimNotify_<Name>` on the
+  AnimInstance for those, so `UProjectBopisAnimInstance::AnimNotify_FootPlant_Left/Right`
+  → `OnFootPlant` → `ABopisCharacterBase::PlayFootstep(bLeft)`. Gated to on
+  the ground, moving (`Speed > StationarySpeed`), not `bShootdodging`: idles,
+  turns in place, the dive's legs and the prone poses carry plants too.
+  `MDT_Mannequin` maps the two names, so the blade's mirrored legs step
+  correctly. The shotgun pack's start clips have none (fine — they're the
+  dive's run-up).
+- **Surface:** `PlayFootstep` traces 40 cm down (`FootstepTraceDistance`)
+  from `foot_l` / `foot_r` (from 10 cm above the sole — on a step up the foot
+  is already inside the ground), `bReturnPhysicalMaterial`, Visibility. No
+  hit = no step (a foot over an edge). Skipped while `bIsRagdoll`.
+- **`UFootstepEffectsData`** (`Gameplay/`, modelled on `UImpactEffectsData`):
+  `Surfaces` map `EPhysicalSurface` → `FFootstepEffect` {`Sounds` (random,
+  never the same twice running — the character keeps `LastFootstepSound`),
+  optional `Dust` Niagara, `Volume`}, `Default`, gait volumes (`WalkVolume`
+  0.6 at ≤ `WalkSpeed` 250, `JogVolume` 1 at ≥ `JogSpeed` 500, blended;
+  `CrouchVolume` 0.4), `VolumeScale`. Played with `PlaySoundAtLocation` at
+  the hit point **with the character as owning actor**, so the cues'
+  per-owner limit counts per character.
+- **Assets:** `DA_FootstepEffects` (`ThirdPerson/Blueprints/`, set on
+  `BP_PlayerCharacter` and `BP_EnemyBase`; CC children inherit) from the
+  **Footstep_Casual** pack (12 sets, 10–14 variations each). Mapping:
+  (user's tuning 2026-10-23 — the pack's Concrete set is too high-pitched
+  for most floors, so Stone is the workhorse and Concrete is kept for the
+  genuinely bright surfaces): **Default, Concrete, Asphalt, Brick, Plaster,
+  Sheetrock, Rock → Stone**; **Tile, Glass → Concrete**; Dirt/Clay → Earth;
+  Grass/Leaves → Grass; **Wood, Cardboard, Carpet, Cloth, Rubber, Plastic →
+  Low Wood**; Metal/Electronics → Metal; Sand; Snow; Water/Blood → Water.
+  The pack's Mud, Normal Wood and Low Metal sets are unused. `/Game/Audio/Footsteps/ATT_Footstep`:
+  full to 3 m, silent at 25 m, no LPF; all 145 cues on it, **2 per owner,
+  stop oldest**.
+- **Physical materials:** the blockout materials carry none, so every floor
+  is the Default until level materials get one. **The set to assign is the
+  ImpactsVFXVol1 pack's `Materials/Physical_Materials/<Name>`** — one per
+  surface, all 24 verified against the project's surface table (the table
+  was derived from them). No project copies needed.
+  - **A footstep patch without replacing the floor:** a Blocking Volume over
+    the area, top ~1 cm above the floor, collision Custom = WorldStatic,
+    everything Ignore except **Visibility Block**, Phys Material Override =
+    the surface's physical material. The foot trace (Visibility) hits it
+    first; pawns pass through; bullets hitting that floor get the same
+    surface, which is right. Cleaner later: a dedicated `Footstep` trace
+    channel + a `BP_FootstepArea` volume that blocks only that channel.
+- Later: a landing thud after dives/falls (CC's `Landing_Cue`), the
+  player's jog as AI noise.
+
 ---
 
 ## Ammo
@@ -951,7 +1005,8 @@ out of the air), which `AGrenade` already supports.
   shake. A kill by the player's blast: `PlayKillSlowMotion(1.5)`.
 - **Kill slow motion:** `UFocusComponent::PlayKillSlowMotion(RealDuration)` is
   a free Focus on a real-time timer; ignored if slow motion is already on. A
-  later `BeginFreeFocus` (dive, roll) takes it over; pressing Focus claims it.
+  later `BeginFreeFocus` (dive, roll) takes it over; pressing Focus claims it
+  (outside a dive — mid-dive either key cancels it instead, see *Free Focus*).
 - **`AGrenade`** (on `AProjectileBase`; `OnHit` is virtual): `FuseTime`
   (0 = none), `bExplodeOnImpact`, bounce sound above `MinBounceSoundSpeed`.
   Shot: goes off now and the shooter becomes the Instigator. Caught in a blast:
@@ -1191,8 +1246,21 @@ hit bones, physics and weapon attachment all run on it.
   sockets, not `hand_r`); copied onto `CCMH_Body_Male` with Manny's transforms
   (+ `foot_l/r_Socket`). Without them the gun sits at the mesh origin (feet).
   `ik_*` bones added to `CCMH_Body_Male` by the user (2026-10-21).
-- **Physics:** `PA_CCMH_Bopis` = copy of `PA_Mannequin` (bone names match).
-  CC's own `CCMH_Body_Physics` kept as a fallback.
+- **Physics:** `PA_CCMH_Bopis` = copy of `PA_Mannequin` (bone names match)
+  on the body meshes; the player's `PA_CCMH_Player` (copy of `PA_Kamz`) as a
+  mesh override. **Corpse asset swap (2026-10-23, mechanism kept, unused):**
+  `ABopisCharacterBase::RagdollPhysicsAsset` (Health|Riddled; **empty on
+  every Blueprint**) is swapped in by `StartRagdoll` — `SetPhysicsAsset(…,
+  true)` after the motors are cleared, before `SetSimulatePhysics` — so a
+  corpse can ragdoll on a different asset than the one serving hits,
+  staggers, the riddled upper body and the dive's limbs. Verified working
+  with `PA_CCMH_Player` as the corpse asset. **CC's own `CCMH_Body_Physics`
+  was tried and rejected:** it's a cloth-collision asset (18 bodies, toes
+  but no feet, no clavicles, no projection or constraint profiles) and our
+  impulse-driven deaths stretch it into the "stuck in a door" look on flat
+  ground. The first "looks better" verdict was a false positive — placed
+  enemies keep their own copy of a Blueprint default the bridge changes, so
+  they were still dying on `PA_CCMH_Bopis` until the editor restarted.
 - **Looks** (`BuildCCCharacter` → one of three): `bUseSavedLook` + `Look`
   (a `CC_Saved_Variables`, for heroes); `bRandomizeLook` → `RandomizeLook`;
   else `Preset.DefaultOptions`. The head ticks after the body
@@ -2693,6 +2761,24 @@ it about 45° toward the back: the torso over-twisted.
   until the travel is `BackstepHysteresis` (10°) further forward.
 - It covers every weapon's strafe, and the mirrored blade copy too.
 
+### Lean into turns (2026-10-23)
+Walking or jogging with the gun lowered, the torso banks into a turn by the
+turn rate — the free run's own rotation toward the movement direction, so
+enemies lean too. Never with the weapon raised (a strafe turn is the camera,
+not the body), nor crouched, diving, rolling or in the air.
+- **C++ (`UProjectBopisAnimInstance::UpdateLean`):** `YawRate` = the actor's
+  yaw delta per second; `LeanAngle` eases (`LeanInterpSpeed` 6) toward
+  `clamp(YawRate × LeanPerYawRate (0.1) × min(Speed / LeanFullSpeed (500), 1),
+  ±MaxLeanAngle (15))`, or 0 when the gate fails. `LeanSpineRotation` =
+  `LeanPerDegree × LeanAngle / 3`. `LeanPerDegree` (default pitch 1, i.e.
+  about the component's Y = the body's forward axis, positive banking right)
+  is the escape hatch if it banks the wrong way or axis — flip it on the ABP
+  defaults, as with `FreeArmSwingFull`. `bLeanIntoTurns` switches it off.
+- **Graph:** three Transform (Modify) Bone nodes (`ModifyBone_36/37/38`:
+  `spine_01/02/03`, additive, component space, alpha 1, Rotation ←
+  `LeanSpineRotation`) on the standing branch right after
+  `LocalToComponentSpace_1`, before the blade's chest turn.
+
 ### Gait — slower cadence with stride warping (2026-10-07)
 Lyra's locomotion was accurate but read as cartoonish; Max Payne 1–2 is the
 reference. Every locomotion/idle clip player runs at `LocomotionPlayRate`
@@ -3137,7 +3223,15 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   (`bFree`).
   - No drain; ignores the meter.
   - Does nothing if Focus is already on.
-  - A Toggle during free Focus claims it as the player's own.
+  - A Toggle during free Focus claims it as the player's own — **except
+    during a dive (2026-10-23):** `UShootdodgeComponent::CancelSlowMotion`,
+    called first by `DoToggleFocus` and by `DoShootdodge` while
+    `IsDodging()`, ends the slow motion instead (the dive's own via
+    `EndFreeFocus`, or a Focus that was already on via `StopFocus`; the
+    hold-on-empty is released); the dive carries on at full speed. With none
+    running, the Focus key toggles the player's own Focus as usual and the
+    dive key does nothing (`TryStart` refuses mid-dive). Landing's
+    `EndSlowMotion` is a no-op after a cancel.
   - `TakeOff` begins it; `NotifyLanded` / `Finish` end it.
 - **Get-up rules:**
   - `IsGettingUp()`: `DoFire` returns early (held fire goes through

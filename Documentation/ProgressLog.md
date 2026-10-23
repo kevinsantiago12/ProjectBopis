@@ -46,10 +46,71 @@
   rest (notify timing, 3× reload bunching, loudness) is the user's tuning;
   the weapon models will be replaced, so no asset polish now.
 
+- **Corpses on CC's constraints (later 10-23, compiled, not playtested):**
+  `RagdollPhysicsAsset` on `ABopisCharacterBase`, swapped in by
+  `StartRagdoll`; `BP_Enemy_CC` / `BP_Player_CC` → `CCMH_Body_Physics`
+  (unchanged from the CC2 source). Alive physics stays on `PA_CCMH_Bopis` /
+  `PA_CCMH_Player`. Spec: *NPC characters (CC2)* → Physics.
+
+- **CC deaths playtested (user):** first "the CC constraints look better" —
+  a false positive (placed enemies kept their own copy of the Blueprint
+  default, so they still died on `PA_CCMH_Bopis`; after the editor restart
+  CC's asset really ran and ragdolls stretched like a body stuck in a door,
+  on flat ground). Swapping to `PA_CCMH_Player` instead was fine → the swap
+  mechanism works, CC's `CCMH_Body_Physics` is a cloth-collision asset, not
+  a ragdoll. `RagdollPhysicsAsset` cleared on both CC Blueprints; bodies
+  back on `PA_CCMH_Bopis` / `PA_CCMH_Player`. **Gotcha:** a Blueprint default
+  set through the bridge doesn't reach actors already placed in a level
+  until the level reloads; spawned actors get it at once.
+- **Slow motion off mid-dive (user: "works"):** the Focus key or
+  the dive key during a dive now ends the slow motion — the dive's own free
+  Focus, or the player's Focus it was holding (`UShootdodgeComponent::
+  CancelSlowMotion`, called from `DoToggleFocus` / `DoShootdodge`); the dive
+  carries on at full speed. Pressing Focus again afterwards starts the
+  player's own Focus as usual. The old mid-dive "claim" (Focus key kept
+  bullet time past landing) is gone for dives; a kill's slow motion outside a
+  dive can still be claimed. Spec: *Shootdodge → Slow motion*.
+
+- **Lean into turns (user: "works", defaults kept):** walking/jogging
+  lowered, the torso banks by the actor's yaw rate (`UpdateLean`;
+  `LeanPerYawRate` 0.1, `MaxLeanAngle` 15, `LeanFullSpeed` 500,
+  `LeanInterpSpeed` 6, `LeanPerDegree` pitch 1 as the axis/sign escape
+  hatch); three spine Modify Bones on the standing branch before the blade.
+  Enemies too; never raised, crouched, diving, rolling or airborne. Spec:
+  *Lean into turns*.
+
+- **Footsteps (compiled + assets, not playtested):** the Lyra clips'
+  `FootPlant_Left/Right` name notifies → `AnimNotify_FootPlant_*` on the
+  anim instance → `ABopisCharacterBase::PlayFootstep` (foot trace with
+  physical material) → `UFootstepEffectsData` (`DA_FootstepEffects`: 24
+  surfaces from the Footstep_Casual pack, Default = Concrete; walk 0.6 /
+  jog 1 / crouch 0.4). `ATT_Footstep` 3 m → 25 m, 2 voices per character
+  (the sound is played with the character as owner). On `BP_PlayerCharacter`
+  and `BP_EnemyBase`. Spec: *Footsteps*. Blockout floors have no physical
+  material → all Default (**Stone**, user's pick) for now. **First test was
+  silent:** the Lyra `FootPlant_*` names are sync markers, not notifies (the
+  FootFX notifies are Lyra's `LyraContextEffects` class, absent here), so
+  detection moved to the pose (`UpdateFootsteps`: foot ≥ 5 cm above its
+  ref-pose height then back within 2 cm = a plant) — **works** (log: 2,352
+  plants over 13 PIE runs, walk/jog volumes blending, 286 rejected in the
+  air and 495 at a standstill; the user's wood patch read as Low Wood).
+  Diagnostic logs removed again. Footstep patches: a
+  Visibility-only Blocking Volume with a Phys Material Override from the
+  ImpactsVFXVol1 pack's `Physical_Materials` (all 24 verified) — spec.
+
 ### ▶ RESUME HERE
 1. **Fix (user, 10 s):** `AM_Pistol_Reload_Offhand` → the Chamber notify →
    tick **Offhand**, save.
-2. **Re-check once:** consecutive shots while looking around (should no
+2. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
+   `VolumeScale`, per-surface sets) and `ATT_Footstep`; physical materials
+   on level materials / patches as levels get dressed. Later: landing thud,
+   jog as AI noise.
+3. **Commit (user):** `Gameplay/FootstepEffectsData.h/.cpp` (new),
+   `DA_FootstepEffects`, `/Game/Audio/Footsteps/`, 145 Footstep_Casual
+   cues, `BP_PlayerCharacter`, `BP_EnemyBase`; plus: `ProjectBopisAnimInstance.h/.cpp`, `ABP_Player`,
+   `ShootdodgeComponent.h/.cpp`, `ProjectBopisCharacter.cpp`,
+   `BopisCharacterBase.h/.cpp`, `BP_Enemy_CC`, `BP_Player_CC`, docs.
+3. **Re-check once:** consecutive shots while looking around (should no
    longer chop); if it still cuts *all* audio, it's the mixer's 32-source
    ceiling → sound priorities. Your tuning: notify timing, 3× reload.
 3. **Commit (user):** `WeaponBase.h/.cpp`, `AnimNotify_WeaponSound.h/.cpp`;

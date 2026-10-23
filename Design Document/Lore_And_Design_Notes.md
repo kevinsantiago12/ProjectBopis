@@ -672,6 +672,9 @@ the room rather than hunting the player. Some may wait **crouched**. They do
 **not** use cover tactically — no popping up from behind cover to shoot
 (user: "I dont want whack a mole").
 
+**Slice setting — settled 2026-10-23:** the first playable slice is set in
+**Filipino slum alleyways** (user). District and story arc still open.
+
 *Original entry:* Linear navigation, nonlinear combat. Freedom comes from how
 the player uses the geometry within an arena, not from branching routes.
 

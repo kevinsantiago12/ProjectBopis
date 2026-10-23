@@ -81,6 +81,11 @@ public:
 	/** Starts a dive if allowed: on the ground, a pistol or duals, enough Focus. */
 	bool TryStart();
 
+	/** Ends the slow motion mid-dive (the Focus or dive key pressed again): the dive's own, or
+	    the player's Focus it was holding. The dive carries on at full speed. Returns whether
+	    there was any to end. */
+	bool CancelSlowMotion();
+
 	/** The character touched down. Ends the flight. */
 	void NotifyLanded();
 

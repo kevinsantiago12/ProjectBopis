@@ -736,6 +736,28 @@ void UShootdodgeComponent::CancelForDeath()
 	SetComponentTickEnabled(false);
 }
 
+bool UShootdodgeComponent::CancelSlowMotion()
+{
+	UFocusComponent* Focus = Character ? Character->GetFocus() : nullptr;
+	if (!IsDodging() || !Focus || !Focus->IsFocusActive())
+	{
+		return false;
+	}
+
+	// The dive's own slow motion, or the player's Focus it was holding: either way, off.
+	Focus->SetHoldOnEmpty(false);
+	if (bOwnsSlowMotion)
+	{
+		Focus->EndFreeFocus();
+	}
+	else
+	{
+		Focus->StopFocus();
+	}
+	bOwnsSlowMotion = false;
+	return true;
+}
+
 void UShootdodgeComponent::EndSlowMotion()
 {
 	if (UFocusComponent* Focus = Character ? Character->GetFocus() : nullptr)

@@ -452,6 +452,8 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Done 2026-10-17, compiled.)* Weapon pickup (or slot switch) mid-roll keeps the roll.
   - [x] *(Done 2026-10-17, compiled.)* Camera height re-applied on capsule resizes (crouch → dive flicker).
   - [x] *(Done 2026-10-17, compiled.)* The Start state on an evaluator driven from C++ (every dive starts at its own offset, the first included); `BackStartOffset`; jog dives jump forward, then turn and ease into the real direction.
+  - [x] *(Done 2026-10-23, user: "works".)* Procedural lean into turns while walking/jogging lowered (`UpdateLean`, three spine Modify Bones); enemies too; never raised. See the spec's *Lean into turns*.
+  - [x] *(Done 2026-10-23, user: "works".)* Slow motion can be switched off mid-dive with the Focus key or the dive key (`CancelSlowMotion`); the dive carries on at full speed. The old mid-dive "claim" is gone for dives.
   - Dropped: hips on physics; late limb physics at the push-off frame; turn-to-run and the strafe back-dive wind-up; the inertialized locomotion→dive blend; the two-evaluator crossfade.
 - [x] *(Done 2026-10-18, user: "works".)* **12. Reload upgrades** (user, 2026-10-17). See the spec's *Reload upgrades* and *Dual pistols in the dive*.
   - [x] Reload carried through a roll: magazine guns at ≥1/3 are reloaded at the roll's end, else cancelled; the shotgun's cycle in progress goes in after the roll.
@@ -496,6 +498,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] Skin through clothing: head + body depth bias in `M_Skin_CCMH` (user: "close enough", 2026-10-22).
   - [x] Bladed strafe waist twist spread over `spine_01`–`03` (user: "looks better").
   - [x] Clothing layer order at the waist (`Layer Depth` per garment MI, tucked vs untucked; user: "it will do for now").
+  - [x] Corpse physics-asset swap (`RagdollPhysicsAsset`, in `StartRagdoll`) — works, but CC's `CCMH_Body_Physics` is a cloth-collision asset and distorts under our death impulses; rejected, property left empty (2026-10-23). Bodies stay on `PA_CCMH_Bopis` / `PA_CCMH_Player`.
   - [ ] Clothing layers on the female MIs; review the tucked list.
   - [ ] Female NPCs: `ik_` bones on the female body (user), female preset, head mesh per gender.
   - [ ] Body proportion sliders under Option B.
@@ -506,6 +509,10 @@ archetype-composition idea, not extended from the old classes.
   - [x] Listen test: shots + reload/draw sounds play (after an editor restart).
   - [x] Cut-off on consecutive shots: gunshot cues 4 → 8 voices + 0.25 s steal fade; foley inner radius 200 → 500; diagnostic logs removed (2026-10-23).
   - [x] Polish — handed to the user (notify timing, 3× reload bunching, loudness); weapon models to be replaced later, so no asset polish now. Still open later: per-gun dry-fire clicks, cue variants, a Weapons sound class.
+- [ ] **24. Footsteps** (user, 2026-10-23). See the spec's *Footsteps*.
+  - [x] *(Done 2026-10-23, user-tested.)* Plants read off the pose (`UpdateFootsteps`: foot ≥ 5 cm above its ref-pose height, then back within 2 cm — the Lyra `FootPlant_*` names turned out to be sync markers) → `PlayFootstep`: foot trace with physical material, `UFootstepEffectsData` (`DA_FootstepEffects` from Footstep_Casual, 24 surfaces, Default Stone; user re-mapped Concrete→Stone, Tile/Glass→Concrete, wood→Low Wood), gait volumes, `ATT_Footstep`, 2 voices per character; on both base characters + the CC children. Gating verified in the log (none in the air or at a standstill).
+  - [ ] Physical materials on level materials (every floor is the Default until then); footstep patches = Visibility-only Blocking Volumes with a Phys Material Override (user has one working).
+  - [ ] Later: landing thud after dives/falls; jog steps as AI noise.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -538,6 +545,7 @@ planning further than that now would be guessing.
 ## Gotchas learned the hard way
 - **An anim pose feeding two parents gets updated twice a frame (2026-10-23).** A player wired straight into two nodes advances twice per frame whenever both are relevant — the bladed legs ran at double speed. Route it through a Save Cached Pose and read it with one Use Cached Pose per parent.
 - **Bridge limits in AnimBPs/materials (2026-10-23):** it can't create nodes inside a state graph ("Cannot cast AnimStateNode to Blueprint"); its node list doesn't offer a Use Cached Pose for a cache made in the same session; and `MaterialTools` can't connect or read `MP_PixelDepthOffset` (enum conversion error) — go through Material Attributes, use a view-ray WPO, or have the user make the wire. `PreSkinnedPosition` is vertex-only: pass it through a VertexInterpolator for pixel outputs.
+- **A Blueprint default set through the bridge doesn't reach actors already placed in the level, nor child Blueprints (2026-10-23).** Placed instances carry their own copy; they pick up the new default only when the level reloads (spawned actors get it at once). A PIE test on placed actors right after a bridge CDO edit tests the *old* value — the "CC ragdoll looks better" false positive. **Child Blueprints' defaults (`BP_Player_CC`, `BP_Enemy_CC`, `_Thug`, `_Goon`) also keep the old parent value until they reload** — no footsteps after setting `FootstepEffects` on the two base Blueprints only. Set the leaf Blueprints too, or restart; this is probably also the sound-slot case below.
 - **Sound changes may need an editor restart before PIE reflects them (2026-10-23).** Weapon BP sound slots filled through the bridge + new `Weapon Sound` notifies placed in the editor, all saved: the next PIE played shots but no reload/draw sounds; after a restart everything played. Cause not found. Restart before judging a PIE sound test.
 - **GitKraken + an untracked `.gitattributes` with LFS rules (2026-10-22)** froze it and staged every asset as an LFS pointer. Fix: delete `.gitattributes`, `git reset` (unstage). Adopt LFS only as one deliberate renormalize commit.
 - **Scanning `.uasset`s for `/Game/` references misses FName-numbered names (2026-10-21).** Unreal stores `Turn_Left_90` as name `Turn_Left` + number 90 (any trailing `_N` without a leading zero), so a text scan sees `Turn_Left`. The CC2 migration missed four turn animations this way and `CC_AnimBP` failed to compile. After a disk-copy migration, also copy same-folder siblings named `*_<N>` from the source.

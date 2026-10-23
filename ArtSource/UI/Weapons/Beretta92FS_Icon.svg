@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512" viewBox="-40 -6 297 148.5">
+  <!-- Beretta 92FS, right side, muzzle right. Units are millimetres of the real gun
+       (217 long x 137 tall). Flat silhouette; detail lines are cut out as transparency
+       through the mask so the icon can be tinted in UMG. -->
+  <defs>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="-40" y="-6" width="297" height="148.5">
+      <rect x="-40" y="-6" width="297" height="148.5" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <!-- slide / frame seam -->
+        <path d="M2,25.5 L112,25.5 L200,25.5"/>
+        <!-- rear serrations -->
+        <path d="M24,6 V21 M27,6 V21 M30,6 V21 M33,6 V21 M36,6 V21 M39,6 V21 M42,6 V21"/>
+        <!-- safety / decocker -->
+        <rect x="5" y="9" width="13" height="6" rx="3"/>
+        <!-- open-top slide: barrel exposed above the slide walls -->
+        <path d="M104,12.5 C108,12.5 110,12.5 114,12.5 L186,12.5 L187,4"/>
+        <path d="M2,25.5 L217,25.5" stroke-width="0.8"/>
+        <!-- slide stop and takedown lever -->
+        <path d="M68,29.5 L104,29.5"/>
+        <circle cx="113" cy="30.5" r="2.2"/>
+        <!-- hammer pin -->
+        <circle cx="2" cy="25" r="1.4"/>
+        <!-- grip panel and medallion -->
+        <path d="M14,47 L47,47 Q49,47 48.5,49.5 L32,121 Q31.4,123.5 29,123.5 L-4,123.5 Q-6.5,123.5 -6,121 L11,49.5 Q11.5,47 14,47 Z"/>
+        <circle cx="21" cy="72" r="5"/>
+        <!-- magazine base plate -->
+        <path d="M-11,131.5 L35,131.5"/>
+      </g>
+      <!-- trigger guard opening -->
+      <path fill="#000" d="M62,38 L102,38 Q104.5,38 104,41.5 L101.5,54 Q100.5,59 95,59 L66,59 Q61,59 61,54 L61,39 Q61,38 62,38 Z"/>
+      <!-- magazine release -->
+      <circle cx="51.5" cy="41" r="1.6" fill="#000"/>
+      <!-- trigger sits inside the opening -->
+      <path fill="#fff" d="M78,38 Q83,46 79,52.5 Q76,56 71.5,55 Q76.5,48 74,38 Z"/>
+    </mask>
+  </defs>
+
+  <g fill="#ECE5D6" mask="url(#cut)">
+    <!-- slide: rear sight, open top over the barrel, front sight, rounded nose -->
+    <path d="M0,4 L2,1 L4,1 L4,-1 L12,-1 L12,1 L98,1 C106,1 108,7 114,7 L184,7 Q186,7 187,3 L206,3 L206.5,-2 L210.5,-2 L211,3 L214,3 Q217,3 217,7 L217,19 Q217,25 211,25.5 L4,26 L0,22 Z"/>
+    <!-- frame rail and dust cover -->
+    <path d="M4,25 L190,25 L192,27 L192,33 Q192,35 189,35 L120,36.5 L112,38 L6,38 Z"/>
+    <!-- hammer -->
+    <path d="M6,19 L-3,17.5 Q-9,18 -8,23.5 L-3,28.5 L6,30 Z"/>
+    <!-- grip and magazine base -->
+    <path d="M18,36 Q1,33 0.5,43 L-11,125 Q-12,129 -13,132 L-13,137 L36,137 L36,132 L34,131 L50.5,58 Q52,50 56,46 L56,36 Z"/>
+    <!-- trigger guard -->
+    <path d="M54,36 L54,60 Q55,66.5 63,66.5 L97,66.5 Q107.5,66.5 108.5,56 L110.5,40 L112,36 Z"/>
+  </g>
+</svg>

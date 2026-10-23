@@ -1,0 +1,436 @@
+<title>Alley Slice Blockout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a drafting sheet. Plan drawing first, sections + pacing beside it, room schedule below. */
+:root {
+  --bg: #e8ebe6;        /* drafting film */
+  --sheet: #f4f5f1;
+  --floor: #fbfbf8;
+  --ink: #1d2729;
+  --muted: #5e6b6b;
+  --line: #c3cbc6;
+  --grid: #dfe4df;
+  --grid2: #cdd5cf;
+  --wall: #263235;
+  --cover: #aab4b0;
+  --accent: #c97a12;    /* sodium streetlight: critical path */
+  --foe: #b3332b;
+  --pick: #23786a;
+  --trig: #6a52a8;
+  --display: "Big Shoulders Text", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111719; --sheet: #172023; --floor: #1d282b; --ink: #dfe6e3; --muted: #8e9c9a;
+  --line: #2f3b3d; --grid: #1a2427; --grid2: #243134; --wall: #c8d2cf; --cover: #4a5856;
+  --accent: #f0a53a; --foe: #e2594d; --pick: #4fb7a2; --trig: #a28be0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111719; --sheet: #172023; --floor: #1d282b; --ink: #dfe6e3; --muted: #8e9c9a;
+  --line: #2f3b3d; --grid: #1a2427; --grid2: #243134; --wall: #c8d2cf; --cover: #4a5856;
+  --accent: #f0a53a; --foe: #e2594d; --pick: #4fb7a2; --trig: #a28be0; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font: 600 12px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(34px, 6vw, 56px)/1 var(--display); letter-spacing: .01em; text-transform: uppercase; margin: 0; text-wrap: balance; }
+h2 { font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+.lede { max-width: 68ch; margin: 4px 0 0; color: var(--muted); }
+.lede b { color: var(--ink); font-weight: 600; }
+
+.sheet { background: var(--sheet); border: 1px solid var(--line); }
+.sheet-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; align-items: baseline;
+  padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.sheet-head .meta { font: 500 12px var(--mono); color: var(--muted); }
+.scroll { overflow-x: auto; }
+.plan { display: block; width: 100%; min-width: 860px; height: auto; }
+
+.row2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; }
+.sections { display: grid; grid-template-columns: 2fr 1fr; gap: 0; }
+.sections figure { margin: 0; padding: 12px 14px 14px; display: grid; gap: 6px; min-width: 0; }
+.sections figure + figure { border-left: 1px solid var(--line); }
+figcaption { font: 600 12px var(--mono); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.sections svg, .pace svg { width: 100%; height: auto; display: block; }
+.pace { padding: 12px 16px 16px; display: grid; gap: 8px; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+
+.rooms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.room-card { background: var(--sheet); padding: 16px 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.room-card .num { font: 800 40px/0.85 var(--display); color: var(--accent); }
+.room-card .top { display: flex; gap: 12px; align-items: flex-end; }
+.room-card h3 { font: 700 20px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+.room-card .size { font: 500 12px var(--mono); color: var(--muted); }
+dl { margin: 0; display: grid; grid-template-columns: 74px 1fr; gap: 5px 10px; font-size: 13.5px; }
+dt { font: 600 11px/1.9 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+dd { margin: 0; }
+.tests { font-size: 13px; border-top: 1px dashed var(--line); padding-top: 9px; color: var(--muted); }
+.tests b { color: var(--ink); font-weight: 600; }
+
+.lists { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.lists section { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.lists ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.lists .owned { border-left: 3px solid var(--trig); padding-left: 14px; }
+code { font: 500 .9em var(--mono); }
+
+/* SVG drawing classes (user units are metres) */
+.g1 { stroke: var(--grid); stroke-width: .05; }
+.g5 { stroke: var(--grid2); stroke-width: .09; }
+.room { fill: var(--floor); stroke: var(--wall); stroke-width: .4; }
+.ghost { fill: none; stroke: var(--muted); stroke-width: .22; stroke-dasharray: .6 .45; }
+.door { fill: var(--floor); }
+.cover { fill: var(--cover); }
+.bal { fill: url(#hatch); }
+.hl { stroke: var(--cover); stroke-width: .16; }
+.rail { fill: none; stroke: var(--wall); stroke-width: .18; stroke-dasharray: .5 .3; }
+.tread { stroke: var(--muted); stroke-width: .1; }
+.trig { stroke: var(--trig); stroke-width: .35; stroke-dasharray: .45 .3; }
+.path { fill: none; stroke: var(--accent); stroke-width: .42; stroke-dasharray: 1 .55; stroke-linecap: round; stroke-linejoin: round; }
+.arrowhead { fill: var(--accent); }
+.foe { fill: var(--foe); }
+.foe-c { fill: var(--floor); stroke: var(--foe); stroke-width: .3; }
+.wave { fill: none; stroke: var(--foe); stroke-width: .24; stroke-dasharray: .4 .3; }
+.pick { fill: var(--pick); }
+.start { fill: var(--accent); }
+.t-room { font: 700 1.3px var(--display); fill: var(--ink); letter-spacing: .04px; text-transform: uppercase; }
+.t-sub { font: 400 .82px var(--body); fill: var(--muted); }
+.t-w { font: 600 .78px var(--mono); fill: var(--foe); }
+.t-p { font: 500 .74px var(--body); fill: var(--pick); }
+.t-t { font: 600 .74px var(--mono); fill: var(--trig); }
+.t-a { font: 600 .8px var(--mono); fill: var(--accent); }
+.t-in { font: 500 .7px var(--body); fill: var(--ink); }
+.t-leg { font: 400 .9px var(--body); fill: var(--ink); }
+.t-head { font: 700 1.1px var(--display); fill: var(--muted); letter-spacing: .12px; }
+.t-dim { font: 500 .6px var(--mono); fill: var(--muted); }
+.dim { stroke: var(--muted); stroke-width: .06; fill: none; }
+.slab { fill: var(--wall); }
+.ground { stroke: var(--wall); stroke-width: .25; }
+.beyond { stroke: var(--muted); stroke-width: .12; stroke-dasharray: .35 .25; fill: none; }
+.flight { stroke: var(--wall); stroke-width: .16; fill: none; }
+/* pacing chart, px units */
+.bar { fill: var(--foe); }
+.bar-w { fill: none; stroke: var(--foe); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.bar-opt { fill: none; stroke: var(--foe); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.axis { stroke: var(--line); stroke-width: 1; }
+.c-lab { font: 500 11px var(--mono); fill: var(--muted); }
+.c-val { font: 600 12px var(--mono); fill: var(--ink); }
+.c-name { font: 700 13px var(--display); fill: var(--ink); text-transform: uppercase; letter-spacing: .5px; }
+
+@media (max-width: 900px) {
+  .row2, .lists { grid-template-columns: 1fr; }
+  .rooms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .rooms, .sections { grid-template-columns: 1fr; }
+  .sections figure + figure { border-left: 0; border-top: 1px solid var(--line); }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ProjectBopis · Phase 6 · Lvl_Linear · slum alleyways · graybox draft 2026-10-23</div>
+    <h1>Alley Slice Blockout</h1>
+    <p class="lede">The six-beat run from <code>Phase6_SliceBrief.md</code>, laid out to scale. <b>Linear, room encounters, about 5–8 minutes.</b> Every doorway and alley gap is drawn 3 m wide (brief minimum 2 m) so a dive through it never clips. Setting: Filipino slum alleyways. Hollow-block and corrugated-sheet shanties, narrow eskinitas, laundry lines, tarps and tangled wires overhead. Same layout as the abstract plan, with the spaces dressed. Faction and story stay open.</p>
+  </header>
+
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>Plan · ground + upper walkway</h2>
+      <span class="meta">1 grid square = 1 m · heavy line every 5 m · north up</span>
+    </div>
+    <div class="scroll">
+      <svg class="plan" viewBox="0 0 100 55" role="img" aria-label="Top-down plan of six connected rooms with enemy, pickup and trigger positions">
+        <defs>
+          <pattern id="g1" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M1 0V1H0" class="g1" fill="none"/></pattern>
+          <pattern id="g5" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="url(#g1)"/><path d="M5 0V5H0" class="g5" fill="none"/></pattern>
+          <pattern id="hatch" width=".7" height=".7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2=".7" class="hl"/></pattern>
+          <marker id="arr" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 0L4 2L0 4z" class="arrowhead"/></marker>
+        </defs>
+        <rect width="100" height="55" fill="url(#g5)"/>
+
+        <!-- legend / title block -->
+        <g>
+          <text x="3" y="4.6" class="t-head">LEGEND</text>
+          <circle cx="4" cy="7" r=".6" class="foe"/><text x="5.4" y="7.3" class="t-leg">Enemy, standing (letter = weapon)</text>
+          <circle cx="4" cy="9.2" r=".55" class="foe-c"/><text x="5.4" y="9.5" class="t-leg">Enemy, crouched holder</text>
+          <circle cx="4" cy="11.4" r=".75" class="wave"/><text x="5.4" y="11.7" class="t-leg">Wave spawn (encounter director)</text>
+          <rect x="3.55" y="13.15" width=".9" height=".9" class="pick" transform="rotate(45 4 13.6)"/><text x="5.4" y="13.9" class="t-leg">Pickup</text>
+          <line x1="3" y1="15.8" x2="5" y2="15.8" class="trig"/><text x="5.4" y="16.1" class="t-leg">Encounter trigger (T1–T5)</text>
+          <line x1="2.8" y1="18" x2="5" y2="18" class="path"/><text x="5.4" y="18.3" class="t-leg">Critical path</text>
+          <rect x="3.3" y="19.6" width="1.4" height="1.4" class="cover"/><text x="5.4" y="20.6" class="t-leg">Low cover: drums, tables, blocks (dive past)</text>
+          <rect x="3.1" y="21.9" width="1.8" height="1.3" class="bal"/><text x="5.4" y="22.9" class="t-leg">Plank walkway at +4 m</text>
+          <text x="3" y="26" class="t-w">P pistol · R rifle · M MAC-11 · DM dual MAC-11 · S shotgun</text>
+          <!-- scale bar -->
+          <g transform="translate(3 29)">
+            <rect x="0" y="0" width="5" height=".5" class="slab"/><rect x="5" y="0" width="5" height=".5" fill="none" class="dim" style="stroke:var(--wall);stroke-width:.1"/>
+            <text x="0" y="1.6" class="t-dim">0</text><text x="4.7" y="1.6" class="t-dim">5</text><text x="9.4" y="1.6" class="t-dim">10 m</text>
+          </g>
+        </g>
+
+        <!-- connectors (drawn first so room walls sit on top) -->
+        <rect x="34" y="40" width="2" height="3" class="room"/>
+        <rect x="66" y="40" width="2" height="3" class="room"/>
+        <rect x="74" y="27" width="3" height="7" class="room"/>
+        <rect x="64" y="12.5" width="2" height="3" class="room"/>
+        <rect x="82" y="27" width="3" height="4" class="ghost"/>
+
+        <!-- rooms -->
+        <rect x="2" y="40" width="20" height="4" class="room"/>
+        <rect x="22" y="36" width="12" height="10" class="room"/>
+        <rect x="36" y="39" width="30" height="5" class="room"/>
+        <rect x="49" y="34" width="5" height="5" class="room"/>
+        <rect x="68" y="34" width="15" height="15" class="room"/>
+        <rect x="66" y="12" width="20" height="15" class="room"/>
+        <rect x="58" y="10" width="6" height="6" class="room"/>
+
+        <!-- door openings -->
+        <rect x="21.7" y="40.5" width=".6" height="3" class="door"/>
+        <rect x="33.7" y="40.2" width="2.6" height="2.6" class="door"/>
+        <rect x="65.7" y="40.2" width="2.6" height="2.6" class="door"/>
+        <rect x="74.2" y="26.7" width="2.6" height="7.6" class="door"/>
+        <rect x="63.7" y="12.7" width="2.6" height="2.6" class="door"/>
+        <rect x="50" y="38.7" width="3" height=".6" class="door"/>
+        <rect x="82.2" y="26.7" width="2.6" height=".6" class="door"/>
+
+        <!-- room 4: balcony, stairs, cover -->
+        <rect x="66.2" y="12.2" width="19.6" height="3.8" class="bal"/>
+        <line x1="66.2" y1="16" x2="83" y2="16" class="rail"/>
+        <rect x="83" y="16" width="2.8" height="8" fill="var(--floor)" class="tread"/>
+        <g class="tread"><line x1="83" y1="17" x2="85.8" y2="17"/><line x1="83" y1="18" x2="85.8" y2="18"/><line x1="83" y1="19" x2="85.8" y2="19"/><line x1="83" y1="20" x2="85.8" y2="20"/><line x1="83" y1="21" x2="85.8" y2="21"/><line x1="83" y1="22" x2="85.8" y2="22"/><line x1="83" y1="23" x2="85.8" y2="23"/></g>
+        <rect x="72" y="23.5" width="1.5" height="1.5" class="cover"/>
+        <rect x="79" y="17.8" width="1.5" height="1.5" class="cover"/>
+
+        <!-- room 5: switchback symbol -->
+        <g class="tread"><line x1="61" y1="10.2" x2="61" y2="15.8"/><line x1="58.2" y1="12" x2="61" y2="12"/><line x1="58.2" y1="13" x2="61" y2="13"/><line x1="58.2" y1="14" x2="61" y2="14"/></g>
+
+        <!-- cover elsewhere -->
+        <rect x="29" y="40.5" width="2" height="2" class="cover"/>
+        <rect x="44" y="40.3" width="1" height="1" class="cover"/>
+        <rect x="49" y="42.7" width="1" height="1" class="cover"/>
+        <rect x="55" y="40.3" width="1" height="1" class="cover"/>
+        <rect x="60" y="42.7" width="1" height="1" class="cover"/>
+        <rect x="73.5" y="39.5" width="4" height="4" class="cover"/>
+        <text x="75.5" y="41.75" class="t-in" text-anchor="middle">blocks + tricycle</text>
+        <rect x="69" y="35.5" width="1.5" height="1.5" class="cover"/>
+
+        <!-- triggers -->
+        <line x1="22.7" y1="40.5" x2="22.7" y2="43.5" class="trig"/><text x="23.2" y="40.2" class="t-t">T1</text>
+        <line x1="37" y1="39.3" x2="37" y2="43.7" class="trig"/><text x="36.4" y="38.5" class="t-t">T2 · or sight</text>
+        <line x1="68.7" y1="40.2" x2="68.7" y2="42.8" class="trig"/><text x="69.1" y="40" class="t-t">T3</text>
+        <line x1="74.2" y1="27.7" x2="76.8" y2="27.7" class="trig"/><text x="77.3" y="28.3" class="t-t">T4</text>
+        <line x1="63.7" y1="12.9" x2="63.7" y2="15.1" class="trig"/><text x="62.2" y="16.9" class="t-t">T5</text>
+
+        <!-- critical path -->
+        <polyline class="path" marker-end="url(#arr)" points="3.6,42 21,42 26,38.6 31,38.9 34.6,41.5 46,42 66,42 68.6,41.5 70.6,47 81.6,47 81.6,36.5 75.5,33.6 75.5,27.5 78,24.6 84.4,24.6 84.4,16.6 82,15.1 64.8,14.6 61.6,13.3"/>
+        <polygon points="2.4,41 3.6,42 2.4,43" class="start"/>
+        <text x="2.3" y="39.2" class="t-a">START · pistol only</text>
+
+        <!-- room 0 pickups -->
+        <rect x="9.55" y="40.75" width=".9" height=".9" class="pick" transform="rotate(45 10 41.2)"/><text x="10.9" y="41.5" class="t-p">pistol ammo</text>
+        <rect x="15.55" y="42.35" width=".9" height=".9" class="pick" transform="rotate(45 16 42.8)"/><text x="16.9" y="43.1" class="t-p">2nd pistol → duals</text>
+
+        <!-- room 1 enemies -->
+        <circle cx="33" cy="37.6" r=".6" class="foe"/><text x="31.6" y="37.9" class="t-w" text-anchor="end">P</text>
+        <circle cx="33" cy="44.5" r=".6" class="foe"/><text x="31.6" y="44.8" class="t-w" text-anchor="end">P</text>
+        <circle cx="32.2" cy="41.5" r=".55" class="foe-c"/><text x="33" y="41.8" class="t-w">P</text>
+
+        <!-- room 2 -->
+        <rect x="38.05" y="40.15" width=".9" height=".9" class="pick" transform="rotate(45 38.5 40.6)"/><text x="39.4" y="40.9" class="t-p">rifle</text>
+        <circle cx="64.2" cy="40.2" r=".6" class="foe"/><text x="63" y="40.5" class="t-w" text-anchor="end">R</text>
+        <circle cx="64.5" cy="43" r=".55" class="foe-c"/><text x="63.3" y="43.3" class="t-w" text-anchor="end">P</text>
+        <circle cx="51.5" cy="38" r=".6" class="foe"/><text x="52.4" y="38.3" class="t-w">P</text>
+        <rect x="51.05" y="35.15" width=".9" height=".9" class="pick" transform="rotate(45 51.5 35.6)"/>
+        <text x="49" y="33.3" class="t-p">open house · 2× grenade</text>
+
+        <!-- room 3 -->
+        <circle cx="72.6" cy="38.8" r=".6" class="foe"/><text x="71.4" y="39.1" class="t-w" text-anchor="end">P</text>
+        <circle cx="78.5" cy="40.2" r=".6" class="foe"/><text x="79.4" y="40.5" class="t-w">M</text>
+        <circle cx="78.2" cy="43.8" r=".6" class="foe"/><text x="79.1" y="44.1" class="t-w">P</text>
+        <circle cx="74" cy="44.5" r=".55" class="foe-c"/><text x="72.8" y="44.8" class="t-w" text-anchor="end">P</text>
+        <circle cx="72.4" cy="36.2" r=".6" class="wave" style="stroke-dasharray:.2 .2"/><text x="73.3" y="36.5" class="t-sub">optional scripted thrower</text>
+
+        <!-- room 4 -->
+        <circle cx="70" cy="21" r=".6" class="foe"/><text x="70.9" y="21.3" class="t-w">P</text>
+        <circle cx="76" cy="19.6" r=".6" class="foe"/><text x="76.9" y="19.9" class="t-w">R</text>
+        <circle cx="81.4" cy="22" r=".6" class="foe"/><text x="80.2" y="22.3" class="t-w" text-anchor="end">P</text>
+        <circle cx="77" cy="13.5" r=".55" class="foe-c"/><text x="77.8" y="13.8" class="t-w">P</text>
+        <rect x="68.55" y="12.95" width=".9" height=".9" class="pick" transform="rotate(45 69 13.4)"/><text x="69.9" y="13.7" class="t-p">grenade launcher</text>
+        <rect x="67.05" y="25.15" width=".9" height=".9" class="pick" transform="rotate(45 67.5 25.6)"/><text x="68.4" y="25.9" class="t-p">rifle ammo</text>
+        <circle cx="83.5" cy="29.2" r="1" class="wave"/><text x="83.5" y="29.5" class="t-w" text-anchor="middle">×3</text>
+        <text x="86" y="29" class="t-w">WAVE · DM, S, P</text>
+        <text x="86" y="30.3" class="t-sub">director, once group 1 is down</text>
+        <text x="86" y="31.5" class="t-sub">back alley behind the player</text>
+        <text x="86.6" y="20" class="t-sub">wooden stairs</text>
+        <text x="86.6" y="21.1" class="t-sub">to +4 m</text>
+
+        <!-- room 5 -->
+        <circle cx="59.4" cy="11.3" r=".5" class="foe-c"/><circle cx="59.4" cy="14.8" r=".5" class="foe-c"/>
+        <rect x="62.35" y="10.75" width=".9" height=".9" class="pick" transform="rotate(45 62.8 11.2)"/>
+        <rect x="62.35" y="14.65" width=".9" height=".9" class="pick" transform="rotate(45 62.8 15.1)"/>
+
+        <!-- room labels -->
+        <text x="2" y="46.4" class="t-room">0 · Eskinita</text><text x="2" y="47.8" class="t-sub">4 × 20 m alley · no enemies · try the dive</text>
+        <text x="22" y="48.4" class="t-room">1 · Wash yard</text><text x="22" y="49.8" class="t-sub">12 × 10 m shared yard · 3 enemies</text>
+        <text x="36.4" y="46.4" class="t-room">2 · Covered alley, near or far</text><text x="36.4" y="47.8" class="t-sub">5 × 30 m under tarps + 5 × 5 m open house · 3 enemies</text>
+        <text x="68" y="51.3" class="t-room">3 · Half-court</text><text x="68" y="52.7" class="t-sub">15 × 15 m basketball court · 4 enemies bunched</text>
+        <text x="66" y="8.7" class="t-room">4 · Row-house yard, escalation</text><text x="66" y="10.4" class="t-sub">20 × 15 m · plank walkway +4 m (hatched) · 4 + wave of 3</text>
+        <text x="57.2" y="11.2" class="t-room" text-anchor="end">5 · Shanty stack</text>
+        <text x="57.2" y="12.6" class="t-sub" text-anchor="end">6 × 6 m, entered from the walkway</text>
+        <text x="57.2" y="13.8" class="t-sub" text-anchor="end">2–3 holders on the landings above</text>
+        <text x="57.2" y="15" class="t-sub" text-anchor="end">shells + revolver at entry · exit to rooftops</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="sheet">
+      <div class="sheet-head"><h2>Sections</h2><span class="meta">heights in metres</span></div>
+      <div class="sections">
+        <figure>
+          <figcaption>Row-house yard · cut south → north, looking east</figcaption>
+          <svg viewBox="-4.5 -10 22 12" role="img" aria-label="Row-house yard section: yard, plank walkway at 4 m with 3.6 m clearance below, roofline at 8 m">
+            <line x1="-4" y1="0" x2="16" y2="0" class="ground"/>
+            <rect x="-3" y="-8.2" width=".25" height="8.2" class="slab" opacity=".25"/>
+            <line x1="-3" y1="-3.5" x2="0" y2="-3.5" class="ground"/>
+            <line x1="0" y1="-8" x2="15.2" y2="-8" class="ground"/>
+            <rect x="0" y="-8" width=".25" height="4.5" class="slab"/>
+            <rect x="15" y="-8" width=".25" height="8" class="slab"/>
+            <rect x="11" y="-4.4" width="4" height=".4" class="slab"/>
+            <line x1="11" y1="-4.4" x2="11" y2="-5.4" class="flight"/><line x1="11" y1="-5.4" x2="12" y2="-5.4" class="flight"/>
+            <line x1="3" y1="0" x2="11" y2="-4" class="beyond"/>
+            <path d="M14.2 -4.4 V -0.1" class="dim"/><text x="13.9" y="-2" class="t-dim" text-anchor="end">3.6 clear</text>
+            <text x="15.6" y="-4" class="t-dim">+4</text><text x="15.6" y="-7.8" class="t-dim">+8</text><text x="15.6" y="0.2" class="t-dim">0</text>
+            <text x="7" y="-1.6" class="t-dim" text-anchor="middle">wooden stairs (beyond)</text>
+            <circle cx="7.5" cy="-.9" r=".55" class="foe"/>
+            <circle cx="13" cy="-4.9" r=".5" class="foe-c"/>
+            <line x1="-3.6" y1="-1" x2="-.6" y2="-1" class="path" marker-end="url(#arr)"/>
+            <text x="-3.6" y="1.4" class="t-dim">from the court (T4)</text>
+            <text x="13" y="1.4" class="t-dim" text-anchor="middle">row houses</text>
+          </svg>
+        </figure>
+        <figure>
+          <figcaption>Shanty stack · switchback</figcaption>
+          <svg viewBox="-3.5 -13.5 12 15" role="img" aria-label="Shanty stack section: entry landing at 4 m, landings at 7.5 and 11 m, exit to the rooftops">
+            <line x1="-3" y1="0" x2="7" y2="0" class="beyond"/><text x="-3" y="-.3" class="t-dim">yard level</text>
+            <rect x="0" y="-12.5" width=".2" height="12.5" class="slab"/><rect x="6" y="-12.5" width=".2" height="12.5" class="slab"/>
+            <rect x="4.5" y="-4" width="1.5" height=".25" class="slab"/>
+            <rect x=".2" y="-5.75" width="1.4" height=".25" class="slab"/>
+            <rect x="4.5" y="-7.5" width="1.5" height=".25" class="slab"/>
+            <rect x=".2" y="-9.25" width="1.4" height=".25" class="slab"/>
+            <rect x="4.5" y="-11" width="1.5" height=".25" class="slab"/>
+            <polyline points="4.5,-4 1.6,-5.75" class="flight"/><polyline points="1.6,-5.75 4.5,-7.5" class="flight"/>
+            <polyline points="4.5,-7.5 1.6,-9.25" class="flight"/><polyline points="1.6,-9.25 4.5,-11" class="flight"/>
+            <circle cx="5.2" cy="-8.1" r=".45" class="foe-c"/><text x="6.6" y="-7.9" class="t-w">S</text>
+            <circle cx=".9" cy="-9.85" r=".45" class="foe-c"/><text x="-.4" y="-9.6" class="t-w" text-anchor="end">P</text>
+            <circle cx="5.2" cy="-11.6" r=".45" class="wave" style="stroke-dasharray:.2 .2"/><text x="6.6" y="-11.4" class="t-w">P?</text>
+            <text x="6.6" y="-3.8" class="t-dim">+4 in</text>
+            <text x="2.9" y="-12.6" class="t-a" text-anchor="middle">ROOFTOPS +11</text>
+          </svg>
+        </figure>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-head"><h2>Escalation</h2><span class="meta">enemies per beat</span></div>
+      <div class="pace">
+        <svg viewBox="0 0 520 210" role="img" aria-label="Bar chart of enemies per beat: 0, 3, 3, 4, 4 plus a wave of 3, and 2 to 3">
+          <g class="c-lab">
+            <line x1="40" x2="510" y1="170" y2="170" class="axis"/>
+            <line x1="40" x2="510" y1="125" y2="125" class="axis" opacity=".5"/>
+            <line x1="40" x2="510" y1="80" y2="80" class="axis" opacity=".5"/>
+            <line x1="40" x2="510" y1="35" y2="35" class="axis" opacity=".5"/>
+            <text x="30" y="174" text-anchor="end" class="c-lab">0</text>
+            <text x="30" y="129" text-anchor="end" class="c-lab">2</text>
+            <text x="30" y="84" text-anchor="end" class="c-lab">4</text>
+            <text x="30" y="39" text-anchor="end" class="c-lab">6</text>
+          </g>
+          <!-- 22.5 px per enemy; columns 78 px apart -->
+          <text x="79" y="162" text-anchor="middle" class="c-val">0</text>
+          <rect x="135" y="102.5" width="42" height="67.5" class="bar"/><text x="156" y="95" text-anchor="middle" class="c-val">3</text>
+          <rect x="213" y="102.5" width="42" height="67.5" class="bar"/><text x="234" y="95" text-anchor="middle" class="c-val">3</text>
+          <rect x="291" y="80" width="42" height="90" class="bar"/><text x="312" y="72" text-anchor="middle" class="c-val">4</text>
+          <rect x="369" y="80" width="42" height="90" class="bar"/>
+          <rect x="369.75" y="13.25" width="40.5" height="66" class="bar-w"/><text x="390" y="8" text-anchor="middle" class="c-val">4 + 3</text>
+          <rect x="447" y="125" width="42" height="45" class="bar"/>
+          <rect x="447.75" y="103.25" width="40.5" height="21" class="bar-opt"/><text x="468" y="96" text-anchor="middle" class="c-val">2–3</text>
+          <text x="79" y="190" text-anchor="middle" class="c-name">0 Alley</text>
+          <text x="156" y="190" text-anchor="middle" class="c-name">1 Yard</text>
+          <text x="234" y="190" text-anchor="middle" class="c-name">2 Covered</text>
+          <text x="312" y="190" text-anchor="middle" class="c-name">3 Court</text>
+          <text x="390" y="190" text-anchor="middle" class="c-name">4 Rows</text>
+          <text x="468" y="190" text-anchor="middle" class="c-name">5 Stack</text>
+        </svg>
+        <p class="note">Dashed: the director wave in the row-house yard and the optional third holder in the shanty stack. The stairwell drops in count on purpose; it gets harder through tight angles and enemies above you rather than more bodies.</p>
+      </div>
+    </div>
+  </div>
+
+  <section style="display:grid;gap:12px">
+    <h2>Room schedule</h2>
+    <div class="rooms">
+      <article class="room-card">
+        <div class="top"><span class="num">0</span><div><h3>Eskinita</h3><div class="size">4 × 20 m</div></div></div>
+        <dl><dt>Enemies</dt><dd>None</dd><dt>Start</dt><dd>Pistol only</dd><dt>Pickups</dt><dd>Pistol ammo; a second pistol unlocks the duals</dd></dl>
+        <p class="tests">Warm-up between shanty walls. Room to try the dive and roll before anyone shoots. Opens 3 m wide into the wash yard.</p>
+      </article>
+      <article class="room-card">
+        <div class="top"><span class="num">1</span><div><h3>Wash yard</h3><div class="size">12 × 10 m</div></div></div>
+        <dl><dt>Enemies</dt><dd>3 pistols: two standing by the laundry lines, one crouched behind a plastic table</dd><dt>Start</dt><dd>T1, the alley mouth</dd><dt>Pickups</dt><dd>Their drops</dd></dl>
+        <p class="tests"><b>Tests:</b> reaction beat, diving in through the door, slow motion on a small group. The template room for the rest.</p>
+      </article>
+      <article class="room-card">
+        <div class="top"><span class="num">2</span><div><h3>Covered alley, near or far</h3><div class="size">5 × 30 m under tarps + 5 × 5 m open house</div></div></div>
+        <dl><dt>Enemies</dt><dd>Rifle + crouched pistol at the far end; pistol in an open house doorway halfway</dd><dt>Start</dt><dd>T2 or being seen</dd><dt>Pickups</dt><dd>Rifle at the entrance; 2 grenades in the open house</dd></dl>
+        <p class="tests"><b>Tests:</b> question 2. Pick them off with the rifle, or rush between the four water drums.</p>
+      </article>
+      <article class="room-card">
+        <div class="top"><span class="num">3</span><div><h3>Half-court</h3><div class="size">15 × 15 m</div></div></div>
+        <dl><dt>Enemies</dt><dd>4 bunched round a pile of hollow blocks and a parked tricycle, one MAC-11, one crouched</dd><dt>Start</dt><dd>T3, the court entrance</dd><dt>Pickups</dt><dd>None new; the open-house grenades are the efficient answer</dd></dl>
+        <p class="tests"><b>Tests:</b> question 5, kill slow motion and flung bodies, the MAC-11 changing your pace. Optional scripted thrower in the NW corner.</p>
+      </article>
+      <article class="room-card">
+        <div class="top"><span class="num">4</span><div><h3>Row-house yard</h3><div class="size">20 × 15 m · walkway +4 m</div></div></div>
+        <dl><dt>Enemies</dt><dd>3 on the floor, 1 crouched on the plank walkway; then a director wave of 3 (dual MAC-11, shotgun, pistol)</dd><dt>Start</dt><dd>T4; director once group 1 is down</dd><dt>Pickups</dt><dd>Grenade launcher on the walkway; rifle ammo by the entrance</dd></dl>
+        <p class="tests"><b>Tests:</b> keep moving. The wave comes up the back alley behind you while you climb the wooden stairs.</p>
+      </article>
+      <article class="room-card">
+        <div class="top"><span class="num">5</span><div><h3>Shanty stack, close quarters</h3><div class="size">6 × 6 m · +4 to +11 m</div></div></div>
+        <dl><dt>Enemies</dt><dd>2–3 crouched holders on the landings above; shotgun, pistols</dd><dt>Start</dt><dd>T5, the walkway door</dd><dt>Pickups</dt><dd>Shotgun shells and the revolver on the entry landing</dd></dl>
+        <p class="tests"><b>Tests:</b> short sightlines, shotgun and revolver territory. Level-end trigger on the rooftops (new code).</p>
+      </article>
+    </div>
+  </section>
+
+  <div class="lists">
+    <section>
+      <h2>Build checks</h2>
+      <ul>
+        <li>Doorways ≥ 2 m (drawn 3 m); ceilings ≥ 3.5 m everywhere for the dive camera, including under the walkway (3.6 m), overhanging upper floors and tarps.</li>
+        <li>One NavMesh bounds volume over the whole run, walkway and shanty stack included.</li>
+        <li>The row-house yard's back alley stays out of the player's view until the wave arrives.</li>
+        <li>Only new code: the exit trigger. Checkpoints only if a full restart proves too punishing.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Layout calls I made</h2>
+      <ul>
+        <li>Alleys are 4–5 m wide, wider than a real eskinita, so the dive and camera fit. Shanty walls, overhangs and wires can make them read tighter.</li>
+        <li>The court's grenades sit in the open house off the covered alley, a small detour.</li>
+        <li>The shanty stack is entered from the walkway, so the climb is forced and the launcher is on the way.</li>
+        <li>Cover (drums, tables, blocks) is low and sparse, placed to dive between, never to peek from.</li>
+      </ul>
+    </section>
+    <section class="owned">
+      <h2>Design-owned, still open</h2>
+      <ul>
+        <li>Which district and story arc the alleys belong to. The setting itself is settled: slum alleyways.</li>
+        <li>Who the enemies are. Composition is undecided, so these are the existing gunmen as placeholders.</li>
+        <li>Any story beat, dialogue or overheard conversation in the run.</li>
+      </ul>
+    </section>
+  </div>
+</div>

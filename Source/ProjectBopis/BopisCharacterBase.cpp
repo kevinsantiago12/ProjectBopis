@@ -8,11 +8,13 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequenceBase.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "PhysicsEngine/PhysicsAsset.h"
 #include "AlphaBlend.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gameplay/HealthComponent.h"
+#include "Gameplay/FootstepEffectsData.h"
 #include "Engine/DamageEvents.h"
 #include "ProjectBopis.h"
 
@@ -762,8 +764,14 @@ void ABopisCharacterBase::StartRagdoll(const FHitResult& Hit, const FVector& Sho
 	PhysicalAnimation->ApplyPhysicalAnimationSettingsBelow(RiddledRootBone, FPhysicalAnimationData(), true);
 	DeathMontage = nullptr;
 
-	// The physics asset's bodies take over from the animation.
+	// The physics asset's bodies take over from the animation. A corpse asset of its own (the
+	// CC bodies: CC's constraints) goes in first, so the bodies are built from it; after the
+	// motors above, which belonged to the old asset's bodies.
 	USkeletalMeshComponent* Body = GetMesh();
+	if (RagdollPhysicsAsset && Body->GetPhysicsAsset() != RagdollPhysicsAsset)
+	{
+		Body->SetPhysicsAsset(RagdollPhysicsAsset, true);
+	}
 	UseRagdollCollision();
 	Body->SetSimulatePhysics(true);
 
@@ -880,6 +888,30 @@ void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon, float P
 			AnimInstance->Montage_Play(*FoundOffhand, PlayRate);
 		}
 	}
+}
+
+void ABopisCharacterBase::PlayFootstep(bool bLeft)
+{
+	USkeletalMeshComponent* Body = GetMesh();
+	if (!FootstepEffects || !Body || bIsRagdoll)
+	{
+		return;
+	}
+
+	// Whatever is under the foot, with its physical material. From a little above the sole —
+	// on a step up, the foot can already be inside the ground.
+	const FVector Foot = Body->GetSocketLocation(bLeft ? LeftFootBone : RightFootBone);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Footstep), false, this);
+	Params.bReturnPhysicalMaterial = true;
+	FHitResult Hit;
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Foot + FVector::UpVector * 10.0f,
+		Foot - FVector::UpVector * FootstepTraceDistance, ECC_Visibility, Params))
+	{
+		return;
+	}
+
+	const float Volume = FootstepEffects->GaitVolume(GetVelocity().Size2D(), bIsCrouched);
+	LastFootstepSound = FootstepEffects->PlayFootstep(this, Hit, Volume, LastFootstepSound);
 }
 
 void ABopisCharacterBase::PlayEquipAnimation(const AWeaponBase* Weapon)

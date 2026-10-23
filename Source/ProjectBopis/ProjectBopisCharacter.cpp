@@ -619,14 +619,18 @@ void AProjectBopisCharacter::DoFire()
 
 void AProjectBopisCharacter::DoShootdodge()
 {
-	if (Roll && Roll->IsRolling())
+	if ((Roll && Roll->IsRolling()) || !Shootdodge)
 	{
 		return;
 	}
-	if (Shootdodge)
+
+	// Mid-dive the key turns the slow motion off instead; the dive carries on at full speed.
+	if (Shootdodge->IsDodging())
 	{
-		Shootdodge->TryStart();
+		Shootdodge->CancelSlowMotion();
+		return;
 	}
+	Shootdodge->TryStart();
 }
 
 void AProjectBopisCharacter::DoRoll()
@@ -817,6 +821,12 @@ void AProjectBopisCharacter::SetAnimationDrivenRotation(bool bAnimationDriven)
 
 void AProjectBopisCharacter::DoToggleFocus()
 {
+	// Mid-dive the key turns the slow motion off (the dive's own, or a Focus it was holding);
+	// with none running, it toggles Focus as usual.
+	if (Shootdodge && Shootdodge->CancelSlowMotion())
+	{
+		return;
+	}
 	if (Focus)
 	{
 		Focus->Toggle();
