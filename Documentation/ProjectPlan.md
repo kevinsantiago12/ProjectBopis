@@ -500,6 +500,12 @@ archetype-composition idea, not extended from the old classes.
   - [ ] Female NPCs: `ik_` bones on the female body (user), female preset, head mesh per gender.
   - [ ] Body proportion sliders under Option B.
   - [ ] Deck perf test — deferred to much later (user, 2026-10-21).
+- [ ] **23. Weapon sound normalization** (user, 2026-10-23: anim-notify shots cut off, code shots loud at any distance, reloads silent). See the spec's *Weapon sounds*.
+  - [x] Shared `ATT_Gunshot` / `ATT_WeaponFoley` attenuation; gunshot cues 4 per shooter, stop oldest; the three pistols on one cue.
+  - [x] Every shot from code (`PlayWeaponSound`); `EWeaponSound` slots per weapon; `AN_WeaponSound` notify. Slots filled on all 11 weapons; notifies placed on the 7 montages + the shotgun pump (user); gunshot notifies deleted from the 3 fire animations.
+  - [x] Listen test: shots + reload/draw sounds play (after an editor restart).
+  - [x] Cut-off on consecutive shots: gunshot cues 4 → 8 voices + 0.25 s steal fade; foley inner radius 200 → 500; diagnostic logs removed (2026-10-23).
+  - [x] Polish — handed to the user (notify timing, 3× reload bunching, loudness); weapon models to be replaced later, so no asset polish now. Still open later: per-gun dry-fire clicks, cue variants, a Weapons sound class.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -532,6 +538,7 @@ planning further than that now would be guessing.
 ## Gotchas learned the hard way
 - **An anim pose feeding two parents gets updated twice a frame (2026-10-23).** A player wired straight into two nodes advances twice per frame whenever both are relevant — the bladed legs ran at double speed. Route it through a Save Cached Pose and read it with one Use Cached Pose per parent.
 - **Bridge limits in AnimBPs/materials (2026-10-23):** it can't create nodes inside a state graph ("Cannot cast AnimStateNode to Blueprint"); its node list doesn't offer a Use Cached Pose for a cache made in the same session; and `MaterialTools` can't connect or read `MP_PixelDepthOffset` (enum conversion error) — go through Material Attributes, use a view-ray WPO, or have the user make the wire. `PreSkinnedPosition` is vertex-only: pass it through a VertexInterpolator for pixel outputs.
+- **Sound changes may need an editor restart before PIE reflects them (2026-10-23).** Weapon BP sound slots filled through the bridge + new `Weapon Sound` notifies placed in the editor, all saved: the next PIE played shots but no reload/draw sounds; after a restart everything played. Cause not found. Restart before judging a PIE sound test.
 - **GitKraken + an untracked `.gitattributes` with LFS rules (2026-10-22)** froze it and staged every asset as an LFS pointer. Fix: delete `.gitattributes`, `git reset` (unstage). Adopt LFS only as one deliberate renormalize commit.
 - **Scanning `.uasset`s for `/Game/` references misses FName-numbered names (2026-10-21).** Unreal stores `Turn_Left_90` as name `Turn_Left` + number 90 (any trailing `_N` without a leading zero), so a text scan sees `Turn_Left`. The CC2 migration missed four turn animations this way and `CC_AnimBP` failed to compile. After a disk-copy migration, also copy same-folder siblings named `*_<N>` from the source.
 - **Blueprint compile errors + PIE = a modal dialog that freezes the bridge; a forced kill = "Restore Packages" on the next launch (2026-10-21).** Both block the game thread (bridge times out). Slate dialogs have no UI Automation tree; Escape doesn't close Restore Packages. What worked: screenshot the window (PowerShell `CopyFromScreen`) and click *Skip Restore* by coordinates (`SetCursorPos` + `mouse_event`). Fix compile errors before PIE.

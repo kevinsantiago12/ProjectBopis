@@ -12,6 +12,59 @@
 
 ---
 
+## 2026-10-23 (2) — Weapon sound normalization
+**Summary:**
+- **One path for every weapon sound.** Before: six guns' shots came from
+  their fire animation's notify (16-voice global limit → shots dropped under
+  fire), five from code (`FireSound`); the Real_Recorded cues had no
+  attenuation (full volume anywhere); the pistols' notify and `FireSound`
+  were different files; reloads, draws and dry fire were silent. Now:
+  `AWeaponBase::PlayWeaponSound(EWeaponSound)` plays every sound on the gun
+  (per-gun voice limit), each weapon BP has a `Weapon|Sounds` slot per event,
+  and `AN_WeaponSound` on a montage or weapon animation asks the gun in hand
+  for that event — one `AM_Pistol_Reload` serves the hi-power's mags and the
+  revolver's speedloader. Shared `ATT_Gunshot` (10 m full, 80 m silent,
+  muffled far) / `ATT_WeaponFoley` (2 m / 15 m) under `/Game/Audio/Weapons/`.
+  Spec: *Weapon sounds*.
+- **Verified from the saved assets** (the bridge can't read notify arrays;
+  parsed the export tables): each reload montage has Mag Out / Mag In /
+  Chamber, the shotgun reload a Round In, the equips an Equip, the pump
+  animation a Pump; the three gunshot notifies are gone. **One miss:**
+  `AM_Pistol_Reload_Offhand`'s Chamber notify has Offhand unticked.
+
+- **PIE test (user):** shots and the new reload/draw sounds play — but
+  only after an editor restart; the first PIE after the bridge filled the
+  slots and the user placed the notifies was silent for reloads/draws, with
+  everything already saved on disk. Cause unknown; gotcha logged. Two
+  temporary `UE_LOG(LogTemp)` lines (`[WeaponSound] …`) are still in
+  `AnimNotify_WeaponSound.cpp` and `WeaponBase.cpp::PlayWeaponSound`.
+- **From the test:** (a) consecutive shots "cut" the audio when looking
+  around — taken to be the 4-voice stop-oldest chopping 2.7 s tails: gunshot
+  cues now 8 voices + 0.25 s steal fade (not re-tested by the user); (b)
+  MWS handling sounds changed volume with camera distance — `ATT_WeaponFoley`
+  inner radius 200 → 500. The diagnostic log lines are removed again. The
+  rest (notify timing, 3× reload bunching, loudness) is the user's tuning;
+  the weapon models will be replaced, so no asset polish now.
+
+### ▶ RESUME HERE
+1. **Fix (user, 10 s):** `AM_Pistol_Reload_Offhand` → the Chamber notify →
+   tick **Offhand**, save.
+2. **Re-check once:** consecutive shots while looking around (should no
+   longer chop); if it still cuts *all* audio, it's the mixer's 32-source
+   ceiling → sound priorities. Your tuning: notify timing, 3× reload.
+3. **Commit (user):** `WeaponBase.h/.cpp`, `AnimNotify_WeaponSound.h/.cpp`;
+   `/Game/Audio/Weapons/` (2 assets); the 11 weapon BPs; 7 montages; 3 MWS
+   fire animations; ~37 sound cues (attenuation/concurrency); plus the
+   still-uncommitted 10-22/10-23 items (ABP_Player, skin/apparel materials,
+   36 garment MIs, MF_ApparelWaistBand, backups, docs).
+4. Sound polish (plan item 23): pack loudness match, per-gun clicks,
+   round-robin variants, Weapons sound class.
+5. Carry-overs: clothing layers on the female MIs + tucked list review;
+   optional `DualLoweredPlayRate` → `LoweredJogPlayRate` rename (user
+   types); Git LFS as one deliberate commit; CC2 remainder (10-21 (3) list).
+
+---
+
 ## 2026-10-23 — Lowered jog pace, blade double-speed legs
 **Summary:**
 - **Lowered jogs all at the dual pace.** The one-handed and long-gun lowered

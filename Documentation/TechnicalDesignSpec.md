@@ -525,6 +525,69 @@ John Woo-scale hits.
   `P_Impact_*_Large_01` effects would need it widened to `UFXSystemAsset`.
 - Bigger impacts during Focus.
 
+### Weapon sounds (2026-10-23)
+
+One path for every sound a gun makes. **The animation marks when, the weapon
+says which sound, the weapon plays it.**
+
+- **`EWeaponSound`:** Fire, DryFire, MagOut, MagIn, Chamber (slide/bolt),
+  RoundIn (one shell / speedloader), Pump, Equip. Each weapon BP has a slot
+  per event under **Weapon|Sounds** (`FireSound`, `DryFireSound`,
+  `MagOutSound` …); an empty slot is silent.
+- **`AWeaponBase::PlayWeaponSound(Sound, bOffhand)`** spawns the slot's cue
+  attached to the gun's mesh (the off-hand mesh for duals): shots and clicks
+  from the `Muzzle` socket, handling from the mesh root. Attached to the gun
+  = owned by the gun, so a cue's *limit to owner* concurrency counts per gun.
+  `Fire()` calls it for every weapon — `bUseAnimationDrivenFeedback` now only
+  decides muzzle flash vs the gun's fire animation; the fire animations'
+  gunshot notifies were deleted (`Fire_Pistol_W`, `Fire_SniperRifle_W`,
+  `Fire_Shotgun_NoDelay`).
+- **`UAnimNotify_WeaponSound`** ("Weapon Sound" in the notify menu): `Sound`
+  + `bOffhand`. On a character montage it plays on the character's equipped
+  weapon; on a gun's own animation, on that gun (and the hand whose mesh is
+  playing it). So one montage serves every gun of that anim type: the
+  revolver maps Mag Out / Mag In / Chamber to open / speedloader / close, the
+  launcher to open / insert / close. Silent in the animation editor preview
+  (no gun in hand).
+  - Placed: `AM_Pistol_Reload` (+`_Offhand`, Offhand ticked), `AM_Rifle_Reload`:
+    Mag Out, Mag In, Chamber. `AM_Shotgun_Reload`: Round In in the Loop
+    section. `AM_Pistol_Equip` (+`_Offhand`), `AM_Rifle_Equip`: Equip.
+    `Fire_Shotgun_NoDelay` (weapon anim): Pump, replacing the pack's
+    `Shotgun_Reload_Cue` notify.
+  - Quick reloads (dive 3×, roll) reuse the montages, so the notifies come
+    along bunched; whether to skip them at speed is undecided (user wants
+    to hear it first).
+- **Shared assets, `/Game/Audio/Weapons/`:** `ATT_Gunshot` — logarithmic,
+  full to 10 m, silent at 80 m, LPF to 3 kHz by 60 m, non-spatialized
+  inside 1–3 m (own gun doesn't flip ears), reverb send on; `ATT_WeaponFoley`
+  — full to 2 m, silent at 15 m. Both copied from the pack's
+  `WeaponShot_att` (the bridge can't create sound assets from scratch).
+  Gunshot cues (6 MWS + 2 Real_Recorded + the `PistolA_Fire02` wave) and the
+  explosion use `ATT_Gunshot`; gunshots override concurrency to **8 per
+  owner, stop oldest, 0.25 s steal fade** (was the pack's 16 global /
+  prevent new — the cause of dropped shots; a first pass at 4 voices with a
+  0.05 s fade chopped the 2.7 s tails audibly on fast guns). Handling cues
+  (28), shell drops, bounce, pickups use `ATT_WeaponFoley` — inner radius
+  **500** (the camera sits 3–4 m behind the gun, so the player's own
+  handling stays at full volume; at 200 it changed with camera distance),
+  silent at 18 m; the pump rack 2 per owner.
+- **Picks:** pistols share `PistolA_Fire_Cue` + MWS eject/insert/raise + RRG
+  `Pistol_01` cock; revolver and MAC-11 all RRG; rifles MWS reload/insert/raise
+  + RRG cock; launcher RRG flare-gun open/insert/close; shotguns MWS in/rack/
+  raise. Dry fire everywhere = RRG `Revolver_Hammer_Hit_Cue` (no pack has a
+  per-gun click). Variants (`_2`, `_3`) unused; pack loudness unmatched; no
+  Weapons sound class yet (nothing in the project to duplicate one from).
+- **Gotchas:** sound waves have no `bOverrideAttenuation` (cues do);
+  the bridge can't read `Notifies` on montages — verify by parsing the
+  export table (scratchpad `notifycount.js`) or in the editor; the first
+  PIE after filling the slots and placing the notifies played no handling
+  sounds although everything was saved — an editor restart fixed it, cause
+  unknown. "Replace with" on an existing Play Sound notify logs a harmless
+  `Type mismatch in Sound` (its sound asset vs our event enum).
+- **User's tuning (not Claude's):** notify timing on the montages, the 3×
+  quick-reload bunching, pack loudness. The weapon models are to be
+  replaced later, so no further asset polish now.
+
 ---
 
 ## Ammo

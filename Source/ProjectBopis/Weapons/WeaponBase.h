@@ -113,6 +113,23 @@ enum class EFireResult : uint8
 	Blocked
 };
 
+/** Moments in a weapon's handling that make a sound. Animations mark when (the
+    AN_WeaponSound notify), each weapon says which sound, and the weapon plays it. */
+UENUM(BlueprintType)
+enum class EWeaponSound : uint8
+{
+	Fire,
+	DryFire,
+	MagOut,
+	MagIn,
+	/** Slide release or bolt. */
+	Chamber,
+	/** One shell, round or speedloader going in. */
+	RoundIn,
+	Pump,
+	Equip
+};
+
 UCLASS()
 class PROJECTBOPIS_API AWeaponBase : public AActor
 {
@@ -170,6 +187,12 @@ public:
 	bool HasZoom() const { return bHasZoom; }
 	float GetZoomedFOV() const { return ZoomedFOV; }
 	bool UsesAnimationDrivenFeedback() const { return bUseAnimationDrivenFeedback; }
+
+	/** Plays one of this weapon's sounds on the gun: the main-hand mesh, or the off-hand
+	    one for duals. Owned by the weapon, so a cue's per-shooter voice limit counts per gun.
+	    Silent if the weapon has no sound for it. */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|Sounds")
+	void PlayWeaponSound(EWeaponSound Sound, bool bOffhand = false);
 	FVector GetGripLocationOffset() const { return GripLocationOffset; }
 	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
 
@@ -280,6 +303,8 @@ protected:
 	/** The mesh the next (or, after firing, the current) shot belongs to. */
 	USkeletalMeshComponent* GetFiringMesh() const;
 
+	USoundBase* GetSound(EWeaponSound Sound) const;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
 
@@ -357,8 +382,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FRotator GripRotationOffset = FRotator::ZeroRotator;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	/** Each shot, from the muzzle. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
 	TObjectPtr<USoundBase> FireSound;
+
+	/** Handling sounds, played when animations call for them (AN_WeaponSound). Empty: silent. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> MagOutSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> MagInSound;
+
+	/** Slide release or bolt. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> ChamberSound;
+
+	/** One shell, round or speedloader going in. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> RoundInSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> PumpSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
+	TObjectPtr<USoundBase> EquipSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UParticleSystem> MuzzleFlash;
@@ -481,7 +528,7 @@ protected:
 	bool bInfiniteReserve = false;
 
 	/** Played when the trigger is pulled on an empty magazine. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
 	TObjectPtr<USoundBase> DryFireSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")

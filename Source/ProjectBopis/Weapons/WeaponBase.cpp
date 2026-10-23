@@ -206,10 +206,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	if (CurrentAmmoInMagazine <= 0)
 	{
-		if (DryFireSound)
-		{
-			UGameplayStatics::SpawnSoundAttached(DryFireSound, WeaponMesh, MuzzleSocketName);
-		}
+		PlayWeaponSound(EWeaponSound::DryFire, IsOffhandNext());
 
 		// Reset the cadence clock so the click obeys TimeBetweenShots. Without this
 		// CanFire() stays true every frame and a held trigger machine-guns the click.
@@ -227,13 +224,13 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	USkeletalMeshComponent* FiringMesh = GetFiringMesh();
 
+	// Every shot's sound starts here, animated guns included, so they all share the cues'
+	// attenuation and per-shooter voice limit. Fire animations keep only the visuals (and
+	// the shotgun's pump rack).
+	PlayWeaponSound(EWeaponSound::Fire, FiringMesh == OffhandMesh);
+
 	if (!bUseAnimationDrivenFeedback)
 	{
-		if (FireSound)
-		{
-			UGameplayStatics::SpawnSoundAttached(FireSound, FiringMesh, MuzzleSocketName);
-		}
-
 		if (MuzzleFlash)
 		{
 			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName);
@@ -478,6 +475,36 @@ void AWeaponBase::EjectCasing(bool bOffhand)
 USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
 {
 	return IsOffhandNext() ? OffhandMesh.Get() : WeaponMesh.Get();
+}
+
+void AWeaponBase::PlayWeaponSound(EWeaponSound Sound, bool bOffhand)
+{
+	USoundBase* Cue = GetSound(Sound);
+	USkeletalMeshComponent* Mesh = bOffhand && OffhandMesh ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (!Cue || !Mesh)
+	{
+		return;
+	}
+
+	// Shots and clicks come from the muzzle; handling sounds from the gun itself.
+	const bool bAtMuzzle = Sound == EWeaponSound::Fire || Sound == EWeaponSound::DryFire;
+	UGameplayStatics::SpawnSoundAttached(Cue, Mesh, bAtMuzzle ? MuzzleSocketName : NAME_None);
+}
+
+USoundBase* AWeaponBase::GetSound(EWeaponSound Sound) const
+{
+	switch (Sound)
+	{
+	case EWeaponSound::Fire:    return FireSound;
+	case EWeaponSound::DryFire: return DryFireSound;
+	case EWeaponSound::MagOut:  return MagOutSound;
+	case EWeaponSound::MagIn:   return MagInSound;
+	case EWeaponSound::Chamber: return ChamberSound;
+	case EWeaponSound::RoundIn: return RoundInSound;
+	case EWeaponSound::Pump:    return PumpSound;
+	case EWeaponSound::Equip:   return EquipSound;
+	}
+	return nullptr;
 }
 
 FTransform AWeaponBase::GetMuzzleTransform(bool bOffhand) const
