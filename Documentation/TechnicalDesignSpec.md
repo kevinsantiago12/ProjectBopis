@@ -1195,6 +1195,34 @@ hit bones, physics and weapon attachment all run on it.
   Hands are deliberately outside it (a held gun would draw over the fingers).
   Backup:
   `/Game/Characters/CC/Backup/M_Skin_CCMH_Original`.
+- **Clothing layer order at the waist (2026-10-22):** every garment carries a
+  **`Layer Depth`** index on its MI (CC's apparel master
+  `M_Base_Material_Apparel`, group Layering, default 0): **0** outer (jackets,
+  vests, waistcoat, apron, overalls, tie, open overshirt), **1** untucked top
+  (and the inner tees of jackets), **2** pants/shorts/underwear, **3** tucked
+  top (`MI_Shirt_01` — also the shirt under the waistcoat and suit jacket —
+  and `MI_Police_Shirt_01`, both police shirts). Inside the waist band the
+  garment is pushed `Layer Depth × Layer Spacing` (1.5 cm) away from the
+  camera, so outer layers win close overlaps and tucked vs untucked is one
+  number per item.
+  - **Waist band** = `/Game/Characters/CC/Materials/MF_ApparelWaistBand`:
+    rest-pose height 78–110 cm (fading to 0 at 70 / 118) × within 24 cm of
+    the centre line (fading to 0 at 30), from PreSkinnedPosition, so A-pose
+    cuffs and hands stay out and sleeve/ankle/neck hems over bare skin are
+    untouched (a push there would let the skin draw over the hem).
+  - **Push = WPO along the view ray** (`normalize(WorldPosition −
+    CameraPositionWS)` × amount): moves each vertex straight away from the
+    camera, so it lands on the same pixel with greater depth. Pixel Depth
+    Offset was the plan, but the bridge can't connect `MP_PixelDepthOffset`
+    (enum conversion bug); it could be swapped in by hand.
+  - **Skin:** `M_Skin_CCMH` adds `Waist Layer Depth` × the band (through a
+    VertexInterpolator — PreSkinnedPosition is vertex-only) to its PDO; body MI
+    3.5 (+ its 2 = 5.5 > the tucked top's 4.5), face MI 0.
+  - **Tucked classification:** rest-pose hem height vs the jeans' top (108.7
+    cm): tucked tops end above it (Shirt_01 101, Police A 99, Police B 103),
+    untucked ones hang to 79–93. New tops: check the same way.
+  - Male tables only so far; female MIs need the same pass. Backup:
+    `/Game/Characters/CC/Backup/M_Base_Material_Apparel_Original`.
   **Rejected — hiding skin under clothing** (masked opacity from the apparel
   masks on the body / `Neck_Mask` × `Neck Shrink` on the head; tried and
   rolled back 2026-10-22): `neck Shrink` is per item on/off, so open-collar
@@ -2321,7 +2349,7 @@ preview) everything stays at defaults. The character calls the public
 | `OffhandArmRecoilAlpha` | `OffhandRecoil` on duals, else 0 |
 | `FreeArmRecoilAlpha` | `PistolOneHanded` only: `MainRecoil × FreeArmAlpha` |
 | `FreeArmSwingRotation` | procedural free-arm swing from the feet — see *One-handed pistol* |
-| `DualLoweredPlayRate` | `LocomotionPlayRate × DualLoweredRateScale` — the lowered-dual walk/jog rate |
+| `DualLoweredPlayRate` | `LocomotionPlayRate × DualLoweredRateScale` — despite the name, **every lowered walk/jog** since 2026-10-23: the dual layer plus the Move state's six lowered players (`BS_MM_Unarmed_Jog_Walk` ×3, `BS_Rifle_Lowered_Jog_Walk` ×3; wired by the user — the bridge can't add nodes inside states). The dual's own Move player had been unwired at 1.0, so a dual reload (which drops the dual layer) sped the legs up. Raised strafes and idles stay on `LocomotionPlayRate` |
 | `LeftArmAlpha` | duals only: `UpperBodyAlpha` (2026-10-06: crouched duals no longer force the arm up — lowered and crouched, the left hand comes from the crouch clip) |
 | `DualLoweredAlpha` | duals only: `(1 − UpperBodyAlpha) × (1 − DualCrouchBlend)` |
 | `LeftHandIKAlpha` | target = 1 **only while aiming (ADS) a long gun** (not Pistol, not dual) and not reload-animating, else 0; eases up (10), snaps down. Every other pose — lowered, hip-fire raised, moving, pistols — keeps the clip's hand-authored left hand (2026-10-06) |
@@ -2560,6 +2588,14 @@ strafing.
     so the torso fades in over `spine_01`/`02`/`03`; `TwoWayBlend_0` picks
     between `_0` (A) and `_13` (B) by `StrafeBladeAlpha` and feeds
     `RotationOffsetBlendSpace_0`. Other stances are untouched.
+  - **`LayeredBoneBlend_10` goes through a Save Cached Pose `BladeLegs`**
+    (2026-10-23), read by one Use Cached Pose each for `_0` and `_13`. Wired
+    straight into both, its mirrored strafe player was updated twice a frame
+    while the TwoWayBlend had both sides relevant: double-speed legs for the
+    second or two `StrafeBladeAlpha` took to settle after a shot from a jog.
+    **Rule: a pose feeding two parents goes through a cached pose.** (The
+    bridge can't create a Use Cached Pose for a cache made in the same
+    session — its node list doesn't refresh; the user placed them.)
 - **Upper body (`UpdateBlade`):** weighted `StrafeBladeAlpha × (1 −
   ProneReloadAlpha)`, so it's off for reloads and draws.
   - **Chest:** `BladeAngle` (35°) about the vertical, half each on

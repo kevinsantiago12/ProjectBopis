@@ -12,6 +12,39 @@
 
 ---
 
+## 2026-10-23 — Lowered jog pace, blade double-speed legs
+**Summary:**
+- **Lowered jogs all at the dual pace.** The one-handed and long-gun lowered
+  jogs ran at `LocomotionPlayRate` (0.75) while the duals got × 0.8 (0.6), and
+  the dual's own Move-state jog was unwired at 1.0 — shown during a dual
+  reload, since the reload drops the dual layer. The user wired all six Move
+  lowered players to `GetDualLoweredPlayRate` (the bridge can't add nodes
+  inside a state graph). One knob: `DualLoweredRateScale` (0.8).
+- **Double-speed legs after shooting from a jog (one-handed):** my 10-22
+  `LayeredBoneBlend_13` shared `LayeredBoneBlend_10` with `_0`, so the mirrored
+  strafe player ticked twice a frame while the TwoWayBlend blended. Fixed with
+  a Save Cached Pose `BladeLegs` (bridge) + two Use Cached Pose nodes (user —
+  the bridge's node list doesn't show a cache made in the same session).
+  User: "works now".
+
+### ▶ RESUME HERE
+1. **Commit (user):** `ABP_Player`; the skin master + both skin MIs; CC's
+   apparel master + 36 garment MIs; `MF_ApparelWaistBand`; both backups in
+   `Content/Characters/CC/Backup/`; docs.
+2. **Clothing layers, follow-ups:** review the tucked list (only Shirt_01 and
+   the police shirts); female MIs not done. Tuning: `Layer Spacing` (apparel
+   master, 1.5), body MI `Waist Layer Depth` (3.5 — keep above 3 × spacing −
+   2). Optional: swap the WPO push for Pixel Depth Offset by hand.
+3. **Optional C++ tidy (user types):** rename `DualLoweredPlayRate` /
+   `DualLoweredRateScale` → `LoweredJogPlayRate` / `LoweredJogRateScale` with
+   a property redirect, now that it drives every lowered jog.
+4. Git LFS: when wanted, one deliberate `git add --renormalize .` commit from
+   a terminal; decline GitKraken's LFS prompts until then.
+5. Remaining CC2 items from the 10-21 (3) list below (female body, placeholder
+   outfits, PA_CCMH_Player preview mesh, Deck test deferred).
+
+---
+
 ## 2026-10-22 — CC2 skin clipping
 **Summary:**
 - **Skin through clothes — fixed by depth, not hiding.** `M_Skin_CCMH`
@@ -32,24 +65,14 @@
   pelvis → `spine_01` joint. `ABP_Player` now spreads it over
   `spine_01`–`03` while bladed (`LayeredBoneBlend_13` + `TwoWayBlend_0`, spec
   *Bladed stance*). User: "looks better, pants still poke a bit".
-
-### ▶ RESUME HERE
-1. **Commit (user):** `ABP_Player`, `M_Skin_CCMH` + both skin MIs + backup
-   `Content/Characters/CC/Backup/`, docs.
-2. **Pants still poke a bit through the shirt hem** (bladed strafe; user:
-   "we fix it tomorrow"). Options, cheapest first:
-   - `LayeredBoneBlend_13` blend depth 3 → 4 (spreads the twist further);
-   - depth trick on clothing: a PixelDepthOffset parameter on CC's apparel
-     master `M_Base_Material_Apparel` (default 0), set > 0 on the lower-body
-     slot from `BuildCCCharacter` so shirts win close calls — no holes;
-   - "Waist Shrink" WPO on the same master for lower-body items (risk:
-     tucked shirts poking out).
-   The apparel master is shared by all clothing — the auto-mode check blocked
-   an edit to it once, so get the user's explicit OK first.
-3. Git LFS: when wanted, one deliberate `git add --renormalize .` commit from
-   a terminal; decline GitKraken's LFS prompts until then.
-4. Remaining CC2 items from the 10-21 (3) list below (female body, placeholder
-   outfits, PA_CCMH_Player preview mesh, Deck test deferred).
+- **Clothing layer order at the waist (later 10-22):** every male garment MI
+  has a `Layer Depth` (0 outer / 1 untucked / 2 pants / 3 tucked; tucked =
+  `MI_Shirt_01`, `MI_Police_Shirt_01`, judged by rest-pose hem height), pushed
+  back in a waist band (`MF_ApparelWaistBand`) by WPO along the view ray —
+  the bridge can't connect `MP_PixelDepthOffset`. Skin at the waist goes
+  deeper (`Waist Layer Depth` 3.5). User: "it will do for now — there are
+  cases that clipping is unavoidable". Spec: *Clothing layer order at the
+  waist*.
 
 ---
 
