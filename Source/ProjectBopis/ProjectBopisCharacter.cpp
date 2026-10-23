@@ -804,6 +804,11 @@ void AProjectBopisCharacter::RestartLevel()
 	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
 }
 
+bool AProjectBopisCharacter::LandsOnTheBody() const
+{
+	return Shootdodge && Shootdodge->IsAirborne();
+}
+
 void AProjectBopisCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);

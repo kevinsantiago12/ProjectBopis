@@ -194,6 +194,14 @@ public:
 	FName GetLeftFootBone() const { return LeftFootBone; }
 	FName GetRightFootBone() const { return RightFootBone; }
 
+	/** Heavier ground contacts: the dive's landing and the roll's tumble (the body, with a thud
+	    under the surface's step) and a fall onto the feet (by how hard). */
+	void PlayDiveLandingThud();
+	void PlayRollThud();
+	void PlayFallThud(float FallSpeed);
+
+	virtual void Landed(const FHitResult& Hit) override;
+
 	/** Puts the legs (each thigh and below) on physics, motors holding them to the animation
 	    in world space — the floor then pushes back on any part of a leg the pose sinks into
 	    it. bWithLeftArm adds the left arm (upperarm_l and below) at its own ArmHoldStrength:
@@ -359,6 +367,16 @@ protected:
 	/** The previous step's sound, so the next differs. */
 	UPROPERTY(Transient)
 	TObjectPtr<USoundBase> LastFootstepSound;
+
+	/** Bone the body-thud trace drops from (dive landing, roll). */
+	UPROPERTY(EditDefaultsOnly, Category = "Footsteps")
+	FName ThudBone = TEXT("pelvis");
+
+	/** This landing is on the body (the dive), not the feet: Landed leaves the thud to it. */
+	virtual bool LandsOnTheBody() const { return false; }
+
+	/** The thud for the ground within TraceDistance below Bone. */
+	void PlayGroundThud(FName Bone, float TraceDistance, float Volume, bool bBody);
 
 	/** How hard the motors pull the simulated bones back to the animated pose. Lower is floppier. */
 	UPROPERTY(EditAnywhere, Category = "Health|Riddled", meta = (ClampMin = "0.0"))

@@ -49,6 +49,13 @@ void URollComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 		const float Position = AnimInstance ? AnimInstance->Montage_GetPosition(RollMontage) : 0.0f;
 		const float Length = RollMontage->GetPlayLength();
 
+		// The tumble lands: the thud.
+		if (!bRollThudDone && Position >= Length * RollThudAt)
+		{
+			bRollThudDone = true;
+			Character->PlayRollThud();
+		}
+
 		// Partway in: slow motion to line up the way out. Not if the player's own Focus is on
 		// (BeginFreeFocus leaves that alone).
 		if (bRollFocus && !bRollFocusDone && Position >= Length * RollFocusStartAt)
@@ -128,6 +135,7 @@ bool URollComponent::TryRoll()
 		return false;
 	}
 	bRollFocusDone = false;
+	bRollThudDone = false;
 
 	// The roll's root motion runs in the body's frame: lock the body's rotation to the
 	// animation, or turning the camera would steer the roll.

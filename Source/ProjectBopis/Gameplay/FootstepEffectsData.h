@@ -48,6 +48,18 @@ public:
 	    blended between; crouched steps use CrouchVolume. */
 	float GaitVolume(float Speed, bool bCrouched) const;
 
+	/** Heavier than a step: the body (a dive landing, a roll's tumble — bBody layers BodyThud
+	    under it) or the feet (a fall) hitting the ground. The surface's step at Volume. */
+	USoundBase* PlayThud(const UObject* WorldContext, const FHitResult& Hit, float Volume,
+		const USoundBase* LastPlayed, bool bBody) const;
+
+	float GetDiveLandingVolume() const { return DiveLandingVolume; }
+	float GetRollVolume() const { return RollVolume; }
+
+	/** A fall onto the feet: nothing below FallLandingMinSpeed, half FallLandingVolume there,
+	    all of it at FallLandingFullSpeed and above (cm/s). */
+	float FallVolume(float FallSpeed) const;
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep")
@@ -76,4 +88,26 @@ protected:
 	/** Multiplies every step — the one knob for "louder everywhere". */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep", meta = (ClampMin = "0.0"))
 	float VolumeScale = 1.0f;
+
+	/** A body hitting the ground, layered under the surface's step for the dive landing and
+	    the roll. Empty: the step alone. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds")
+	TObjectPtr<USoundBase> BodyThud;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds", meta = (ClampMin = "0.0"))
+	float DiveLandingVolume = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds", meta = (ClampMin = "0.0"))
+	float RollVolume = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds", meta = (ClampMin = "0.0"))
+	float FallLandingVolume = 1.2f;
+
+	/** Fall speeds (cm/s) below which a landing is silent, and at which it's full. A normal
+	    jump lands at roughly 600–900. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds", meta = (ClampMin = "0.0"))
+	float FallLandingMinSpeed = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Footstep|Thuds", meta = (ClampMin = "1.0"))
+	float FallLandingFullSpeed = 1000.0f;
 };

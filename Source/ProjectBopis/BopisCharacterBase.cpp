@@ -914,6 +914,62 @@ void ABopisCharacterBase::PlayFootstep(bool bLeft)
 	LastFootstepSound = FootstepEffects->PlayFootstep(this, Hit, Volume, LastFootstepSound);
 }
 
+void ABopisCharacterBase::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	// Onto the feet: a thud by how hard. The dive lands on the body and makes its own.
+	if (!LandsOnTheBody())
+	{
+		PlayFallThud(-GetVelocity().Z);
+	}
+}
+
+void ABopisCharacterBase::PlayDiveLandingThud()
+{
+	if (FootstepEffects)
+	{
+		PlayGroundThud(ThudBone, 100.0f, FootstepEffects->GetDiveLandingVolume(), true);
+	}
+}
+
+void ABopisCharacterBase::PlayRollThud()
+{
+	if (FootstepEffects)
+	{
+		PlayGroundThud(ThudBone, 100.0f, FootstepEffects->GetRollVolume(), true);
+	}
+}
+
+void ABopisCharacterBase::PlayFallThud(float FallSpeed)
+{
+	const float Volume = FootstepEffects ? FootstepEffects->FallVolume(FallSpeed) : 0.0f;
+	if (Volume > 0.0f)
+	{
+		PlayGroundThud(LeftFootBone, FootstepTraceDistance + 20.0f, Volume, false);
+	}
+}
+
+void ABopisCharacterBase::PlayGroundThud(FName Bone, float TraceDistance, float Volume, bool bBody)
+{
+	USkeletalMeshComponent* Body = GetMesh();
+	if (!FootstepEffects || !Body || bIsRagdoll || Volume <= 0.0f)
+	{
+		return;
+	}
+
+	const FVector From = Body->GetSocketLocation(Bone);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(GroundThud), false, this);
+	Params.bReturnPhysicalMaterial = true;
+	FHitResult Hit;
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, From + FVector::UpVector * 10.0f,
+		From - FVector::UpVector * TraceDistance, ECC_Visibility, Params))
+	{
+		return;
+	}
+	LastFootstepSound = FootstepEffects->PlayThud(this, Hit, Volume, LastFootstepSound, bBody);
+}
+
 void ABopisCharacterBase::PlayEquipAnimation(const AWeaponBase* Weapon)
 {
 	ActiveEquipMontage = nullptr;

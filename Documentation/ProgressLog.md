@@ -98,14 +98,31 @@
   Visibility-only Blocking Volume with a Phys Material Override from the
   ImpactsVFXVol1 pack's `Physical_Materials` (all 24 verified) — spec.
 
+- **Thuds (user: "thuds work"):** dive landing, roll tumble (at 20 % of the
+  roll) and falls onto the feet (by fall speed; enemies too), all
+  surface-aware through `PlayThud` with CC's `Landing_Cue` layered under the
+  body ones. User tuned the asset: dive 3, roll 2, fall 3 (C++ defaults
+  1.5 / 1 / 1.2). Spec: *Footsteps → Thuds*.
+
+- **Slum respawning arena: paper layout only** (user: "I just want a Level
+  Layout, not a thing in UE5"). `Design Document/Arena_Slums_Layout.html`:
+  48 × 40 m, barangay half-court centre, ring lanes, jeepney/kiosk sightline
+  breakers, plank gallery +4 m with two stairs on the east row house, 8 dead-
+  end alleys with shanty doors as enemy entrances, 3 wander points. Open
+  (user's): one-time vs. returning grenades/rockets; endless vs. a goal.
+
 ### ▶ RESUME HERE
 1. **Fix (user, 10 s):** `AM_Pistol_Reload_Offhand` → the Chamber notify →
    tick **Offhand**, save.
-2. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
+2. **Commit (user):** `FootstepEffectsData.h/.cpp`, `BopisCharacterBase.h/.cpp`,
+   `ProjectBopisCharacter.h/.cpp`, `ShootdodgeComponent.cpp`,
+   `RollComponent.h/.cpp`, `DA_FootstepEffects`, `Landing_Cue`, docs.
+3. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
    `VolumeScale`, per-surface sets) and `ATT_Footstep`; physical materials
    on level materials / patches as levels get dressed. Later: landing thud,
    jog as AI noise.
-3. **Commit (user):** `Gameplay/FootstepEffectsData.h/.cpp` (new),
+3. ~~Commit~~ — pushed by the user (2026-10-23, evening): footsteps, lean,
+   slow-mo cancel, ragdoll slot, sounds. *(Old list:)* `Gameplay/FootstepEffectsData.h/.cpp` (new),
    `DA_FootstepEffects`, `/Game/Audio/Footsteps/`, 145 Footstep_Casual
    cues, `BP_PlayerCharacter`, `BP_EnemyBase`; plus: `ProjectBopisAnimInstance.h/.cpp`, `ABP_Player`,
    `ShootdodgeComponent.h/.cpp`, `ProjectBopisCharacter.cpp`,

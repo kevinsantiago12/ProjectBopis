@@ -639,8 +639,27 @@ Lyra clips already carry.
     first; pawns pass through; bullets hitting that floor get the same
     surface, which is right. Cleaner later: a dedicated `Footstep` trace
     channel + a `BP_FootstepArea` volume that blocks only that channel.
-- Later: a landing thud after dives/falls (CC's `Landing_Cue`), the
-  player's jog as AI noise.
+- **Thuds (2026-10-23):** heavier ground contacts go through the same data.
+  `UFootstepEffectsData::PlayThud` = the surface's step at a given volume,
+  with `BodyThud` (CC's `Landing_Cue`, on `ATT_Footstep`) layered under it
+  for body contacts. `ABopisCharacterBase::PlayGroundThud(Bone, trace,
+  volume, bBody)` traces from the bone like a step. Three callers:
+  - **Dive landing:** `UShootdodgeComponent::NotifyLanded` →
+    `PlayDiveLandingThud` (from `ThudBone` = `pelvis`, 100 cm,
+    `DiveLandingVolume` — C++ default 1.5, **3 on the asset**, body).
+  - **Roll:** `URollComponent::TickComponent` once the montage passes
+    `RollThudAt` (0.2) → `PlayRollThud` (`RollVolume` — default 1.0, **2 on
+    the asset**, body); reset per roll like the roll's Focus.
+  - **Fall onto the feet:** `ABopisCharacterBase::Landed` →
+    `PlayFallThud(-Velocity.Z)` (the velocity is still the fall's at that
+    point) → `FallVolume`: silent below `FallLandingMinSpeed` 300, half of
+    `FallLandingVolume` (default 1.2, **3 on the asset**) there, full at
+    `FallLandingFullSpeed` 1000 (a normal jump lands at ~600–900). Enemies
+    too. Skipped when `LandsOnTheBody()` — the player's override returns
+    true mid-dive, so the dive's own thud isn't doubled.
+  - User-tested 2026-10-23 ("thuds work"); the volumes above are the user's
+    tuning (steps stay at walk 0.6 / jog 1 / crouch 0.4, scale 1).
+- Later: the player's jog as AI noise.
 
 ---
 

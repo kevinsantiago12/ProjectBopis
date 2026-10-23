@@ -101,6 +101,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Roll|Focus")
 	bool bRollFocus = true;
 
+	/** How far through the roll (0..1) the body hits the ground — the thud. */
+	UPROPERTY(EditAnywhere, Category = "Roll", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RollThudAt = 0.2f;
+
 	/** How far through the roll (0..1) the slow motion starts. */
 	UPROPERTY(EditAnywhere, Category = "Roll|Focus", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float RollFocusStartAt = 0.3f;
@@ -127,6 +131,9 @@ private:
 
 	/** This roll's slow motion has been tried (once per roll). */
 	bool bRollFocusDone = false;
+
+	/** This roll's thud has played. */
+	bool bRollThudDone = false;
 
 	/** The slow motion running is this roll's (a free Focus), with this much real time left. */
 	bool bOwnsFocus = false;

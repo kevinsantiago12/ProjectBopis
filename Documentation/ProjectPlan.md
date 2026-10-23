@@ -512,7 +512,8 @@ archetype-composition idea, not extended from the old classes.
 - [ ] **24. Footsteps** (user, 2026-10-23). See the spec's *Footsteps*.
   - [x] *(Done 2026-10-23, user-tested.)* Plants read off the pose (`UpdateFootsteps`: foot ≥ 5 cm above its ref-pose height, then back within 2 cm — the Lyra `FootPlant_*` names turned out to be sync markers) → `PlayFootstep`: foot trace with physical material, `UFootstepEffectsData` (`DA_FootstepEffects` from Footstep_Casual, 24 surfaces, Default Stone; user re-mapped Concrete→Stone, Tile/Glass→Concrete, wood→Low Wood), gait volumes, `ATT_Footstep`, 2 voices per character; on both base characters + the CC children. Gating verified in the log (none in the air or at a standstill).
   - [ ] Physical materials on level materials (every floor is the Default until then); footstep patches = Visibility-only Blocking Volumes with a Phys Material Override (user has one working).
-  - [ ] Later: landing thud after dives/falls; jog steps as AI noise.
+  - [x] *(Done 2026-10-23, user: "thuds work"; volumes tuned to 3 / 2 / 3.)* Thuds: dive landing (pelvis, body thud), roll tumble (`RollThudAt` 0.2), fall onto the feet (by fall speed, enemies too) — all surface-aware via `PlayThud`; CC's `Landing_Cue` as the body layer.
+  - [ ] Later: jog steps as AI noise.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice
@@ -522,6 +523,11 @@ archetype-composition idea, not extended from the old classes.
 >
 > **2026-10-19:** draft brief in [Phase6_SliceBrief.md](Phase6_SliceBrief.md) (six beats,
 > encounter table, build order) — awaiting the user's cut.
+>
+> **2026-10-23:** paper level layout for a **respawning slum arena** (user: a
+> layout only, not built in UE5):
+> [Design Document/Arena_Slums_Layout.html](../Design%20Document/Arena_Slums_Layout.html).
+> 48 × 40 m, half-court + ring lanes + a +4 m gallery, 8 enemy-entrance alleys.
 
 Goal: prove the core combat loop in an actual space, with real weapons and
 real enemies. The "linear navigation, nonlinear combat" pillar this phase was

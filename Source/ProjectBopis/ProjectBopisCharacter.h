@@ -523,6 +523,9 @@ public:
 
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
+	/** Mid-flight of a dive, the landing is on the body — the dive plays that thud. */
+	virtual bool LandsOnTheBody() const override;
+
 	URollComponent* GetRoll() const { return Roll; }
 
 	virtual bool WantsFreeArmPhysics() const override;

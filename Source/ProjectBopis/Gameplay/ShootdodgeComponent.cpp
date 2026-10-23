@@ -563,6 +563,7 @@ void UShootdodgeComponent::NotifyLanded()
 	}
 
 	EndSlowMotion();
+	Character->PlayDiveLandingThud();
 
 	// Normal gravity; the horizontal speed carries on as a slide, slowed only by
 	// LandSlideDeceleration (friction off).

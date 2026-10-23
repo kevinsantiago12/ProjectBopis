@@ -39,6 +39,29 @@ USoundBase* UFootstepEffectsData::PlayFootstep(const UObject* WorldContext, cons
 	return Chosen;
 }
 
+USoundBase* UFootstepEffectsData::PlayThud(const UObject* WorldContext, const FHitResult& Hit, float Volume,
+	const USoundBase* LastPlayed, bool bBody) const
+{
+	USoundBase* Step = PlayFootstep(WorldContext, Hit, Volume, LastPlayed);
+	if (bBody && BodyThud)
+	{
+		UGameplayStatics::PlaySoundAtLocation(WorldContext, BodyThud, Hit.ImpactPoint, FRotator::ZeroRotator,
+			Volume * VolumeScale, 1.0f, 0.0f, nullptr, nullptr, Cast<AActor>(WorldContext));
+	}
+	return Step;
+}
+
+float UFootstepEffectsData::FallVolume(float FallSpeed) const
+{
+	if (FallSpeed < FallLandingMinSpeed)
+	{
+		return 0.0f;
+	}
+	const float Alpha = FMath::Clamp((FallSpeed - FallLandingMinSpeed)
+		/ FMath::Max(FallLandingFullSpeed - FallLandingMinSpeed, 1.0f), 0.0f, 1.0f);
+	return FMath::Lerp(FallLandingVolume * 0.5f, FallLandingVolume, Alpha);
+}
+
 float UFootstepEffectsData::GaitVolume(float Speed, bool bCrouched) const
 {
 	if (bCrouched)
