@@ -72,6 +72,9 @@ public:
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }
 
+	/** Everything carried, in pickup order. */
+	const TArray<TObjectPtr<AWeaponBase>>& GetCarriedWeapons() const { return CarriedWeapons; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

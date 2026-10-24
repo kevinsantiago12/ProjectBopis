@@ -24,3 +24,6 @@ Plugins/*/Intermediate/
 # OS
 .DS_Store
 Thumbs.db
+
+# Source audio (raw recordings and edits)
+/Audio Processing/

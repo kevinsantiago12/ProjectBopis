@@ -12,6 +12,53 @@
 
 ---
 
+## 2026-10-24 — Weapon wheel look moved to the designer
+- **User:** "This UI, I cant design it?" — it was drawn in code
+  (`NativePaint`), so a Blueprint child showed an empty canvas. Now
+  `UWeaponWheelWidget` keeps the logic (segments, key/pointer modes,
+  cycling, hit-test) and drives **named widgets** in `WBP_WeaponWheel`:
+  `Segment_0..5` tinted by state, `Icon_0..5` (brush + size at the icon's
+  own ratio), `Count_0..5`, `NameText`, `AmmoText`; extras for Blueprint:
+  `GetSegmentState`, `GetHoveredIndex`, `GetSegmentAngleDegrees`,
+  `OnHoverChanged`. `NativePaint`, the fonts, `RingThickness`,
+  `SegmentGapDegrees` and `SegmentImage` are gone. Applied by Claude ("apply
+  and run"); built clean, bridge up, DLL newer than source.
+- **Assets:** `/Game/UI/T_WheelSegment` (generated 56° ring wedge, UI
+  compression, no mips); `/Game/UI/WBP_WeaponWheel` (parent
+  `WeaponWheelWidget`) set as `WeaponWheelClass` on `BP_PlayerCharacter`
+  (`BP_Player_CC` inherits). The bridge can't build widget trees and
+  `BlueprintTools.create` takes the **parent class** as `asset_type` (passing
+  `WidgetBlueprint` fails) — so the tree was generated as UMG clipboard text,
+  `Tools/WBP_WeaponWheel_Tree.txt`, to paste into the empty Hierarchy.
+  Spec: *Weapon wheel*.
+- **Paste hit a name clash:** the class's private `NameText`/`AmmoText`
+  members collided with the variables the Blueprint generates for the
+  widgets of those names ("failed to find a property for it"). Members
+  renamed `NameTextBlock`/`AmmoTextBlock` (applied by Claude, "go ahead");
+  rebuilt clean, bridge up, DLL newer. The user saved the pasted tree
+  before the rebuild; it's in the asset (all 26 widgets + `WheelCanvas`).
+  Gotcha added to the plan.
+- **Icons (user):** too gray — the generated tree had them at 35 %
+  opacity (Claude's slip). Then: "for the dual weapons, stack 2 of the same
+  icon together diagonally going right", and all icons the same height, the
+  widest one (the AK) setting it. Built: `IconMaxWidth` 110 / `IconMaxHeight`
+  50 / `DualIconOffset` (30, 14), `IconDual_0..5`, sizes via brush
+  `ImageSize` (applied by Claude, "apply and run"; built clean, bridge up,
+  DLL newer). Tree generator now `Tools/MakeWeaponWheelTree.ps1`; the user
+  re-pastes the tree.
+- **Bark volume (user picked the Sound Class route):** `/Game/Audio/SC_Barks`
+  (duplicate of the engine `Voice` class, parent cleared so no engine asset
+  changes) set as Sound Class on all 43 bark waves (7 English, 36 Tagalog),
+  saved. Adjust: open `SC_Barks` → Properties → Volume.
+- **Dual icons (user):** "one on top of each other to indicate dual, only
+  offset on X and Y, like the second image shadowing the first" — the tree
+  now draws `IconDual_N` behind `Icon_N`, and `DualIconOffset` defaults to
+  (10, 8) (applied by Claude, "apply and run"; built clean, bridge up, DLL
+  newer). The user's saved WBP still has the earlier paste (copy on top):
+  re-paste, or swap the icon slots' ZOrder.
+
+---
+
 ## 2026-10-23 (2) — Weapon sound normalization
 **Summary:**
 - **One path for every weapon sound.** Before: six guns' shots came from
@@ -103,6 +150,25 @@
   surface-aware through `PlayThud` with CC's `Landing_Cue` layered under the
   body ones. User tuned the asset: dive 3, roll 2, fall 3 (C++ defaults
   1.5 / 1 / 1.2). Spec: *Footsteps → Thuds*.
+- **Bark variation (user: "works", defaults kept):** each enemy rolls a pitch
+  from its `UBarkVoice`'s `PitchMin`–`PitchMax` (0.92–1.08) when it gets the
+  voice (BeginPlay / `SetBarkVoice`) and keeps it for every line — barks and
+  scripted dialogue; each bark adds ±`PitchJitter` (3 %) and down to
+  −`VolumeJitter` (15 %). `UBarkSubsystem::PlayVoice` takes pitch/volume.
+  Spec: *Enemy barks → Variation*.
+- **Weapon wheel (compiled + assets, not playtested):** first built with one
+  segment per carried weapon; the user wants **GTA V**: six fixed segments
+  by weapon type, counter-clockwise from the top, mouse wheel cycles within
+  the hovered type, Tab blocks all other input and slows time, release
+  equips — rebuilt that way the same evening (`UWeaponWheelWidget`,
+  `WeaponWheelCycleAction`, input guards on every handler, free Focus for
+  the slow motion). `DisplayName` + `Icon` on all 11 weapons (Handcrafted
+  White set; revolver/MAC-11/launcher icons are guesses). **The IMC
+  mappings can't be made by the bridge** (`Mappings` reads empty): the user
+  mapped `IA_WeaponWheel` (Tab + LB); `IA_WeaponWheelCycle` (Mouse Wheel
+  Axis, D-pad Up / Down-negated) is still to map. The first test showed the
+  object-reference CDO gotcha again (`WeaponWheelAction` None in PIE until a
+  restart — now a verified gotcha in the plan). Spec: *Weapon wheel*.
 
 - **Slum respawning arena: paper layout only** (user: "I just want a Level
   Layout, not a thing in UE5"). `Design Document/Arena_Slums_Layout.html`:
@@ -114,9 +180,25 @@
 ### ▶ RESUME HERE
 1. **Fix (user, 10 s):** `AM_Pistol_Reload_Offhand` → the Chamber notify →
    tick **Offhand**, save.
-2. **Commit (user):** `FootstepEffectsData.h/.cpp`, `BopisCharacterBase.h/.cpp`,
+2. **Weapon wheel, designer version:** in `WBP_WeaponWheel` delete
+   `WheelCanvas`, Ctrl+V the tree from `Tools/MakeWeaponWheelTree.ps1
+   -Clipboard` (adds `IconDual_N`, full-opacity icons), compile, save. Then
+   the playtest (check a dual pair and the shared icon height): press
+   1–6 → the wheel comes up with that type lit and stays; the same key (or
+   the key of the gun in hand) steps the type's next weapon; other keys move
+   the highlight; click → equip + close; combat keys dead while it's up
+   (movement and camera free, user's call), time slow. Icons now at their own proportions on a fat ring. Swap
+   guessed icons on the weapon BPs. Pad flow (hold LB, point, release) is
+   there too; its cycle action `IA_WeaponWheelCycle` is unmapped (optional:
+   Mouse Wheel Axis, D-pad Up / Down-negated).
+3. **Commit (user):** `FootstepEffectsData.h/.cpp`, `BopisCharacterBase.h/.cpp`,
    `ProjectBopisCharacter.h/.cpp`, `ShootdodgeComponent.cpp`,
-   `RollComponent.h/.cpp`, `DA_FootstepEffects`, `Landing_Cue`, docs.
+   `RollComponent.h/.cpp`, `BarkSet.h`, `BarkSubsystem.h/.cpp`,
+   `EnemyBase.h/.cpp`, `EncounterEvent.cpp`, `DA_FootstepEffects`,
+   `Landing_Cue`; wheel: `UI/WeaponWheelWidget.h/.cpp` (new),
+   `WeaponBase.h`, `WeaponHolderComponent.h`, `ProjectBopisCharacter.h/.cpp`,
+   `IA_WeaponWheel`, the 11 weapon BPs, `BP_PlayerCharacter`,
+   `BP_Player_CC`, `IMC_Default` (after the mapping); docs.
 3. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
    `VolumeScale`, per-surface sets) and `ATT_Footstep`; physical materials
    on level materials / patches as levels get dressed. Later: landing thud,

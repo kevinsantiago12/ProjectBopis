@@ -342,7 +342,8 @@ void AEncounterEvent::Say(AEnemyBase* Speaker, USoundBase* Sound, const FText& S
 	// so it carries down a corridor and grows as the player comes closer.
 	if (Sound)
 	{
-		CurrentVoice = UBarkSubsystem::PlayVoice(Speaker, Sound, VoiceFullRange, VoiceFalloff);
+		CurrentVoice = UBarkSubsystem::PlayVoice(Speaker, Sound, VoiceFullRange, VoiceFalloff,
+			Speaker ? Speaker->GetVoicePitch() : 1.0f);
 	}
 
 	// The subtitle, if the player's close enough to be hearing it.

@@ -24,7 +24,8 @@ public:
 
 	/** Plays a voice from Speaker's head (its root without one) in 3D: full within FullRange,
 	    gone Falloff further out. */
-	static UAudioComponent* PlayVoice(AActor* Speaker, USoundBase* Sound, float FullRange, float Falloff);
+	static UAudioComponent* PlayVoice(AActor* Speaker, USoundBase* Sound, float FullRange, float Falloff,
+		float Pitch = 1.0f, float Volume = 1.0f);
 
 	/** The language barks are picked in ("en", "tl"...). A voice without it falls back to English. */
 	UFUNCTION(BlueprintCallable, Category = "Bark")

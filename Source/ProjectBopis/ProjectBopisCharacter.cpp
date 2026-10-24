@@ -16,6 +16,7 @@
 #include "ProjectBopis.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/PlayerHUDWidget.h"
+#include "UI/WeaponWheelWidget.h"
 #include "Weapons/WeaponBase.h"
 #include "Weapons/Grenade.h"
 #include "Gameplay/HealthComponent.h"
@@ -32,6 +33,7 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 {
 	// Capsule, weapon holder and tick come from ABopisCharacterBase.
 	Focus =CreateDefaultSubobject<UFocusComponent>(TEXT("Focus"));
+	WeaponWheelClass = UWeaponWheelWidget::StaticClass();
 	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
 	Roll = CreateDefaultSubobject<URollComponent>(TEXT("Roll"));
 
@@ -182,6 +184,22 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 				&AProjectBopisCharacter::DoThrowGrenade);
 		}
 
+		if (WeaponWheelAction)
+		{
+			EnhancedInputComponent->BindAction(WeaponWheelAction, ETriggerEvent::Started, this,
+				&AProjectBopisCharacter::DoWeaponWheelStart);
+			EnhancedInputComponent->BindAction(WeaponWheelAction, ETriggerEvent::Completed, this,
+				&AProjectBopisCharacter::DoWeaponWheelEnd);
+			EnhancedInputComponent->BindAction(WeaponWheelAction, ETriggerEvent::Canceled, this,
+				&AProjectBopisCharacter::DoWeaponWheelEnd);
+		}
+
+		if (WeaponWheelCycleAction)
+		{
+			EnhancedInputComponent->BindAction(WeaponWheelCycleAction, ETriggerEvent::Triggered, this,
+				&AProjectBopisCharacter::WeaponWheelCycleInput);
+		}
+
 	}
 	else
 	{
@@ -204,6 +222,14 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 {
 	// get the Vector2D look axis
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	// The held wheel: the look input points round it instead of turning the camera. The
+	// keyboard's wheel leaves the camera alone.
+	if (IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode())
+	{
+		WeaponWheel->AddPointerDelta(LookAxisVector);
+		return;
+	}
 
 	// pass the axis values to the aim input
 	DoAim(LookAxisVector.X, LookAxisVector.Y);
@@ -544,7 +570,7 @@ void AProjectBopisCharacter::UpdateMovementStance()
 void AProjectBopisCharacter::DoJumpStart()
 {
 	// Winding up for a dive is a commitment: no hopping out of it. Nor out of a roll.
-	if ((Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
+	if (IsWeaponWheelOpen() || (Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -561,6 +587,16 @@ void AProjectBopisCharacter::DoJumpEnd()
 
 void AProjectBopisCharacter::DoFire()
 {
+	// Wheel up from the keyboard: the click is the pick, not a shot.
+	if (IsWeaponWheelOpen())
+	{
+		if (WeaponWheel->IsKeyMode())
+		{
+			CloseWeaponWheel(true);
+		}
+		return;
+	}
+
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	if (!Holder)
 	{
@@ -619,7 +655,7 @@ void AProjectBopisCharacter::DoFire()
 
 void AProjectBopisCharacter::DoShootdodge()
 {
-	if ((Roll && Roll->IsRolling()) || !Shootdodge)
+	if (IsWeaponWheelOpen() || (Roll && Roll->IsRolling()) || !Shootdodge)
 	{
 		return;
 	}
@@ -635,7 +671,7 @@ void AProjectBopisCharacter::DoShootdodge()
 
 void AProjectBopisCharacter::DoRoll()
 {
-	if (!Roll)
+	if (!Roll || IsWeaponWheelOpen())
 	{
 		return;
 	}
@@ -826,6 +862,11 @@ void AProjectBopisCharacter::SetAnimationDrivenRotation(bool bAnimationDriven)
 
 void AProjectBopisCharacter::DoToggleFocus()
 {
+	if (IsWeaponWheelOpen())
+	{
+		return;
+	}
+
 	// Mid-dive the key turns the slow motion off (the dive's own, or a Focus it was holding);
 	// with none running, it toggles Focus as usual.
 	if (Shootdodge && Shootdodge->CancelSlowMotion())
@@ -840,16 +881,108 @@ void AProjectBopisCharacter::DoToggleFocus()
 
 void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 {
-	// The dive is animated for the gun in hand; no swapping while winding up for it, or rolling.
+	// The held (pointer) wheel owns the keys while it's up.
+	if (IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode())
+	{
+		return;
+	}
+
+	// A number key brings the wheel up in key mode and highlights its type; the click equips.
+	OpenWeaponWheel(true);
+	if (IsWeaponWheelOpen())
+	{
+		WeaponWheel->SelectType(Slot - 1);
+	}
+}
+
+void AProjectBopisCharacter::DoSelectWeapon(AWeaponBase* Weapon)
+{
 	if ((Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
 
-	if (UWeaponHolderComponent* Holder = GetWeaponHolder())
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	if (Holder && Weapon && Weapon != Holder->GetEquippedWeapon())
 	{
-		Holder->SelectSlot(Slot);
+		Holder->EquipWeapon(Weapon);
 	}
+}
+
+void AProjectBopisCharacter::OpenWeaponWheel(bool bKeyMode)
+{
+	if (IsDead() || IsWeaponWheelOpen())
+	{
+		return;
+	}
+
+	// Made on first use, over the HUD.
+	if (!WeaponWheel && WeaponWheelClass)
+	{
+		WeaponWheel = CreateWidget<UWeaponWheelWidget>(GetWorld(), WeaponWheelClass);
+		if (WeaponWheel)
+		{
+			WeaponWheel->AddToViewport(50);
+		}
+	}
+	if (WeaponWheel)
+	{
+		WeaponWheel->Open(bKeyMode);
+
+		// Time slows while it's open, unless the player's own Focus already has it slow.
+		if (bWeaponWheelSlowMotion && Focus)
+		{
+			bWheelOwnsFocus = Focus->BeginFreeFocus();
+		}
+	}
+}
+
+void AProjectBopisCharacter::CloseWeaponWheel(bool bEquip)
+{
+	if (!IsWeaponWheelOpen())
+	{
+		return;
+	}
+
+	AWeaponBase* Pick = bEquip ? WeaponWheel->GetHoveredWeapon() : nullptr;
+	WeaponWheel->Close();
+	if (bWheelOwnsFocus && Focus)
+	{
+		Focus->EndFreeFocus();
+	}
+	bWheelOwnsFocus = false;
+	if (Pick)
+	{
+		DoSelectWeapon(Pick);
+	}
+}
+
+void AProjectBopisCharacter::DoWeaponWheelStart()
+{
+	OpenWeaponWheel(false);
+}
+
+void AProjectBopisCharacter::DoWeaponWheelEnd()
+{
+	// Only the held (pointer) wheel closes on release; the keyboard's waits for the click.
+	if (IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode())
+	{
+		CloseWeaponWheel(true);
+	}
+}
+
+void AProjectBopisCharacter::WeaponWheelCycleInput(const FInputActionValue& Value)
+{
+	const float Step = Value.Get<float>();
+	if (IsWeaponWheelOpen() && !FMath::IsNearlyZero(Step))
+	{
+		WeaponWheel->CycleHovered(Step > 0.0f ? 1 : -1);
+	}
+}
+
+bool AProjectBopisCharacter::IsWeaponWheelOpen() const
+{
+	return WeaponWheel && WeaponWheel->IsOpen();
 }
 
 void AProjectBopisCharacter::HoldReloadForRoll()
@@ -871,7 +1004,7 @@ void AProjectBopisCharacter::HoldReloadForRoll()
 
 void AProjectBopisCharacter::DoReload()
 {
-	if (Roll && Roll->IsRolling())
+	if (IsWeaponWheelOpen() || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -905,7 +1038,7 @@ void AProjectBopisCharacter::DoReload()
 
 void AProjectBopisCharacter::DoThrowGrenade()
 {
-	if (IsDead() || !GrenadeClass || (Roll && Roll->IsRolling()))
+	if (IsDead() || !GrenadeClass || IsWeaponWheelOpen() || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -1049,6 +1182,11 @@ void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 
 void AProjectBopisCharacter::DoCrouchStart()
 {
+	if (IsWeaponWheelOpen())
+	{
+		return;
+	}
+
 	// Only records the request — UpdateCrouch decides whether the character is
 	// actually down, since crouch only applies while standing still.
 	bCrouchRequested = bCrouchIsToggle ? !bCrouchRequested : true;
@@ -1117,6 +1255,11 @@ void AProjectBopisCharacter::UpdateCrouch()
 
 void AProjectBopisCharacter::DoFireHeld()
 {
+	if (IsWeaponWheelOpen())
+	{
+		return;
+	}
+
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
 	if (!Holder)
 	{
@@ -1138,6 +1281,11 @@ void AProjectBopisCharacter::DoFireHeld()
 
 void AProjectBopisCharacter::DoAimStart()
 {
+	if (IsWeaponWheelOpen())
+	{
+		return;
+	}
+
 	// State only — Tick derives the stance and camera from this every frame.
 	bIsAiming = true;
 }

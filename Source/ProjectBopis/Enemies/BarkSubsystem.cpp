@@ -1,4 +1,5 @@
 #include "Enemies/BarkSubsystem.h"
+#include "Enemies/EnemyBase.h"
 #include "Components/AudioComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
@@ -68,13 +69,19 @@ bool UBarkSubsystem::TryBark(AActor* Speaker, const UBarkVoice* Voice, EBarkType
 	}
 	USoundBase* Sound = Choices[FMath::RandRange(0, Choices.Num() - 1)];
 
-	Playing.Add(PlayVoice(Speaker, Sound, VoiceFullRange, VoiceFalloff));
+	// The speaker's own voice, varied a little each time, so the same clip never lands identically.
+	const AEnemyBase* Enemy = Cast<AEnemyBase>(Speaker);
+	const float Pitch = (Enemy ? Enemy->GetVoicePitch() : 1.0f)
+		* FMath::FRandRange(1.0f - Voice->PitchJitter, 1.0f + Voice->PitchJitter);
+	const float Volume = FMath::FRandRange(1.0f - Voice->VolumeJitter, 1.0f);
+	Playing.Add(PlayVoice(Speaker, Sound, VoiceFullRange, VoiceFalloff, Pitch, Volume));
 	NextAllowed.Add(Type, Now + Lines->Cooldown);
 	LastPlayed.Add(Type, Sound);
 	return true;
 }
 
-UAudioComponent* UBarkSubsystem::PlayVoice(AActor* Speaker, USoundBase* Sound, float FullRange, float Falloff)
+UAudioComponent* UBarkSubsystem::PlayVoice(AActor* Speaker, USoundBase* Sound, float FullRange, float Falloff,
+	float Pitch, float Volume)
 {
 	UAudioComponent* Voice = NewObject<UAudioComponent>(Speaker);
 	Voice->SetSound(Sound);
@@ -97,6 +104,8 @@ UAudioComponent* UBarkSubsystem::PlayVoice(AActor* Speaker, USoundBase* Sound, f
 		Voice->SetupAttachment(Speaker->GetRootComponent());
 	}
 	Voice->RegisterComponent();
+	Voice->SetPitchMultiplier(Pitch);
+	Voice->SetVolumeMultiplier(Volume);
 	Voice->Play();
 	return Voice;
 }

@@ -14,6 +14,7 @@ class AProjectileBase;
 class UWeaponHolderComponent;
 class UImpactEffectsData;
 class UStaticMesh;
+class UTexture2D;
 
 /** How enemies fire a weapon: a burst of shots at a set spacing, then a pause. */
 USTRUCT(BlueprintType)
@@ -181,6 +182,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetWeaponSlot() const { return WeaponSlot; }
 
+	/** For the HUD and the weapon wheel. */
+	UFUNCTION(BlueprintPure, Category = "Weapon|UI")
+	const FText& GetDisplayName() const { return DisplayName; }
+
+	UFUNCTION(BlueprintPure, Category = "Weapon|UI")
+	UTexture2D* GetIcon() const { return Icon; }
+
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	EAmmoType GetAmmoType() const { return AmmoType; }
 
@@ -313,6 +321,15 @@ protected:
 	    4 SMGs and rifles, 5 sniper; 1 is kept free for melee. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "1", ClampMax = "9"))
 	int32 WeaponSlot = 2;
+
+	/** Name shown on the HUD and in the weapon wheel. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|UI")
+	FText DisplayName;
+
+	/** Icon for the weapon wheel — any texture, drawn square inside the segment. Swap it per
+	    Blueprint whenever a better image turns up. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|UI")
+	TObjectPtr<UTexture2D> Icon;
 
 	/** The dual-wield version of this weapon (e.g. BP_Pistol → BP_DualPistols). Picking up
 	    this weapon again while carrying it unlocks the dual version as a separate selection.

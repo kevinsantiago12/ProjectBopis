@@ -3,6 +3,7 @@
 #include "Enemies/EnemyBase.h"
 #include "Enemies/BopisAIController.h"
 #include "Enemies/BarkSubsystem.h"
+#include "Enemies/BarkSet.h"
 #include "AIController.h"
 #include "BrainComponent.h"
 #include "EngineUtils.h"
@@ -93,6 +94,7 @@ void AEnemyBase::Tick(float DeltaSeconds)
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+	RollVoicePitch();
 
 	HomeLocation = GetActorLocation();
 
@@ -724,6 +726,17 @@ void AEnemyBase::BarkAllyDown()
 	{
 		Witness->Bark(EBarkType::AllyDown);
 	}
+}
+
+void AEnemyBase::SetBarkVoice(UBarkVoice* Voice)
+{
+	BarkVoice = Voice;
+	RollVoicePitch();
+}
+
+void AEnemyBase::RollVoicePitch()
+{
+	VoicePitch = BarkVoice ? FMath::FRandRange(BarkVoice->PitchMin, BarkVoice->PitchMax) : 1.0f;
 }
 
 bool AEnemyBase::Bark(EBarkType Type)

@@ -661,6 +661,109 @@ Lyra clips already carry.
     tuning (steps stay at walk 0.6 / jog 1 / crouch 0.4, scale 1).
 - Later: the player's jog as AI noise.
 
+### Weapon wheel (2026-10-23)
+
+A GTA V-style radial picker (user's spec, 2026-10-23): a fixed ring of
+segments, **one per weapon type (`WeaponSlot` 1–6), counter-clockwise from
+the top**; each shows the type's current weapon. While it's open **combat
+input is blocked and time runs slow; movement and the camera stay free**. *(The first version had one
+segment per carried weapon; replaced the same day.)*
+
+- **Keyboard (key mode):** a number key brings the wheel up with that type
+  highlighted and it **stays up until the fire click**; more keys move the
+  highlight; the same type again — or the first press on the type of the gun
+  in hand — steps to the type's next weapon (pistol → duals → revolver). The
+  click equips the highlighted weapon and closes (no shot). The camera stays
+  free. `Holder->SelectSlot` is no longer called from the keys.
+- **Pad / held key (pointer mode):** held open, look input steers a pointer,
+  the cycle action steps the hovered type, release equips.
+
+- **`UWeaponWheelWidget`** (`UI/`, on `UPlayerHUDElementWidget`) is logic
+  only; **the look is `/Game/UI/WBP_WeaponWheel`**, built in the designer
+  (2026-10-24, the user wanted to design it — the first versions were drawn
+  in code with `NativePaint`). On initialise the class finds its widgets
+  **by name** (`GetWidgetFromName`, every one optional) and pushes state into
+  them while open: `Segment_0..5` (Image) tinted by state (`HoverColor`,
+  `EquippedColor`, `SegmentColor`, `EmptyColor` for a type with nothing
+  carried); `Icon_0..5` (Image) set to the type's current weapon's **`Icon`**
+  (`AWeaponBase`, Weapon|UI) at **the texture's own proportions**, hidden
+  when empty. **All icons share one height** (user, 2026-10-24): the most
+  that lets every *carried* icon fit `IconMaxWidth` 110 (so the widest gun
+  sets it), capped at `IconMaxHeight` 50 for when nothing long is carried —
+  every carried weapon counts, not just those showing, so cycling never
+  resizes; size goes through the brush's `ImageSize`. **Dual-wield**
+  (`IsDualWield()`): the icon shows twice, `IconDual_0..5` drawing the
+  second, the second copy **behind the first, like a shadow** (user,
+  2026-10-24: "one on top of each other to indicate dual"), the pair offset by
+  `DualIconOffset` (10, 8; was 30, 14) and centred on the single icon's spot by render translation; the
+  pair's spread counts against `IconMaxWidth`;
+  `Count_0..5` (TextBlock) `k/n` when the type holds several, else hidden;
+  `NameText` / `AmmoText` — the hovered type's weapon, else the one in hand,
+  and `mag / reserve`. Anything else in the tree (the `Key_0..5` slot
+  numbers, backdrops) is the user's and isn't touched. For Blueprint use:
+  `GetHoveredIndex`, `GetSegmentState(i)` (`EWheelSegmentState`
+  Empty/Carried/Equipped/Hovered), `GetSegmentWeapon(i)`,
+  `GetSegmentAngleDegrees(i)` (screen degrees, −90 = top), and the
+  **`OnHoverChanged(Index)`** event for animation. Layout numbers that the
+  hit-test needs stay on the class (`NumSegments` 6,
+  `FirstSegmentAngleDegrees` −90, `bCounterClockwise`, `Radius` 230 = the
+  designed ring's middle, `DeadZone`, `PointerScale`, `CycleRepeatDelay`) —
+  keep `Radius` in step with the layout.
+- **`WBP_WeaponWheel` as generated:** root `WheelCanvas`, everything
+  anchored at the centre (anchor/alignment 0.5). Six `Segment_i` = one
+  `/Game/UI/T_WheelSegment` (1024², a white 56° ring wedge pointing up,
+  UI compression, no mips) at 592² rotated `−60·i`° (render transform) →
+  ring 165–295 px, 4° gaps; `Icon_i` at 230 px along the segment's angle (a pistol icon as
+  designer preview) with `IconDual_i` on the same spot, hidden,
+  `Key_i` (static "1"–"6") at 149, `Count_i` at 314, the two centre texts at
+  y −12 / +14. Generated as UMG clipboard text by `Tools/MakeWeaponWheelTree.ps1`
+  (writes `Tools/WBP_WeaponWheel_Tree.txt`; `-Clipboard` copies it) and
+  pasted into the empty tree — the
+  bridge can't build widget trees.
+  **Don't give the class a property named like one of these widgets**: the
+  Blueprint's generated widget variable clashes with it (hence
+  `NameTextBlock`/`AmmoTextBlock` for the members).
+- **Model:** `Segments[type]` = carried weapons of that slot in pickup
+  order (rebuilt every frame while open); `Selected[type]` = the type's
+  current weapon, kept between openings; `Open()` points each type at the
+  equipped weapon where it has it. `CycleHovered(±1)` wraps, with
+  `CycleRepeatDelay` 0.15 s so a held D-pad steps rather than spins.
+- **Pointing:** while open, `LookInput` feeds the wheel instead of the
+  camera — `AddPointerDelta` accumulates look input (mouse delta or stick
+  value × `PointerScale` 10, Y flipped by `bFlipPointerY`) and clamps to the
+  rim; inside `DeadZone` (0.3 × Radius) nothing is hovered.
+  `GetHoveredIndex` = angle from the first segment, the way the segments
+  run.
+- **Character:** `OpenWeaponWheel(bKeyMode)` / `CloseWeaponWheel(bEquip)`.
+  Number keys → `DoSelectWeaponSlot` → open in key mode +
+  `SelectType(slot − 1)`; `DoFire` with the key-mode wheel up →
+  `CloseWeaponWheel(true)`. `WeaponWheelAction` (hold; Started →
+  `DoWeaponWheelStart` = pointer mode, Completed/Canceled →
+  `DoWeaponWheelEnd`, which only closes a pointer-mode wheel);
+  `WeaponWheelCycleAction` (Axis1D, Triggered → `CycleHovered(sign)`, works
+  in both modes); `WeaponWheelClass` (`WBP_WeaponWheel_C` on `BP_PlayerCharacter`, inherited by `BP_Player_CC`; the C++ default has no tree and would show nothing); the widget
+  made on first use at Z 50. **Open:** slow motion via
+  `Focus->BeginFreeFocus()` (`bWeaponWheelSlowMotion`; no meter cost;
+  nothing if the player's own Focus is already on), ended on close when the
+  wheel started it. **Blocked while open:** jump, fire-held, aim start,
+  reload, crouch start, Focus, dive, roll, grenade — each handler returns
+  on `IsWeaponWheelOpen()`; **movement stays free** (user, 2026-10-23) and
+  aim/crouch *releases* still go through;
+  in pointer mode the number keys are blocked too and look steers the wheel.
+  Equip → `DoSelectWeapon(pick)` → `Holder->EquipWeapon`, with the number
+  keys' old gating (no swap mid-roll or in a dive wind-up).
+  `UWeaponHolderComponent::GetCarriedWeapons()` exposes the list.
+- **Assets:** `IA_WeaponWheel` (digital) and `IA_WeaponWheelCycle`
+  (Axis1D) set on `BP_PlayerCharacter` and `BP_Player_CC`; the 11 weapons
+  have `DisplayName` + an icon from the Handcrafted Weapon Icons **White**
+  set (first-pass picks — the revolver, MAC-11 and launcher are guesses).
+  **IMC mappings are the user's** (the bridge reads `IMC_Default.Mappings`
+  as empty): `IA_WeaponWheel` ← Tab, Gamepad Left Shoulder;
+  `IA_WeaponWheelCycle` ← Mouse Wheel Axis, Gamepad D-pad Up (+1) / Down
+  (Negate).
+- **Later:** the user's own wheel art (swap `T_WheelSegment` or the
+  Segment images' brushes), the Black icon set if the HUD goes light.
+
 ---
 
 ## Ammo
@@ -1226,8 +1329,21 @@ language code in a `UBarkVoice` (`Languages` map, falls back to `en`). An enemy'
 per-type cooldown, chance, one bark per speaker (Death cuts it off), at most
 `MaxConcurrent` 2 at once (Death always plays), no line twice running.
 `SetLanguage(FName)` swaps language. No subtitles. Voice plays via the shared
-static `UBarkSubsystem::PlayVoice` (head, 3D, 400/2500 falloff). Clips: mono
-WAV, 48 kHz 16-bit, silence trimmed. Hooks built: Spotted (first sight after an
+static `UBarkSubsystem::PlayVoice` (head, 3D, 400/2500 falloff; takes a pitch
+and a volume multiplier since 2026-10-23). **Variation (2026-10-23):** each
+enemy rolls `VoicePitch` from its voice's `PitchMin`–`PitchMax` (0.92–1.08)
+when it gets the voice (`BeginPlay`, `SetBarkVoice`) and keeps it for every
+line — barks and scripted `AEncounterEvent::Say` lines — so one clip set
+reads as several men and each stays himself; `TryBark` adds ±`PitchJitter`
+(0.03) and down to −`VolumeJitter` (0.15) per bark so a repeated clip never
+lands identically. Scripted lines take the pitch only. A pitch shift also
+stretches the clip (0.92 ≈ 8 % longer), part of the effect. Clips: mono
+WAV, 48 kHz 16-bit, silence trimmed. **Volume (2026-10-24):** every bark
+line — the 7 English waves in `/Game/Audio` and the 36 Tagalog ones under
+`/Game/Dialog/Tagalog` — uses Sound Class `/Game/Audio/SC_Barks` (a
+standalone duplicate of the engine's `Voice`, no parent), so its *Volume* is
+the one knob for all barks, multiplying each wave's own Volume. New bark
+lines need the class set too (Property Matrix → Sound Class). Hooks built: Spotted (first sight after an
 alert, re-armed after `WarningBurstResetTime` unseen; flag set even when the
 coordinator drops it), Hurt (non-lethal damage), Death (`Die`), Reloading
 (enemy reload start), LostSight (the moment the Spotted flag re-arms, only if

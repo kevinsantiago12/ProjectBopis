@@ -67,6 +67,23 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Bark")
 	TMap<FName, TObjectPtr<UBarkSet>> Languages;
 
+	/** Each speaker rolls its own pitch from this range when it gets the voice, and keeps it for
+	    every line it says — one set of clips sounds like several people. 0.92–1.08 is a clear
+	    spread without chipmunks or giants. */
+	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.5", ClampMax = "1.5"))
+	float PitchMin = 0.92f;
+
+	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.5", ClampMax = "1.5"))
+	float PitchMax = 1.08f;
+
+	/** On top, each bark varies by up to ± this in pitch... */
+	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.0", ClampMax = "0.2"))
+	float PitchJitter = 0.03f;
+
+	/** ...and down to (1 − this) in volume, so a repeated line never lands identically. */
+	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.0", ClampMax = "0.5"))
+	float VolumeJitter = 0.15f;
+
 	/** The set in this language, else English, else none. */
 	const UBarkSet* GetSet(FName Language) const
 	{

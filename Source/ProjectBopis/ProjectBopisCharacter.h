@@ -8,6 +8,7 @@
 #include "ProjectBopisCharacter.generated.h"
 
 class UPlayerHUDWidget;
+class UWeaponWheelWidget;
 class UInputComponent;
 class USkeletalMeshComponent;
 class USpringArmComponent;
@@ -135,6 +136,23 @@ protected:
 	/** Grenade throw Input Action **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* GrenadeAction;
+
+	/** Weapon wheel: hold to open, release to equip what's pointed at. The number keys keep
+	    working beside it; the wheel is there for a controller. */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* WeaponWheelAction;
+
+	/** Weapon wheel: steps the hovered type's weapon (mouse wheel, D-pad up/down as ±1). */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* WeaponWheelCycleAction;
+
+	/** The wheel widget: the C++ class, or a Blueprint child restyled in the editor. */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UWeaponWheelWidget> WeaponWheelClass;
+
+	/** Slow motion while the wheel is open (a free Focus, no meter cost). */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	bool bWeaponWheelSlowMotion = true;
 
 	/** True: tap to toggle crouch. False: hold to stay crouched.
 	    Eventually belongs in player settings — BlueprintReadWrite so an options
@@ -303,6 +321,26 @@ protected:
 	/** Selects a weapon slot (1-based) from a number key. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoSelectWeaponSlot(int32 Slot);
+
+	/** Equips one carried weapon (the wheel's pick), with the number keys' gating. */
+	void DoSelectWeapon(AWeaponBase* Weapon);
+
+	/** The weapon wheel. Keyboard: a number key opens it in key mode (that type highlighted;
+	    more keys move it, the same type steps its weapons) and a click equips. Pad/held key:
+	    held open in pointer mode (look steers), released to pick. While open every other input
+	    is blocked and time runs slow. */
+	void OpenWeaponWheel(bool bKeyMode);
+	void CloseWeaponWheel(bool bEquip);
+	void DoWeaponWheelStart();
+	void DoWeaponWheelEnd();
+	void WeaponWheelCycleInput(const FInputActionValue& Value);
+	bool IsWeaponWheelOpen() const;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWeaponWheelWidget> WeaponWheel;
+
+	/** The wheel's slow motion is a free Focus it started (ended when it closes). */
+	bool bWheelOwnsFocus = false;
 
 	/** Toggles Focus from input. */
 	UFUNCTION(BlueprintCallable, Category = "Input")

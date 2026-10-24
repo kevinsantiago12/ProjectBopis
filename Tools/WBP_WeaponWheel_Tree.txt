@@ -1,0 +1,496 @@
+Begin Object Class=/Script/UMG.CanvasPanel Name="WheelCanvas"
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_2"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_3"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_4"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Segment_5"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_2"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_2"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_3"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_3"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_4"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_4"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Icon_5"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_IconDual_5"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_2"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_3"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_4"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Key_5"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_2"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_3"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_4"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Count_5"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_NameText"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_AmmoText"
+   End Object
+   Begin Object Name="Slot_Segment_0"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_0'"
+   End Object
+   Begin Object Name="Slot_Segment_1"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_1'"
+   End Object
+   Begin Object Name="Slot_Segment_2"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_2'"
+   End Object
+   Begin Object Name="Slot_Segment_3"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_3'"
+   End Object
+   Begin Object Name="Slot_Segment_4"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_4'"
+   End Object
+   Begin Object Name="Slot_Segment_5"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=592.000000,Bottom=592.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Segment_5'"
+   End Object
+   Begin Object Name="Slot_Icon_0"
+      LayoutData=(Offsets=(Left=0.000000,Top=-230.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_0'"
+   End Object
+   Begin Object Name="Slot_IconDual_0"
+      LayoutData=(Offsets=(Left=0.000000,Top=-230.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_0'"
+   End Object
+   Begin Object Name="Slot_Icon_1"
+      LayoutData=(Offsets=(Left=-199.185843,Top=-115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_1'"
+   End Object
+   Begin Object Name="Slot_IconDual_1"
+      LayoutData=(Offsets=(Left=-199.185843,Top=-115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_1'"
+   End Object
+   Begin Object Name="Slot_Icon_2"
+      LayoutData=(Offsets=(Left=-199.185843,Top=115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_2'"
+   End Object
+   Begin Object Name="Slot_IconDual_2"
+      LayoutData=(Offsets=(Left=-199.185843,Top=115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_2'"
+   End Object
+   Begin Object Name="Slot_Icon_3"
+      LayoutData=(Offsets=(Left=0.000000,Top=230.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_3'"
+   End Object
+   Begin Object Name="Slot_IconDual_3"
+      LayoutData=(Offsets=(Left=0.000000,Top=230.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_3'"
+   End Object
+   Begin Object Name="Slot_Icon_4"
+      LayoutData=(Offsets=(Left=199.185843,Top=115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_4'"
+   End Object
+   Begin Object Name="Slot_IconDual_4"
+      LayoutData=(Offsets=(Left=199.185843,Top=115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_4'"
+   End Object
+   Begin Object Name="Slot_Icon_5"
+      LayoutData=(Offsets=(Left=199.185843,Top=-115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'Icon_5'"
+   End Object
+   Begin Object Name="Slot_IconDual_5"
+      LayoutData=(Offsets=(Left=199.185843,Top=-115.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.Image'IconDual_5'"
+   End Object
+   Begin Object Name="Slot_Key_0"
+      LayoutData=(Offsets=(Left=0.000000,Top=-149.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_0'"
+   End Object
+   Begin Object Name="Slot_Key_1"
+      LayoutData=(Offsets=(Left=-129.037785,Top=-74.500000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_1'"
+   End Object
+   Begin Object Name="Slot_Key_2"
+      LayoutData=(Offsets=(Left=-129.037785,Top=74.500000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_2'"
+   End Object
+   Begin Object Name="Slot_Key_3"
+      LayoutData=(Offsets=(Left=0.000000,Top=149.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_3'"
+   End Object
+   Begin Object Name="Slot_Key_4"
+      LayoutData=(Offsets=(Left=129.037785,Top=74.500000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_4'"
+   End Object
+   Begin Object Name="Slot_Key_5"
+      LayoutData=(Offsets=(Left=129.037785,Top=-74.500000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Key_5'"
+   End Object
+   Begin Object Name="Slot_Count_0"
+      LayoutData=(Offsets=(Left=0.000000,Top=-314.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_0'"
+   End Object
+   Begin Object Name="Slot_Count_1"
+      LayoutData=(Offsets=(Left=-271.931977,Top=-157.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_1'"
+   End Object
+   Begin Object Name="Slot_Count_2"
+      LayoutData=(Offsets=(Left=-271.931977,Top=157.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_2'"
+   End Object
+   Begin Object Name="Slot_Count_3"
+      LayoutData=(Offsets=(Left=0.000000,Top=314.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_3'"
+   End Object
+   Begin Object Name="Slot_Count_4"
+      LayoutData=(Offsets=(Left=271.931977,Top=157.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_4'"
+   End Object
+   Begin Object Name="Slot_Count_5"
+      LayoutData=(Offsets=(Left=271.931977,Top=-157.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'Count_5'"
+   End Object
+   Begin Object Name="Slot_NameText"
+      LayoutData=(Offsets=(Left=0.000000,Top=-12.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'NameText'"
+   End Object
+   Begin Object Name="Slot_AmmoText"
+      LayoutData=(Offsets=(Left=0.000000,Top=14.000000,Right=0.000000,Bottom=0.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))
+      bAutoSize=True
+      ZOrder=3
+      Parent="/Script/UMG.CanvasPanel'WheelCanvas'"
+      Content="/Script/UMG.TextBlock'AmmoText'"
+   End Object
+   Slots(0)="/Script/UMG.CanvasPanelSlot'Slot_Segment_0'"
+   Slots(1)="/Script/UMG.CanvasPanelSlot'Slot_Segment_1'"
+   Slots(2)="/Script/UMG.CanvasPanelSlot'Slot_Segment_2'"
+   Slots(3)="/Script/UMG.CanvasPanelSlot'Slot_Segment_3'"
+   Slots(4)="/Script/UMG.CanvasPanelSlot'Slot_Segment_4'"
+   Slots(5)="/Script/UMG.CanvasPanelSlot'Slot_Segment_5'"
+   Slots(6)="/Script/UMG.CanvasPanelSlot'Slot_Icon_0'"
+   Slots(7)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_0'"
+   Slots(8)="/Script/UMG.CanvasPanelSlot'Slot_Icon_1'"
+   Slots(9)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_1'"
+   Slots(10)="/Script/UMG.CanvasPanelSlot'Slot_Icon_2'"
+   Slots(11)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_2'"
+   Slots(12)="/Script/UMG.CanvasPanelSlot'Slot_Icon_3'"
+   Slots(13)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_3'"
+   Slots(14)="/Script/UMG.CanvasPanelSlot'Slot_Icon_4'"
+   Slots(15)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_4'"
+   Slots(16)="/Script/UMG.CanvasPanelSlot'Slot_Icon_5'"
+   Slots(17)="/Script/UMG.CanvasPanelSlot'Slot_IconDual_5'"
+   Slots(18)="/Script/UMG.CanvasPanelSlot'Slot_Key_0'"
+   Slots(19)="/Script/UMG.CanvasPanelSlot'Slot_Key_1'"
+   Slots(20)="/Script/UMG.CanvasPanelSlot'Slot_Key_2'"
+   Slots(21)="/Script/UMG.CanvasPanelSlot'Slot_Key_3'"
+   Slots(22)="/Script/UMG.CanvasPanelSlot'Slot_Key_4'"
+   Slots(23)="/Script/UMG.CanvasPanelSlot'Slot_Key_5'"
+   Slots(24)="/Script/UMG.CanvasPanelSlot'Slot_Count_0'"
+   Slots(25)="/Script/UMG.CanvasPanelSlot'Slot_Count_1'"
+   Slots(26)="/Script/UMG.CanvasPanelSlot'Slot_Count_2'"
+   Slots(27)="/Script/UMG.CanvasPanelSlot'Slot_Count_3'"
+   Slots(28)="/Script/UMG.CanvasPanelSlot'Slot_Count_4'"
+   Slots(29)="/Script/UMG.CanvasPanelSlot'Slot_Count_5'"
+   Slots(30)="/Script/UMG.CanvasPanelSlot'Slot_NameText'"
+   Slots(31)="/Script/UMG.CanvasPanelSlot'Slot_AmmoText'"
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_0"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=0.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_1"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=-60.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_2"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=-120.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_3"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=-180.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_4"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=-240.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Segment_5"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'",ImageSize=(X=592.000000,Y=592.000000))
+   ColorAndOpacity=(R=0.070000,G=0.070000,B=0.070000,A=0.800000)
+   RenderTransform=(Translation=(X=0.000000,Y=0.000000),Scale=(X=1.000000,Y=1.000000),Shear=(X=0.000000,Y=0.000000),Angle=-300.000000)
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_0"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_0"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_1"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_1"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_2"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_2"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_3"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_3"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_4"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_4"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="Icon_5"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.Image Name="IconDual_5"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Visibility=Hidden
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_0"
+   Text=INVTEXT("1")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_1"
+   Text=INVTEXT("2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_2"
+   Text=INVTEXT("3")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_3"
+   Text=INVTEXT("4")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_4"
+   Text=INVTEXT("5")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Key_5"
+   Text=INVTEXT("6")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_0"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_1"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_2"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_3"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_4"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Count_5"
+   Text=INVTEXT("1/2")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="NameText"
+   Text=INVTEXT("Weapon")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=22.000000)
+   Justification=Center
+   bIsVariable=True
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="AmmoText"
+   Text=INVTEXT("12 / 36")
+   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Regular",Size=16.000000)
+   Justification=Center
+   bIsVariable=True
+End Object

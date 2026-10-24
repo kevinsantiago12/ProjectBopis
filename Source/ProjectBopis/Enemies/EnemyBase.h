@@ -410,7 +410,10 @@ public:
 
 	void SetPatrolPoints(const TArray<TObjectPtr<AActor>>& Points) { PatrolPoints = Points; }
 
-	void SetBarkVoice(UBarkVoice* Voice) { BarkVoice = Voice; }
+	void SetBarkVoice(UBarkVoice* Voice);
+
+	/** Its own pitch for every line it says, rolled once from the voice's range. */
+	float GetVoicePitch() const { return VoicePitch; }
 
 	/** A scripted event walks (or runs) it to Target while it's calm; patrolling waits until the
 	    event lets it go (EndScripted). False if it can't (alerted, dead, no path). */
@@ -524,6 +527,10 @@ private:
 	/** This sighting has been called out ("there he is"): once per alert, and again after
 	    losing the player long enough for a fresh engagement. */
 	bool bSightingCalled = false;
+
+	/** Rolls VoicePitch from the current voice's range (1 without a voice). */
+	void RollVoicePitch();
+	float VoicePitch = 1.0f;
 
 	bool bWaitingForTrigger = false;
 
