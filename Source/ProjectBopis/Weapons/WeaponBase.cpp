@@ -336,6 +336,13 @@ void AWeaponBase::FireHitscan(const FVector& TraceStart, const FVector& SpreadDi
 	FHitResult HitResult;
 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
 
+	// A round that went past the player: the crack of it going by.
+	if (ImpactEffects)
+	{
+		ImpactEffects->PlayNearMiss(this, TraceStart, bHit ? HitResult.Location : TraceEnd, GetOwner(),
+			HitResult.GetActor());
+	}
+
 	const FVector DebugLineStart = TraceStart + (SpreadDirection * 150.0f);
 
 	if (CVarShowWeaponTrace.GetValueOnGameThread())

@@ -524,6 +524,33 @@ decal chosen by the physical surface struck**. User-confirmed in PIE.
   entirely: config, Blueprint responses and docs). **Gotcha:** a Niagara
   emitter with collision that behaves as if the world is offset by the
   spawn point → check Local Space first.
+- **Hit and near-miss sounds (2026-10-24, user: "we have the assets, just
+  need the system").** Pack: `Real_Recorded_Guns/Cues/Bullet_Imacts_Flybys`
+  (one wave per cue, no attenuation of their own).
+  - **Hits:** `FImpactEffect::Sound` + **`SoundVariants`**, one picked at
+    random (`PickSound`, like the decal pool). A character hit on a bone in
+    **`HeadBones`** (`head`; both CC physics assets have that body) plays
+    one of **`HeadshotSounds`** instead. All impact sounds use
+    **`SoundAttenuation`** = `/Game/Audio/Weapons/ATT_BulletImpact`
+    (duplicate of `ATT_WeaponFoley`: full within 600 cm, silent by 3600)
+    at **`SoundVolume`**.
+  - **Mapping** (8 variations each, flesh 10): Concrete/Asphalt/Brick/
+    Plaster/Default → Concrete; Rock/Tile → Rocks; Dirt/Sand → Dirt; Metal →
+    Metal_hard; Plastic/Electronics → Metal_light; Wood → Wood_Hard;
+    Cardboard/Sheetrock → Wood_Light; Cloth/Carpet/Clay/Rubber → Mud; Glass
+    → Glass_Close; Grass/Leaves → Grass; Snow; Water; Blood → Body_Flesh.
+    Unused for now: Body_armor (a future armoured enemy), Glass_far.
+  - **Near misses:** `UImpactEffectsData::PlayNearMiss(From, To, Shooter,
+    HitActor)`, called from `AWeaponBase::FireHitscan` after every round's
+    trace. It takes the point of the round's path nearest the player's head
+    (`GetPawnViewLocation`); only if the round got past him (not stopped
+    short, not started beside him), wasn't his, didn't hit him, and passed
+    within **`NearMissRadius`** 250 cm. Plays one of **`NearMissSounds`**
+    (10 flybys) there, so it's directional, at **`NearMissVolume`**, at most
+    once per **`NearMissMinInterval`** 0.12 s (platform time, shared by every
+    weapon), so bursts and shotgun pellets don't stack. Hitscan only; rockets
+    and grenades make none.
+  - *(Tested by the user 2026-10-24: "sounds work".)*
 
 **Exaggeration pass (2026-10-09, user-confirmed in PIE).** The goal is
 John Woo-scale hits.
@@ -1416,6 +1443,14 @@ hit bones, physics and weapon attachment all run on it.
   components are created by CC (`Apparel_<slot>` / `Hair_<slot>` tags,
   leader-posed to the body). A property read on a literal object in a BP graph
   reads `self` — the preset must be a variable (`Preset`).
+  **Body and head from the preset (2026-10-24):** `BuildCCCharacter` (both
+  `BP_Enemy_CC` and `BP_Player_CC`) sets the body mesh to `Preset.Body` and
+  the head to `Preset.Head` (`CC_Preset_DataAsset`'s soft references, loaded
+  with `LoadAssetBlocking` first so they can't resolve to nothing), so a
+  female preset makes a female character; the mesh set on the Blueprint is
+  only the editor default. Verified: a placed `BP_Enemy_CC` with the female
+  preset built `CCMH_Body_Female` + `CCMH_Head_Female` (viewport check), and
+  male enemies and the player still build as before (PIE).
 - **Skeleton:** `CCMH_Skeleton` ⊇ UE5 Manny's bones except `ik_*` (to add on
   the body meshes by hand). Compatible both ways with `SK_Mannequin`; CCMH also
   lists the Shotgun, Dodge, Dodge-Prone and Kamz pack skeletons
@@ -1458,6 +1493,18 @@ hit bones, physics and weapon attachment all run on it.
   `+` tables; hair blacklist (afros, bobs, female long/ponytail, `Short_01`);
   outfits `DT_Outfits_PH_M` = Formal, Police_Officer, Manual_Labor,
   Retail_Worker + placeholder `PH_Street_Thug` / `PH_Goon` (design to tune).
+- **Preset `CCMH_Preset_PH_Female`** (2026-10-24; female civilians): copy of
+  CC's `CCMH_Preset_Female_01` — female body/head, Asian, skin tones 03 + 02
+  (the skin textures are shared between genders), the female `+` apparel
+  tables, the stock female hair blacklist (no male styles, beards or afros),
+  voice Female1. Outfits `DT_Outfits_PH_F` = `DT_Outfits_F+` minus
+  Casual_Fall/Winter, Weatherproof (climate), Pyjamas, Beachwear, Club,
+  Police_Officer (not a civilian): Casual_Spring/Summer, Street, Sporty,
+  Formal, Corporate, Business_Casual, Retail_Worker, Medical_Staff — a
+  placeholder set, design to tune. Its default face is the stock one;
+  `RandomizeLook` applies the Asian head shapes. No civilian Blueprint yet:
+  a civilian role needs its own female `Hairstyles`/`Eyebrows`/`Outfits`
+  lists and `BeardChance` 0 (the role lists live on the Blueprint).
 - **Creator level `/Game/Characters/CC/Lvl_CharacterCreator`** (from CC2's
   apparel demo level): GameMode override `CC_GameMode`, a TargetPoint tagged
   **`CC Start`** on the floor (z 50, yaw 0) where CC spawns its customizer pawn;
@@ -1530,7 +1577,20 @@ hit bones, physics and weapon attachment all run on it.
   - **Tucked classification:** rest-pose hem height vs the jeans' top (108.7
     cm): tucked tops end above it (Shirt_01 101, Police A 99, Police B 103),
     untucked ones hang to 79–93. New tops: check the same way.
-  - Male tables only so far; female MIs need the same pass. Backup:
+  - **Female pass (2026-10-24):** same values by garment type, set by full
+    asset path (male and female MIs share names: two `MI_Shirt_01`, two
+    `MI_Jeans_Blue`…). Female waist = 103 cm (police pants 116). **0**
+    jackets/cardigan/vest/blazers/apron/lab coat; **1** tees, sleeveless,
+    turtleneck, sweater, pullover, hoodies, sweatshirt, jersey,
+    tracksuit/pyjama/nurse tops, **dresses, swimsuits**; **2** everything in
+    the lower-body table (pants, shorts, **skirts**, tights, underwear,
+    bikini bottoms — it wins a material shared with a top); **3** Shirt_01,
+    the bow blouse, police shirts, corset, crop tops, sports bra, strap tops
+    (hems at or above the waist). Inner garments keep their own value — the
+    female blazer wears the **male** `MI_Shirt_01`, which stays 3. 67 MIs;
+    5 skipped because they aren't apparel-master children (lingerie
+    pattern/trim, `MI_Dress_Ada`, pantyhose, torn denim).
+  Backup:
     `/Game/Characters/CC/Backup/M_Base_Material_Apparel_Original`.
   **Rejected — hiding skin under clothing** (masked opacity from the apparel
   masks on the body / `Neck_Mask` × `Neck Shrink` on the head; tried and
@@ -1542,9 +1602,10 @@ hit bones, physics and weapon attachment all run on it.
   Apparel menu lists the preset's `DT Apparel`. `CC_Customizable_Character`
   Presets list starts with `CCMH_Preset_PH_Male`.
 - **Not yet:** body proportion sliders (CC drives them with ModifyBone in its
-  `CCMH_Body_AnimBP`, unused under Option B); female NPCs (`ik_*` on the female
-  body, a female preset, and the head mesh is hard-wired to male in
-  `BuildCCCharacter`).
+  `CCMH_Body_AnimBP`, unused under Option B); a civilian Blueprint for the female
+  preset (female characters are civilians plus one story character — user,
+  2026-10-24; lore doc *Female characters*). The female body, head, preset
+  and clothing layers are done (2026-10-24).
 - **Cost:** dressed character ≈ 30k verts LOD0 (body 7.3k, head 4.9k, items
   2.5–5.3k), 4–5 LODs per part, ~12 draw calls (head has 6 sections), 35 head
   shape targets; skin textures 4K (cap to 1–2K for the Deck).

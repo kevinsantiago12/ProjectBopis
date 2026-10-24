@@ -678,6 +678,11 @@ the room rather than hunting the player. Some may wait **crouched**. They do
 *Original entry:* Linear navigation, nonlinear combat. Freedom comes from how
 the player uses the geometry within an arena, not from branching routes.
 
+## Female characters — *stated 2026-10-24*
+**Stated by the user:** female characters are **civilians, plus one story
+character**. Which story character, and anything else about her, isn't
+recorded here.
+
 ## FPS combat philosophy — *settled 2026-10-15*
 **Judged by the user:** replaced by the Max Payne 1 and 2 shooting model (see
 PART 3, *Shooting model*). Kept from it: hip-fire fully effective, no

@@ -10,6 +10,7 @@
 class UNiagaraSystem;
 class UMaterialInterface;
 class USoundBase;
+class USoundAttenuation;
 
 /** What a hit on one kind of surface spawns. Any part may be left empty. */
 USTRUCT(BlueprintType)
@@ -42,6 +43,10 @@ struct FImpactEffect
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact")
 	TObjectPtr<USoundBase> Sound;
+
+	/** More hit sounds to pick from at random, alongside Sound. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact")
+	TArray<TObjectPtr<USoundBase>> SoundVariants;
 };
 
 /**
@@ -59,6 +64,12 @@ public:
 	/** Spawns the effect for whatever surface the hit reports, or Default. */
 	void SpawnImpact(const UObject* WorldContext, const FHitResult& Hit) const;
 
+	/** A round that went past the player without hitting him: the crack of it going by, at the
+	    point of its path nearest his head, if that's within NearMissRadius. Rounds the player
+	    fires himself, or that stop short of him, make none. */
+	void PlayNearMiss(const UObject* WorldContext, const FVector& From, const FVector& To,
+		const AActor* Shooter, const AActor* HitActor) const;
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact")
@@ -74,4 +85,40 @@ protected:
 	/** Multiplies every burst's scale — the one knob for "bigger everywhere". */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact", meta = (ClampMin = "0.01"))
 	float EffectScale = 1.0f;
+
+	/** A hit on a character's head plays one of these instead of its surface's sound. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound")
+	TArray<TObjectPtr<USoundBase>> HeadshotSounds;
+
+	/** The bones that count as the head for HeadshotSounds. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound")
+	TArray<FName> HeadBones = { TEXT("head") };
+
+	/** How far hit and near-miss sounds carry, and where they pan from. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound")
+	TObjectPtr<USoundAttenuation> SoundAttenuation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound", meta = (ClampMin = "0.0"))
+	float SoundVolume = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Near Miss")
+	TArray<TObjectPtr<USoundBase>> NearMissSounds;
+
+	/** How close (cm) to the player's head a round must pass to be heard going by. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Near Miss", meta = (ClampMin = "0.0"))
+	float NearMissRadius = 250.0f;
+
+	/** At most one near miss per this many seconds, so a burst or a shotgun's pellets don't stack. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Near Miss", meta = (ClampMin = "0.0"))
+	float NearMissMinInterval = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Near Miss", meta = (ClampMin = "0.0"))
+	float NearMissVolume = 1.0f;
+
+private:
+	/** One clip from First and Variants, at random; null when both are empty. */
+	static USoundBase* PickSound(USoundBase* First, const TArray<TObjectPtr<USoundBase>>& Variants);
+
+	/** When the last near miss played (platform seconds), across every weapon using this asset. */
+	mutable double LastNearMissTime = 0.0;
 };

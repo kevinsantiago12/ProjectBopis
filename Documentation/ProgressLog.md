@@ -86,6 +86,34 @@
   `MissCarryDistance` 1500 — a miss checks its own path, mirrors to the other
   side or holds. Built clean, bridge up, DLL newer.
   **Tested by the user: "misses work".**
+- **Bullet hit and near-miss sounds (plan item 26).** Real Recorded Guns
+  cues wired into `DA_ImpactEffects`: per-surface `Sound` + `SoundVariants`
+  (all 24 surfaces + Default), `HeadshotSounds` (bone `head`),
+  `NearMissSounds`, `SoundAttenuation` = new `ATT_BulletImpact`.
+  `PlayNearMiss` runs after every hitscan round. Applied by Claude ("apply
+  and run"); built clean, bridge up, DLL newer; assets checked (every cue
+  path exists, other DA fields unchanged) and saved. Spec: *Impact effects →
+  Hit and near-miss sounds*.
+  **Tested by the user: "sounds work".**
+- **Female CC (user: "for civilians … and one story character").** Lore doc
+  *Female characters* + spec note. **`ik_` bones on `CCMH_Body_Female`**
+  (user): the copy/paste attempt misnamed a bone and Merge All tried to
+  re-merge the male (failed, nothing saved); restarted without saving,
+  `git restore`d the female mesh, then added the seven bones by hand →
+  Merge. Verified: female has all seven, male + `CCMH_Skeleton` unchanged,
+  no merge warnings. Gotcha in the plan. Next: head per gender, civilian
+  preset, female clothing layers.
+- **Female characters, rest of the list (user: "do all the fix in the
+  checklist … including that one").** (1) `BuildCCCharacter` (enemy +
+  player) takes body and head from the preset (`LoadAssetBlocking` + set);
+  a first write bound the wrong getter class and resolved soft refs only —
+  reverted unsaved, rewritten with `:self` + loads. Verified with a placed
+  female (viewport capture: female body + head, hair) and male enemies +
+  player in PIE. (2) `CCMH_Preset_PH_Female` + `DT_Outfits_PH_F` (8
+  placeholder civilian outfits). (3) Female clothing layers: 67 MIs by path;
+  the pass overwrote the **male** `MI_Shirt_01` (inner shirt of the female
+  blazer) to 1 — caught on read-back and restored to 3; male-side values
+  otherwise unchanged. Gotchas in the plan.
 - **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
   nothing visible (component scale doesn't reach these sprite sizes); the
   user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
@@ -97,29 +125,28 @@
   Space off on BloodChunks1** (user: "that fixed it"). Gotcha in the spec.
 
 ### ▶ RESUME HERE
+0. **See a female civilian:** no civilian Blueprint yet. To look at one, set a
+   CC character's `Preset` to `CCMH_Preset_PH_Female` with `bRandomizeLook` off
+   (random looks use the Blueprint's male hair/outfit lists). Check the
+   clothing layers at the waist with a few outfits.
 1. **Wheel cycling (mapped by the user 2026-10-24):** quick check — with the
    number-key wheel up, the mouse wheel steps the lit type's weapons; pad:
    hold LB, point, D-pad Up/Down steps, release equips.
-2. **Untrack the source audio (user):** `git rm -r --cached "Audio Processing"`
-   then commit — the ignore rule only covers new files.
-3. **Commit (user)** — everything since `ffcfde52`: bark pitch spread
-   (`BarkSet.h`, `BarkSubsystem.h/.cpp`); shots on CC people
-   (`EnemyBase.h/.cpp`, `ImpactEffectsData.cpp`, the Blood override on
-   `BP_EnemyBase`, `BP_PlayerCharacter`, `BP_Enemy_CC`, `_Goon`, `_Thug`,
-   `BP_Player_CC`); `NS_ImpactBlood` (user's trim + Local Space off),
-   `DA_ImpactEffects` (Blood Scale 0.5); user's `IMC_Default` (wheel cycle)
-   and `BP_DualPistols`; the three docs.
-4. **Fix (user, 10 s), if not done yet:** `AM_Pistol_Reload_Offhand` → the
+2. **Commit (user)** — since `3c332fdb` ("Added Blood Impacts"): bullet hit
+   and near-miss sounds (`ImpactEffectsData.h/.cpp`, `WeaponBase.cpp`,
+   `DA_ImpactEffects`, new `ATT_BulletImpact`); the user's `BP_DualPistols`;
+   the three docs.
+3. **Fix (user, 10 s), if not done yet:** `AM_Pistol_Reload_Offhand` → the
    Chamber notify → tick **Offhand**, save.
-5. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
+4. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
    `VolumeScale`, per-surface sets) and `ATT_Footstep`; physical materials
    on level materials / patches as levels get dressed.
-6. **Re-check once:** consecutive shots while looking around (should no
+5. **Re-check once:** consecutive shots while looking around (should no
    longer chop); if it still cuts *all* audio, it's the mixer's 32-source
    ceiling → sound priorities.
-7. Sound polish (plan item 23): pack loudness match, per-gun clicks,
+6. Sound polish (plan item 23): pack loudness match, per-gun clicks,
    round-robin variants, Weapons sound class (like `SC_Barks`).
-8. Carry-overs: clothing layers on the female MIs + tucked list review;
+7. Carry-overs: clothing layers on the female MIs + tucked list review;
    optional `DualLoweredPlayRate` → `LoweredJogPlayRate` rename (user
    types); Git LFS as one deliberate commit; CC2 remainder (10-21 (3) list).
 
