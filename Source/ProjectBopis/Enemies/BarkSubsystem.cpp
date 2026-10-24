@@ -109,3 +109,62 @@ UAudioComponent* UBarkSubsystem::PlayVoice(AActor* Speaker, USoundBase* Sound, f
 	Voice->Play();
 	return Voice;
 }
+
+float UBarkSubsystem::AssignPitch(const AActor* Speaker, const UBarkVoice* Voice)
+{
+	ReleasePitch(Speaker);
+	if (!Voice)
+	{
+		return 1.0f;
+	}
+	const float Min = FMath::Min(Voice->PitchMin, Voice->PitchMax);
+	const float Max = FMath::Max(Voice->PitchMin, Voice->PitchMax);
+
+	// What the voice's other speakers already have, low to high.
+	TArray<float> Taken;
+	for (const FAssignedPitch& Assigned : AssignedPitches)
+	{
+		if (Assigned.Voice.Get() == Voice)
+		{
+			Taken.Add(Assigned.Pitch);
+		}
+	}
+	Taken.Sort();
+
+	float Pitch = FMath::FRandRange(Min, Max);
+	if (!Taken.IsEmpty())
+	{
+		// The emptiest spot: an end of the range, or the middle of the widest gap between two
+		// taken pitches; then a little jitter so the spacing doesn't sound mechanical.
+		float Clearance = Taken[0] - Min;
+		Pitch = Min;
+		if (Max - Taken.Last() > Clearance)
+		{
+			Clearance = Max - Taken.Last();
+			Pitch = Max;
+		}
+		for (int32 Index = 1; Index < Taken.Num(); ++Index)
+		{
+			const float HalfGap = (Taken[Index] - Taken[Index - 1]) * 0.5f;
+			if (HalfGap > Clearance)
+			{
+				Clearance = HalfGap;
+				Pitch = Taken[Index - 1] + HalfGap;
+			}
+		}
+		const float Jitter = Clearance * Voice->PitchSpreadJitter;
+		Pitch = FMath::Clamp(Pitch + FMath::FRandRange(-Jitter, Jitter), Min, Max);
+	}
+
+	AssignedPitches.Add({ Speaker, Voice, Pitch });
+	return Pitch;
+}
+
+void UBarkSubsystem::ReleasePitch(const AActor* Speaker)
+{
+	// Also drops speakers that went away without dying (level unload, a destroyed actor).
+	AssignedPitches.RemoveAll([Speaker](const FAssignedPitch& Assigned)
+	{
+		return !Assigned.Speaker.IsValid() || Assigned.Speaker.Get() == Speaker;
+	});
+}

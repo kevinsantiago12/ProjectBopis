@@ -56,6 +56,72 @@
   (10, 8) (applied by Claude, "apply and run"; built clean, bridge up, DLL
   newer). The user's saved WBP still has the earlier paste (copy on top):
   re-paste, or swap the icon slots' ZOrder.
+- **`.gitignore`:** `/Audio Processing/` (source recordings and edits). The
+  14 files already tracked there stay tracked until
+  `git rm -r --cached "Audio Processing"` (user's call, with a commit).
+- **Tested (user, end of session):** "stuff is tested" — the designer wheel
+  (shared icon height, widest icon deciding, accepted as is; dual shadow
+  pair), bark volume via `SC_Barks`. Committed by the user as `ffcfde52`
+  "Add Weapon Wheel and Bark Dialog Update". **Only `IA_WeaponWheelCycle`
+  mapping is left** — tomorrow.
+- **Bark pitch spread (user: random pitches could land almost the same):**
+  `UBarkSubsystem::AssignPitch` / `ReleasePitch` + `FAssignedPitch` list;
+  `UBarkVoice::PitchSpreadJitter` 0.3; `AEnemyBase::RollVoicePitch` asks the
+  subsystem, `Die` releases. Applied by Claude ("apply and run"); built
+  clean, bridge up, DLL newer. (A first patch script dropped its anchor
+  lines; restored from backup and redone before building.) Spec: *Enemy
+  barks → Pitch spread*.
+  **Tested by the user: "pitch spread works".**
+- **Shots on CC people (user: "they shoot each other again… bullet holes
+  appear on the CC models"):** checked live in PIE first — collision hadn't
+  changed (capsule Pawn; body the only bullet-blocking part; clothes/head no
+  collision). Causes: (1) **no character had a physical material**, so body
+  hits used `DA_ImpactEffects` Default = concrete + bullet hole, projected onto
+  every CC piece; (2) **misses** (60–150 cm beside the player) leave the
+  ally-check tube and, with friendly fire on, hit allies beside/behind the
+  player. Fixes (applied by Claude, "apply and run"): Phys Material Override
+  = `Blood` on the Mesh of `BP_EnemyBase` + `BP_PlayerCharacter` (bridge; CC
+  children inherit; verified in PIE on `BP_Enemy_CC` and `BP_Player_CC`);
+  `SpawnImpact` skips decals on characters; `AEnemyBase::IsAllyAlong` +
+  `MissCarryDistance` 1500 — a miss checks its own path, mirrors to the other
+  side or holds. Built clean, bridge up, DLL newer.
+  **Tested by the user: "misses work".**
+- **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
+  nothing visible (component scale doesn't reach these sprite sizes); the
+  user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
+  then froze at the hit height on an invisible, raised copy of the floor.
+  Tried: Distance Field collision (kept), small collision radius (no
+  effect), a "Debris" trace channel + CPU ray trace (config, Blueprint
+  responses, docs — **rolled back** at the user's call, verified: config
+  back to HEAD, all six Blueprints' responses as before). **Fix: Local
+  Space off on BloodChunks1** (user: "that fixed it"). Gotcha in the spec.
+
+### ▶ RESUME HERE
+1. **Wheel cycling (mapped by the user 2026-10-24):** quick check — with the
+   number-key wheel up, the mouse wheel steps the lit type's weapons; pad:
+   hold LB, point, D-pad Up/Down steps, release equips.
+2. **Untrack the source audio (user):** `git rm -r --cached "Audio Processing"`
+   then commit — the ignore rule only covers new files.
+3. **Commit (user)** — everything since `ffcfde52`: bark pitch spread
+   (`BarkSet.h`, `BarkSubsystem.h/.cpp`); shots on CC people
+   (`EnemyBase.h/.cpp`, `ImpactEffectsData.cpp`, the Blood override on
+   `BP_EnemyBase`, `BP_PlayerCharacter`, `BP_Enemy_CC`, `_Goon`, `_Thug`,
+   `BP_Player_CC`); `NS_ImpactBlood` (user's trim + Local Space off),
+   `DA_ImpactEffects` (Blood Scale 0.5); user's `IMC_Default` (wheel cycle)
+   and `BP_DualPistols`; the three docs.
+4. **Fix (user, 10 s), if not done yet:** `AM_Pistol_Reload_Offhand` → the
+   Chamber notify → tick **Offhand**, save.
+5. **Footstep tuning (user):** `DA_FootstepEffects` (gait volumes,
+   `VolumeScale`, per-surface sets) and `ATT_Footstep`; physical materials
+   on level materials / patches as levels get dressed.
+6. **Re-check once:** consecutive shots while looking around (should no
+   longer chop); if it still cuts *all* audio, it's the mixer's 32-source
+   ceiling → sound priorities.
+7. Sound polish (plan item 23): pack loudness match, per-gun clicks,
+   round-robin variants, Weapons sound class (like `SC_Barks`).
+8. Carry-overs: clothing layers on the female MIs + tucked list review;
+   optional `DualLoweredPlayRate` → `LoweredJogPlayRate` rename (user
+   types); Git LFS as one deliberate commit; CC2 remainder (10-21 (3) list).
 
 ---
 
@@ -177,7 +243,9 @@
   end alleys with shanty doors as enemy entrances, 3 wander points. Open
   (user's): one-time vs. returning grenades/rockets; endless vs. a goal.
 
-### ▶ RESUME HERE
+*(RESUME HERE moved to 2026-10-24.)*
+
+### (old) RESUME HERE
 1. **Fix (user, 10 s):** `AM_Pistol_Reload_Offhand` → the Chamber notify →
    tick **Offhand**, save.
 2. **Weapon wheel, designer version:** in `WBP_WeaponWheel` delete

@@ -474,33 +474,37 @@ bool AEnemyBase::FireAt(const FVector& Target, bool bHit)
 		Offset = Right * (FMath::RandBool() ? Side : -Side)
 			+ Up * (FMath::FRandRange(-0.25f, 1.0f) * NearMissHeight);
 	}
-	const FVector Direction = (Target + Offset - Muzzle).GetSafeNormal();
-
 	// Never through a friend: if a live ally's body is in the tube from the muzzle to the
 	// player (LineOfFireRadius wide), hold every shot — hit or near miss — and try again next
 	// tick; the burst isn't used up. Pawn bodies only: an ally's gun, held out in front,
 	// mustn't hide the ally behind it.
+	if (IsAllyAlong(Muzzle, Target))
 	{
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(EnemyLineOfFire), false, this);
-		// To the player (the point this shot is built around), not the round's own path: a
-		// near miss offset past a friend is still firing through him.
-		const FVector End = Target;
-		TArray<FHitResult> Hits;
-		GetWorld()->SweepMultiByObjectType(Hits, Muzzle, End, FQuat::Identity,
-			FCollisionObjectQueryParams(ECC_Pawn), FCollisionShape::MakeSphere(LineOfFireRadius), Params);
+		LineOfFireBlockedTime += GetWorld()->GetDeltaSeconds();
+		return false;
+	}
 
-		const bool bAllyInTheWay = Hits.ContainsByPredicate([](const FHitResult& Hit)
+	// A miss goes on past the player: if a friend is on its own path (beside the player or
+	// behind him), send it past the other side instead, and hold if that's no better.
+	if (!bHit)
+	{
+		const float Reach = FVector::Dist(Muzzle, Target) + MissCarryDistance;
+		auto IsMissBlocked = [&](const FVector& MissOffset)
 		{
-			const AEnemyBase* Ally = Cast<AEnemyBase>(Hit.GetActor());
-			return Ally && !Ally->IsDead();
-		});
-
-		if (bAllyInTheWay)
+			return IsAllyAlong(Muzzle, Muzzle + (Target + MissOffset - Muzzle).GetSafeNormal() * Reach);
+		};
+		if (IsMissBlocked(Offset))
 		{
-			LineOfFireBlockedTime += GetWorld()->GetDeltaSeconds();
-			return false;
+			const FVector OtherSide = Offset - 2.0f * FVector::DotProduct(Offset, Right) * Right;
+			if (IsMissBlocked(OtherSide))
+			{
+				LineOfFireBlockedTime += GetWorld()->GetDeltaSeconds();
+				return false;
+			}
+			Offset = OtherSide;
 		}
 	}
+	const FVector Direction = (Target + Offset - Muzzle).GetSafeNormal();
 
 	// Exact: the shot is placed already, so the gun's own bloom stays out of it.
 	if (Weapon->Fire(Muzzle, Direction, true) != EFireResult::Fired)
@@ -512,12 +516,31 @@ bool AEnemyBase::FireAt(const FVector& Target, bool bHit)
 	return true;
 }
 
+bool AEnemyBase::IsAllyAlong(const FVector& From, const FVector& To) const
+{
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(EnemyLineOfFire), false, this);
+	TArray<FHitResult> Hits;
+	GetWorld()->SweepMultiByObjectType(Hits, From, To, FQuat::Identity,
+		FCollisionObjectQueryParams(ECC_Pawn), FCollisionShape::MakeSphere(LineOfFireRadius), Params);
+	return Hits.ContainsByPredicate([](const FHitResult& Hit)
+	{
+		const AEnemyBase* Ally = Cast<AEnemyBase>(Hit.GetActor());
+		return Ally && !Ally->IsDead();
+	});
+}
+
 void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 {
 	Super::Die(Killer, ShotDirection);
 
 	Bark(EBarkType::Death);
 	BarkAllyDown();
+
+	// Its pitch is free for the next spawn (the death line above already has it).
+	if (UBarkSubsystem* Barks = GetWorld()->GetSubsystem<UBarkSubsystem>())
+	{
+		Barks->ReleasePitch(this);
+	}
 
 	DropWeapon(ShotDirection);
 
@@ -736,7 +759,10 @@ void AEnemyBase::SetBarkVoice(UBarkVoice* Voice)
 
 void AEnemyBase::RollVoicePitch()
 {
-	VoicePitch = BarkVoice ? FMath::FRandRange(BarkVoice->PitchMin, BarkVoice->PitchMax) : 1.0f;
+	// Handed out by the bark subsystem, spread away from the voice's other speakers.
+	UWorld* World = GetWorld();
+	UBarkSubsystem* Barks = World ? World->GetSubsystem<UBarkSubsystem>() : nullptr;
+	VoicePitch = Barks ? Barks->AssignPitch(this, BarkVoice) : 1.0f;
 }
 
 bool AEnemyBase::Bark(EBarkType Type)

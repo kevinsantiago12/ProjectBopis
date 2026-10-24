@@ -4,6 +4,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/DecalComponent.h"
+#include "GameFramework/Character.h"
 #include "Sound/SoundBase.h"
 
 void UImpactEffectsData::SpawnImpact(const UObject* WorldContext, const FHitResult& Hit) const
@@ -52,7 +53,10 @@ void UImpactEffectsData::SpawnImpact(const UObject* WorldContext, const FHitResu
 		}
 	}
 
-	if (DecalPool.Num() > 0)
+	// People don't take bullet holes: the decal would land on every piece of the body and its
+	// clothes, and slide as they move. Their impact is the burst and the sound.
+	const bool bOnCharacter = Hit.GetActor() && Hit.GetActor()->IsA<ACharacter>();
+	if (DecalPool.Num() > 0 && !bOnCharacter)
 	{
 		// A decal projects along its X axis, so roll spins it around the surface
 		// normal — repeated holes don't all line up the same way.

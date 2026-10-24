@@ -192,6 +192,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour", meta = (ClampMin = "0.0"))
 	float LineOfFireRadius = 20.0f;
 
+	/** A miss carries on past the player: this far beyond him (cm) its own path is checked for
+	    allies too, and it's sent past his other side, or held, if one is on it. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour", meta = (ClampMin = "0.0"))
+	float MissCarryDistance = 1500.0f;
+
 	/** Searching: this long (seconds) at the last known spot without finding the player and
 	    the lead is gone — it roams instead (Gunman Check: Lead Gone). */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Roam", meta = (ClampMin = "0.0"))
@@ -412,7 +417,7 @@ public:
 
 	void SetBarkVoice(UBarkVoice* Voice);
 
-	/** Its own pitch for every line it says, rolled once from the voice's range. */
+	/** Its own pitch for every line it says, handed out once by the bark subsystem. */
 	float GetVoicePitch() const { return VoicePitch; }
 
 	/** A scripted event walks (or runs) it to Target while it's calm; patrolling waits until the
@@ -494,6 +499,9 @@ private:
 	    it fired. */
 	bool FireAt(const FVector& Target, bool bHit);
 
+	/** A live ally within LineOfFireRadius of the line From → To. */
+	bool IsAllyAlong(const FVector& From, const FVector& To) const;
+
 	/** A bone from HitBoneWeights, picked at random by weight. NAME_None if none apply. */
 	FName PickHitBone(const USkeletalMeshComponent* PlayerMesh) const;
 
@@ -528,7 +536,7 @@ private:
 	    losing the player long enough for a fresh engagement. */
 	bool bSightingCalled = false;
 
-	/** Rolls VoicePitch from the current voice's range (1 without a voice). */
+	/** Gets VoicePitch from the bark subsystem (1 without a voice). */
 	void RollVoicePitch();
 	float VoicePitch = 1.0f;
 

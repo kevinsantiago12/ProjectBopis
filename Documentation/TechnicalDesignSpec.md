@@ -496,6 +496,34 @@ decal chosen by the physical surface struck**. User-confirmed in PIE.
   - `Default` is the Concrete burst + `MI_Generic_1`.
 - **Level side:** a surface reacts only once its material (or instance) has a
   **Phys Material**. Otherwise it gets `Default`.
+- **Characters (2026-10-24):** the Mesh of `BP_EnemyBase` and
+  `BP_PlayerCharacter` has **Phys Material Override = `ImpactsVFXVol1/…/Blood`**
+  (SurfaceType23, friction 0.7, restitution 0.3); the CC children inherit it.
+  A component override reaches every physics-asset body (engine:
+  `FBodyInstance::GetSimplePhysicalMaterial` — body override > component
+  override > body setup > material > default). So a hit on a person plays the
+  Blood entry (`NS_ImpactBlood`, no decal, no sound yet; **Scale 0.5**,
+  user 2026-10-24: "scale the blood particles down" — × the asset's
+  `EffectScale` 1.5, tune it there live in PIE). Before, no character
+  had a physical material: body hits got `Default` (concrete burst +
+  `MI_Generic_1`), and the hole projected onto every CC piece (body, head,
+  clothes all receive decals). Safety net in code: `SpawnImpact` never spawns a
+  decal on an `ACharacter`. Set through the bridge (object reference →
+  restart before PIE); verified live on `BP_Enemy_CC` and `BP_Player_CC`.
+- **`NS_ImpactBlood`, trimmed by the user (2026-10-24).** Size: the DA
+  Scale only scales the component, which this system's sprite sizes
+  ignore, so the user cut emitters/modules in the Niagara editor instead
+  (Blood's DA Scale stays 0.5). **Floating chunks:** BloodChunks1 froze at
+  the hit height, on an invisible copy of the floor raised by that height
+  (slopes too). Cause: the emitter simulated in **Local Space**, and its
+  Collision module put particles in the wrong space; **Local Space off**
+  fixed it (user-confirmed). Collision Type is **Distance Field**, which
+  ignores skinned meshes, so chunks drop through people. Things tried and
+  ruled out on the way: a fixed small collision radius, and a "Debris"
+  trace channel with CPU ray-trace collision (built, then rolled back
+  entirely: config, Blueprint responses and docs). **Gotcha:** a Niagara
+  emitter with collision that behaves as if the world is offset by the
+  spawn point → check Local Space first.
 
 **Exaggeration pass (2026-10-09, user-confirmed in PIE).** The goal is
 John Woo-scale hits.
@@ -666,7 +694,7 @@ Lyra clips already carry.
 A GTA V-style radial picker (user's spec, 2026-10-23): a fixed ring of
 segments, **one per weapon type (`WeaponSlot` 1–6), counter-clockwise from
 the top**; each shows the type's current weapon. While it's open **combat
-input is blocked and time runs slow; movement and the camera stay free**. *(The first version had one
+input is blocked and time runs slow; movement and the camera stay free**. *(Tested by the user 2026-10-24; only the `IA_WeaponWheelCycle` mapping is left.)* *(The first version had one
 segment per carried weapon; replaced the same day.)*
 
 - **Keyboard (key mode):** a number key brings the wheel up with that type
@@ -1331,7 +1359,7 @@ per-type cooldown, chance, one bark per speaker (Death cuts it off), at most
 `SetLanguage(FName)` swaps language. No subtitles. Voice plays via the shared
 static `UBarkSubsystem::PlayVoice` (head, 3D, 400/2500 falloff; takes a pitch
 and a volume multiplier since 2026-10-23). **Variation (2026-10-23):** each
-enemy rolls `VoicePitch` from its voice's `PitchMin`–`PitchMax` (0.92–1.08)
+enemy gets a `VoicePitch` from its voice's `PitchMin`–`PitchMax` (0.92–1.08)
 when it gets the voice (`BeginPlay`, `SetBarkVoice`) and keeps it for every
 line — barks and scripted `AEncounterEvent::Say` lines — so one clip set
 reads as several men and each stays himself; `TryBark` adds ±`PitchJitter`
@@ -1354,6 +1382,21 @@ Grenade (a fused grenade's first bounce → nearest alerted enemy within
 no behaviour reacts to them. Test set: `/Game/Audio/ThugTest_BarkSet` +
 `ThugTest_BarkVoice` on `BP_EnemyBase` (clips currently stereo; mix to mono
 for proper 3D).
+
+**Pitch spread (2026-10-24, user: random rolls could land two enemies on almost
+the same pitch):** `UBarkSubsystem::AssignPitch(Speaker, Voice)` hands the
+pitches out. It tracks each living speaker's pitch per voice asset
+(`AssignedPitches`, weak pointers) and gives a new speaker the emptiest spot in
+the range: the first is random, then the two ends, then the middle of the
+widest gap, ± `PitchSpreadJitter` (0.3 of the clearance, on `UBarkVoice`) so the
+spacing isn't mechanical. `AEnemyBase::RollVoicePitch` asks for it; `Die` calls
+`ReleasePitch` after the death bark so respawns reuse the gaps; destroyed
+speakers are pruned on the next release. Per voice, because only speakers
+sharing a clip set can sound alike. Caveat: the per-bark `PitchJitter` (±0.03)
+can blur neighbours once a voice has more than ~5 living speakers in the
+0.16-wide range — widen the range or lower the jitter for crowds. *(Tested by the
+user 2026-10-24.)*
+
 
 ## NPC characters (CC2)
 
@@ -1937,6 +1980,19 @@ death* below).
     - Any live `AEnemyBase` in the tube means the shot is held (`FireAt`
       returns false). Hits and near misses alike, the burst isn't spent, and
       it retries next tick.
+    - **Misses check their own path too (2026-10-24; user: "they shoot each
+      other again" after the CC switch).** A near miss leaves the tube
+      (`NearMissMin`–`Max` 60–150 cm beside the player) and carries on, so an
+      ally beside or behind the player could take it — friendly fire is on
+      in `BP_EnemyBase`. The tube sweep is now the helper
+      `IsAllyAlong(From, To)`; a miss also sweeps its own direction out to
+      `MissCarryDistance` (1500 cm) past the player. An ally on it mirrors the
+      miss to the player's other side; both sides blocked holds the shot
+      like the tube does. Collision was checked live and hadn't changed with
+      CC: capsule Pawn 34 × 96 (ignores Visibility), body `CCMH_Body_Male`
+      Pawn query-only (the only part bullets hit), head/hair/clothes
+      (`CC_SkelMesh_C`) no collision, grooms PhysicsActor.
+      *(Tested by the user 2026-10-24: "misses work".)*
   - **Reposition when blocked:** held time accumulates in
     `LineOfFireBlockedTime`; a fired shot or a new move
     (`ClearLineOfFireBlocked`) resets it.

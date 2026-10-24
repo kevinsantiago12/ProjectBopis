@@ -67,14 +67,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Bark")
 	TMap<FName, TObjectPtr<UBarkSet>> Languages;
 
-	/** Each speaker rolls its own pitch from this range when it gets the voice, and keeps it for
-	    every line it says — one set of clips sounds like several people. 0.92–1.08 is a clear
-	    spread without chipmunks or giants. */
+	/** Each speaker gets its own pitch from this range when it gets the voice, and keeps it for
+	    every line it says — one set of clips sounds like several people. The bark subsystem
+	    hands them out spread apart, away from the pitches the voice's other living speakers
+	    have. 0.92–1.08 is a clear spread without chipmunks or giants. */
 	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.5", ClampMax = "1.5"))
 	float PitchMin = 0.92f;
 
 	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.5", ClampMax = "1.5"))
 	float PitchMax = 1.08f;
+
+	/** How far a new speaker's pitch may stray from the emptiest spot in the range, as a share
+	    of its distance to the nearest pitch already taken: 0 spaces them perfectly evenly. */
+	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PitchSpreadJitter = 0.3f;
 
 	/** On top, each bark varies by up to ± this in pitch... */
 	UPROPERTY(EditAnywhere, Category = "Bark|Variation", meta = (ClampMin = "0.0", ClampMax = "0.2"))

@@ -27,6 +27,14 @@ public:
 	static UAudioComponent* PlayVoice(AActor* Speaker, USoundBase* Sound, float FullRange, float Falloff,
 		float Pitch = 1.0f, float Volume = 1.0f);
 
+	/** A pitch for Speaker in Voice: from the voice's range, as far as it can get from the
+	    pitches the voice's other speakers have, so a room of them doesn't sound like twins.
+	    Replaces any pitch Speaker already had. */
+	float AssignPitch(const AActor* Speaker, const UBarkVoice* Voice);
+
+	/** Frees Speaker's pitch for the next one (at death). */
+	void ReleasePitch(const AActor* Speaker);
+
 	/** The language barks are picked in ("en", "tl"...). A voice without it falls back to English. */
 	UFUNCTION(BlueprintCallable, Category = "Bark")
 	void SetLanguage(FName InLanguage) { Language = InLanguage; }
@@ -52,6 +60,15 @@ private:
 
 	/** Each type's last line, so it isn't said twice running. */
 	TMap<EBarkType, TWeakObjectPtr<USoundBase>> LastPlayed;
+
+	/** The pitch each living speaker has, and whose voice it's in. */
+	struct FAssignedPitch
+	{
+		TWeakObjectPtr<const AActor> Speaker;
+		TWeakObjectPtr<const UBarkVoice> Voice;
+		float Pitch = 1.0f;
+	};
+	TArray<FAssignedPitch> AssignedPitches;
 
 	/** What's being said now. */
 	UPROPERTY()
