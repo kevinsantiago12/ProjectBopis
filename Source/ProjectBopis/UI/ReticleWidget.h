@@ -8,11 +8,14 @@
 #include "ReticleWidget.generated.h"
 
 /**
- * Crosshair: a static dot, drawn entirely by WBP_Reticle. Kept as the widget's parent
- * class so reticle behaviour has a home if it ever needs code again.
+ * Crosshair: a static dot, drawn entirely by WBP_Reticle. The code only hides it while the
+ * weapon wheel is up.
  */
 UCLASS()
 class PROJECTBOPIS_API UReticleWidget : public UPlayerHUDElementWidget
 {
 	GENERATED_BODY()
+
+protected:
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 };

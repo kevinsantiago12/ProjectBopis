@@ -176,8 +176,11 @@ firing on the move, drawn in tighter when taking careful aim. Dual submachine
 guns are planned to be carried the same way.
 
 You keep every gun you find. Ammunition is shared by calibre, so the guns that
-use the same rounds draw on one supply. Number keys pick a category: pistols,
-shotguns, rifles, sniper rifle. Press the same key again to cycle within it.
+use the same rounds draw on one supply. A number key brings up a **weapon
+wheel** — one slot per kind of gun — with that kind picked; the same key again
+steps through the guns of that kind, and a click takes the one shown. The world
+slows while the wheel is up, and you can keep moving. On a controller you hold
+a button and point at a slot.
 Weapons found on the ground give their ammunition if you already have that gun.
 A second pistol puts a dual pair in your hands as its own selection, alongside
 the single one. Drawing a gun takes a moment — you can't fire until it's up —
@@ -410,8 +413,9 @@ character. Working today:
   pin one down and you can keep it staggering, while the rest keep shooting
 - The dead drop their guns, which clatter to the floor and can be picked up for
   the weapon or its ammunition
-- Bullet impacts that match what was hit (dust, sparks, splinters, bullet
-  holes), muzzle flash, weapon sound
+- Bullet impacts that match what was hit — dust, sparks, splinters and bullet
+  holes, and blood on people — each with its own sound; a headshot sounds
+  different. Muzzle flash, weapon sound
 - Scripted moments: enemies you overhear talking before they know you are
   there — they speak, gesture, walk and turn to each other, and either play
   the scene out or break off the moment they spot you; a scene can also start
@@ -419,6 +423,23 @@ character. Working today:
 - Enemies that call out in a fight — spotting you, reloading, hurt, a friend
   down, a grenade at their feet — kept from talking over each other, with
   room for a Tagalog voice set alongside the English placeholders
+- Rounds that miss you crack past your head, from the side they passed on
+- Gunshots that carry and fade with distance; reloads and drawing a gun have
+  their own sounds
+- Footsteps that sound like the floor, and a thud when you land a dive, a roll
+  or a fall
+- The body leans into turns when running or walking; slow motion can be cut
+  short mid-dive
+- A weapon wheel for picking guns, with the world slowed while it's open
+- People built from a character creator — varied Filipino faces, skin tones,
+  hair and clothing, men and women — plus a creator for authoring the look
+  of named characters. Women are planned as civilians and one story character
+- Enemy voices that differ from man to man even when they share a set of lines
+- Enemies who hold their fire rather than shoot through a friend in the way
+- Music that sets the mood and changes as you move through a level, unaffected
+  by slow motion
+- Rooms that send in reinforcements in waves as a fight thins out
+- A level ending: the screen fades out and the next level begins
 
 All of it was built under the old premise, and all of it is **implementation
 state rather than canon** — the test bed the new direction gets evaluated
@@ -484,3 +505,9 @@ a shooting range.
   casings added to the build.
 - 2026-10-21 — Overheard enemy conversations (scripted scenes that can break
   off or start the fight) and enemy combat call-outs added to the build.
+- 2026-10-24 — Weapon wheel; bullet, near-miss, footstep and landing sounds;
+  blood on hits; people from a character creator, men and women (women planned
+  as civilians and one story character); enemy voices that vary; enemies hold
+  fire for their friends.
+- 2026-10-25 — Music that changes through a level; reinforcements in waves; a
+  level ending.

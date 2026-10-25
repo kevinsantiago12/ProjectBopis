@@ -72,7 +72,8 @@ struct FEncounterSpawn
 	UPROPERTY(EditAnywhere, Category = "Spawn")
 	TObjectPtr<UBarkVoice> Voice;
 
-	/** Seconds after the trigger fires: a stagger, so a doorway pours out one by one. */
+	/** Seconds after the trigger fires (in a wave: after the wave starts): a stagger, so a doorway
+	    pours out one by one. */
 	UPROPERTY(EditAnywhere, Category = "Spawn", meta = (ClampMin = "0.0"))
 	float Delay = 0.0f;
 
@@ -83,10 +84,39 @@ struct FEncounterSpawn
 	TObjectPtr<AEncounterTrigger> WaitForTrigger;
 };
 
+/** More enemies a trigger brings in after its first Spawns, once the room has thinned out. */
+USTRUCT(BlueprintType)
+struct FEncounterWave
+{
+	GENERATED_BODY()
+
+	/** Who comes in: entries as in the trigger's Spawns, each on its own Delay from the wave's start. */
+	UPROPERTY(EditAnywhere, Category = "Wave")
+	TArray<FEncounterSpawn> Spawns;
+
+	/** It's due once the room is down to this many standing (0: everyone before it down),
+	    counted only after the wave before it is all in. */
+	UPROPERTY(EditAnywhere, Category = "Wave", meta = (ClampMin = "0"))
+	int32 StartWhenAliveAtMost = 0;
+
+	/** Seconds from due to coming in: a breather. */
+	UPROPERTY(EditAnywhere, Category = "Wave", meta = (ClampMin = "0.0"))
+	float Delay = 2.0f;
+
+	/** Scripted events it starts as it comes in (a shout for backup, say). */
+	UPROPERTY(EditAnywhere, Category = "Wave")
+	TArray<TObjectPtr<AEncounterEvent>> EventsToStart;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEncounterClearedSignature, AEncounterTrigger*, Trigger);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEncounterWaveSignature, AEncounterTrigger*, Trigger, int32, WaveIndex);
+
 /**
  *  A room's start line: when the player walks into the box, every linked enemy is set off at
  *  once (each still takes its reaction beat before shooting), and its Spawns come in. Place it
- *  at the doorway, midway down a hallway, or before a room as a spawn-ahead line.
+ *  at the doorway, midway down a hallway, or before a room as a spawn-ahead line. Its Waves
+ *  follow as the room thins out; once every enemy it set off or brought in is down, the room's
+ *  cleared, and what waits on that goes.
  */
 UCLASS()
 class PROJECTBOPIS_API AEncounterTrigger : public AActor
@@ -108,6 +138,22 @@ public:
 
 	/** Goes off as if the player had walked in (a scripted event's Set Off Encounter step). */
 	void Fire();
+
+	/** Every enemy it set off or brought in is down, with no one (and no wave) left to come. */
+	UFUNCTION(BlueprintPure, Category = "Encounter")
+	bool IsCleared() const { return bCleared; }
+
+	/** Its enemies still standing, spawns on their way included (not waves still to come). */
+	UFUNCTION(BlueprintPure, Category = "Encounter")
+	int32 GetAliveCount() const;
+
+	/** Goes off once, when the room's cleared: for a level script (music, a door). */
+	UPROPERTY(BlueprintAssignable, Category = "Encounter")
+	FEncounterClearedSignature OnCleared;
+
+	/** Goes off as each wave comes in (WaveIndex: its place in Waves, from 0). */
+	UPROPERTY(BlueprintAssignable, Category = "Encounter")
+	FEncounterWaveSignature OnWaveStarted;
 
 protected:
 	virtual void BeginPlay() override;
@@ -148,6 +194,11 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Encounter")
 	TArray<FEncounterSpawn> Spawns;
 
+	/** More enemies after the first Spawns, in order, each once the room has thinned out (the
+	    first, only after the trigger's fired). The room isn't cleared till the last is in and down. */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Waves")
+	TArray<FEncounterWave> Waves;
+
 	/** The enemy class for spawns that don't name one. */
 	UPROPERTY(EditAnywhere, Category = "Encounter")
 	TSubclassOf<AEnemyBase> DefaultEnemyClass;
@@ -157,8 +208,17 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Encounter")
 	TArray<TObjectPtr<AEncounterEvent>> EventsToStart;
 
-	/** Editor only: lines to everything it's linked to (enemies orange, spawn points red, ambush
-	    points yellow, patrol routes green, the trigger a spawn waits for cyan). */
+	/** Scripted events it starts once the room's cleared. */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared")
+	TArray<TObjectPtr<AEncounterEvent>> EventsOnCleared;
+
+	/** Triggers it sets off once the room's cleared (the next room's ambush, say). */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared")
+	TArray<TObjectPtr<AEncounterTrigger>> TriggersOnCleared;
+
+	/** Editor only: lines to everything it's linked to (enemies orange, spawn points red — a
+	    wave's pink — ambush points yellow, patrol routes green, the trigger a spawn waits for
+	    cyan, what it sets going once cleared white). */
 	UPROPERTY(EditAnywhere, Category = "Encounter")
 	bool bDrawLinks = true;
 
@@ -167,8 +227,28 @@ private:
 public:
 
 private:
-	/** Brings in Spawns[Index]. */
-	void SpawnOne(int32 Index);
+	/** Brings in a list's entries, each on its own Delay: the first Spawns (WaveIndex INDEX_NONE)
+	    or a wave's. */
+	void BringIn(int32 WaveIndex);
+
+	/** Brings in Spawns[Index] (WaveIndex INDEX_NONE) or Waves[WaveIndex].Spawns[Index]. */
+	void SpawnOne(int32 WaveIndex, int32 Index);
+
+	/** Polled: brings in the next wave when it's due, and once the room's cleared, sets going
+	    what waits on it. */
+	void UpdateRoom();
 
 	bool bTriggered = false;
+
+	bool bCleared = false;
+
+	/** Delayed spawns that haven't come in yet: the room isn't cleared without them. */
+	int32 PendingSpawns = 0;
+
+	/** The wave to come next (an index into Waves), and the world time it comes (below 0: not
+	    due yet). */
+	int32 NextWave = 0;
+	double NextWaveAt = -1.0;
+
+	FTimerHandle RoomTimer;
 };

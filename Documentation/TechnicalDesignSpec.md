@@ -15,6 +15,99 @@
 
 ---
 
+## Contents
+
+- [Setting change 2026-09-13 — implications](#setting-change-2026-09-13--implications)
+- [Combat: the shooting model — Max Payne 1/2 (2026-10-15)](#combat-the-shooting-model--max-payne-12-2026-10-15)
+  - [Firing — hold the trigger (increment 1)](#firing--hold-the-trigger-increment-1)
+  - [Accuracy — spread (increment 2)](#accuracy--spread-increment-2)
+  - [Enemy firing pattern — per weapon (increment 2b)](#enemy-firing-pattern--per-weapon-increment-2b)
+  - [Configured values (2026-10-15, written through the bridge)](#configured-values-2026-10-15-written-through-the-bridge)
+  - [Ammo values](#ammo-values)
+  - [Trace source — two-stage (rewritten 2026-10-03)](#trace-source--two-stage-rewritten-2026-10-03)
+  - [Weapon raised vs lowered — hip-fire (2026-10-04)](#weapon-raised-vs-lowered--hip-fire-2026-10-04)
+  - [Crouch — a stationary stance (2026-10-05)](#crouch--a-stationary-stance-2026-10-05)
+  - [Muzzle obstruction](#muzzle-obstruction)
+- [Rendering target](#rendering-target)
+  - [Current state vs. target](#current-state-vs-target)
+  - [What switching actually costs](#what-switching-actually-costs)
+  - [Implications for gameplay work](#implications-for-gameplay-work)
+- [Weapons: data, not code](#weapons-data-not-code)
+  - [Projectile vs hitscan](#projectile-vs-hitscan)
+  - [Impact effects — per surface (2026-10-09)](#impact-effects--per-surface-2026-10-09)
+  - [Weapon sounds (2026-10-23)](#weapon-sounds-2026-10-23)
+  - [Footsteps (2026-10-23)](#footsteps-2026-10-23)
+  - [Weapon wheel (2026-10-23)](#weapon-wheel-2026-10-23)
+- [Ammo](#ammo)
+  - [Shared ammo pool (2026-10-08)](#shared-ammo-pool-2026-10-08)
+  - [Pickups and the backpack (2026-10-08)](#pickups-and-the-backpack-2026-10-08)
+  - [Equip animation (2026-10-08)](#equip-animation-2026-10-08)
+  - [Fire result](#fire-result)
+  - [Reload](#reload)
+  - [Directional hit indicator (2026-10-16)](#directional-hit-indicator-2026-10-16)
+  - [Shell casings (2026-10-16)](#shell-casings-2026-10-16)
+  - [Pellets and damage falloff (2026-10-03)](#pellets-and-damage-falloff-2026-10-03)
+- [Explosives (2026-10-19)](#explosives-2026-10-19)
+- [Encounter triggers, ambushes and spawning (2026-10-19)](#encounter-triggers-ambushes-and-spawning-2026-10-19)
+- [Background music (2026-10-24)](#background-music-2026-10-24)
+- [Level exit (2026-10-24)](#level-exit-2026-10-24)
+- [NPC characters (CC2)](#npc-characters-cc2)
+- [Enemies](#enemies)
+  - [Built so far (2026-10-09) — steps 1–3, user-confirmed in PIE](#built-so-far-2026-10-09--steps-13-user-confirmed-in-pie)
+  - [Taking bullets and dying — step 4a (2026-10-09/10, user-confirmed in PIE)](#taking-bullets-and-dying--step-4a-2026-10-0910-user-confirmed-in-pie)
+  - [Hit reactions while alive — step 4b (2026-10-10, built while the user was away; user-confirmed in PIE)](#hit-reactions-while-alive--step-4b-2026-10-10-built-while-the-user-was-away-user-confirmed-in-pie)
+  - [Corpse limit — step 4c, part 1 (2026-10-10, user-confirmed in PIE)](#corpse-limit--step-4c-part-1-2026-10-10-user-confirmed-in-pie)
+  - [Weapon drop — step 4c, part 2 (2026-10-10, user-confirmed in PIE)](#weapon-drop--step-4c-part-2-2026-10-10-user-confirmed-in-pie)
+  - [Focus refill on kills — step 4c, part 3 (2026-10-10)](#focus-refill-on-kills--step-4c-part-3-2026-10-10)
+  - [Enemy shooting — step 5 (2026-10-13, user-confirmed in PIE)](#enemy-shooting--step-5-2026-10-13-user-confirmed-in-pie)
+  - [Player death — Phase 5 (2026-10-13, user-confirmed in PIE)](#player-death--phase-5-2026-10-13-user-confirmed-in-pie)
+  - [Enemy shooting v2 — the hit-chance model (2026-10-13, user-confirmed in PIE)](#enemy-shooting-v2--the-hit-chance-model-2026-10-13-user-confirmed-in-pie)
+  - [Gunman behaviour v1 — work order (2026-10-13, done 2026-10-14)](#gunman-behaviour-v1--work-order-2026-10-13-done-2026-10-14)
+  - [Room encounters — holding enemies (2026-10-16)](#room-encounters--holding-enemies-2026-10-16)
+  - [Searching with the gun down (2026-10-17)](#searching-with-the-gun-down-2026-10-17)
+  - [Three families](#three-families)
+  - [What the design buys us](#what-the-design-buys-us)
+  - [Two-layer health — required, not cosmetic](#two-layer-health--required-not-cosmetic)
+  - [Vocalization system](#vocalization-system)
+  - [Readability layers by distance](#readability-layers-by-distance)
+- [Animation architecture (AnimBP) — 2026-10-04, logic moved to C++ 2026-10-05](#animation-architecture-animbp--2026-10-04-logic-moved-to-c-2026-10-05)
+  - [Logic — UProjectBopisAnimInstance (C++, 2026-10-05)](#logic--uprojectbopisaniminstance-c-2026-10-05)
+  - [AnimGraph (top level, in evaluation order)](#animgraph-top-level-in-evaluation-order)
+  - [Left-hand IK history (2026-10-06)](#left-hand-ik-history-2026-10-06)
+  - [One-handed pistol (2026-10-07)](#one-handed-pistol-2026-10-07)
+  - [Lean into turns (2026-10-23)](#lean-into-turns-2026-10-23)
+  - [Gait — slower cadence with stride warping (2026-10-07)](#gait--slower-cadence-with-stride-warping-2026-10-07)
+  - [Procedural recoil (2026-10-07)](#procedural-recoil-2026-10-07)
+  - [Turn-in-place (2026-10-05)](#turn-in-place-2026-10-05)
+  - [Slots](#slots)
+  - [Sync groups](#sync-groups)
+  - [Decided against](#decided-against)
+  - [Open](#open)
+- [Combat abilities — dual-wield, shootdodge, Focus (slow motion)](#combat-abilities--dual-wield-shootdodge-focus-slow-motion)
+  - [Dual pistols — built 2026-10-04 (demo)](#dual-pistols--built-2026-10-04-demo)
+  - [Dual spread (2026-10-07)](#dual-spread-2026-10-07)
+  - [Dual pistols in the dive: off-hand montages and recoil (2026-10-18, user-confirmed)](#dual-pistols-in-the-dive-off-hand-montages-and-recoil-2026-10-18-user-confirmed)
+  - [Shootdodge](#shootdodge)
+  - [Dodge roll and the moves around it (2026-10-14 / 15)](#dodge-roll-and-the-moves-around-it-2026-10-14--15)
+  - [Prone as a transient state](#prone-as-a-transient-state)
+  - [Focus (slow motion) — built 2026-10-09](#focus-slow-motion--built-2026-10-09)
+- [Levels](#levels)
+- [Narrative](#narrative)
+- [Architecture principles](#architecture-principles)
+  - [Animation feedback data belongs to the animator, not the weapon](#animation-feedback-data-belongs-to-the-animator-not-the-weapon)
+  - [Render-affecting properties need their setters](#render-affecting-properties-need-their-setters)
+  - [First-person projection is a separate rendering path — *historical*](#first-person-projection-is-a-separate-rendering-path--historical)
+- [Character rig (third person, 2026-09-30 →)](#character-rig-third-person-2026-09-30-)
+  - [Historical: the first-person rig (2026-08-30 → 2026-09-30)](#historical-the-first-person-rig-2026-08-30--2026-09-30)
+- [Current state](#current-state)
+  - [Vendor content](#vendor-content)
+- [Build tooling](#build-tooling)
+- [Engineering gotchas](#engineering-gotchas)
+  - [Full list (from ProjectPlan.md, 2026-10-24)](#full-list-from-projectplanmd-2026-10-24)
+- [Changelog](#changelog)
+
+---
+
 ## Setting change 2026-09-13 — implications
 
 The premise changed from 2098 sci-fi/cyberpunk to **Philippines, 2002, noir
@@ -721,15 +814,17 @@ Lyra clips already carry.
 A GTA V-style radial picker (user's spec, 2026-10-23): a fixed ring of
 segments, **one per weapon type (`WeaponSlot` 1–6), counter-clockwise from
 the top**; each shows the type's current weapon. While it's open **combat
-input is blocked and time runs slow; movement and the camera stay free**. *(Tested by the user 2026-10-24; only the `IA_WeaponWheelCycle` mapping is left.)* *(The first version had one
+input and the camera are blocked, the crosshair hides, and time runs slow; movement
+stays free** (camera lock + hidden crosshair: user, 2026-10-24 — "they can cheese the
+game because of the dilation"). *(Tested by the user 2026-10-24; only the `IA_WeaponWheelCycle` mapping is left.)* *(The first version had one
 segment per carried weapon; replaced the same day.)*
 
 - **Keyboard (key mode):** a number key brings the wheel up with that type
   highlighted and it **stays up until the fire click**; more keys move the
   highlight; the same type again — or the first press on the type of the gun
   in hand — steps to the type's next weapon (pistol → duals → revolver). The
-  click equips the highlighted weapon and closes (no shot). The camera stays
-  free. `Holder->SelectSlot` is no longer called from the keys.
+  click equips the highlighted weapon and closes (no shot). The camera holds
+  still (2026-10-24). `Holder->SelectSlot` is no longer called from the keys.
 - **Pad / held key (pointer mode):** held open, look input steers a pointer,
   the cycle action steps the hovered type, release equips.
 
@@ -803,8 +898,16 @@ segment per carried weapon; replaced the same day.)*
   wheel started it. **Blocked while open:** jump, fire-held, aim start,
   reload, crouch start, Focus, dive, roll, grenade — each handler returns
   on `IsWeaponWheelOpen()`; **movement stays free** (user, 2026-10-23) and
-  aim/crouch *releases* still go through;
-  in pointer mode the number keys are blocked too and look steers the wheel.
+  aim/crouch *releases* still go through. **Look** is swallowed in key mode
+  and steers the pointer in pointer mode (`LookInput`, 2026-10-24), and in
+  pointer mode the number keys are blocked too. **Crosshair:**
+  `UReticleWidget::NativeTick` sets its render opacity to 0 while
+  `IsWeaponWheelOpen()` (now public on the character) — opacity, not
+  visibility, so it can't fight `WBP_Reticle`.
+  **On death** (2026-10-24, audit #1) `Die` shuts the wheel before
+  `StopFocus` and clears `bWheelOwnsFocus` without `EndFreeFocus` — the
+  death slow-mo is a free Focus too, and a later click would have ended it.
+  *(Camera lock, hidden crosshair and the death fix: User-tested 2026-10-25.)*
   Equip → `DoSelectWeapon(pick)` → `Holder->EquipWeapon`, with the number
   keys' old gating (no swap mid-roll or in a dive wind-up).
   `UWeaponHolderComponent::GetCarriedWeapons()` exposes the list.
@@ -1330,6 +1433,38 @@ spawned as the player goes rather than all placed up front.
   (`BS_MM_Unarmed_Jog_Walk` exists: walk 200, jog 400).
 - Not built: removing enemies behind the player (with level streaming, later).
 
+**Room cleared and waves (2026-10-24, user: "do the room cleared one, even
+better if you can set a wave spawning event system"):** on `AEncounterTrigger`.
+- **Its room:** `Enemies` (placed, plus spawn-ahead enemies other triggers
+  hand it via `AddEnemy`) and its own spawns, which `SpawnOne` now adds to
+  `Enemies`. Entries with `WaitForTrigger` belong to that trigger's room
+  instead. `PendingSpawns` counts delayed entries not yet in (decremented as
+  each one's moment comes, spawned or not). `GetAliveCount()` = living
+  `Enemies` + `PendingSpawns`.
+- **Polled** by `UpdateRoom` on a 0.25 s looping world timer from
+  `BeginPlay` (no death event to bind; the director polls the same way).
+  From the start, so a room shot clear from the doorway before the player
+  walks in counts.
+- **Waves** (`Waves`, `FEncounterWave`): `Spawns` (the same entries; `Delay`
+  is from the wave's start), `StartWhenAliveAtMost` (0 = everyone before it
+  down), `Delay` 2 s, `EventsToStart`. Only after the trigger has fired, in
+  order: the next one is due once the one before is all in
+  (`PendingSpawns` 0) and the room is at or under its count, then comes
+  `Delay` later (world time). `BringIn(WaveIndex)` spawns a list
+  (`INDEX_NONE` = the first `Spawns`); `OnWaveStarted(Trigger, WaveIndex)`.
+- **Cleared:** nothing left to bring in (fired, or no spawns and no waves),
+  it has had someone (fired, or enemies listed), all waves started, and
+  `GetAliveCount()` 0. Once: `EventsOnCleared` start, `TriggersOnCleared`
+  `Fire()`, `OnCleared(Trigger)` broadcasts (Blueprint-assignable, for the
+  Level Blueprint), timer stops; `IsCleared()`.
+- **Editor:** wave spawn lines pink, a wave's events purple arrows, the
+  cleared links white arrows; the label adds "Waves N (M spawns)".
+- **Limits:** a delayed spawn-ahead from another trigger isn't counted until
+  it arrives, so the room can clear early without it. The director
+  (`AEncounterDirector`) is separate and doesn't count toward a room.
+- *User-tested 2026-10-25* (a wave after thinning out, the cleared link, a room shot clear from
+  outside its trigger).
+
 **Scripted events, stage 1 (2026-10-21):** `AEncounterEvent` (Encounter tab;
 editor label + note icon; purple lines to its speakers, and from triggers that
 start it). Ordered `Steps` (`FEncounterEventStep`): **SayLine** (speaker enemy,
@@ -1372,7 +1507,7 @@ resumes, facing cleared); `Alert` also calls it. An interrupt with no
 `InterruptSound`/subtitle falls back to the noticer's Spotted bark. Event voices
 now play through `UBarkSubsystem::PlayVoice`. Link lines: speakers purple,
 move/face targets green, set-off trigger orange, started/chained events white
-(interrupted chain red). Not built: a Play Sound step.
+(interrupted chain red). Not built: a Play Sound step. *(Stage 2: User-tested 2026-10-25.)*
 
 **Enemy barks (2026-10-21):** seven types (`EBarkType`: Spotted, LostSight,
 Reloading, Hurt, AllyDown, Grenade, Death). Data: `UBarkSet` (one voice, one
@@ -1423,6 +1558,73 @@ sharing a clip set can sound alike. Caveat: the per-bark `PitchJitter` (±0.03)
 can blur neighbours once a voice has more than ~5 living speakers in the
 0.16-wide range — widen the range or lower the jitter for crowds. *(Tested by the
 user 2026-10-24.)*
+
+
+## Background music (2026-10-24)
+
+User: "make a bgm system. one that plays background music, and can crossfade
+in a trigger" — "also does not get affected by time dilation". Code:
+`Gameplay/MusicSubsystem.h/.cpp`, `Gameplay/MusicTrigger.h/.cpp`.
+
+- **`UMusicSubsystem`** (world subsystem, one per level):
+  `PlayMusic(Track, FadeTime = 2, Volume = 1)`, `StopMusic(FadeTime)`,
+  `GetCurrentTrack()`, all Blueprint-callable. One track at a time: the
+  playing one fades out (`FadeOut`, held in `FadingOut` until silent; each
+  destroys itself) while the new one fades in from a fresh `CreateSound2D`,
+  both on `EAudioFaderCurve::Sin` (equal power, no dip in the middle). The
+  same track again carries on rather than restarting; None fades to
+  silence; `FadeTime` 0 is a hard cut. A level reload (death) starts the
+  music over.
+- **Out of slow motion.** The Focus's slow-mo sound is
+  `SetGlobalPitchModulation`, which every sound gets **except UI sounds**
+  (`FSoundSource::UpdateCommon`, `Audio.cpp`). The music's components are
+  `bIsUISound` — `CreateSound2D` already sets it; the code sets it again
+  because it's the reason. Fades run on the audio device's
+  `GetGameDeltaTime()` = `FApp::GetDeltaTime()`, which time dilation doesn't
+  touch, so a crossfade takes the same real seconds in slow motion. Side
+  effect: UI sounds play through pause, which suits music.
+- **`AMusicTrigger`** — a blue box on the encounter-trigger pattern
+  (`Trigger` profile, player pawn only, editor label "MUSIC" + track,
+  audio-component sprite). `Track` (None: fade out), `FadeTime` 2,
+  `TrackVolume` 1, `bTriggerOnce` (on), `bPlayAtStart` (fires in
+  `BeginPlay`: a level's opening music). `Fire()` is Blueprint-callable for
+  level scripts.
+- **Assets:** tracks in `/Game/Audio/BGM` (`DarkCrimes` so far); tick
+  Looping on a wave for music that carries on. Planned: an `SC_Music` sound
+  class as the overall music level, like `SC_Barks`.
+- **Later, if wanted:** a Play Music step for scripted events; combat /
+  explore intensity layers; music that carries across level loads.
+- *User-tested 2026-10-25* (start track, fade-out trigger, unaffected by slow motion).
+
+
+## Level exit (2026-10-24)
+
+The slice brief's one required new code (build order step 5). User: "Go with
+exit trigger. Dont drop it on the map, thats a test for later." Code:
+`Gameplay/LevelExitTrigger.h/.cpp`. Not placed in any level yet.
+
+- **`ALevelExitTrigger`** — a green box on the encounter-trigger pattern
+  (`Trigger` profile, player pawn only, editor label "EXIT" + where it goes).
+  Once only; ignored if the player is already dead. `Fire()` is
+  Blueprint-callable for level scripts.
+- **On the way out:** `SetCanBeDamaged(false)` (the engine flag
+  `ABopisCharacterBase::TakeDamage` already honours through `Super`), so a
+  last bullet can't start the death restart; `DisableInput` on the pawn;
+  the player's `UFocusComponent::StopFocus()`;
+  `UWidgetLayoutLibrary::RemoveAllWidgets` (HUD, subtitles, an open weapon
+  wheel); a camera fade to black over `FadeTime` 1.5 s, held; the music out
+  over the same (`bFadeOutMusic`, through `UMusicSubsystem::StopMusic`);
+  then `CompleteWidgetClass` (any UMG widget — a "level complete" card —
+  drawn over the black, since the camera fade darkens only the 3D picture).
+- **The load:** after `LoadDelay` 3 s (never before the fade ends), counted
+  in real seconds on `FApp::GetDeltaTime()` like the death restart, then
+  `OpenLevelBySoftObjectPtr(NextLevel)` — a `TSoftObjectPtr<UWorld>`, so
+  the next level isn't loaded with this one — or, with none, this level
+  again from the top.
+- **Later, if wanted:** an exit that waits for the room to be cleared; a
+  results card (time, kills); checkpoints (the brief: only if a restart
+  from the top proves too punishing).
+- *User-tested 2026-10-25.*
 
 
 ## NPC characters (CC2)
@@ -1549,8 +1751,54 @@ hit bones, physics and weapon attachment all run on it.
   whatever is worn — tank tops included, whose own mask is near-empty — and
   the worn items' masks add legs/feet/sleeves. Body MI = 2, face MI = 0.
   Hands are deliberately outside it (a held gun would draw over the fingers).
+  *(Since 2026-10-25 these are a WPO along the camera ray, not PDO — see
+  "Skin push by WPO" below.)*
   Backup:
   `/Game/Characters/CC/Backup/M_Skin_CCMH_Original`.
+- **Skin push by WPO, not Pixel Depth Offset (2026-10-24/25; user: "I can
+  see seams in all the cc models if they have their skin exposed").** The
+  three skin pushes below (head neck, body torso, waist band) were PDO.
+  PDO also moves where a pixel is *lit* (deferred lighting rebuilds the
+  position from depth), so pushed bare skin shadowed itself and its
+  subsurface scattering showed through orange: a line where the head mesh
+  meets the body across the upper chest, a line above the navel (the waist
+  band's top), orange forearms on the female body (its A-pose forearms sit
+  inside the waist band). Zeroing the biases removed all of it
+  (user-tested). **Tried and dropped:** gating the pushes by the worn
+  items' masks. On the head the body-layout masks read through the head's
+  UV0 lit random areas (dark patches on the head's shoulders); a `Neck
+  Shrink` gate fixed that. But on the body the masks are coarse (a one-piece
+  swimsuit and the dresses use upper-body masks), and in the waist band
+  every garment is pushed back 1.5–4.5 cm, so wherever a mask fell short the
+  skin sorted in front and punched ragged holes through the garment (user
+  screenshot). **Now:** the original always-on terms (`Depth Region`
+  T-shirt mask on the torso, the band, `Neck_Mask` on the head; values face
+  2, body 2 and 3.5) sum in `Add_1`→`Add_2`→`Add_4` and drive a **WPO along
+  the camera ray** — `normalize(WorldPosition − CameraPositionWS)` × sum
+  (`WorldPosition_1` set to exclude shader offsets, `Subtract_9`,
+  `Normalize_0`, `Multiply_44`), added to CC's own WPO in `Add_5` → the
+  Make node's WorldPositionOffset. WPO moves the surface itself in the
+  shadow pass too, so lighting stays consistent while the sorting is the
+  same as 2026-10-22's. The band comes straight from `MF_ApparelWaistBand`
+  (vertex shader; `VertexInterpolator_0` unused). The Make node's
+  PixelDepthOffset is CC's own again, through a ×1 `Multiply_45` (the bridge
+  misreports every Make input fed by the Break node as "BaseColor"; a
+  pass-through reads back reliably). Backups: git (`111a1187`, before any of
+  this) and file copies. (The orange in the creator level is its
+  body-selection highlight, not shading.) **Known leftover:** female
+  forearms in the A-pose still fall inside the band, so an arm very close in
+  front of a jacket at the hip could tuck behind it; tighten the band if it
+  shows. **User-tested 2026-10-25:** seams and patches gone on bare skin,
+  "clothes fixed".
+- **CC parts cast shadows on each other (2026-10-24).** CC's component class
+  `CharacterCustomizer_Core/Data/CC_SkelMesh` — the class CC creates heads,
+  apparel and hair as (`CharacterCustomizer`, `BP_Enemy_CC`, `BP_Player_CC`
+  are its only users) — had **Self Shadow Only** on, so each part shadowed
+  only itself: the head's shadow stopped dead at the head/body seam on the
+  shoulder (user screenshot), hair didn't shadow the face, clothes didn't
+  shadow skin. Unticked on the class by the user and saved; the class
+  default now reads off. Parts already built keep the old value until their
+  character rebuilds (restart PIE, nudge a placed one).
 - **Clothing layer order at the waist (2026-10-22):** every garment carries a
   **`Layer Depth`** index on its MI (CC's apparel master
   `M_Base_Material_Apparel`, group Layering, default 0): **0** outer (jackets,
@@ -1572,7 +1820,8 @@ hit bones, physics and weapon attachment all run on it.
     Offset was the plan, but the bridge can't connect `MP_PixelDepthOffset`
     (enum conversion bug); it could be swapped in by hand.
   - **Skin:** `M_Skin_CCMH` adds `Waist Layer Depth` × the band (through a
-    VertexInterpolator — PreSkinnedPosition is vertex-only) to its PDO; body MI
+    VertexInterpolator — PreSkinnedPosition is vertex-only) to its PDO *(since
+    2026-10-25: to its camera-ray WPO, straight from the function)*; body MI
     3.5 (+ its 2 = 5.5 > the tucked top's 4.5), face MI 0.
   - **Tucked classification:** rest-pose hem height vs the jeans' top (108.7
     cm): tucked tops end above it (Shirt_01 101, Police A 99, Police B 103),
@@ -1612,7 +1861,9 @@ hit bones, physics and weapon attachment all run on it.
 
 ## Enemies
 
-Rewritten 2026-09-30 for the Aswang direction. Lore in
+Rewritten 2026-09-30 for the Aswang direction. *(The Aswang were dropped 2026-10-09: the five Aswang-specific
+sections from "Three families" to "Readability layers by distance" are marked
+superseded; the systems built since are for human enemies.)* Lore in
 `Design Document/Lore_And_Design_Notes.md` PART 1; the decisions below came
 out of a design conversation on 2026-09-28/30 and are implementation-side.
 
@@ -2580,6 +2831,10 @@ It makes it more plausible."
 
 ### Three families
 
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped (lore doc PART 1 — user:
+> "Aswang is not a thing anymore"). Kept as history; the enemies built since are
+> human (`BP_Enemy_CC` Thug/Goon).
+
 | Family | Share | Behaviour | Build cost |
 |---|---|---|---|
 | **Mature Aswang** | The overwhelming majority | Gun users. Composed, clothed, armed. Always already in monstrous form when combat is possible. | The main enemy. Full ranged AI. |
@@ -2599,6 +2854,10 @@ scripting three one-offs**.
 
 ### What the design buys us
 
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped (lore doc PART 1 — user:
+> "Aswang is not a thing anymore"). Kept as history; the enemies built since are
+> human (`BP_Enemy_CC` Thug/Goon).
+
 - **No mid-combat transformation.** Aswang aware of a threat are already in
   monstrous form. The model/skeleton swap — previously the most expensive
   unknown here — is off the table.
@@ -2611,6 +2870,10 @@ scripting three one-offs**.
   of the most expensive things in a shooter and it is simply not needed.
 
 ### Two-layer health — required, not cosmetic
+
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped (lore doc PART 1 — user:
+> "Aswang is not a thing anymore"). Kept as history; the enemies built since are
+> human (`BP_Enemy_CC` Thug/Goon).
 
 Aswang are tanky and do not die to a single headshot. Implemented naïvely as a
 larger `Health` number this **breaks the bloom skill test**: when everything
@@ -2638,6 +2901,10 @@ heavy multiplier that isn't an instant kill still rewards placement.
 something can actually die.
 
 ### Vocalization system
+
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped (lore doc PART 1 — user:
+> "Aswang is not a thing anymore"). Kept as history; the enemies built since are
+> human (`BP_Enemy_CC` Thug/Goon).
 
 Aswang must not read as reskinned human shooter enemies. Growls, screams and
 animalistic gestures are **state telemetry**, not flavour — the Halo
@@ -2674,6 +2941,10 @@ Retrofitting announcements onto a finished state machine is how transitions
 end up silently doing nothing.
 
 ### Readability layers by distance
+
+> ⚠ **Superseded 2026-10-09:** the Aswang are dropped (lore doc PART 1 — user:
+> "Aswang is not a thing anymore"). Kept as history; the enemies built since are
+> human (`BP_Enemy_CC` Thug/Goon).
 
 The old tension (horror wants unreadable enemies, design wants legible ones)
 is **resolved**: no mid-combat transformation means enemies in combat are
@@ -2795,6 +3066,8 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    `bDualSpread` (0.2 s): True ← `MM_Pistol_Idle_Hipfire_Dual` (spread), False ←
    (bool: pistol ? `MM_Pistol_Idle_Hipfire` : `MM_Rifle_Idle_Hipfire`); weight
    `UpperBodyAlpha`.
+   (`DefaultSlot` → dual-reload spine hold `LayeredBoneBlend_14` → cached
+   pose; see *Dual reload*.)
    Montages are therefore upper-body only (legs keep stride), and the raised
    pose holds between shots.
 4. **Aim offsets, chained** (2026-10-05): `AO_MM_Rifle_Idle_Hipfire` →
@@ -2826,7 +3099,8 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    players are mirrored (right foot forward). See *One-handed pistol*.
 7. **Dual left-arm layer** (`clavicle_l`): Blend ← Blend by bool `bDualSpread`
    (0.2 s; True ← `MM_Pistol_Idle_Hipfire_Dual`, False ← `MM_Pistol_Idle_Hipfire`)
-   → **`OffhandSlot`**
+   → **`OffhandSlot`** → off-hand shoulder hold (`LayeredBoneBlend_15`, see
+   *Dual reload*)
    → `AO_MM_Pistol_Idle_ADS` (X ← **+**`RootYawOffset`, the mirror flips it) →
    Mirror (`MDT_Mannequin`); weight `LeftArmAlpha`.
 8. **Dual lowered layer** (`pelvis` — whole body): Blend ← unarmed walk/jog
@@ -3274,6 +3548,9 @@ head while running and gunning.
 **Tried and dropped:**
 - Procedural `upperarm_l` spread (Modify Bone, pitch +20°) — deformed the
   shoulder.
+- A dual-only aim pose clip (2026-10-25, for the jacket seams bending in the
+  dual aim) — wired in, then rolled back before posing: the user judged the
+  pose fine.
 - Camera pull-in for duals — not pursued.
 - A runtime run-and-gun alpha blending the spread clip under, then over, the
   slots — never held through shots (the base-pose problem above). Reverted.
@@ -3281,10 +3558,29 @@ head while running and gunning.
 The old note about dual SMGs needing a `bOneHanded` flag is superseded:
 `AnimType Dual` covers them.
 
-**Accepted quirk (2026-10-05, won't fix):** the reload montage leans/twists the
-torso (authored for a two-handed reload). User judged it minor. If it's ever
-revisited: a no-spine copy of the clip plus a `DualReloadMontages` map used
-instead of `ReloadMontages` for dual weapons.
+**Dual reload: torso and off-hand shoulder held (2026-10-25; was an accepted
+quirk since 2026-10-05).** The reload montage, authored for a two-handed
+reload, leaned and twisted the torso, dropped the left shoulder and pushed
+the left armpit into the body (user: "I want no movement on lower to middle
+spine ... the shoulder on the left dips hard"). Instead of the no-spine clip
+copy considered then, the AnimGraph holds bones to the idle while duals
+reload, by `UProjectBopisAnimInstance::DualReloadHoldAlpha` (FInterpTo toward
+`bIsDualWield && bReloadAnimating`, `DualReloadHoldSpeed` 10):
+- **Spine hold** — Layered Blend per Bone `LayeredBoneBlend_14` between
+  `DefaultSlot` and `SaveCachedPose_1`: Base = the slot (montage), Blend =
+  its own `MM_Pistol_Idle_Hipfire` player, filters **`pelvis` 0 +
+  `spine_04` −1**, local space. A negative blend depth subtracts that
+  branch's weight (`FAnimationRuntime::CreateMaskWeights` adds
+  `(1/depth)·(depth+1)` per bone, clamped), so only the pelvis and
+  `spine_01`–`03` are held; the upper chest and arms still reload. To hold
+  `spine_04` too, change the −1 filter to `spine_05`. Everything reading
+  that cached pose gets it.
+- **Off-hand shoulder hold** — `LayeredBoneBlend_15` between `OffhandSlot`
+  and its aim offset (pre-mirror): filters **`clavicle_r` 0 + `upperarm_r`
+  −1**, so just the collarbone — mirrored, the left shoulder.
+The dive/prone reloads use their own branch and are untouched.
+**User-tested 2026-10-25:** "reload works" (spine hold as built, `spine_04`
+free).
 
 ### Dual pistols in the dive: off-hand montages and recoil (2026-10-18, user-confirmed)
 
@@ -4407,9 +4703,8 @@ files* to *show* new source files.
 
 ## Engineering gotchas
 
-Full list with reproduction detail lives in
-[ProjectPlan.md](ProjectPlan.md)'s "Gotchas learned the hard way" section. The
-ones most likely to bite:
+The ones most likely to bite first; the **full list** with reproduction detail
+follows below (moved here from ProjectPlan.md on 2026-10-24 — add new ones there).
 
 - **A Blend Space (or Sequence) Player reads its `StartPosition` only when
   its state initializes, and with the value from its last update.** So a
@@ -4546,8 +4841,86 @@ ones most likely to bite:
 
 ---
 
+### Full list (from ProjectPlan.md, 2026-10-24)
+
+Newest first, as they were recorded.
+
+- **Pixel Depth Offset moves where a pixel is lit, not only its depth test
+  (2026-10-24).** Deferred lighting rebuilds each pixel's position from the
+  depth buffer, so PDO on visible skin made it shadow itself (and subsurface
+  scattering bleed orange) wherever the offset changed. Use PDO only where
+  the surface ends up hidden (here: skin under worn clothing).
+  *(2026-10-25: or use WPO along the camera ray instead, which moves the
+  surface in the shadow pass too — what the skin does now.)*
+- **CC's apparel masks are coarse (2026-10-25).** A handful of generic
+  shapes (Top, TShirt, ExposedChest…) shared by many garments; a one-piece
+  swimsuit uses an upper-body mask. Don't gate anything that must cover a
+  garment exactly by them, and they're in the body's UV layout — meaningless
+  on the head mesh.
+- **An anim pose feeding two parents gets updated twice a frame (2026-10-23).** A player wired straight into two nodes advances twice per frame whenever both are relevant — the bladed legs ran at double speed. Route it through a Save Cached Pose and read it with one Use Cached Pose per parent.
+- **Bridge limits in AnimBPs/materials (2026-10-23):** it can't create nodes inside a state graph ("Cannot cast AnimStateNode to Blueprint"); its node list doesn't offer a Use Cached Pose for a cache made in the same session; and `MaterialTools` can't connect or read `MP_PixelDepthOffset` (enum conversion error) — go through Material Attributes, use a view-ray WPO, or have the user make the wire. `PreSkinnedPosition` is vertex-only: pass it through a VertexInterpolator for pixel outputs.
+- **A Blueprint default set through the bridge doesn't reach actors already placed in the level, nor child Blueprints (2026-10-23).** Placed instances carry their own copy; they pick up the new default only when the level reloads (spawned actors get it at once). A PIE test on placed actors right after a bridge CDO edit tests the *old* value — the "CC ragdoll looks better" false positive. **Child Blueprints' defaults (`BP_Player_CC`, `BP_Enemy_CC`, `_Thug`, `_Goon`) also keep the old parent value until they reload** — no footsteps after setting `FootstepEffects` on the two base Blueprints only. Set the leaf Blueprints too, or restart; this is probably also the sound-slot case below.
+- **An object reference set on a Blueprint default through the bridge doesn't reach PIE-spawned instances until the editor restarts (2026-10-23, verified).** The CDO reads as set and the package saves correctly, but a PIE instance reads `None` — seen with the weapon sound slots (silent reloads) and `WeaponWheelAction` (probed in PIE: CDO set, instance None; a sibling set in the editor was fine). Scalars/structs set the same way (ragdoll asset, footstep data on the CC children) did arrive. **After any bridge edit of an object-reference default, restart before judging a PIE test.**
+- **A C++ property on a widget class must not share a name with a designer widget in its Blueprint (2026-10-24).** The Blueprint generates a variable per widget marked *Is Variable*; if the parent already has a property of that name (one not meant for `BindWidget`), compile fails with "has a generated variable for the widget [X] but we failed to find a property for it". Seen with the wheel's `NameText`/`AmmoText` members; renamed `…TextBlock`. Either name members differently or make them real `meta = (BindWidget)` / `BindWidgetOptional` slots.
+- **Adding bones to a CC body: by hand, Merge only (2026-10-24).** Copy/paste of the `ik_` bones from `CCMH_Body_Male` in the Skeleton Editing tool produced a misnamed bone (`ik_handgun_r` as `ik_hand_r`'s parent, log: "Hierarchy does not match") and the merge failed ("Skeleton can't be modified"); **Merge All** then re-merges *every* mesh on the skeleton and failed on the male. Nothing reached disk; fixed by restarting without saving, `git restore` of the female mesh, and adding the seven bones by hand with the skeleton's exact names/parents, then **Merge** (Merge All off).
+- **Bridge graph DSL: name the target, load soft refs (2026-10-24).** `(Class|CCPresetDataAsset|GetBody preset)` read back as `Class|WeaponDrop|GetBody` (the reader labels a getter by the first class with that property name; the node itself worked — verified by building a female). Pass the object as `:self` anyway, and wrap a soft reference in `Utilities|LoadAssetBlocking` before using it — the writer inserts `ResolveSoftReference`, which returns nothing for an unloaded asset.
+- **CC apparel: male and female MIs share names (2026-10-24).** Set MI parameters by full path, never by name; and female garments use male MIs (the female blazer's inner shirt is the male `MI_Shirt_01`), so a pass over one gender can overwrite the other's values — check shared paths afterwards.
+- **GitKraken + an untracked `.gitattributes` with LFS rules (2026-10-22)** froze it and staged every asset as an LFS pointer. Fix: delete `.gitattributes`, `git reset` (unstage). Adopt LFS only as one deliberate renormalize commit.
+- **Git LFS adopted (2026-10-24).** `.gitattributes` tracks `*.uasset`, `*.umap`, source meshes (fbx/obj/abc/glb), images, audio, video, fonts and archives; code, config and docs stay plain git. Two commits by the user: `4ecf87a5` (the attributes) and `111a1187` (`git add --renormalize .` — 25,467 files to LFS pointers). History before them stays plain git (4.87 GiB packed); not rewritten. New clones need Git LFS installed. An earlier abandoned attempt had left a 6 GB local LFS cache in `.git/lfs` (reused by the renormalize); `git lfs prune` after the push frees what's unused.
+- **Scanning `.uasset`s for `/Game/` references misses FName-numbered names (2026-10-21).** Unreal stores `Turn_Left_90` as name `Turn_Left` + number 90 (any trailing `_N` without a leading zero), so a text scan sees `Turn_Left`. The CC2 migration missed four turn animations this way and `CC_AnimBP` failed to compile. After a disk-copy migration, also copy same-folder siblings named `*_<N>` from the source.
+- **Blueprint compile errors + PIE = a modal dialog that freezes the bridge; a forced kill = "Restore Packages" on the next launch (2026-10-21).** Both block the game thread (bridge times out). Slate dialogs have no UI Automation tree; Escape doesn't close Restore Packages. What worked: screenshot the window (PowerShell `CopyFromScreen`) and click *Skip Restore* by coordinates (`SetCursorPos` + `mouse_event`). Fix compile errors before PIE.
+- **The editor bridge goes through a local stdio proxy — editor restarts no longer break it (2026-10-03; proven 2026-10-04 across six real restarts, one a crash).** `.mcp.json` launches `node .claude/unreal-mcp-proxy.mjs` instead of connecting to `http://127.0.0.1:8000/mcp` directly. Background: as a direct HTTP server, `unreal-mcp` was marked `failed` whenever a session started with the editor closed or the editor was closed mid-session for a rebuild, and only `/mcp` brought it back (retries didn't; `reconnect_session_connector` handles claude.ai connectors only). Claude Code can always start the proxy, because it's a local process. It answers `initialize`/`tools/list` itself, since the editor's tool list is three static meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`). The list is snapshotted in `.claude/unreal-mcp-tools.json` and refreshed whenever the editor is reachable. The proxy opens the upstream session lazily, per call. When the editor restarts, its old session id gets a 404 "client should reinitialize"; the proxy opens a new session and retries once, invisibly. With the editor closed, a call returns a readable "not reachable" tool error, and works again as soon as the editor is up. Needs Node 18+ (global `fetch`); no dependencies. Tested against the live editor, a dead port, and a simulated restart. To check the editor's server itself, `netstat -ano | grep LISTEN | grep :8000` should still show `UnrealEditor.exe`. `claude mcp get unreal-mcp` health-checks the proxy. Old direct config, for reference: `{"type": "http", "url": "http://127.0.0.1:8000/mcp"}`.
+- **Editor-bridge limits for AnimBlueprints (learned 2026-10-04).** (1) It **cannot create nodes inside anim state graphs** (Idle/Move) — `create_node` fails with `Cannot cast type 'AnimStateNode' to 'Blueprint'` — but it **can read them and set properties on existing in-state nodes** (sync groups were set that way). (2) In the top-level AnimGraph it creates **Save Cached Pose** but **not Use Cached Pose** nodes (never listed by `find_node_types`); designs needing pose reuse need the user to drop in the Use nodes, or avoid reuse (chain layers, give each branch its own source players). (3) **Anim compile errors are invisible** — `compile_blueprint` and the log both say `Compile Errors: []`; real messages are only in the AnimBP's Compiler Results panel. (4) **`read_graph_dsl` is lossy** — drops split rotator pins and the third input of a 3-input AND — so never round-trip a graph through `write_graph_dsl`; use `create_node`/`connect_pins`, and confirm wiring with `get_node_infos`. (5) A wildcard `Equal (==)` fed an enum specialises to a **byte** compare and broke the compile; use `Utilities|Enum|Equal(Enum)`. (6) Asset-specific node types appear only once the asset exists: `Mirror with <MDT>`, `BlendspacePlayer'<asset>'`, `AimOffsetPlayer'<asset>'`. (7) Blend Poses by Enum pins can't be added (`add_node_pin` unsupported, `VisibleEnumEntries` unreadable) — use Blend Poses by bool where two branches suffice. (8) Before risky AnimBP work, save a checkpoint (or note the autosave) — a broken graph got saved once, and rollback had to be done node by node.
+- **Array properties can't change size and contents in one bridge write (2026-10-04).** `set_properties` rejects it ("ArrayRemove: elements changed alongside the size change"). Two writes: first shrink/grow without changing surviving elements (or clear to `[]`), then set contents at the final size. Hit on blend-space `SampleData` and layered-blend `BranchFilters`. Writing a struct like a node's `Node` block replaces every field, so always read it first and write it back whole with only the intended change.
+- **Never write blend-space samples (or other derived-data assets) through the bridge (2026-10-04).** Writing `SampleData` on a duplicated blend space bypassed the editor's post-edit rebuild; the triangulation still indexed the old 27 samples, and **saving crashed the editor** (`Array index out of bounds: 18 into an array of size 15`). Derived data (`BlendSpaceData`, `GridSamples`) isn't readable either, so the rebuild can't be verified before saving. Same class of risk: AnimSequence additive settings (recompression), Mirror Data Tables (bone-index map), probably pose assets and aim offsets. Create/edit those in the editor; the bridge is fine for simple values read directly (BP defaults, node settings, wiring).
+- **Lyra aim-offset samples in this project had no base pose (2026-10-04).** `MM_Rifle_Idle_Hipfire_AO_*` were `AAT_RotationOffsetMeshSpace` with `RefPoseType AnimFrame` but `RefPoseSeq None` — lost in migration — so the aim offset added whole-body offsets and made the character giant. Fixed by setting base pose = `MM_Rifle_Idle_Hipfire_AO_CC`, frame 0, on all 15. The pistol and unarmed AO samples probably have the same fault.
+- **The editor's asset registry can lose track of a loaded asset (2026-10-04).** `BP_DualPistols`, later `ABP_FirstPersonArms`: bridge `save_assets`/`exists` reported "Asset does not exist" while the asset was loaded, editable and compiling, and its `.uasset` was on disk. Saving from the editor UI still worked. Restart the editor to re-scan; don't use the bridge's save-all-dirty mode as a workaround (it saves things the user hasn't chosen).
+- **Playing a montage stops other montages in the same slot group.** Two montages meant to play at once (dual-pistol main + off-hand reload) need slots in **different groups** — `OffhandSlot` lives in its own `OffhandGroup`.
+- **Montage Blueprint-node traps (2026-10-05).** (1) `Montage_Play`'s **`bStopAllMontages`** (default true) stops the montages already playing **in the same slot group** — *corrected 2026-10-06: not every montage*; a turn in `TurnGroup` never cancelled fire/reload. Set it **true** when re-playing a montage to crossfade (the old copy blends out over the new blend-in); `false` leaves the old copy playing underneath — it kept a reload loop running forever. (2) **`StopSlotAnimation` only stops dynamic montages** (from Play Slot Animation), silently ignoring montage assets; use `Montage_StopGroupByName` or `Montage_Stop` with the specific montage (`Montage_Stop` with no montage stops *all*). (3) Lyra's `MM_*_Turn*` clips ship with **Enable Root Motion on** — played as a montage, root motion overrides movement input and the character can't move until it ends. Turn it off; the turn is curve-driven.
+- **Anim-node pin values don't always reach the node's settings (2026-10-05).** `set_pin_value` on a Blend Poses by bool's `BlendTime_0/1` pins read back fine on the pin, but the node's `Node.blendTime` stayed 0.1 — the crouch blend snapped. Set anim-node settings through the `Node` struct (`set_properties`, read it first and write it back whole), then read the struct back after compiling.
+- **`OnStartCrouch`/`OnEndCrouch` adjustments don't always pair (2026-10-05).** The engine's early-out paths (capsule already at the target size) call them with 0. Accumulating `±ScaledHalfHeightAdjust` onto the camera boom drifted it a step per crouch until it left the map. Derive anything height-related from the capsule's *current* size each frame instead.
+- **Reparenting a Blueprint onto a native class: variables merge only on an exact type match (2026-10-05).** Same-named bool/enum Blueprint variables merged into the C++ properties; `float` C++ vs Blueprint "Float" (which is double in UE5) did not — the editor renamed the Blueprint copies to `Speed_0` etc. and their getters kept reading them. Declare AnimGraph-facing reals as `double`. Rehearse a reparent on a duplicate first; the bridge has `set_parent`, and `ProgrammaticToolset.execute_tool_script` batches the cleanup (138 node deletions in one call).
+- **Montage sections don't blend (2026-10-06).** Jumping between sections inside one montage — including a looping section wrapping to its own start — is an instant playhead move. A loop whose first and last poses differ snaps. Fix used: re-play the montage from the loop's start a blend-time early with `Montage_PlayWithBlendIn(..., bStopAllMontages = true)`. *Not* inertialization from the character's Tick: the wrap happens inside the anim update, so a request from Tick lands a frame late and smooths nothing.
+- **A new `EWeaponAnimType` value needs wiring in three places (2026-10-06):** pins on every Blend Poses by Enum in the AnimGraph (otherwise the node falls back to its Default pose — the unarmed set), and entries in `FireMontages` / `ReloadMontages` on `BP_PlayerCharacter` (otherwise nothing plays, silently). Map keys serialize lower-camel-case through the bridge (`pumpShotgun`); write the whole map back.
+- **Montage section data isn't visible to the bridge (2026-10-06):** `CompositeSections` can't be read or written — sections and their links are editor work. `Preview All Sections` ignores loop links; use the row's own Preview.
+- **A new Transform (Modify) Bone's optional pins override its settings (2026-10-07).** Created nodes show Translation/Rotation/Scale as pins at their defaults, and at compile the pin value wins — so writing `Node.rotation` through the bridge did nothing, the compile copied (0,0,0) back into `Node`, and the recoil looked "not working" for several rounds (a twist seen during one test was the aim offset, not the node). Hide the pins via `ShowPinForProperties` **first**, then write `Node`, then compile and read `Node` back. A constant-alpha test (break the alpha link, set 1, look for a permanent offset) isolates "is the node applied" from "is the driver working".
+- **A stock additive fire clip can drag a re-authored idle back to the original (2026-10-07).** Lyra's `MM_Pistol_Fire` is mesh-space additive with *Selected animation frame* but no base animation set (engine source: that mode needs one), so its delta was baked against some other pose. Layered over the spread dual idle, each shot pulled the arms back to the narrow grip until the montage ended. Moving the blend after the slot didn't help either, and cost a revert. Fix: a copy of the clip with base **Local Animation Frame, frame 0** — pure kick. Check a fire clip's base pose before layering it over a custom idle; change it in the editor (recompression), not through the bridge.
+- **AnimGraph getter pins can't be watched (2026-10-08).** Getters feeding anim nodes are copied by the fast path and never execute as Blueprint, so *Watch This Value* shows an empty bubble. To see live AnimInstance values, use a temporary `GEngine->AddOnScreenDebugMessage` in `NativeUpdateAnimation` (fixed key, 0 s duration) or the Rewind Debugger. Also: a value typed into an anim node's Details does nothing while its pin is wired — the wire wins.
+- **In-state nodes: the bridge can expose pins and connect, just not create (2026-10-07).** Extends the 2026-10-04 limit: `ShowPinForProperties` writes and `connect_pins` work inside Idle/Move, so the user drops one getter per state and the bridge wires every player to it (20 Play Rate pins done this way).
+- **Rotate Root Bone is a local-space node** (2026-10-05) — wiring it between Local→Component / Component→Local fails with incompatible pins. Connect it directly in local space.
+- **The pistol aim-offset samples (`MM_Pistol_Idle_ADS_AO_*`) had no base pose either** (2026-10-05) — same fault as the rifle set; fixed by setting base pose `_AO_CC`. A rifle AO on pistol poses twists the wrists when yaw is non-zero.
+- **Swapping a weapon's mesh/animation in the Details panel leaves a hidden reference behind.** After `BP_Pistol` was re-pointed to `MilitaryWeapSilver`, its `WeaponMesh` component template still held `AnimationData.AnimToPlay = SciFiWeapDark/.../Fire_Pistol_W` — a leftover from previewing the animation on the component, never shown in the Blueprint's own properties and inert at runtime (`AnimationMode` is `AnimationBlueprint`), but a real hard reference that would have kept the old pack from deleting cleanly. Found 2026-09-21 by grepping the `.uasset` for `/Game/SciFiWeapDark`; confirmed and cleared via the bridge (`ObjectTools.get_properties` on `Default__BP_Pistol_C:WeaponMesh`, set `AnimationData.animToPlay` to `"None"`, compile, save). Rule: before deleting a vendor pack, grep the binaries for its `/Game/` path, not just the Blueprint Details panel — and check component templates, not only the CDO.
+- **Searching for an asset by filename convention will miss vendor/migrated content.** The 2026-08-30 (3) audit concluded "no `AnimMontage` asset anywhere in `Content/`" and flagged a fabricated blocker on `BP_Pistol` as a result — but `AM_Pistol_Fire.uasset` was sitting in `Content/Characters/Heroes/Mannequin/Animations/Actions/` the whole time. Two compounding causes: the sweep matched our own `*_Montage` naming convention rather than the asset *class*, so Lyra's `AM_` prefix slipped past; and the Lyra tree is still **untracked** in git, so anything reasoning from `git ls-files` wouldn't see it either. Rule: search assets by type/class (the editor's Content Browser filter, or `.uasset` class inspection), never by filename pattern, and remember that untracked/vendor trees are invisible to git-based searches. Corrected 2026-08-30 (4).
+- **The UnrealMCP bridge only auto-starts at editor launch, so ticking the setting mid-session does nothing.** The MCP server isn't a separate process — it's Epic's engine plugin `ModelContextProtocol` (`UE_5.8/Engine/Plugins/Experimental/`), enabled in `ProjectBopis.uproject`, serving on port `8000` at path `/mcp` (name `unreal-mcp`) — defaults that already match `.mcp.json`. Auto-start is gated on `bAutoStartServer` in `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini` but fires exactly once, at `PostEngineInit` (`ModelContextProtocolEditor.cpp:64`). So an editor instance that was already running when the box got ticked will never start the server, and Claude Code's connection is refused despite every setting looking correct. **Fix without restarting the editor:** run `ModelContextProtocol.StartServer` in the editor console (`.StopServer` and `.RefreshTools` also exist). Verify with `netstat -ano | grep :8000` — a bare `GET /mcp` returning **405** is healthy, not broken (streamable HTTP wants POST). **Separately (superseded 2026-10-03 by the stdio proxy above):** Claude Code only attaches MCP servers at its own startup, so with the old direct-HTTP config the server had to be up *before* Claude Code launched. Confirmed 2026-08-30 (4).
+- **The weapon-firing pipeline currently assumes a player, not just a Pawn.** `WeaponHolderComponent::EquipWeapon`/`FireEquippedWeapon` both `Cast<AProjectBopisCharacter>(GetOwner())`, and `FireEquippedWeapon`'s aim source is `APlayerController::DeprojectScreenPositionToWorld` — an AI-controlled pawn has no `PlayerController`/viewport to deproject from at all. Confirmed 2026-08-18 while adding animation-driven fire feedback (the montage-playing code hit the same cast). Deliberately **not** fixed preemptively — `AWeaponBase`'s core firing logic (`FireHitscan`/`FireProjectile`, bloom, damage) is actually actor-agnostic and fine; it's specifically the holder/feedback layer that assumes a player. AI aiming can't reuse screen-deprojection anyway (no screen to deproject from — it'd need line-of-sight/perception-based targeting instead), so this was never going to be a small swap-a-cast-for-an-interface fix. Revisit when Phase 5 (enemies) actually defines how AI fires weapons, not before.
+- **`WeaponBase::FireMontage` was skeleton-specific, which would've broken if the same weapon were ever fired by two different skeletons** (e.g. player + an enemy archetype) — an `UAnimMontage` is authored against one specific skeleton, so a single montage property on the weapon could only ever be correct for whichever skeleton it was set up for. Caught 2026-08-18 while discussing AI extensibility, **and actually fixed the same session** (see Phase 4's animation checklist item) rather than just logged: `FireMontage` moved off `WeaponBase` entirely onto `AProjectBopisCharacter`, which now plays it on its own mesh after checking `WeaponBase::UsesAnimationDrivenFeedback()` (a pure bool signal). The general lesson stands for next time this shape of problem shows up (Phase 5 enemies, most likely): the weapon shouldn't hold data about how to animate whoever's holding it — each animator should own its own lookup ("given this weapon's identity, what's *my* matching feedback"), not the weapon holding one hardcoded answer for everyone. When an enemy archetype needs its own fire animation, it should follow this same pattern (its own montage/feedback owned on the enemy class, triggered the same way), not extend `WeaponBase` with a per-consumer map.
+- **IntelliSense false-positives on `AddDynamic` (and similar delegate macros).** `AddDynamic`/`RemoveDynamic` aren't real functions — they're macros doing compile-time template validation of the delegate signature, and Visual Studio's IntelliSense parser frequently can't follow that and shows a red squiggly "cannot find" error even when the actual build (via UnrealBuildTool) compiles it fine. Confirmed 2026-08-17 on `CollisionComponent->OnComponentHit.AddDynamic(...)`. Rule: if IntelliSense flags a delegate-binding line as an error, trust an actual build result over the editor's live squiggle before assuming the code is wrong.
+- **Live Coding cannot handle structural changes to native classes** — confirmed for two distinct cases now. (1) A member's *type* changing (e.g. `WeaponMesh` going from `UStaticMeshComponent` to `USkeletalMeshComponent`): reports success but corrupts any Blueprint referencing that class — it becomes unusable as a parent, Blueprints built on it detach (2026-08-12, engine log: `"Live coding succeeded, data type changes may cause packaging to fail if assets reference the new or updated data types"`). (2) A constructor's component *attachment hierarchy* changing (2026-08-18: reordered `CreateDefaultSubobject` calls and changed `SetupAttachment` targets so the camera attaches to the capsule and the arms attach to the camera, instead of the reverse) — `BP_FirstPersonCharacter`'s Components panel kept showing the old hierarchy order until a full rebuild. Rule, broadened: any change to an existing member's *type*, or to *what attaches to what* in a constructor, needs a full editor restart + Rebuild Solution, not a Live Coding patch — and after rebuilding, also try closing/reopening the affected Blueprint if a Live-Coding-cached hierarchy still looks stale.
+- **A rendering-affecting `UPROPERTY` set via direct assignment can leave a stale render proxy, even though the underlying data is correct.** `WeaponHolderComponent::EquipWeapon` set `MeshComp->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;` directly. Direct field assignment doesn't mark render state dirty, so the unified first-person render path could pick the primitive up with a stale/incorrect transform — inconsistent between "fresh PIE run after an editor restart" (correct) and "Stop→Play again in the same session" (wrong), and also explained why the weapon looked different in FPS view vs. external/spectator view (two separate rendering paths, one working off stale state). Confirmed 2026-08-30 via a debug readout showing the actual relative transform never changed between a "correct" and "wrong" run (ruling out the offset math), plus the tell: manually nudging the weapon's Scale in the Details panel during Play visually "fixed" it by incidentally forcing a render-state refresh. **Fix:** use the paired setter (`SetFirstPersonPrimitiveType()`) instead of raw field assignment. Rule: for any `UPROPERTY` that affects how a primitive renders (not just plain data), check for and prefer a setter function over direct assignment, especially when changing it at runtime (not just at construction) — the setter is usually the one that remembers to invalidate render state.
+
+- **Attaching to a skeletal mesh socket in `BeginPlay` can snap to a stale socket transform.** `UWeaponHolderComponent::EquipWeapon` runs from `BeginPlay`, before the arms mesh's pose is evaluated, so `AttachToComponent(..., WeaponAttachSocketName)` resolves against a socket that isn't yet where it will end up — the weapon ends up visibly misplaced. Confirmed 2026-08-30 (7) by a deliberate test: re-running the identical attach 5 seconds after start corrects the position, proving the attach logic is right and only its *timing* is wrong. Note this is a **different root cause** from the stale-render-proxy bug logged the same day — that one was fixed with `SetFirstPersonPrimitiveType()` and the symptom still came back, which is what led here. Rule: don't assume a socket transform is valid during `BeginPlay`; attach after the mesh has initialized (or re-attach once it has). **Superseded 2026-09-30.** The TEMP 5s timer was removed and the weapon position proved *identical* across a full session — so the timer was never fixing anything, and the August conclusion above was wrong about the cause. Whether a mistimed attach ever existed is now unclear; the attach target also changed from the arms mesh to the body mesh in the third-person conversion. Treat the original diagnosis as unproven rather than settled.
+- **The Output Log names the Live Coding failure directly — read it before theorizing.** 2026-08-30 (7): after a structural refactor, the weapon position fixed but *firing* broke, and nothing in the C++ diff explained a firing failure. The log said exactly what happened: `LogClass: UClass WeaponHolderComponent Reload.` / `Could not find existing class ... assuming new or modified class` / `Re-instancing WeaponHolderComponent after reload.` / `LogLiveCoding: Warning: Live coding succeeded, data type changes may cause packaging to fail...`. A full Rebuild Solution fixed it. Third occurrence of the same underlying Gotcha; the lesson added here is procedural — when behavior goes strange right after a Live Coding patch, check the Output Log for `Re-instancing` before forming any other hypothesis.
+
+- **`FHitResult::Location` and `FHitResult::ImpactPoint` are not the same thing, and the difference only bites on swept shapes.** `ImpactPoint` is the point on the surface that was struck; `Location` is where the *querying shape's origin* ended up. For a line trace (zero-thickness ray) they coincide, so hitscan code never notices. For a **swept sphere** the shape stops when its surface touches, leaving its centre one radius out — with `AProjectileBase`'s `InitSphereRadius(5.0f)`, `Location` sits 5cm off the surface. Confirmed 2026-08-31: projectile impact decals appeared on only some surfaces while hitscan decals worked fine on the *same* surfaces. Cause: a decal is a **projection box** whose `DecalSize.X` is its projection depth — also 5 — so the box reached exactly as far as the gap and the surface sat right on the boundary, painting or not depending on angle, curvature, and float precision. Note how misleading the symptom was: it read as a decal *facing* bug, and the next instinct (per-mesh `bReceivesDecals`) was also wrong. The thing that actually cracked it was the observation that hitscan worked on the same surfaces, which isolated it to the code path. **Rule: use `ImpactPoint` for anything placed *on* a surface (decals, impact FX, scorch marks); reserve `Location` for where the moving object itself ended up (stuck projectiles, ricochet origins).**
+- **A one-way collision ignore isn't enough to stop a projectile hitting its firer.** `IgnoreActorWhenMoving` on the projectile's own collision component, plus actor comparisons in `OnHit`, still let rounds detonate on the player (2026-08-31). Both sides sweep, so the *other* actor's movement can generate the blocking hit even when the projectile is told to ignore it. The working fix ignores in **both directions** — the projectile ignores the actor, and that actor's root component ignores the projectile — driven by an explicit `AddIgnoredActor()` the weapon calls at spawn rather than inferring from `Instigator`/`Owner` (which is a silent hole if either is unset). `OnHit`'s guard must also return **before `Destroy()`**, or a stray self-hit still consumes the round.
+- **The weapon mesh's local +X is not necessarily its barrel axis — don't derive muzzle direction from the actor transform.** 2026-08-31: `Darkness_AssaultRifle` sits at ~72° world yaw off the camera facing with `GripRotationOffset` at zero. Setting the offset to +72 made the number look right (world yaw → `-0.06`) but was **visually wrong** — you ended up sighting down the side of the receiver. Reverted. Any muzzle-position maths derived from "rotate the socket offset by the actor's rotation" inherits the same bad assumption. If muzzle position is ever needed again, measure the socket's world transform directly rather than reconstructing it. This is also why the projectile spawn origin was moved to the crosshair (`TraceStart`) instead: it removes the weapon's orientation from the trajectory entirely.
+
+- **A CDO read-back is not proof that a Blueprint default took effect.** 2026-08-31 (2): `AnimType` was set to `Rifle` on the weapon CDOs through the editor bridge and verified by reading it straight back — but only `BP_FirstPersonCharacter` was compiled afterwards, so the *spawned* weapon instances kept the C++ default (`Pistol`). The ABP then faithfully reported `Pistol` and the bug looked like a graph problem for far longer than it should have. **Rule: set → compile that specific Blueprint → save → verify against a live PIE instance, not the CDO.** Related: `reset_properties` can return `true` without actually clearing a value (setting `"None"` explicitly worked where reset didn't), so verify that too.
+- **Grip offsets are in socket space, and the first-person projection shrinks what you see of them.** 2026-08-31 (2): `GripLocationOffset` was reported as "not changing position", but a live PIE read showed the weapon mesh exactly matching the configured `(0, -10, -2)` — it was applying correctly. Two things make small values read as no change: the offset is relative to the `HandGrip_R` socket, whose axes come from the hand bone (so X/Y/Z are *not* forward/right/up), and the weapon renders at `FirstPersonScale 0.6`, so a 10-unit move shows as roughly 6. Tune with large single-axis values first to learn the mapping, then refine. Same underlying trap as the grip-*rotation* mistake logged above.
+- **A world-space effect attached to a first-person-projected mesh draws in the wrong place.** 2026-08-31 (2): `SpawnEmitterAttached` returns a particle component rendered through the normal world projection, while `WeaponMesh` is tagged `FirstPersonPrimitiveType::FirstPerson` — so the muzzle flash appeared detached from the barrel even though the socket was correct. Fix: call `SetFirstPersonPrimitiveType(FirstPerson)` on anything spawned onto a first-person primitive. Worth remembering for any future attached VFX (tracers, shell ejection, impact sparks on the weapon itself).
+
+- **A montage's `SequenceLength` is read-only through the editor bridge, but opening the asset editor recalculates it.** 2026-08-31 (4): duplicating an existing montage and repointing its `SlotAnimTracks` segment to a different animation leaves `SequenceLength` stuck at the *source* montage's value — so a 2s reload built from a 0.667s fire montage would play only a third of the way through. Setting the property directly is rejected. The fix is `OpenEditorForAsset` on the montage, which forces the recalculation; then save. Full working method: **duplicate → repoint the segment → open the asset editor → save.** This was initially written off as impossible and the tradeoff accepted on `AM_Rifle_Fire` (which sat inconsistent for a day before being fixed the same way) — worth trying the open-the-editor trick before concluding an asset can't be built through the bridge.
+
+- **A threshold compared against a value that changes must scale with it.** 2026-08-31 (5): `M_Reticle_Corners` masked its corner brackets by testing `min(|x|,|y|)` against an *absolute* `CornerCut` of 0.11, while the idle `Radius` was 0.12. At rest the mask erased nearly the whole shape, so the crosshair looked invisible with near-zero line thickness; as bloom grew `Radius` the brackets appeared from nowhere. Thickness was never actually changing — the mask was eating it, which made it look like a completely different bug. Fixed by making the threshold **`Radius × CornerCut`**, so the brackets hold the same proportion of each side at any radius. General shape of the mistake: any cutoff compared against an animated quantity has to be expressed relative to it, or the effect inverts at one end of the range.
+- **Swapping a widget's brush material every tick destroys its dynamic material instance.** 2026-08-31 (5): `SetBrushFromMaterial` creates a fresh MID, so calling it unconditionally each frame throws away every parameter written to the previous one and churns garbage — the reticle would appear to ignore its `Radius`/`Thickness`/`Color`. The fix is a stored `LastCrosshairMaterial` variable and a branch that only swaps on change. Keying off the *equipped weapon* rather than a swap event also means every future acquisition path (pickups, weapon switching) works without notifying the UI.
+- **Editor-bridge API details worth remembering** (2026-08-31 (5)): a Blueprint **variable's getter/setter node types don't exist until the Blueprint is compiled** — create the variable, compile, *then* create the nodes. And overloaded functions (`SetScalarParameterValue`, `GetDynamicMaterial`, `SetBrushFromMaterial`) need `declaring_class` passed to `create_node`, or you silently get the wrong variant — the MaterialParameterCollection version, or the by-ref-Brush one that can't take a widget.
+
 ## Changelog
 
+- 2026-10-25 (3) — Home test pass: weapon wheel (camera lock, death, cycling), female and male clothing layers, enemy search with the gun down, scripted events stage 2, background music, level exit, room cleared + waves all user-tested. Gunfire audio is to be refactored.
+- 2026-10-25 (2) — Dual reload holds the pelvis, `spine_01`–`03` and the off-hand collarbone (`DualReloadHoldAlpha`, two Layered Blend per Bone holds with negative-depth filters); user-tested. The 10-05 accepted quirk is closed.
+- 2026-10-25 — CC skin: the clothing push on skin is a WPO along the camera ray instead of Pixel Depth Offset (PDO had made bare skin shadow itself — seams, orange); `CC_SkelMesh` Self Shadow Only off. Gotchas: PDO and lighting, CC's coarse apparel masks.
+- 2026-10-24 — Contents list added; the Aswang-era enemy sections marked superseded; the plan's gotcha list (52 entries) moved into *Engineering gotchas → Full list*.
 - 2026-10-16 (8) — Focus dead on again (`FocusSpreadMultiplier` default 0); fast-gun recoil (fire montage keeps pace, kick scales with fire rate), user-confirmed.
 - 2026-10-16 (7) — Enemy aim at the shot point (planned shots, aim flick, pitch override) tried and reverted.
 - 2026-10-16 (6) — First-dive bug fixed: the Start blend space's start position is seeded in `NativeInitializeAnimation` (`GetRestStartPosition`).

@@ -99,6 +99,11 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	bDualSpread = bIsDualWield && !bIsAiming;
 
+	// Duals reloading: the torso and off-hand shoulder hold still (the reload clips lean them
+	// for a two-handed reload).
+	DualReloadHoldAlpha = FMath::FInterpTo(DualReloadHoldAlpha, bIsDualWield && bReloadAnimating ? 1.0f : 0.0f,
+		DeltaSeconds, DualReloadHoldSpeed);
+
 	// The one-handed pistol's bladed stance: the mirrored strafe copy reads the negated direction,
 	// and fades in with the raised stance (standing, not diving).
 	CardinalDirectionMirrored = -CardinalDirection;

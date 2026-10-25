@@ -223,11 +223,14 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 	// get the Vector2D look axis
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	// The held wheel: the look input points round it instead of turning the camera. The
-	// keyboard's wheel leaves the camera alone.
-	if (IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode())
+	// While the wheel is up the camera holds still — its slow motion isn't for lining up
+	// shots. The held (pad) wheel takes the look input to point round it instead.
+	if (IsWeaponWheelOpen())
 	{
-		WeaponWheel->AddPointerDelta(LookAxisVector);
+		if (!WeaponWheel->IsKeyMode())
+		{
+			WeaponWheel->AddPointerDelta(LookAxisVector);
+		}
 		return;
 	}
 
@@ -753,6 +756,13 @@ void AProjectBopisCharacter::Die(AController* Killer, const FVector& ShotDirecti
 	if (Roll)
 	{
 		Roll->Cancel();
+	}
+	if (IsWeaponWheelOpen())
+	{
+		// Shut without handing its slow motion back: StopFocus below clears it, and a later
+		// click must not end the death's own.
+		WeaponWheel->Close();
+		bWheelOwnsFocus = false;
 	}
 	if (Focus)
 	{

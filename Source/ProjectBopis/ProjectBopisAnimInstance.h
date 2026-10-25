@@ -225,6 +225,17 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	bool bDualSpread = false;
 
+	/** Duals reloading: the reload clips (authored for a two-handed reload) lean and twist the
+	    torso and drop the off-hand shoulder. The AnimGraph holds the pelvis, the lower/middle
+	    spine and the off-hand collarbone to the idle pose by this weight, so only the arms
+	    reload. Eased in and out. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float DualReloadHoldAlpha = 0.0f;
+
+	/** How fast DualReloadHoldAlpha eases (FInterpTo speed): 10 is about a quarter second. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = "0.1"))
+	float DualReloadHoldSpeed = 10.0f;
+
 	/** Weight of the one-handed pistol's free-arm pose (left hand at the side): only while
 	    raised, eased out while reload-animating. Lowered, the one-handed clips own the arm. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")

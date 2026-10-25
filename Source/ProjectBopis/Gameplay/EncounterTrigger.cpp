@@ -58,9 +58,19 @@ void AEncounterTrigger::OnConstruction(const FTransform& Transform)
 	{
 		SpawnAhead += Spawn.WaitForTrigger ? 1 : 0;
 	}
+	FString WaveText;
+	if (Waves.Num() > 0)
+	{
+		int32 WaveSpawns = 0;
+		for (const FEncounterWave& Wave : Waves)
+		{
+			WaveSpawns += Wave.Spawns.Num();
+		}
+		WaveText = FString::Printf(TEXT("\nWaves %d (%d spawns)"), Waves.Num(), WaveSpawns);
+	}
 	Label->SetRelativeLocation(FVector(0.0f, 0.0f, Volume->GetUnscaledBoxExtent().Z + 40.0f));
-	Label->SetText(FText::FromString(FString::Printf(TEXT("TRIGGER\n%s\nEnemies %d  Spawns %d (ahead %d)"),
-		*GetActorLabel(), Enemies.Num(), Spawns.Num(), SpawnAhead)));
+	Label->SetText(FText::FromString(FString::Printf(TEXT("TRIGGER\n%s\nEnemies %d  Spawns %d (ahead %d)%s"),
+		*GetActorLabel(), Enemies.Num(), Spawns.Num(), SpawnAhead, *WaveText)));
 #endif
 }
 
@@ -83,10 +93,12 @@ void AEncounterTrigger::DrawLinks() const
 	const FVector From = GetActorLocation();
 	const FColor EnemyColor(255, 140, 0);
 	const FColor SpawnColor(255, 40, 40);
+	const FColor WaveSpawnColor(255, 120, 170);
 	const FColor AmbushColor(255, 190, 0);
 	const FColor PatrolColor(40, 220, 80);
 	const FColor WaitColor(0, 200, 255);
 	const FColor EventColor(220, 80, 255);
+	const FColor ClearedColor(255, 255, 255);
 
 	// One frame's worth: redrawn every editor tick, so moving anything updates the lines.
 	auto Line = [World](const FVector& A, const FVector& B, const FColor& Color)
@@ -127,14 +139,31 @@ void AEncounterTrigger::DrawLinks() const
 		}
 	}
 
-	for (const FEncounterSpawn& Spawn : Spawns)
+	// What it sets going once the room's cleared: white arrows.
+	for (const AEncounterEvent* Event : EventsOnCleared)
+	{
+		if (Event)
+		{
+			DrawDebugDirectionalArrow(World, From, Event->GetActorLocation(), 60.0f, ClearedColor, false, -1.0f, SDPG_World, 2.0f);
+		}
+	}
+	for (const AEncounterTrigger* Trigger : TriggersOnCleared)
+	{
+		if (Trigger)
+		{
+			DrawDebugDirectionalArrow(World, From, Trigger->GetActorLocation(), 60.0f, ClearedColor, false, -1.0f, SDPG_World, 2.0f);
+		}
+	}
+
+	// A spawn entry: a line to where it appears, then its moves from there.
+	auto DrawSpawn = [&](const FEncounterSpawn& Spawn, const FColor& Color)
 	{
 		if (!Spawn.SpawnPoint)
 		{
-			continue;
+			return;
 		}
 		const FVector SpawnAt = Spawn.SpawnPoint->GetActorLocation();
-		Line(From, SpawnAt, SpawnColor);
+		Line(From, SpawnAt, Color);
 		if (Spawn.AmbushPoint)
 		{
 			Line(SpawnAt, Spawn.AmbushPoint->GetActorLocation(), AmbushColor);
@@ -145,6 +174,25 @@ void AEncounterTrigger::DrawLinks() const
 			// Which trigger wakes it: an arrow from where it appears to that trigger.
 			DrawDebugDirectionalArrow(World, SpawnAt, Spawn.WaitForTrigger->GetActorLocation(), 60.0f,
 				WaitColor, false, -1.0f, SDPG_World, 2.0f);
+		}
+	};
+
+	for (const FEncounterSpawn& Spawn : Spawns)
+	{
+		DrawSpawn(Spawn, SpawnColor);
+	}
+	for (const FEncounterWave& Wave : Waves)
+	{
+		for (const FEncounterSpawn& Spawn : Wave.Spawns)
+		{
+			DrawSpawn(Spawn, WaveSpawnColor);
+		}
+		for (const AEncounterEvent* Event : Wave.EventsToStart)
+		{
+			if (Event)
+			{
+				DrawDebugDirectionalArrow(World, From, Event->GetActorLocation(), 60.0f, EventColor, false, -1.0f, SDPG_World, 2.0f);
+			}
 		}
 	}
 }
@@ -165,6 +213,10 @@ void AEncounterTrigger::BeginPlay()
 			Enemy->SetWaitingForTrigger(bEnemiesWaitForTrigger);
 		}
 	}
+
+	// Watches the room from the start, for its waves and for its being cleared: one shot clear
+	// from the doorway, before the player walks in, counts too.
+	GetWorldTimerManager().SetTimer(RoomTimer, this, &AEncounterTrigger::UpdateRoom, 0.25f, true);
 }
 
 void AEncounterTrigger::AddEnemy(AEnemyBase* Enemy, bool bWait)
@@ -216,19 +268,7 @@ void AEncounterTrigger::Fire()
 	// spawns first, so an event's speakers are already there when it starts.
 	if (bFirstTime)
 	{
-		for (int32 Index = 0; Index < Spawns.Num(); ++Index)
-		{
-			if (Spawns[Index].Delay > 0.0f)
-			{
-				FTimerHandle Timer;
-				GetWorldTimerManager().SetTimer(Timer,
-					FTimerDelegate::CreateUObject(this, &AEncounterTrigger::SpawnOne, Index), Spawns[Index].Delay, false);
-			}
-			else
-			{
-				SpawnOne(Index);
-			}
-		}
+		BringIn(INDEX_NONE);
 		for (AEncounterEvent* Event : EventsToStart)
 		{
 			if (Event)
@@ -239,13 +279,37 @@ void AEncounterTrigger::Fire()
 	}
 }
 
-void AEncounterTrigger::SpawnOne(int32 Index)
+void AEncounterTrigger::BringIn(int32 WaveIndex)
 {
-	if (!Spawns.IsValidIndex(Index))
+	const TArray<FEncounterSpawn>& List = WaveIndex == INDEX_NONE ? Spawns : Waves[WaveIndex].Spawns;
+	PendingSpawns += List.Num();
+	for (int32 Index = 0; Index < List.Num(); ++Index)
+	{
+		if (List[Index].Delay > 0.0f)
+		{
+			FTimerHandle Timer;
+			GetWorldTimerManager().SetTimer(Timer,
+				FTimerDelegate::CreateUObject(this, &AEncounterTrigger::SpawnOne, WaveIndex, Index), List[Index].Delay, false);
+		}
+		else
+		{
+			SpawnOne(WaveIndex, Index);
+		}
+	}
+}
+
+void AEncounterTrigger::SpawnOne(int32 WaveIndex, int32 Index)
+{
+	// This one's moment has come, whether or not it makes it in.
+	PendingSpawns = FMath::Max(0, PendingSpawns - 1);
+
+	const TArray<FEncounterSpawn>* List = WaveIndex == INDEX_NONE ? &Spawns
+		: (Waves.IsValidIndex(WaveIndex) ? &Waves[WaveIndex].Spawns : nullptr);
+	if (!List || !List->IsValidIndex(Index))
 	{
 		return;
 	}
-	const FEncounterSpawn& Spawn = Spawns[Index];
+	const FEncounterSpawn& Spawn = (*List)[Index];
 	const TSubclassOf<AEnemyBase> Class = Spawn.EnemyClass ? Spawn.EnemyClass : DefaultEnemyClass;
 	APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!Class || !Spawn.SpawnPoint || !Player)
@@ -296,15 +360,92 @@ void AEncounterTrigger::SpawnOne(int32 Index)
 		Enemy->SetPatrolPoints(Spawn.PatrolPoints);
 	}
 
-	// Spawned ahead: joins its own trigger (asleep, unless patrolling). Otherwise a patroller just
-	// patrols, and the rest come in already set off.
+	// Spawned ahead: joins its own trigger (asleep, unless patrolling), and is that room's to
+	// clear. Otherwise it's this room's: a patroller just patrols, the rest come in set off.
 	if (Spawn.WaitForTrigger)
 	{
 		Spawn.WaitForTrigger->AddEnemy(Enemy, !bPatroller);
+		return;
 	}
-	else if (!bPatroller)
+	Enemies.Add(Enemy);
+	if (!bPatroller)
 	{
 		Enemy->SetWaitingForTrigger(true);
 		Enemy->TriggerAmbush(Player);
 	}
+}
+
+int32 AEncounterTrigger::GetAliveCount() const
+{
+	int32 Alive = PendingSpawns;
+	for (const AEnemyBase* Enemy : Enemies)
+	{
+		if (IsValid(Enemy) && !Enemy->IsDead())
+		{
+			++Alive;
+		}
+	}
+	return Alive;
+}
+
+void AEncounterTrigger::UpdateRoom()
+{
+	if (bCleared)
+	{
+		return;
+	}
+
+	// The next wave, once the trigger's fired and the wave before is all in: due when the room's
+	// thinned out to its count, and in its Delay later. No clearing while one's still to come.
+	if (bTriggered && Waves.IsValidIndex(NextWave))
+	{
+		const FEncounterWave& Wave = Waves[NextWave];
+		const double Now = GetWorld()->GetTimeSeconds();
+		if (NextWaveAt < 0.0 && PendingSpawns == 0 && GetAliveCount() <= Wave.StartWhenAliveAtMost)
+		{
+			NextWaveAt = Now + Wave.Delay;
+		}
+		if (NextWaveAt >= 0.0 && Now >= NextWaveAt)
+		{
+			const int32 WaveIndex = NextWave++;
+			NextWaveAt = -1.0;
+			BringIn(WaveIndex);
+			for (AEncounterEvent* Event : Wave.EventsToStart)
+			{
+				if (Event)
+				{
+					Event->StartEvent();
+				}
+			}
+			OnWaveStarted.Broadcast(this, WaveIndex);
+		}
+		return;
+	}
+
+	// Cleared: not while it still has spawns or waves to bring in (they come once it fires), nor
+	// before it's had anyone to clear.
+	const bool bAllIn = bTriggered || (Spawns.Num() == 0 && Waves.Num() == 0);
+	const bool bHadAnyone = bTriggered || Enemies.Num() > 0;
+	if (!bAllIn || !bHadAnyone || GetAliveCount() > 0)
+	{
+		return;
+	}
+	bCleared = true;
+	GetWorldTimerManager().ClearTimer(RoomTimer);
+
+	for (AEncounterEvent* Event : EventsOnCleared)
+	{
+		if (Event)
+		{
+			Event->StartEvent();
+		}
+	}
+	for (AEncounterTrigger* Trigger : TriggersOnCleared)
+	{
+		if (Trigger)
+		{
+			Trigger->Fire();
+		}
+	}
+	OnCleared.Broadcast(this);
 }

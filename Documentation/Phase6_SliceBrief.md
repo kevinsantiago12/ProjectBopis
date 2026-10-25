@@ -119,7 +119,7 @@ work, but only if the design wants it in the slice.
 6. A pass on lighting (basic, readable) and pickup placement.
 7. Playtest against the five questions; tune counts, sizes and ammo.
 
-New code the slice needs: only the **exit trigger** (small). Optional: the
+New code the slice needs: only the **exit trigger** (small). *(Built 2026-10-24: `ALevelExitTrigger`, see the spec's "Level exit"; not placed yet.)* *(2026-10-24: triggers now have `Waves` and a room-cleared hook, so room 4's "wave of 3" can be a wave on its trigger instead of the director.)* Optional: the
 **scripted grenade thrower**, and **checkpoints**, if a restart from the top
 proves too punishing at 5–8 minutes.
 

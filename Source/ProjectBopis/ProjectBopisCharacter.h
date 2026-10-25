@@ -282,6 +282,9 @@ protected:
 public:
 	AProjectBopisCharacter();
 
+	/** The weapon wheel is up (HUD elements hide under it — the crosshair). */
+	bool IsWeaponWheelOpen() const;
+
 protected:
 
 	/** Called from Input Actions for movement input */
@@ -327,14 +330,13 @@ protected:
 
 	/** The weapon wheel. Keyboard: a number key opens it in key mode (that type highlighted;
 	    more keys move it, the same type steps its weapons) and a click equips. Pad/held key:
-	    held open in pointer mode (look steers), released to pick. While open every other input
-	    is blocked and time runs slow. */
+	    held open in pointer mode (look steers), released to pick. While open, combat input
+	    and the camera are blocked (movement stays) and time runs slow. */
 	void OpenWeaponWheel(bool bKeyMode);
 	void CloseWeaponWheel(bool bEquip);
 	void DoWeaponWheelStart();
 	void DoWeaponWheelEnd();
 	void WeaponWheelCycleInput(const FInputActionValue& Value);
-	bool IsWeaponWheelOpen() const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UWeaponWheelWidget> WeaponWheel;
