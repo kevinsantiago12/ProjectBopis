@@ -363,6 +363,30 @@
   current hand). `ABP_Player`: Modify Bone `ik_hand_l` + Copy Bone →
   `hand_l` after `TwoBoneIK_0`; compiled, saved. Built clean, bridge up, DLL
   newer. Not tested; no gun locks yet.
+- **Tested (user):** "lowered idle and jog is fine now. Mossberg hold is ok"
+  — the Mossberg and the M4 lock the hand angle (sockets calibrated). Only
+  issue: lying **backwards** (prone on the back after a shootdodge) the left
+  hand can't reach the grip — "maybe fix this later but ignore for now".
+  Committed and pushed by the user (`4103f1da`, "Added Some weapon anims. Fix
+  on left hand grip for long guns").
+- **Right-hand grip style** (user, Mossberg: "the normal right hand gun grip
+  does not fit ... the thumb penetrates through the model becuase of the
+  Straight Stock"; "apply and run"). `EWeaponGripStyle` + `GripStyle` on the
+  weapon; `RightHandGripPoses` / `RightHandGripPose` /
+  `RightHandGripPoseAlpha` + `UpdateRightHandGrip` on the anim instance;
+  `ABP_Player`: a Layered Blend per Bone on the right thumb and finger chains
+  (`LayeredBoneBlend_16` ← `SequenceEvaluator_0`) after the left-hand IK;
+  compiled, saved. First rebuild timed out on the editor's save prompt; the
+  rerun built clean, bridge up, DLL newer. The user made
+  `/Game/StraightStockGripPose` (on `CCMH_Skeleton`, compatible with
+  `SK_Mannequin` both ways); hooked up over the bridge: `ABP_Player`
+  Right Hand Grip Poses `StraightStock` → it, `BP_PumpShotgun` Grip Style
+  `StraightStock`; compiled, saved. **Bug, solved:** "all weapons are like
+  way infront of the player like 5+ meters away" — the user had added a
+  preview gun on `HandGrip_R` to pose against ("just added a preview asset
+  is all"); dragging a preview asset moves its socket, here the CC body's
+  mesh socket on `CCMH_Body_Male`, in memory only (file unchanged).
+  Reloaded → "guns are back, grip works". Gotcha in the spec.
 - **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
   nothing visible (component scale doesn't reach these sprite sizes); the
   user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
@@ -395,20 +419,12 @@
    `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
    Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
    Fire notify and no flash. Then test every gun: one shot sound, one flash.
-6. **Mossberg hold:** left hand overextended (`LeftHandGrip` y 40 — move it
-   back, onto the `pump` bone, or scale down); right hand needs a
-   straight-stock pose.
-7. **Lowered long-gun poses (user authoring, 2026-10-26: "I need a better pose, ill author it myself"):** stand idle `anim_shotgun_stand_idle`, crouch idle `anim_shotgun_crouch_idle`, and `BS_Rifle_Lowered_Jog_Walk` (`MM_Rifle_Jog_Fwd_Lowered`, `anim_shotgun_walk_fwd_loop`). The IK sets the hand position; the clip sets wrist rotation and elbow. Then test idle/jog lowered with the rifle,
-   shotguns and launcher — hand on the grip; watch the lowered clips you
-   haven't edited for odd wrists. If it doesn't follow at all, the IK node is
-   inside `ABP_Player`'s raised branch (bridge fix).
-8. **M4 hatch** (`b_gun_shelleject_hatch`): skeleton editing tool or an M4
+6. **M4 hatch** (`b_gun_shelleject_hatch`): skeleton editing tool or an M4
    fire animation.
-9. **Left-hand angle per long gun:** PIE, lock off, lowered idle where the hand
-   looks right → console `Bopis.LeftHandGripCalibrate 1` → type the yellow
-   X/Y/Z into the gun's `LeftHandGrip` socket rotation → tick
-   `bLockLeftHandRotation` on its Blueprint. Mossberg and M4 first; check
-   idle, jog, raised, aimed.
+7. **Deferred (user): prone on the back** after a shootdodge — the left hand
+   can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
+8. **New long guns:** calibrate and tick `bLockLeftHandRotation`
+   (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked
@@ -419,18 +435,8 @@
    `CleanFlatIcons` and `Weapons` first (nothing uses them), then demo folders.
 3. **`AM_Pistol_Reload_Offhand`** → Chamber notify → tick **Offhand**, if not
    done yet.
-4. **Commit** (everything above is tested except the gunfire audio): C++ — `ProjectBopisCharacter.h/.cpp` (wheel lock, wheel on death),
-   `UI/ReticleWidget.h/.cpp`, `Gameplay/EncounterTrigger.h/.cpp` (room
-   cleared + waves), new `Gameplay/MusicSubsystem.h/.cpp`,
-   `Gameplay/MusicTrigger.h/.cpp`, `Gameplay/LevelExitTrigger.h/.cpp`; docs —
-   `ProgressLog.md`, new `ProgressLog_Archive.md`, `ProjectPlan.md`,
-   `TechnicalDesignSpec.md`, `Phase6_SliceBrief.md`, both GDD files, new
-   `Documentation/Reports/`.
-   Content: `M_Skin_CCMH`, `MI_Skin_Body_CCMH`, `MI_Skin_Face_CCMH` (skin fix).
-   `CC_SkelMesh` (Self Shadow Only off).
-   Dual reload hold: `ProjectBopisAnimInstance.h/.cpp`, `ABP_Player`.
-   Feedback standard: `Weapons/WeaponBase.h/.cpp`, `BopisCharacterBase.cpp`;
-   `BP_Pistol`, `BP_DualPistols`, `BP_Pistol_EnemyOnly`, `BP_PumpShotgun`.
+4. **Committed and pushed** by the user (`f7611c2c`, `4103f1da`, 2026-10-26);
+   working tree clean.
 
 **C. Can be done remotely** (C++ — presented first, then "apply and run")
 1. Optional: `DualLoweredPlayRate` → `LoweredJogPlayRate` rename.

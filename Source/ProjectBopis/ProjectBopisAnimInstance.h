@@ -219,6 +219,20 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double LeftHandGripRotationAlpha = 0.0;
 
+	/** Right-hand finger poses by grip style (one-frame clips on this skeleton). A style with
+	    none keeps the clips' own fingers — the pistol grip they were authored for. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TMap<EWeaponGripStyle, TObjectPtr<UAnimSequenceBase>> RightHandGripPoses;
+
+	/** The held weapon's finger pose, played by the AnimGraph's finger layer (hand_r's thumb
+	    and finger chains). Kept while the layer eases out. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> RightHandGripPose;
+
+	/** Weight of that layer: in when the weapon's grip has a pose, out while drawing or tossing. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float RightHandGripPoseAlpha = 0.0f;
+
 	/** Any pistol-style hold (Pistol, PistolOneHanded or Dual) — the AnimGraph's
 	    pistol-vs-long-gun switches (aim offset, hip-fire idle, crouch idle) read this
 	    instead of == Pistol. */
@@ -737,6 +751,7 @@ private:
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
 	void UpdateLeftHandGrip(const ABopisCharacterBase& Character, const AWeaponBase* Weapon);
+	void UpdateRightHandGrip(const AWeaponBase* Weapon, float DeltaSeconds);
 
 	/** Sets the held gun's pump amount from the Pump curve (and zeroes a gun just put away). */
 	void UpdatePump(AWeaponBase* Weapon);

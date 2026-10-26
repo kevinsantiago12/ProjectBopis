@@ -3382,6 +3382,37 @@ lock off where the hand looks right, type it into the socket, then tick the
 lock. Unlike the reverted lock, the angle comes from our socket, not from
 Lyra's `ik_hand_l` keys. Limit: only the hand turns, not the forearm twist, so
 a clip whose forearm points far off can over-bend the wrist (fix the elbow).
+**State (user, 2026-10-26):** locked on `BP_PumpShotgun` and
+`BP_CloseRangeRifle` (sockets calibrated); "lowered idle and jog is fine
+now. Mossberg hold is ok". Not locked: `BP_Shotgun`, `BP_BattleRifle`,
+`BP_GrenadeLauncher` (silver placeholders — lock their replacements).
+**Open:** lying **backwards** after a shootdodge (prone on the back), the
+left hand can't reach `LeftHandGrip` — deferred by the user.
+
+**Right-hand grip style (2026-10-26).** Every clip's right-hand fingers are
+posed for a pistol grip; on the Mossberg's straight stock the thumb went
+through the wood (user: "the normal right hand gun grip does not fit ... the
+thumb penetrates through the model becuase of the Straight Stock"). Per the
+architecture rule (weapon = identity, holder = skeleton data):
+`EWeaponGripStyle` { `PistolGrip`, `StraightStock` } and
+`AWeaponBase::GripStyle` (default `PistolGrip`); the anim instance owns
+`RightHandGripPoses` (`TMap<EWeaponGripStyle, UAnimSequenceBase>`, set in
+`ABP_Player`'s Class Defaults — one-frame finger poses on `SK_Mannequin`).
+`UpdateRightHandGrip` sets `RightHandGripPose` (kept while easing out, so the
+fingers never pass through the bind pose) and `RightHandGripPoseAlpha`
+(eases in when the grip has a pose; out while drawing or tossing a grenade;
+`UpperBodyInterpSpeed`). AnimGraph: `LayeredBoneBlend_16` between
+`ComponentToLocalSpace_1` and `LayeredBoneBlend_5` — Base the pose, Blend
+`SequenceEvaluator_0` (Sequence pin ← `RightHandGripPose`), weight
+`RightHandGripPoseAlpha`, filters `thumb_01_r`, `index_metacarpal_r`,
+`middle_metacarpal_r`, `ring_metacarpal_r`, `pinky_metacarpal_r` (depth 0,
+local space). Fingers only — the wrist (and so the gun and aim) is
+untouched; tilt a gun in the hand with `GripRotationOffset`. Montages play
+upstream (`DefaultSlot`), so the grip holds through fire and reload.
+**Tested (user, 2026-10-26): "grip works"** — `/Game/StraightStockGripPose`
+(authored on `CCMH_Skeleton`, which lists `SK_Mannequin` as compatible and
+vice versa) on `BP_PumpShotgun`. Edits to the pose flow through on save (and
+in PIE before saving) — no rebuild or re-hookup while it's the same asset.
 
 ### One-handed pistol (2026-10-07)
 `EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay
@@ -5020,6 +5051,15 @@ follows below (moved here from ProjectPlan.md on 2026-10-24 — add new ones the
 - **`FHitResult::Location` vs `ImpactPoint`.** For a swept shape, `Location` is
   the shape's centre at impact — one radius off the surface. Use `ImpactPoint`
   for anything placed *on* a surface (decals, impact FX).
+- **A preview asset on a socket moves the socket when you drag it.** In the
+  animation/skeleton editors, a preview mesh attached to a socket (Add Preview
+  Asset) is selectable in the viewport, and its gizmo edits the *socket's*
+  relative transform. 2026-10-26: posing fingers against a preview gun on
+  `HandGrip_R` moved the CC body's socket (a **mesh** socket on
+  `CCMH_Body_Male`, which outranks the skeleton's) — every gun floated ahead
+  of the hand in PIE, with nothing changed on disk (PIE uses the in-memory
+  asset). Fix: Asset Actions → **Reload** (or don't save it). Pose by
+  selecting bones in the skeleton tree; remove the preview asset afterwards.
 - **IntelliSense false-positives on delegate macros** (`AddDynamic`). Trust the
   actual build over the editor squiggle.
 - **A new Transform (Modify) Bone exposes Translation/Rotation/Scale as pins,

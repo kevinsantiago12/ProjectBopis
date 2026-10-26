@@ -601,9 +601,12 @@ archetype-composition idea, not extended from the old classes.
   - [ ] M4 (`SK_AR4`) ejection hatch: `b_gun_shelleject_hatch` closed in the ref pose — skeleton editing tool, or an M4 fire animation that opens it (user). Also the launcher's fire animation.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Long guns keep the left-hand IK when lowered (user's lowered idle/jog clips bring the hand near the grip; the IK closes the gap). Two-handed pistol unchanged.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Per-gun left-hand angle: `bLockLeftHandRotation` (weapon) + the `LeftHandGrip` socket's rotation; `Bopis.LeftHandGripCalibrate 1` shows the rotation for the current hand. AnimGraph: Modify Bone `ik_hand_l` + Copy Bone → `hand_l` after `TwoBoneIK_0`; saved.
-  - [ ] User, per long gun: calibrate in the lowered idle (lock off), type the rotation into `LeftHandGrip`, tick `bLockLeftHandRotation`; check idle, jog, raised, aimed.
-  - [ ] Test: lowered idle/jog with each long gun — hand on the grip; watch untouched lowered clips (jog left/right/back, crouch) for odd wrists or overstretched arms. If the hand doesn't follow when lowered, `TwoBoneIK_0` sits inside the raised branch of `ABP_Player`.
-  - [ ] Mossberg hold: left hand overextended (`LeftHandGrip` y 40 — move it back, onto `pump`, or scale down); right hand needs a straight-stock pose.
+  - [x] *(User, 2026-10-26.)* Calibrated and locked: `BP_PumpShotgun`, `BP_CloseRangeRifle`. Lock the silver placeholders' replacements as they arrive.
+  - [x] *(Tested 2026-10-26, user: "lowered idle and jog is fine now".)* Lowered idle/jog — hand on the grip.
+  - [x] *(User, 2026-10-26: "Mossberg hold is ok".)* Mossberg hold.
+  - [ ] Deferred (user: "maybe fix this later but ignore for now"): lying backwards after a shootdodge, the left hand can't reach `LeftHandGrip`.
+  - [x] *(Compiled 2026-10-26, "apply and run".)* Right-hand grip style: `EWeaponGripStyle` on the weapon; `RightHandGripPoses` map on the anim instance; finger layer (`LayeredBoneBlend_16`) in `ABP_Player`; saved.
+  - [x] *(User + bridge, 2026-10-26.)* `StraightStockGripPose` authored; `ABP_Player` Right Hand Grip Poses `StraightStock` → it; `BP_PumpShotgun` Grip Style `Straight Stock`. *Tested (user): "grip works".*
   - [ ] .45s: stay on the silver `Pistols_A` (user, 2026-10-25; an M1911 swap was reverted). Its missing magazine comes from the 1911 pack's `NonRigged_M1911_Magazine` — the user's design, later.
   - [x] *(Bridge, 2026-10-25.)* "5.56 Assault Rifle" — `BP_CloseRangeRifle` on the FPS pack's M4 (`SK_AR4`), sockets on its muzzle/eject bones. Still: `LeftHandGrip`, grip offsets, and hitscan vs the old projectile round (user's call).
   - [ ] AK-74u — new Blueprint (Rifle anim type).

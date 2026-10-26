@@ -140,6 +140,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdatePump(Holder ? Holder->GetEquippedWeapon() : nullptr);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
+	UpdateRightHandGrip(Weapon, DeltaSeconds);
 	UpdateFreeArmSwing(DeltaSeconds);
 	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
@@ -882,6 +883,21 @@ void UProjectBopisAnimInstance::UpdateLeftHandGrip(const ABopisCharacterBase& Ch
 		LeftHandGripLocation += HandWorld.InverseTransformVectorNoScale(
 			SlideParentWorld.TransformVectorNoScale(Weapon->GetPumpOffset()));
 	}
+}
+
+void UProjectBopisAnimInstance::UpdateRightHandGrip(const AWeaponBase* Weapon, float DeltaSeconds)
+{
+	// The clips' fingers suit a pistol grip; other grips swap in their own finger pose. The last
+	// pose is kept while the layer eases out, so the fingers never pass through the bind pose.
+	const TObjectPtr<UAnimSequenceBase>* Found = Weapon ? RightHandGripPoses.Find(Weapon->GetGripStyle()) : nullptr;
+	UAnimSequenceBase* Pose = Found ? Found->Get() : nullptr;
+	if (Pose)
+	{
+		RightHandGripPose = Pose;
+	}
+
+	const float Target = (Pose && !bEquipAnimating && !bThrowingGrenade) ? 1.0f : 0.0f;
+	RightHandGripPoseAlpha = FMath::FInterpTo(RightHandGripPoseAlpha, Target, DeltaSeconds, UpperBodyInterpSpeed);
 }
 
 void UProjectBopisAnimInstance::UpdatePump(AWeaponBase* Weapon)

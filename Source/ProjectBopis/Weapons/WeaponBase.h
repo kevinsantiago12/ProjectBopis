@@ -99,6 +99,15 @@ enum class EAmmoType : uint8
 	LauncherGrenade
 };
 
+/** How the gun's stock meets the shooting hand: a pistol grip, or a straight stock whose wrist
+    the hand wraps around (the Mossberg). The holder's AnimBP picks the finger pose for it. */
+UENUM(BlueprintType)
+enum class EWeaponGripStyle : uint8
+{
+	PistolGrip,
+	StraightStock
+};
+
 /** Outcome of a fire attempt. Callers branch on this for feedback — a rate-limited
     click must be silent, an empty one must not be. */
 UENUM(BlueprintType)
@@ -203,6 +212,7 @@ public:
 	FVector GetGripLocationOffset() const { return GripLocationOffset; }
 	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
 	bool LocksLeftHandRotation() const { return bLockLeftHandRotation; }
+	EWeaponGripStyle GetGripStyle() const { return GripStyle; }
 
 	/** Pump guns: where the slide is now, in its parent bone's space — back along -X by
 	    PumpTravel × the pump amount. Zero for guns without a pump. */
@@ -419,6 +429,10 @@ protected:
 	    Bopis.LeftHandGripCalibrate 1 shows it from the hand as it is now. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	bool bLockLeftHandRotation = false;
+
+	/** The shooting hand's grip on this gun — identity only; the holder decides the finger pose. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	EWeaponGripStyle GripStyle = EWeaponGripStyle::PistolGrip;
 
 	/** Each shot, from the muzzle. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
