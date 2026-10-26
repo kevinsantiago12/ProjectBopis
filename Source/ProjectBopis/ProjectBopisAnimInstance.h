@@ -726,6 +726,12 @@ private:
 	void UpdateUpperBody(float DeltaSeconds);
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
 	void UpdateLeftHandGrip(const ABopisCharacterBase& Character, const AWeaponBase* Weapon);
+
+	/** Sets the held gun's pump amount from the Pump curve (and zeroes a gun just put away). */
+	void UpdatePump(AWeaponBase* Weapon);
+
+	/** The gun the Pump curve was last driving. */
+	TWeakObjectPtr<AWeaponBase> PumpWeapon;
 	void UpdateTurnInPlace(float ActorYaw, float DeltaSeconds);
 	void UpdateRecoil(float DeltaSeconds);
 	void UpdateFreeArmSwing(float DeltaSeconds);

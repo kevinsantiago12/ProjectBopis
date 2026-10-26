@@ -578,6 +578,30 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Compiled 2026-10-25, "apply and run".)* `DualReloadHoldAlpha` (C++) and two Layered Blend per Bone holds in `ABP_Player`: pelvis + `spine_01`–`03`, and the off-hand collarbone.
   - [x] *(User-tested 2026-10-25.)* Test: dual reload from behind — no lean, the left shoulder stays up, the left arm clear of the body. Tune: `spine_04` too (filter → `spine_05`), `DualReloadHoldSpeed`.
 - [ ] **31. Gunfire audio refactor** (user, 2026-10-25, home test of consecutive shots: "gunfire audio to refactored"). Item 23 raised the gunshot cues to 8 voices with a steal fade; the test still didn't pass. Next: pin down the symptom, then rework the fire-sound path (`AWeaponBase::PlayWeaponSound`, cue concurrency, sound priorities; the mixer's 32-voice ceiling if *all* audio cuts out).
+- [ ] **32. Procedural pump + grip curves** (user, 2026-10-25: "lets go procedural" for a more prominent pump; the reload End should pump; "the equip anim ends with the hands not landing on the left grip"). See the spec's *Procedural pump and grip curves*.
+  - [x] *(Compiled 2026-10-25, "apply and run".)* C++: `Pump`/`HandGrip` curves in `UProjectBopisAnimInstance`; `AWeaponBase` pump bone/travel/amount; `UWeaponAnimInstance`.
+  - [x] *(Bridge, 2026-10-25.)* Both shotguns `Slide_Bone`/8 cm (the semi-auto pumps on reload only). Reload stays the shared `AM_Shotgun_Reload` (a pump-only copy was made and removed).
+  - [ ] *(Deferred: `Shotgun_A` is a placeholder.)* With the final shotgun model: its pump bone + travel on both shotgun BPs, and a post-process AnimBP (parent `WeaponAnimInstance`, one Modify Bone on the slide) — user creates the asset, Claude wires it.
+  - [x] *(Compiled 2026-10-25, "apply and run".)* No rack after a reload for now (user: "Just dont rack it at all for now"): `bPlayReloadEnd` (character, default off) — the montage ends with the last insert.
+  - [ ] User: curves — `Pump` on `MM_PumpShotgun_Fire` (rack); `HandGrip` at the end of `MM_Rifle_Equip`.
+  - [ ] Test: the pump fire (the hand rides back), shotgun reloads end after the last shell with no slap, equip lands on the grip (rifle and both shotguns).
+- [ ] **33. Final weapon assets** (user, 2026-10-25: "replace the pump shotgun assets, replace the semi-shotgun with a spas-12. Add single and dual berettas (different from the pistol). Replace the mac with micro uzi. Add new Ar-15 model, Add AK74u"). Intake checklist: the spec's *Adding a weapon*.
+  - [ ] Design calls (user): which rifle the AR-15 replaces (`BP_CloseRangeRifle` or `BP_BattleRifle`); AK-74u ammo (shared Rifle or its own); whether the .45 and 9mm share Pistol ammo. *(Decided 2026-10-25: the MAC-11 stays — Micro Uzi dropped; the Beretta is one-handed like the .45.)*
+  - [ ] Pump shotgun — the Mossberg 500 (`/Game/Mossberg/Mossberg-5001`, material set up 2026-10-25: `MI_Mossberg500`) onto `BP_PumpShotgun`; its slide AnimBP on the `pump` bone (plan item 32's deferred part).
+  - [ ] SPAS-12 — replaces `BP_Shotgun` (semi-auto; pump bone for a reload rack later).
+  - [x] *(Bridge, 2026-10-25.)* 9mm Pistol (Beretta 92FS) + Dual 9mm Pistols — `BP_Pistol9mm` / `BP_DualPistol9mm`; the old pistol renamed ".45 Pistol" / "Dual .45 Pistols".
+  - [ ] 9mm: sockets on `SK_Beretta_92FS` (`MuzzleFlash`, `AmmoEject` — user), grip offsets (PIE), icon, pickup, loadout/enemy pools, LOD reduction.
+  - [ ] MAC-11 kept (user: "I will keep the mac-11") — a final MAC-11 model when there is one.
+  - [ ] Replace every gun on a MilitaryWeapSilver mesh (user, 2026-10-25): .45 pair + `BP_Pistol_EnemyOnly` (`Pistols_A`), both shotguns (`Shotgun_A`), `BP_CloseRangeRifle` (`Assault_Rifle_A`), `BP_BattleRifle` (`Sniper_Rifle_A`), `BP_GrenadeLauncher`. The 9mm, revolver and MAC meshes aren't silver but borrow its muzzle flashes and sounds.
+  - [x] *(Compiled 2026-10-26, "apply and run".)* Weapon feedback standard (user: "It will now always play the Fire animation when firing. If it is none, it will not do it. We replace the notifies with our own ones so it does not double up"): `bUseAnimationDrivenFeedback` removed; `Fire()` plays `FireAnimation` if set (its Weapon Sound notifies make the sounds), else the Fire sound from code; flash always from code. Bridge: `P_Pistol_MuzzleFlash_01` on the .45 pair + `BP_Pistol_EnemyOnly`; `BP_PumpShotgun` → `Mossberg-500_Pump`. Spec: *Adding a weapon*.
+  - [ ] User: on `Fire_Pistol_W`, `Fire_Shotgun_NoDelay`, `Fire_SniperRifle_W` — delete the flash (particle) notifies, add a Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a Fire notify and no flash. Until then those guns fire silently.
+  - [ ] Test: every gun — one shot sound, one flash at the muzzle; the Mossberg pumps on fire.
+  - [x] *(User, 2026-10-26.)* Mossberg pump: `PumpBoneName` None on `BP_PumpShotgun` (the procedural offset pushed the hand sideways — `grip`'s X isn't along the barrel); `Mossberg-500_Pump` retimed to the body's fire animation. Optional: `LeftHandGrip` onto `pump` so the hand rides it.
+  - [ ] Mossberg hold: left hand overextended (`LeftHandGrip` y 40 — move it back, onto `pump`, or scale down); right hand needs a straight-stock pose.
+  - [ ] .45s: stay on the silver `Pistols_A` (user, 2026-10-25; an M1911 swap was reverted). Its missing magazine comes from the 1911 pack's `NonRigged_M1911_Magazine` — the user's design, later.
+  - [x] *(Bridge, 2026-10-25.)* "5.56 Assault Rifle" — `BP_CloseRangeRifle` on the FPS pack's M4 (`SK_AR4`), sockets on its muzzle/eject bones. Still: `LeftHandGrip`, grip offsets, and hitscan vs the old projectile round (user's call).
+  - [ ] AK-74u — new Blueprint (Rifle anim type).
+  - [ ] Pickups, enemy weapon pools, the wheel's icons; old placeholders onto the unused-content list.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
 
 ## Phase 6 — First playable slice

@@ -224,21 +224,21 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	USkeletalMeshComponent* FiringMesh = GetFiringMesh();
 
-	// Every shot's sound starts here, animated guns included, so they all share the cues'
-	// attenuation and per-shooter voice limit. Fire animations keep only the visuals (and
-	// the shotgun's pump rack).
-	PlayWeaponSound(EWeaponSound::Fire, FiringMesh == OffhandMesh);
-
-	if (!bUseAnimationDrivenFeedback)
-	{
-		if (MuzzleFlash)
-		{
-			UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName);
-		}
-	}
-	else if (FireAnimation)
+	// The gun's own animation (if it has one) moves its parts, and its Weapon Sound notifies make
+	// its sounds — the shot is a Fire notify on it, played through PlayWeaponSound so the cues'
+	// attenuation and per-shooter voice limit still apply. Without one, the shot sounds from here.
+	// The flash is always ours, at the muzzle socket.
+	if (FireAnimation)
 	{
 		FiringMesh->PlayAnimation(FireAnimation, false);
+	}
+	else
+	{
+		PlayWeaponSound(EWeaponSound::Fire, FiringMesh == OffhandMesh);
+	}
+	if (MuzzleFlash)
+	{
+		UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName);
 	}
 
 	// A burst runs while shots follow at the weapon's rate; a longer gap starts a new one.

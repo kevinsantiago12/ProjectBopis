@@ -219,6 +219,126 @@
   refactored"** — consecutive shots still not right; plan item 31. Plan items
   10, 20, 28, 29 closed; the GDD's build list gained music, waves and the
   level ending.
+- **One-handed pistol broken → back to the last push** (user, 10-25: "pull
+  from the last push"). Local `main` = `origin/main` (`b3dac65c`), so the six
+  assets saved in the editor since (`AM_Shotgun_Reload`, `MM_Shotgun_Reload`,
+  `AM_Shotgun_Fire_Pump`, `CCMH_Body_Male`, `ABP_Player`, `MM_Rifle_Equip`)
+  were backed up to the scratchpad and restored with `git restore` (editor
+  closed). None of them were Claude's.
+- **Procedural pump + grip curves, part 1** (plan item 32; "apply and
+  run"). C++ built clean, bridge up, DLL newer. Bridge: both shotguns get
+  `Slide_Bone`/8 cm (user: the semi-auto "does not pump. Pumps on the
+  reload"). A pump-only reload montage was made, then dropped — the rack clip
+  is additive and can't go in a full-pose montage, and both shotguns share
+  `MM_Shotgun_Reload` anyway, so its End pumps by curves; the six character
+  Blueprints' map entries were put back (the CC four hold their own copies).
+  An AnimBP made by the bridge had no target skeleton and was deleted — the
+  user makes it. Not tested.
+- **No rack after a reload, for now** (user, on the reload's End: "better of
+  not playing the end" → "Just dont rack it at all for now"; "apply and
+  run"). `ABopisCharacterBase::bPlayReloadEnd` (default off): when loading
+  stops, Loop's next section is `NAME_None`, so the montage ends with the
+  last insert and blends out. Both shotguns. Built clean, bridge up, DLL
+  newer. Not tested. The slide's AnimBP waits for the final shotgun model
+  (`Shotgun_A` is a placeholder).
+- **Final weapon assets planned** (user: "That looks better, but I think at
+  this point I better add the final assets"): pump shotgun, SPAS-12 (replaces
+  the semi-auto), single + dual Berettas (new), Micro Uzi (replaces the
+  MAC-11), AR-15 (new model), AK-74u (new). Plan item 33; a reusable intake
+  checklist in the spec (*Adding a weapon*). Four design calls asked.
+- **9mm and .45 pistols** (user: "I will keep the mac-11. I have added the
+  Beretta. Create a weapon and dual for it. Name it 9mm Pistol. Rename the
+  current pistol to .45 Pistol"). Bridge: `BP_Pistol9mm` /
+  `BP_DualPistol9mm` (copies of the .45 pair) on `SK_Beretta_92FS`,
+  cross-linked single/dual/drop, animation-driven feedback off with
+  `P_Pistol_MuzzleFlash_01` (no fire anim on that skeleton); display names
+  ".45 Pistol" / "Dual .45 Pistols" and "9mm Pistol" / "Dual 9mm Pistols".
+  Compiled, saved; then scaled 1.2 (user; the root mesh, the off-hand
+  inherits). The Beretta needs its sockets before it's usable. Earlier:
+  for a period-accurate dual SMG the "Ingram" (MAC-10/11, Danao copies)
+  fits 2002 Philippine crime best — the user kept the MAC-11.
+- **Weapon feedback standard proposed, on hold** (user: "We will use
+  animation for the weapons for the weapon movements ... The notifies drive
+  the sounds" → "hold of on this, I will replace all the weapons that uses
+  silver"). Proposal in the spec (*Adding a weapon*); the silver-mesh guns
+  listed in plan item 33. No code changed.
+- **M1911 in for the .45s** (user: "reimported with -90 yaw, scale it 1.1 and
+  swap it in, can you rig the slide?"). Bridge: `Rigged_M1911` on the .45
+  pair and the enemy-only pistol, ×1.1, code flash, silver fire anim cleared;
+  saved. The reimport's rotation didn't show (barrel still along X; file
+  unchanged since the 18:52 import). Slide rigging can't be done over the
+  bridge (no bone or weight tools).
+- **M1911 swap reverted** (user: "revert that change to the pistol, put them
+  back to the silver model ... We can use the new 1911 magazine instead for
+  reloads"). The .45 pair and enemy-only pistol are back on `Pistols_A`
+  (scale 1.0, `Fire_Pistol_W`, animation-driven feedback, no code flash; the
+  ".45" names kept); saved. A magazine-in-hand proposal (a notify state +
+  per-weapon magazine mesh) was set aside — "we do the magazine stuff later.
+  I have my own ideas for that. Lets just update all of the weapon models for
+  now". No code changed.
+- **5.56 Assault Rifle + Mossberg material** (user: "BP_CloseRangeRifle Gets
+  replaced as 5.56 Assault Rifle. Use the M4 Model form the FPS pack. I added
+  a Mossberg Model ... Its material is not set up"). Bridge: the rifle
+  renamed and on `SK_AR4`, with `MuzzleFlash`/`AmmoEject` sockets on its own
+  bones; `MI_Mossberg500` (from `M_TacticalPistol`, BaseColor/Normal/ORM, black
+  mask) on the Mossberg mesh, its ORM texture made linear; all saved. Open:
+  the rifle is still the old projectile round (asked), its `LeftHandGrip`
+  and grip offsets; the Mossberg goes onto a Blueprint next.
+  Then the rifle scaled 1.2 (user: "AR scale is off" → "scale it 1.2"; its
+  Blueprint had no scale — the M4 is 91 cm against the silver rifle's 97).
+- **AR to 1.1; Mossberg pump bone** (user: "try 1.1 or the AR. The new
+  mossberg has no pistol grip, and the left hand looks odd even after adding
+  the lefthandgrip"). Rifle scale 1.1, saved (one save attempt returned a
+  transient 'asset does not exist'; the retry worked). The user had put the
+  Mossberg on `BP_PumpShotgun` with its sockets; its `PumpBoneName` was still
+  the silver `Slide_Bone` (sideways pump offset) — now `pump`. The left-hand
+  look is open: screenshot asked.
+- **AR back to 1.2** (2026-10-26; user: "the problem is the extended stock").
+  `SK_AR4_X` checked: the same M4 turned to +X, not a collapsed stock; the
+  stock isn't rigged, so a collapsed one is a mesh edit (user).
+- **Mossberg scaled 1.2** (user: "the mossberg is out of scale too, try 1.2
+  aswell"). Set on `BP_PumpShotgun`'s root mesh and compiled, but the bridge
+  wouldn't save it ('Asset does not exist', three tries, though `find_assets`
+  lists it and the file is on disk) — the user saves it in the editor. Gotcha
+  in the making: a bridge save right after a compile sometimes fails like
+  this; a later standalone save worked once (the rifle), not here.
+  (The user saved it afterwards: no longer dirty.)
+- **Left hand locked to the gun** (user, Mossberg screenshot: "The left hand
+  keeps rotating when looking around"; "go"). The left-hand Two Bone IK kept
+  the animation's hand rotation (Take Rotation From Effector Space off,
+  Maintain Effector Rel Rot on); flipped both, so the hand follows `ik_hand_l`
+  on the gun. All two-handed guns. `ABP_Player` compiled, saved. Not tested.
+  **Reverted** (user: "enemies hands twist ... Your current fix did not
+  work"): back to Take Rotation off / Maintain on; the user saved
+  `ABP_Player`. The Mossberg's hand is a reach problem — its `LeftHandGrip`
+  (y 40) is farther forward than the M4's. Not fixed yet.
+- **Mossberg fire animation (user).** After a walkthrough (Create Animation
+  from the mesh, setting its length), the user made
+  `/Game/Mossberg/Mossberg-500_Pump` on the Mossberg's skeleton, with Weapon
+  Sound notifies.
+- **Weapon feedback standard in code** (user: "It will now always play the
+  Fire animation when firing. If it is none, it will not do it. We replace
+  the notifies with our own ones so it does not double up"; "apply and
+  run"). `bUseAnimationDrivenFeedback` / `UsesAnimationDrivenFeedback()`
+  removed (`WeaponBase.h`); `Fire()` plays `FireAnimation` if set (its
+  Weapon Sound notifies make the sounds), else the Fire sound from code, and
+  always spawns `MuzzleFlash`; a comment in `BopisCharacterBase.cpp`. Bridge:
+  `P_Pistol_MuzzleFlash_01` on the .45 pair and `BP_Pistol_EnemyOnly`;
+  `BP_PumpShotgun`'s `FireAnimation` = `Mossberg-500_Pump`; compiled. The
+  bridge save failed ('Asset does not exist' ×3) — the user saves. Built
+  clean, bridge up, DLL newer. Not tested. Until `Fire_Pistol_W`,
+  `Fire_Shotgun_NoDelay` and `Fire_SniperRifle_W` get a Fire notify (and lose
+  their flash notifies), those guns fire silently.
+- **Mossberg pump fixed (user).** "when he is pumping, it looks like hes
+  pumping in the wrong direction ... like sideways": the old procedural pump
+  (the `Pump` curve on `MM_PumpShotgun_Fire` → an offset along the `pump`
+  bone's parent X) assumed `grip`'s X runs along the barrel; on the Mossberg
+  it doesn't. The user set `PumpBoneName` None on `BP_PumpShotgun` and
+  retimed `Mossberg-500_Pump` to match the body's fire animation: "Its fixed
+  now". The pump moves only by the gun's animation; `LeftHandGrip` stays on
+  the root bone. The procedural pump is now used only by `BP_Shotgun`
+  (`Slide_Bone`; `MM_Shotgun_Fire` has a `Pump` curve), which the SPAS-12
+  replaces.
 - **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
   nothing visible (component scale doesn't reach these sprite sizes); the
   user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
@@ -236,6 +356,24 @@
    sound dropping during bursts (the mixer's 32-voice ceiling → sound
    priorities/concurrency)? Then rework the fire-sound path.
 2. `SC_Music` sound class on `DarkCrimes` (bridge; plan item 27's last part).
+3. **Pump + grip (plan item 32):** user draws `Pump` on `MM_PumpShotgun_Fire`
+   (the rack) and `HandGrip` at the end of `MM_Rifle_Equip`; then test the
+   pump fire, a shotgun reload (ends with the last shell — no rack for now)
+   and the equip landing. The slide's AnimBP waits for the final model.
+4. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
+   and `AmmoEject` on `SK_Beretta_92FS`, then tune grips in PIE. Still to
+   decide: AR-15 replaces which rifle; AK-74u ammo; .45 vs 9mm ammo. Then
+   import one gun at a time (skeletal, +X barrel,
+   moving parts as bones) — sockets and grip offsets are yours, Blueprints
+   and wiring Claude's.
+5. **Fire notifies (feedback standard, plan item 33):** on `Fire_Pistol_W`
+   (.45s, enemy pistol), `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
+   `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
+   Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
+   Fire notify and no flash. Then test every gun: one shot sound, one flash.
+6. **Mossberg hold:** left hand overextended (`LeftHandGrip` y 40 — move it
+   back, onto the `pump` bone, or scale down); right hand needs a
+   straight-stock pose.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked
@@ -256,6 +394,8 @@
    Content: `M_Skin_CCMH`, `MI_Skin_Body_CCMH`, `MI_Skin_Face_CCMH` (skin fix).
    `CC_SkelMesh` (Self Shadow Only off).
    Dual reload hold: `ProjectBopisAnimInstance.h/.cpp`, `ABP_Player`.
+   Feedback standard: `Weapons/WeaponBase.h/.cpp`, `BopisCharacterBase.cpp`;
+   `BP_Pistol`, `BP_DualPistols`, `BP_Pistol_EnemyOnly`, `BP_PumpShotgun`.
 
 **C. Can be done remotely** (C++ — presented first, then "apply and run")
 1. Optional: `DualLoweredPlayRate` → `LoweredJogPlayRate` rename.

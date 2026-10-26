@@ -38,6 +38,7 @@
   - [Weapon sounds (2026-10-23)](#weapon-sounds-2026-10-23)
   - [Footsteps (2026-10-23)](#footsteps-2026-10-23)
   - [Weapon wheel (2026-10-23)](#weapon-wheel-2026-10-23)
+  - [Adding a weapon — intake checklist (2026-10-25)](#adding-a-weapon--intake-checklist-2026-10-25)
 - [Ammo](#ammo)
   - [Shared ammo pool (2026-10-08)](#shared-ammo-pool-2026-10-08)
   - [Pickups and the backpack (2026-10-08)](#pickups-and-the-backpack-2026-10-08)
@@ -686,10 +687,11 @@ says which sound, the weapon plays it.**
   attached to the gun's mesh (the off-hand mesh for duals): shots and clicks
   from the `Muzzle` socket, handling from the mesh root. Attached to the gun
   = owned by the gun, so a cue's *limit to owner* concurrency counts per gun.
-  `Fire()` calls it for every weapon — `bUseAnimationDrivenFeedback` now only
-  decides muzzle flash vs the gun's fire animation; the fire animations'
-  gunshot notifies were deleted (`Fire_Pistol_W`, `Fire_SniperRifle_W`,
-  `Fire_Shotgun_NoDelay`).
+  **Since 2026-10-26** (the feedback standard, *Adding a weapon*): `Fire()`
+  calls it only for guns **without** a `FireAnimation`; a gun with one sounds
+  its shot from a `Fire` Weapon Sound notify on that animation. The pack fire
+  animations' own gunshot notifies were deleted earlier, so `Fire_Pistol_W`,
+  `Fire_SniperRifle_W` and `Fire_Shotgun_NoDelay` each need a `Fire` notify.
 - **`UAnimNotify_WeaponSound`** ("Weapon Sound" in the notify menu): `Sound`
   + `bOffhand`. On a character montage it plays on the character's equipped
   weapon; on a gun's own animation, on that gun (and the hand whose mesh is
@@ -924,6 +926,64 @@ segment per carried weapon; replaced the same day.)*
 
 ---
 
+### Adding a weapon — intake checklist (2026-10-25)
+For the final weapon assets (plan item 33) and any gun after. Every system is
+data-driven per weapon, so a new gun reuses an existing **anim type** (no new
+montages) and needs:
+- **Mesh:** a **skeletal** mesh (the weapon components are skeletal), barrel
+  along **+X**, cm scale. Moving parts as their own bones (slide/pump, bolt,
+  magazine) — the pump code (`PumpBoneName`; it assumes the pump bone's
+  parent has X along the barrel) and any gun-side reload animation need them.
+- **Budget** (provisional, 2026-10-25, until the deferred Steam Deck perf
+  test; third-person camera, Halo 1–2 fidelity): LOD0 **3–6k triangles** for
+  pistols/SMGs, **6–12k** for long guns; LOD1 ~50%, LOD2 ~25%; 1 material
+  (2 at most); one texture set, 2K long guns / 1K pistols and SMGs; ~5–15
+  bones, rigid skinning. A dressed CC character is ~30k verts and 12 draw
+  calls, so guns at these numbers add ~15–30% per body. Bought packs are
+  often 20–60k (first-person): bring LOD0 down with the skeletal-mesh LOD
+  reduction rather than remodelling.
+- **Sockets** (user, placed visually): `MuzzleFlash` (X out of the barrel),
+  `AmmoEject`, and `LeftHandGrip` on long guns and two-handed pistols.
+- **Blueprint** (bridge, from the matching existing one): mesh, `AnimType`,
+  `AmmoType`, wheel `WeaponSlot`, `DisplayName` + icon, sound slots
+  (`EWeaponSound`), `FireAnimation` if the gun animates itself, muzzle FX,
+  shell casing, `PumpBoneName`/`PumpTravel` only for a pump gun with no fire animation of
+  its own (None otherwise — its animation moves the pump); duals also the
+  off-hand mesh and `OffhandGrip*` offsets.
+- **Tuning** (user, in PIE): `GripLocationOffset`/`GripRotationOffset`
+  (socket space of `HandGrip_R`), stats (damage, fire rate, magazine,
+  reload, spread).
+- **Around it:** a pickup Blueprint (ammo + weapon), enemy weapon pools /
+  spawn entries if enemies carry it, and — for a pump gun with no fire animation — a post-process
+  AnimBP on the mesh (parent `WeaponAnimInstance`, one Transform (Modify)
+  Bone on the pump bone ← `PumpSlideOffset`, Parent Bone Space; the user
+  creates the asset with the skeleton, Claude wires it).
+- **After:** the replaced placeholder's assets go on the unused-content list.
+- **Feedback standard — in code 2026-10-26** (user, 2026-10-25: "The
+  animation drives only the movement and notifies. The notifies drive the
+  sounds"; 2026-10-26: "It will now always play the Fire animation when
+  firing. If it is none, it will not do it. We replace the notifies with our
+  own ones so it does not double up"). `bUseAnimationDrivenFeedback` and
+  `UsesAnimationDrivenFeedback()` are **removed**. `AWeaponBase::Fire()`:
+  - `FireAnimation` set → it plays on the firing mesh every shot; it moves
+    the gun's parts and its **Weapon Sound notifies make the sounds** (the
+    shot is a `Fire` notify, so it still goes through `PlayWeaponSound` —
+    same attenuation and per-shooter voice limit).
+  - `FireAnimation` None → no animation; the `Fire` sound plays from code.
+  - `MuzzleFlash` always spawns from code at `MuzzleSocketName`, every gun.
+  - Dry fire stays in code.
+  So a gun's fire animation carries **no flash or pack sound notifies** — the
+  flash would double, and pack sounds would bypass the weapon's sound slots.
+  New guns: author the fire anim with a `Fire` Weapon Sound notify (plus
+  `Pump`/`Chamber` where the part moves). Bridge on the day: the .45 pair and
+  `BP_Pistol_EnemyOnly` got `P_Pistol_MuzzleFlash_01` (their flash used to
+  come from `Fire_Pistol_W`); `BP_PumpShotgun`'s `FireAnimation` is the
+  user's `Mossberg-500_Pump`. Guns with a fire animation (and so silent until
+  it has a `Fire` notify): the .45 pair + enemy pistol (`Fire_Pistol_W`),
+  `BP_Shotgun` (`Fire_Shotgun_NoDelay`), `BP_BattleRifle`
+  (`Fire_SniperRifle_W`), `BP_PumpShotgun` (`Mossberg-500_Pump`). Without
+  one: the 9mm pair, MACs, revolver, 5.56 rifle, launcher.
+
 ## Ammo
 
 Four phases: **A** state + gating + dry fire (done), **B** reload (done),
@@ -964,6 +1024,85 @@ Pistol, `GetAmmoType()`). Mapping: `BP_Pistol`/`BP_DualPistols` → Pistol,
 SMG are for weapons not built yet. Set on the Blueprints 2026-10-08. Anim type
 and ammo type are independent (`BP_Pistol` is `PistolOneHanded`, duals `Dual`,
 both Pistol ammo).
+
+**.45 and 9mm pistols (2026-10-25).** User: "I have added the Beretta. Create
+a weapon and dual for it. Name it 9mm Pistol. Rename the current pistol to .45
+Pistol." `BP_Pistol9mm` / `BP_DualPistol9mm` are copies of `BP_Pistol` /
+`BP_DualPistols` (`PistolOneHanded` / `Dual`, Pistol ammo, slot 2) on
+`/Game/Tactical_SemiAuto_Pistol/SkeletalMesh/SK_Beretta_92FS` (main and
+off-hand meshes), cross-linked (`DualWieldClass`, `SingleWieldClass`,
+`DropAsClass` → the 9mm pair). The .45s' `Fire_Pistol_W` is on the old
+skeleton, so the 9mm pair has no gun-side fire animation (`FireAnimation`
+None — the shot sounds from code), with `P_Pistol_MuzzleFlash_01` at the `MuzzleFlash` socket
+(the pack's `SK_Beretta_92FS_Anim`, 3.3 s, isn't a fire cycle). Display
+names: ".45 Pistol" / "Dual .45 Pistols", "9mm Pistol" / "Dual 9mm Pistols".
+**Scale 1.2** (user): the root `WeaponMesh`'s relative scale on both; the
+dual's off-hand stays 1 and inherits it (the holder's attach rules keep world
+scale), so it isn't doubled.
+**The .45s stay on the silver model** (2026-10-25). An M1911
+(`/Game/M1911/Meshes/SkeletalMesh/Rigged_M1911`) was swapped onto the .45
+pair and the enemy-only pistol, then reverted at the user's call ("put them
+back to the silver model"): `Pistols_A`, scale 1.0, `Fire_Pistol_W`, as
+before (since 2026-10-26 with `P_Pistol_MuzzleFlash_01` from code; the flash
+used to come from the animation). The silver pistol's problem is that it
+has no magazine; the 1911 pack's `NonRigged_M1911_Magazine` is to supply one
+for reloads — **the user's design, later** (a "Magazine In Hand" notify-state
+proposal was set aside: "I have my own ideas for that"). Notes on the 1911
+mesh for whenever it's used: barrel along X (the other pistols' along +Y; a
+yaw −90 reimport didn't take), no slide bone, no sockets, 6 material slots,
+11,474 verts, 1 LOD.
+
+**5.56 Assault Rifle (2026-10-25).** `BP_CloseRangeRifle`, renamed, on the FPS
+pack's M4 (`/Game/FPS_Weapon_Bundle/Weapons/Meshes/AR4/SK_AR4`; barrel +Y
+like the silver rifle, 91 cm, 9,735 verts, 2 materials). **Scale 1.2** (user, after
+trying 1.1 — about 109 cm in game; the root mesh). Its length is the
+**extended stock** (user): the stock has no bone, and `SK_AR4_X` is the same
+model turned to +X, not a collapsed variant — collapsing it means moving the
+buttstock's vertices ~8 cm forward (Blender, or the skeletal-mesh modeling
+tools) and reimporting. Sockets added on its
+own bones: `MuzzleFlash` on `b_gun_muzzleflash`, `AmmoEject` on
+`b_gun_shelleject` (zero offset — check the flash direction). Still needs a
+`LeftHandGrip` and grip offsets. **Still a projectile weapon**
+(`BP_RifleRound_Projectile`, the old setting's fragmenting round) — hitscan is
+the user's call.
+
+**Mossberg 500 material (2026-10-25).** Mesh `/Game/Mossberg/Mossberg-5001`
+(the importer's `Mossberg-500` is a Phong material instance with no
+roughness/metallic inputs — now unused). New `MI_Mossberg500` from
+`M_TacticalPistol` (BaseColor / Normal / ORM, Tint white, Mask the engine's
+black texture so nothing tints); the ORM texture switched to linear
+(`SRGB` off, `TC_Masks`). Mesh: barrel +Y, 112 cm, 3,109 verts, bones
+`grip`, `trigger`, `safety`, `pump` (child of `grip`), `ejectionport`, `shell`,
+`muzzle`. **On `BP_PumpShotgun`** at root scale **1.2** (user, 2026-10-26; set up by the user with `GripLocationOffset` (0, 30, −3) and
+`MuzzleFlash`, `AmmoEject`, `LeftHandGrip` sockets); `PumpBoneName` fixed from
+the silver gun's `Slide_Bone` to `pump` — with a missing bone the pump offset
+fell back to the component's axes, sideways on this model. Unverified: that
+`grip`'s X runs along the barrel (the pump code's assumption). The model has a
+straight stock, no pistol grip, so the shotgun hold poses (pistol-grip
+wrist) don't fit its right hand.
+**Fire animation (2026-10-26):** the user's `/Game/Mossberg/Mossberg-500_Pump`,
+on the Mossberg's own skeleton, with Weapon Sound notifies. The old
+`Fire_Shotgun_NoDelay` was on `Shotgun_A`'s skeleton (it wouldn't play on this
+mesh), and the pump shotgun's old feedback switch was off anyway, so its fire
+animation had never played. **Left hand:** the rotating/odd left hand is
+reach, not rotation — its `LeftHandGrip` (y 40 on the root) sits farther
+forward than the M4's, overextending the arm. Options: move the socket back,
+put it on the `pump` bone (it then rides the pump), or a lower scale.
+**Pump (2026-10-26, user).** With the gun's own fire animation playing, the
+hand pumped **sideways**: the procedural pump (the `Pump` curve on
+`MM_PumpShotgun_Fire` → an offset along the `pump` bone's parent X) assumed
+`grip`'s X runs along the barrel, and on this model it doesn't. So
+`PumpBoneName` is **None** on `BP_PumpShotgun`, and the pump moves only by
+`Mossberg-500_Pump`, which the user retimed to match the body's
+`MM_PumpShotgun_Fire` ("Its fixed now"). `LeftHandGrip` is still on the root
+bone, so the hand holds the gun steady; to have it ride the pump, put the
+socket on `pump`.
+**Open:** the Beretta mesh has **no sockets yet** (`MuzzleFlash`, `AmmoEject`
+— user); grip offsets are the .45's copy (tune in PIE); icon is the .45's;
+no pickup or loadout entry yet; both pistols share Pistol ammo (design call:
+`HighPowerPistol` exists for the .45 if they should differ); 7,552 verts and
+1 LOD — over the pistol budget, reduce. The `Slide` bone could kick on fire
+through the pump mechanism (a `Pump` curve on the fire montage) later.
 
 **MAC-11 placeholder (2026-10-19).** `BP_MAC11` (`PistolOneHanded`) and
 `BP_DualMAC11` (`Dual`), the first SMG-ammo weapons; an Uzi replaces them in
@@ -1128,7 +1267,10 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
   forever.)
 - **End:** once the weapon stops reloading (full, dry, or swapped), Loop's next
   section is re-pointed to `End` (`Montage_SetNextSection`, this playthrough
-  only) — the current insert finishes, then the rack plays.
+  only) — the current insert finishes, then the rack plays. **Since
+  2026-10-25 only with `bPlayReloadEnd`** (character, default **off**; user:
+  "Just dont rack it at all for now"): otherwise Loop's next section is
+  `NAME_None`, so the montage ends with the last insert and blends out.
 - `ActiveReloadMontage` tracks the montage from `DoReload` until it stops;
   `IsReloadAnimating()` exposes that so the AnimBP keeps the left-hand IK off
   through the whole montage, rack included (the weapon's `IsReloading()` goes
@@ -1264,6 +1406,53 @@ short; raise it to the pump length if the pump should always finish.
 `PumpShotgun` exists only so the fire montage can differ — the AnimGraph's
 per-weapon Blend Poses by Enum nodes got matching pins (user, by hand), and the
 character's montage maps need an entry for it like any anim type.
+
+**Procedural pump and grip curves (2026-10-25, in progress).** User: a more
+prominent pump; the reload's End should pump, not slap the top; the equip
+should end with the left hand on the grip. Findings: `Shotgun_A`'s
+`Slide_Bone` (child of `Grip_Bone`; the barrel is `Grip_Bone` +X) never
+moved — `Fire_Shotgun_NoDelay` has no slide track — and while raised the
+left-hand IK pinned the hand to `LeftHandGrip`, which sits on `Clip_Bone`
+(static), so the clip's own pump was overridden. Both shotguns shared
+`AM_Shotgun_Reload` (End = a top slap, right for the semi-auto).
+- **Curves on the clips** (read by `UProjectBopisAnimInstance`):
+  **`Pump`** 0–1 (slide fully back at 1) and **`HandGrip`** 0–1 (left-hand
+  IK on although a montage is playing: `LeftHandIKAlpha` = max(its usual
+  value, the curve) for two-handed holds).
+- **Slide:** `AWeaponBase::PumpBoneName` / `PumpTravel` (cm);
+  `SetPumpAmount` each frame from the `Pump` curve (`UpdatePump`, which also
+  zeroes a gun put away mid-pump); `GetPumpOffset()` = (−travel × amount,
+  0, 0) in the slide's parent-bone space. `UWeaponAnimInstance` (base for a
+  weapon mesh's **post-process AnimBP**, so it runs on top of whatever the
+  gun plays) exposes it as `PumpSlideOffset` for a Transform (Modify) Bone
+  on the slide (translation Add, Parent Bone Space). **Both shotguns**:
+  `Slide_Bone`, 8 cm — the semi-auto doesn't pump when it fires (its fire
+  clip has no `Pump` curve) but does at the end of a reload (user).
+- **Hand:** `UpdateLeftHandGrip` adds the same offset (parent-bone space →
+  world → `hand_r` space) to `LeftHandGripLocation`, so the IK'd hand rides
+  the slide.
+- **Reload:** both shotguns keep the shared `AM_Shotgun_Reload` (user: "both
+  shotguns I plan are using the same anim sequence"). **No rack for now:**
+  `bPlayReloadEnd` is off, so End (the slap) doesn't play. If a rack comes
+  back, the plan was curves over `MM_Shotgun_Reload`'s End (`HandGrip` 1 for
+  the hand on the grip, `Pump` for the slide), or End only after reloading
+  from empty. The rack clip can't go into the montage anyway: `MM_PumpShotgun_Fire` is
+  additive and the reload is a full pose — a montage track can't mix
+  additive types ("AAT" error). A pump-only copy
+  (`AM_PumpShotgun_ShellReload`) was made and removed the same day. Note:
+  the four CC Blueprints each hold their own copy of `ReloadMontages`, so a
+  change on `BP_PlayerCharacter` / `BP_EnemyBase` doesn't reach them.
+- **Deferred until the final shotgun model** (user: `Shotgun_A` "is a place
+  holder"): the post-process AnimBP that moves the slide (one Transform
+  (Modify) Bone on the pump bone, `PumpSlideOffset`, Parent Bone Space; the
+  user creates the asset with the skeleton — the bridge makes AnimBPs without
+  one — and Claude wires it and sets the mesh's Post Process Anim Blueprint).
+  The code assumes the pump bone's parent has X along the barrel; check that
+  on the new rig. Until then the hand rides 8 cm along a still slide
+  (`PumpTravel` 0 keeps it on the grip instead).
+- **To do:** the curves
+  (user): `Pump` on `MM_PumpShotgun_Fire` (its rack); `HandGrip` at the end
+  of `MM_Rifle_Equip`.
 
 ---
 
@@ -3132,6 +3321,18 @@ Open: the rotation route needs socket orientation tuned against `hand_l` axes;
 the attachment-chain offset is mathematically sound but misbehaved here — the
 cause wasn't isolated.
 
+**Hand rotation lock — tried and reverted (2026-10-26).** The left-hand Two
+Bone IK (`TwoBoneIK_0`, effector `ik_hand_l`, bone space) has **Take Rotation
+From Effector Space off** and **Maintain Effector Rel Rot on**, so the hand
+keeps its twist from the arm animation. Flipping both (the hand takes
+`ik_hand_l`'s rotation, fixed to the gun) was tried for the Mossberg's
+rotating hand (user: "The left hand keeps rotating when looking around"): it
+twisted enemies' hands and didn't fix the Mossberg (user: "enemies hands
+twist ... Your current fix did not work"), so it's back to off / on. The
+M4's steady hand comes from a comfortable reach, not the node; the Mossberg's
+problem is its `LeftHandGrip` reach (see *Mossberg 500*). (The AnimGraph
+steps above say "take rotation"; the node is deliberately off.)
+
 ### One-handed pistol (2026-10-07)
 `EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay
 `Pistol`). `IsPistolAnimType()` in `WeaponBase.h` covers both pistol types.
@@ -4546,8 +4747,9 @@ against one specific skeleton, so a single montage property on the weapon
 could only ever be correct for one skeleton — wrong the moment the same weapon
 is fired by a different one (a future AI enemy).
 
-The rule: a weapon may say *whether* it wants animation-driven feedback, and
-may state its own *identity* (`AnimType`), but never *what* to play. Each
+The rule: a weapon may state its own *identity* (`AnimType`), but never
+*what* the holder plays. (Until 2026-10-26 it could also say *whether* it
+wanted animation-driven feedback; that switch is gone.) Each
 animator — the player character now, each enemy archetype later — owns its own
 skeleton-appropriate lookup.
 

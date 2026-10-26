@@ -808,10 +808,9 @@ void ABopisCharacterBase::PlayFireAnimation(const AWeaponBase* Weapon)
 		return;
 	}
 
-	// Deliberately not gated on UsesAnimationDrivenFeedback() — that flag says
-	// where the *weapon's* sound and muzzle flash come from. The body animation
-	// is the character animating itself, and plays either way. Looked up by the
-	// weapon's anim type, so each weapon gets its own without owning the asset.
+	// The body animation is the character animating itself, separate from the gun's own fire
+	// animation (which moves the gun and makes its sounds). Looked up by the weapon's anim
+	// type, so each weapon gets its own without owning the asset.
 	const EWeaponAnimType AnimType = Weapon->GetAnimType();
 	UAnimMontage* FoundMontage = nullptr;
 
@@ -1047,11 +1046,12 @@ void ABopisCharacterBase::UpdateReloadMontage()
 	}
 
 	// Loading stops when the magazine fills, the reserve runs dry, or the weapon is
-	// swapped: let the current insert finish, then play End (the rack).
+	// swapped: let the current insert finish, then play End (the rack) — or, without
+	// bPlayReloadEnd, nothing: the montage ends with that insert and blends out.
 	const AWeaponBase* EquippedWeapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
 	if (!EquippedWeapon || !EquippedWeapon->IsReloading())
 	{
-		AnimInstance->Montage_SetNextSection(LoopSection, EndSection, ActiveReloadMontage);
+		AnimInstance->Montage_SetNextSection(LoopSection, bPlayReloadEnd ? EndSection : NAME_None, ActiveReloadMontage);
 		return;
 	}
 

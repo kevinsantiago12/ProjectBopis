@@ -27,6 +27,11 @@ namespace
 	const FName LeftHandGripSocket(TEXT("LeftHandGrip"));
 	const FName RightHandBone(TEXT("hand_r"));
 
+	// Curves on our montages' clips: the shotgun's pump, and the left hand on the grip although a
+	// montage is playing (the end of an equip, a rack during a reload).
+	const FName PumpCurve(TEXT("Pump"));
+	const FName HandGripCurve(TEXT("HandGrip"));
+
 	/** Direction has to move this far from the current cardinal before the cardinal
 	    changes — a 10-degree dead zone past each 45-degree boundary. */
 	constexpr float CardinalSwitchAngle = 55.0f;
@@ -127,6 +132,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	HipAimHandAlpha = FMath::FInterpTo(HipAimHandAlpha, bHipAimHand ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
 	UpdateUpperBody(DeltaSeconds);
+	UpdatePump(Holder ? Holder->GetEquippedWeapon() : nullptr);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
 	UpdateFreeArmSwing(DeltaSeconds);
@@ -755,6 +761,13 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		? IKTarget
 		: FMath::FInterpTo(LeftHandIKAlpha, IKTarget, DeltaSeconds, LeftHandIKInterpSpeed);
 
+	// A HandGrip curve puts the hand on the grip although a montage is playing: the end of an
+	// equip, a rack during a reload. It follows the curve, so it eases as the clip does.
+	if (bTwoHanded)
+	{
+		LeftHandIKAlpha = FMath::Max(LeftHandIKAlpha, static_cast<double>(GetCurveValue(HandGripCurve)));
+	}
+
 	// One-handed pistol: the raised pistol poses are two-handed, so while raised the free
 	// left arm is overridden with the at-side pose. It follows the raised layer, and eases
 	// out for reload, equip and grenade montages (and back in after) so their own left arm
@@ -837,6 +850,29 @@ void UProjectBopisAnimInstance::UpdateLeftHandGrip(const ABopisCharacterBase& Ch
 
 	LeftHandGripLocation = GripWorld.GetRelativeTransform(HandWorld).GetLocation();
 	LeftHandGripAlpha = 1.0;
+
+	// Pump guns: the hand rides the slide, which moves along its parent bone's X.
+	const FName PumpBone = Weapon->GetPumpBoneName();
+	if (!PumpBone.IsNone())
+	{
+		const FTransform SlideParentWorld = WeaponMesh->GetSocketTransform(WeaponMesh->GetParentBone(PumpBone));
+		LeftHandGripLocation += HandWorld.InverseTransformVectorNoScale(
+			SlideParentWorld.TransformVectorNoScale(Weapon->GetPumpOffset()));
+	}
+}
+
+void UProjectBopisAnimInstance::UpdatePump(AWeaponBase* Weapon)
+{
+	// The Pump curve drives the held gun's slide. A gun put away mid-pump is left forward.
+	if (PumpWeapon.IsValid() && PumpWeapon.Get() != Weapon)
+	{
+		PumpWeapon->SetPumpAmount(0.0f);
+	}
+	PumpWeapon = Weapon;
+	if (Weapon)
+	{
+		Weapon->SetPumpAmount(GetCurveValue(PumpCurve));
+	}
 }
 
 void UProjectBopisAnimInstance::UpdateTurnInPlace(float ActorYaw, float DeltaSeconds)

@@ -451,6 +451,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "0.0"))
 	float ReloadLoopBlendTime = 0.15f;
 
+	/** Per-round reloads: play the montage's End section (the rack) once loading stops. Off: the
+	    montage just ends with the last insert and blends out. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	bool bPlayReloadEnd = false;
+
 	/** Fast guns play the fire montage faster, so its kick and return fit between shots
 	    (clip length ÷ the weapon's TimeBetweenShots), at most this many times as fast. */
 	UPROPERTY(EditAnywhere, Category = "Animation", meta = (ClampMin = "1.0"))

@@ -194,7 +194,6 @@ public:
 
 	bool HasZoom() const { return bHasZoom; }
 	float GetZoomedFOV() const { return ZoomedFOV; }
-	bool UsesAnimationDrivenFeedback() const { return bUseAnimationDrivenFeedback; }
 
 	/** Plays one of this weapon's sounds on the gun: the main-hand mesh, or the off-hand
 	    one for duals. Owned by the weapon, so a cue's per-shooter voice limit counts per gun.
@@ -203,6 +202,20 @@ public:
 	void PlayWeaponSound(EWeaponSound Sound, bool bOffhand = false);
 	FVector GetGripLocationOffset() const { return GripLocationOffset; }
 	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
+
+	/** Pump guns: where the slide is now, in its parent bone's space — back along -X by
+	    PumpTravel × the pump amount. Zero for guns without a pump. */
+	FVector GetPumpOffset() const
+	{
+		return PumpBoneName.IsNone() ? FVector::ZeroVector : FVector(-PumpTravel * PumpAmount, 0.0, 0.0);
+	}
+
+	/** The slide's bone; GetPumpOffset is in its parent's space. */
+	FName GetPumpBoneName() const { return PumpBoneName; }
+
+	/** How far through a pump the slide is, 0 (forward) to 1 (fully back). Set each frame by the
+	    holder's AnimInstance from the Pump curve on its animations. */
+	void SetPumpAmount(float Amount) { PumpAmount = Amount; }
 
 	/** Whether enough time has passed since the last shot for this weapon to fire again. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
@@ -424,18 +437,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
 	TObjectPtr<USoundBase> EquipSound;
 
+	/** Spawned at MuzzleSocketName on every shot — every gun's flash comes from here, not
+	    from its animation. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UParticleSystem> MuzzleFlash;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	FName MuzzleSocketName = TEXT("Muzzle");
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
-	bool bUseAnimationDrivenFeedback = false;
-
-	/** Played on the weapon's own mesh when firing, if this weapon uses animation-driven feedback. */
+	/** Played on the weapon's own mesh every shot: it moves the gun's parts, and its Weapon
+	    Sound notifies make the sounds — the shot is a Fire notify on it. None: no animation,
+	    and the shot sounds from code. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UAnimSequence> FireAnimation;
+
+	/** Pump guns: the slide's bone. The mesh's post-process AnimBP moves it, and the holder's
+	    left hand follows it. None: no pump. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pump")
+	FName PumpBoneName;
+
+	/** How far (cm) the slide travels back at a full pump (the Pump curve at 1). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pump", meta = (ClampMin = "0.0"))
+	float PumpTravel = 0.0f;
+
+	float PumpAmount = 0.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UMaterialInterface> HitDecalMaterial;
