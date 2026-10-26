@@ -208,6 +208,17 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	double LeftHandGripAlpha = 0.0;
 
+	/** The left hand's angle on the gun, relative to hand_r — the LeftHandGrip socket's
+	    rotation. After the two-bone IK, the AnimGraph turns ik_hand_l to it (in ik_hand_gun's
+	    space) and copies that rotation onto hand_l. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	FRotator LeftHandGripRotation = FRotator::ZeroRotator;
+
+	/** Weight of that copy: LeftHandIKAlpha for weapons that lock the hand's angle
+	    (bLockLeftHandRotation) and have the socket, else 0. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	double LeftHandGripRotationAlpha = 0.0;
+
 	/** Any pistol-style hold (Pistol, PistolOneHanded or Dual) — the AnimGraph's
 	    pistol-vs-long-gun switches (aim offset, hip-fire idle, crouch idle) read this
 	    instead of == Pistol. */

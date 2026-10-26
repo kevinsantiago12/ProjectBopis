@@ -983,6 +983,19 @@ montages) and needs:
   `BP_Shotgun` (`Fire_Shotgun_NoDelay`), `BP_BattleRifle`
   (`Fire_SniperRifle_W`), `BP_PumpShotgun` (`Mossberg-500_Pump`). Without
   one: the 9mm pair, MACs, revolver, 5.56 rifle, launcher.
+  **User's fire animations (2026-10-26),** each with a Weapon Sound `Fire`
+  notify and no flash, wired by the user: `SK_Beretta_92FS_Fire` (9mm pair),
+  `SK_SMG11_Nostock_Y_Skeleton_Fire` (MAC pair; its Fire notify must sit
+  before the next shot restarts the clip, ~0.05 s), `/Game/_357Revolver_Fire`
+  (revolver; the cylinder doesn't turn — left for later), and
+  `Mossberg-500_Pump`. Still without a fire animation: the 5.56 rifle and
+  the launcher. **M4 hatch:** `SK_AR4`'s `b_gun_shelleject_hatch` is closed
+  in the reference pose. Moving bones in the mesh editor's viewport is
+  preview-only and isn't saved; either edit the reference pose with the
+  Skeletal Mesh editor's skeleton editing tool (Accept, then save), or have
+  an M4 fire animation open it and end open — a gun's fire animation holds
+  its last frame, so it stays open after the first shot, like a real dust
+  cover.
 
 ## Ammo
 
@@ -1513,7 +1526,12 @@ pitch 8 / yaw −93 (the mesh runs along X, the pistol family along Y).
 **Hands (2026-10-19):**
 - Left-hand IK (`TwoBoneIK_0`, on `ik_hand_l` moved to the `LeftHandGrip`
   socket) runs for every two-handed hold whenever the gun is up (aimed or
-  raised for hip-fire), not for the one-handed pistol or duals, and lets go for
+  raised for hip-fire) — **and for long guns lowered too, since 2026-10-26**
+  (user: "on jog and idle lowered, I edited the anim so the left hand is close
+  to the weapon grip, but it does not follow it"): the gun rides `hand_r` with
+  each weapon's own grip offsets, so a lowered pose can only bring the hand
+  near the grip. The two-handed pistol keeps the gun-up rule
+  (`bIsPistolHold`). Not for the one-handed pistol or duals; lets go for
   reloads, draws and throws. It keeps the pose's hand rotation
   (`bTakeRotationFromEffectorSpace` off, `bMaintainEffectorRelRot` on): the
   rifle turn clips otherwise rolled the hand palm-up.
@@ -3272,7 +3290,11 @@ one-handed pistol (no shared grip, 2026-10-07) and post-montage drops all ease. 
    Space — the parent is `ik_hand_gun`, i.e. the hand; ← `LeftHandGripLocation`,
    alpha ← `LeftHandGripAlpha`; rotation Ignore) → TwoBoneIK `hand_l` → effector
    `ik_hand_l` (bone space, take rotation), joint target `lowerarm_l`, alpha
-   `LeftHandIKAlpha` → Component→Local. The Modify Bone replaces the clip's
+   `LeftHandIKAlpha` → **Modify Bone `ik_hand_l`** (rotation Replace, Parent
+   Bone Space ← `LeftHandGripRotation`, alpha `LeftHandGripAlpha`) → **Copy
+   Bone `ik_hand_l` → `hand_l`** (rotation only, component space, alpha
+   `LeftHandGripRotationAlpha`; both 2026-10-26, see *Per-gun hand angle*) →
+   Component→Local. The Modify Bone replaces the clip's
    `ik_hand_l` (which assumes Lyra's rifle) with the weapon's `LeftHandGrip`
    socket, so the hand lands on *our* foregrip/pump. Sockets on
    `Assault_Rifle_A`, `Shotgun_A`, `Pistols_A` skeletons; none yet on
@@ -3317,6 +3339,11 @@ The clip-driven IK misaligned on our guns in every pose. What was tried:
    long gun**. Lowered/hip-fire hands are left to the animation (user edits the
    FK). The shotgun's pump went out of arm reach when the torso twisted left →
    **`TurnThreshold` 90 → 45** so the twist never gets that far.
+5. **2026-10-19 → 2026-10-26:** widened to whenever the gun is up (aimed or
+   raised), then to long guns lowered too — the user edited the lowered
+   idle/jog clips' left hand near the grip, and the IK closes the gap.
+6. **2026-10-26:** per-gun hand angle from the socket's rotation, opt-in
+   (below) — the clips' wrists gave a different angle on the gun in each pose.
 Open: the rotation route needs socket orientation tuned against `hand_l` axes;
 the attachment-chain offset is mathematically sound but misbehaved here — the
 cause wasn't isolated.
@@ -3332,6 +3359,29 @@ twist ... Your current fix did not work"), so it's back to off / on. The
 M4's steady hand comes from a comfortable reach, not the node; the Mossberg's
 problem is its `LeftHandGrip` reach (see *Mossberg 500*). (The AnimGraph
 steps above say "take rotation"; the node is deliberately off.)
+
+**Per-gun hand angle (2026-10-26).** The IK places only the wrist; with
+Maintain Effector Rel Rot the hand keeps its angle to the *forearm*, so each
+clip's elbow and wrist gave it a different angle on the gun (user, M4 jog:
+"its just the hand is the wrong angle and position. If i adjust the HandGrip
+for the jog, it becomes busted for the idle"). Now a weapon can lock the angle
+to itself: **`AWeaponBase::bLockLeftHandRotation`** (default off) makes the
+hand take the **`LeftHandGrip` socket's rotation**. `UpdateLeftHandGrip`
+stores the socket's rotation relative to `hand_r` (`LeftHandGripRotation`,
+from the same relative transform as the location);
+`LeftHandGripRotationAlpha` = `LeftHandIKAlpha × LeftHandGripAlpha` for
+locking weapons, else 0. AnimGraph, after `TwoBoneIK_0` (whose flags are
+unchanged): Modify Bone `ik_hand_l` (`ModifyBone_39`) turns the effector to
+that rotation in `ik_hand_gun`'s space (lag-free, like the location), then
+Copy Bone (`CopyBone_5`) copies its component-space rotation onto `hand_l`.
+Nothing downstream reads `ik_hand_l`/`hand_l` (checked). Clips now decide only
+the elbow. **Calibration:** `Bopis.LeftHandGripCalibrate 1` (cheat CVar) shows
+on screen the socket rotation (relative to the socket's bone, as X/Y/Z =
+roll/pitch/yaw) that reproduces the player's current hand — read it with the
+lock off where the hand looks right, type it into the socket, then tick the
+lock. Unlike the reverted lock, the angle comes from our socket, not from
+Lyra's `ik_hand_l` keys. Limit: only the hand turns, not the forearm twist, so
+a clip whose forearm points far off can over-bend the wrist (fix the elbow).
 
 ### One-handed pistol (2026-10-07)
 `EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay

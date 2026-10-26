@@ -202,6 +202,7 @@ public:
 	void PlayWeaponSound(EWeaponSound Sound, bool bOffhand = false);
 	FVector GetGripLocationOffset() const { return GripLocationOffset; }
 	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
+	bool LocksLeftHandRotation() const { return bLockLeftHandRotation; }
 
 	/** Pump guns: where the slide is now, in its parent bone's space — back along -X by
 	    PumpTravel × the pump amount. Zero for guns without a pump. */
@@ -411,6 +412,13 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	FRotator GripRotationOffset = FRotator::ZeroRotator;
+
+	/** Two-handed guns: the left hand takes its angle on the gun from the LeftHandGrip
+	    socket's rotation, so it grips the same way in every pose and clip. Off: the angle
+	    comes from the animation's wrist. Set the socket's rotation first — in PIE,
+	    Bopis.LeftHandGripCalibrate 1 shows it from the hand as it is now. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	bool bLockLeftHandRotation = false;
 
 	/** Each shot, from the muzzle. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")

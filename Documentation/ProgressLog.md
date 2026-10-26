@@ -339,6 +339,30 @@
   the root bone. The procedural pump is now used only by `BP_Shotgun`
   (`Slide_Bone`; `MM_Shotgun_Fire` has a `Pump` curve), which the SPAS-12
   replaces.
+- **Fire animations (user):** 9mm pair (`SK_Beretta_92FS_Fire`), MAC pair
+  (`SK_SMG11_Nostock_Y_Skeleton_Fire`), the Mossberg (retimed) and the
+  revolver (`_357Revolver_Fire`; "I cant spin the cylinder, bit ill leave
+  that"), each with a Weapon Sound Fire notify, wired on their Blueprints by
+  the user. **M4 hatch** closed by default and the user's edits "dont go
+  thru": viewport bone moves are preview-only — the skeleton editing tool
+  (Accept, save) or an M4 fire animation that ends with it open.
+- **Lowered long-gun left hand** (user: "on jog and idle lowered, I edited
+  the anim so the left hand is close to the weapon grip, but it does not
+  follow it"; "apply and run"). `UProjectBopisAnimInstance`: the left-hand IK
+  target is now `(bGunUp || !bIsPistolHold) && bTwoHanded && ...` — long guns
+  keep the IK lowered; the two-handed pistol keeps the gun-up rule. Built
+  clean, bridge up, DLL newer. Not tested.
+- **Per-gun left-hand angle** (user, M4 jog: "the hand is the wrong angle and
+  position. If i adjust the HandGrip for the jog, it becomes busted for the
+  idle"; "apply and run"). Cause: the IK places only the wrist, and the hand
+  keeps its angle to the forearm, which differs per clip. New
+  `AWeaponBase::bLockLeftHandRotation` (off by default): the hand takes the
+  `LeftHandGrip` socket's rotation. Anim instance: `LeftHandGripRotation`,
+  `LeftHandGripRotationAlpha`, and the cheat CVar
+  `Bopis.LeftHandGripCalibrate` (shows the socket rotation that matches the
+  current hand). `ABP_Player`: Modify Bone `ik_hand_l` + Copy Bone →
+  `hand_l` after `TwoBoneIK_0`; compiled, saved. Built clean, bridge up, DLL
+  newer. Not tested; no gun locks yet.
 - **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
   nothing visible (component scale doesn't reach these sprite sizes); the
   user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
@@ -374,6 +398,17 @@
 6. **Mossberg hold:** left hand overextended (`LeftHandGrip` y 40 — move it
    back, onto the `pump` bone, or scale down); right hand needs a
    straight-stock pose.
+7. **Lowered long-gun poses (user authoring, 2026-10-26: "I need a better pose, ill author it myself"):** stand idle `anim_shotgun_stand_idle`, crouch idle `anim_shotgun_crouch_idle`, and `BS_Rifle_Lowered_Jog_Walk` (`MM_Rifle_Jog_Fwd_Lowered`, `anim_shotgun_walk_fwd_loop`). The IK sets the hand position; the clip sets wrist rotation and elbow. Then test idle/jog lowered with the rifle,
+   shotguns and launcher — hand on the grip; watch the lowered clips you
+   haven't edited for odd wrists. If it doesn't follow at all, the IK node is
+   inside `ABP_Player`'s raised branch (bridge fix).
+8. **M4 hatch** (`b_gun_shelleject_hatch`): skeleton editing tool or an M4
+   fire animation.
+9. **Left-hand angle per long gun:** PIE, lock off, lowered idle where the hand
+   looks right → console `Bopis.LeftHandGripCalibrate 1` → type the yellow
+   X/Y/Z into the gun's `LeftHandGrip` socket rotation → tick
+   `bLockLeftHandRotation` on its Blueprint. Mossberg and M4 first; check
+   idle, jog, raised, aimed.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked

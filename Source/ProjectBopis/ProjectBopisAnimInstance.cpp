@@ -13,6 +13,10 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "AnimationRuntime.h"
+#include "Engine/Engine.h"
+
+static TAutoConsoleVariable<bool> CVarLeftHandGripCalibrate(TEXT("Bopis.LeftHandGripCalibrate"),
+	false, TEXT("Show the LeftHandGrip socket rotation that matches the player's left hand as it is now."), ECVF_Cheat);
 
 namespace
 {
@@ -26,6 +30,7 @@ namespace
 
 	const FName LeftHandGripSocket(TEXT("LeftHandGrip"));
 	const FName RightHandBone(TEXT("hand_r"));
+	const FName LeftHandBone(TEXT("hand_l"));
 
 	// Curves on our montages' clips: the shotgun's pump, and the left hand on the grip although a
 	// montage is playing (the end of an equip, a rack during a reload).
@@ -746,15 +751,17 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 		? (1.0 - UpperBodyAlpha) * (1.0 - DualCrouchBlend)
 		: 0.0;
 
-	// Left-hand IK: two-handed holds (long guns and the two-handed pistol), whenever the gun is
-	// up (aimed, or raised for hip-fire), so the hand stays on the grip at any pitch — the aim
-	// offsets' arm poses don't match every raised or fire pose under them. Not the one-handed
-	// pistol (free arm) or duals (a gun in each hand); off while a reload, draw or grenade toss
-	// uses the hand. Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l.
+	// Left-hand IK: two-handed holds, so the hand stays on the gun's grip. Long guns always,
+	// lowered too — the lowered idle/jog poses only bring the hand near the grip, and the gun
+	// (riding hand_r, with each weapon's own grip offsets) moves under it. The two-handed
+	// pistol only while the gun is up (aimed, or raised for hip-fire), where the aim offsets'
+	// arm poses don't match every raised or fire pose under them. Not the one-handed pistol
+	// (free arm) or duals (a gun in each hand); off while a reload, draw or grenade toss uses
+	// the hand. Target: the weapon's LeftHandGrip socket, else the clip's ik_hand_l.
 	// Eases on, snaps off.
 	const bool bTwoHanded = !bIsDualWield && CurrentAnimType != EWeaponAnimType::PistolOneHanded;
 	const bool bGunUp = bIsAiming || bIsWeaponRaised;
-	const double IKTarget = (bGunUp && bTwoHanded
+	const double IKTarget = ((bGunUp || !bIsPistolHold) && bTwoHanded
 		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade) ? 1.0 : 0.0;
 
 	LeftHandIKAlpha = IKTarget < LeftHandIKAlpha
@@ -767,6 +774,10 @@ void UProjectBopisAnimInstance::UpdateArmAlphas(const AWeaponBase* Weapon, float
 	{
 		LeftHandIKAlpha = FMath::Max(LeftHandIKAlpha, static_cast<double>(GetCurveValue(HandGripCurve)));
 	}
+
+	// Weapons that lock the hand's angle to the gun take it from the socket; it holds and lets
+	// go with the IK.
+	LeftHandGripRotationAlpha = Weapon->LocksLeftHandRotation() ? LeftHandIKAlpha * LeftHandGripAlpha : 0.0;
 
 	// One-handed pistol: the raised pistol poses are two-handed, so while raised the free
 	// left arm is overridden with the at-side pose. It follows the raised layer, and eases
@@ -848,8 +859,20 @@ void UProjectBopisAnimInstance::UpdateLeftHandGrip(const ABopisCharacterBase& Ch
 	const FTransform GripWorld = WeaponMesh->GetSocketTransform(LeftHandGripSocket);
 	const FTransform HandWorld = BodyMesh->GetSocketTransform(RightHandBone);
 
-	LeftHandGripLocation = GripWorld.GetRelativeTransform(HandWorld).GetLocation();
+	const FTransform GripInHand = GripWorld.GetRelativeTransform(HandWorld);
+	LeftHandGripLocation = GripInHand.GetLocation();
+	LeftHandGripRotation = GripInHand.Rotator();
 	LeftHandGripAlpha = 1.0;
+
+	// Tuning aid for bLockLeftHandRotation: the socket rotation (relative to its bone) that
+	// would hold the left hand at its angle now — read it where the hand looks right.
+	if (CVarLeftHandGripCalibrate.GetValueOnGameThread() && GEngine && Character.IsPlayerControlled())
+	{
+		const FTransform SocketBoneWorld = WeaponMesh->GetSocketTransform(WeaponMesh->GetSocketBoneName(LeftHandGripSocket));
+		const FRotator Needed = BodyMesh->GetSocketTransform(LeftHandBone).GetRelativeTransform(SocketBoneWorld).Rotator();
+		GEngine->AddOnScreenDebugMessage(static_cast<uint64>(GetUniqueID()), 1.0f, FColor::Yellow,
+			FString::Printf(TEXT("LeftHandGrip rotation: X %.1f  Y %.1f  Z %.1f"), Needed.Roll, Needed.Pitch, Needed.Yaw));
+	}
 
 	// Pump guns: the hand rides the slide, which moves along its parent bone's X.
 	const FName PumpBone = Weapon->GetPumpBoneName();
