@@ -224,12 +224,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TMap<EWeaponGripStyle, TObjectPtr<UAnimSequenceBase>> RightHandGripPoses;
 
+	/** The finger pose for a lowered pistol, whose idle and jog are unarmed clips with an open
+	    hand (e.g. MM_Pistol_Idle_Hipfire, whose first frame grips a pistol). None: the hand stays open. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> LoweredPistolGripPose;
+
 	/** The held weapon's finger pose, played by the AnimGraph's finger layer (hand_r's thumb
 	    and finger chains). Kept while the layer eases out. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<UAnimSequenceBase> RightHandGripPose;
 
-	/** Weight of that layer: in when the weapon's grip has a pose, out while drawing or tossing. */
+	/** Weight of that layer: in when the weapon's grip has a pose or a pistol is lowered, out while drawing or tossing. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	float RightHandGripPoseAlpha = 0.0f;
 

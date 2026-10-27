@@ -887,10 +887,17 @@ void UProjectBopisAnimInstance::UpdateLeftHandGrip(const ABopisCharacterBase& Ch
 
 void UProjectBopisAnimInstance::UpdateRightHandGrip(const AWeaponBase* Weapon, float DeltaSeconds)
 {
-	// The clips' fingers suit a pistol grip; other grips swap in their own finger pose. The last
-	// pose is kept while the layer eases out, so the fingers never pass through the bind pose.
+	// The clips' fingers suit a pistol grip; other grips swap in their own finger pose. A lowered
+	// pistol plays unarmed clips with an open hand, so it takes LoweredPistolGripPose (not while a
+	// reload moves the hand). The last pose is kept while the layer eases out, so the fingers
+	// never pass through the bind pose.
 	const TObjectPtr<UAnimSequenceBase>* Found = Weapon ? RightHandGripPoses.Find(Weapon->GetGripStyle()) : nullptr;
 	UAnimSequenceBase* Pose = Found ? Found->Get() : nullptr;
+	const bool bPistolLowered = Weapon && bIsPistolHold && !bIsAiming && !bIsWeaponRaised && !bReloadAnimating;
+	if (!Pose && bPistolLowered)
+	{
+		Pose = LoweredPistolGripPose.Get();
+	}
 	if (Pose)
 	{
 		RightHandGripPose = Pose;

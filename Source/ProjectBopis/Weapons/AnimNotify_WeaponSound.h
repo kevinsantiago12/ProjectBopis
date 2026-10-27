@@ -7,7 +7,8 @@
 
 /** Plays a sound of the weapon involved: on a character's montage, its equipped gun; on a
     gun's own animation, that gun. Which sound is the weapon's call (its Weapon|Sounds
-    slots), so one reload montage serves every gun that shares it. */
+    slots), so one reload montage serves every gun that shares it. Mag Out and Mag In also
+    drop the gun's magazine and put it back (see AWeaponBase::PlayWeaponEvent). */
 UCLASS(meta = (DisplayName = "Weapon Sound"))
 class PROJECTBOPIS_API UAnimNotify_WeaponSound : public UAnimNotify
 {

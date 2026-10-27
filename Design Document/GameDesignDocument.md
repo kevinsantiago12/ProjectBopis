@@ -511,3 +511,8 @@ a shooting range.
   fire for their friends.
 - 2026-10-25 — Music that changes through a level; reinforcements in waves; a
   level ending.
+- 2026-10-26 — The first final gun models: a Mossberg pump shotgun, an M4
+  rifle, Beretta 9mm pistols and 1911 .45 pistols. Guns move as they fire (slides, pumps), spent
+  magazines drop to the floor on reloads, and hands hold each gun the way it's
+  built. The number keys now run pistols, shotguns, SMGs, rifles and sniper
+  rifles; the grenade launcher is set aside for now.

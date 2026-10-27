@@ -501,7 +501,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] 2. `AExplosion` / `BP_Explosion`.
   - [x] 3. `AGrenade`, thrown and launched rounds.
   - [x] 4. Quick throw on G (turn first, Max Payne 2 arc, additive toss, free arm and blade handled).
-  - [x] 5. `BP_GrenadeLauncher` (slot 6, key 6).
+  - [x] 5. `BP_GrenadeLauncher` (slot 6, key 6). *(Out of the game since 2026-10-26 — nothing gives it out; kept for later.)*
   - [x] 6. Pickups, HUD grenade count.
 - [x] *(Done 2026-10-19.)* **16. Revolver** (.357, two-handed, `HighPowerPistol` ammo, speedloader).
 - [x] *(Done 2026-10-19.)* **17. Hand fixes:** left-hand IK for two-handed holds at the hip; hip aim hand turn for two-handed holds; blade turns corrected for the turn-in-place offset; IK keeps the pose's hand rotation.
@@ -556,6 +556,11 @@ archetype-composition idea, not extended from the old classes.
   - [x] **User:** `IA_WeaponWheel` mapped (Tab + Gamepad Left Shoulder) — pad/held mode.
   - [x] *(Done 2026-10-24: compiled, tree pasted; tested by the user.)* **Look moved to the designer** (user: "I can't design it?"): `UWeaponWheelWidget` is logic only and drives named widgets in `/Game/UI/WBP_WeaponWheel` (`Segment_0..5`, `Icon_0..5`, `Count_0..5`, `NameText`, `AmmoText`), plus `GetSegmentState`/`GetHoveredIndex`/`GetSegmentAngleDegrees` and `OnHoverChanged` for Blueprint. `WBP_WeaponWheel` created (parent `WeaponWheelWidget`) and set as `WeaponWheelClass` on `BP_PlayerCharacter`; wedge texture `/Game/UI/T_WheelSegment`. **User:** paste `Tools/WBP_WeaponWheel_Tree.txt` into its empty Hierarchy (Ctrl+V), compile, save; restart the editor before the PIE test (object-reference gotcha).
   - [x] *(Done 2026-10-24, compiled, tested.)* Icons: **one shared height** (the widest carried icon fits `IconMaxWidth`, cap `IconMaxHeight`), own proportions; **dual-wield shows the icon twice**, the second copy behind the first like a shadow (`IconDual_N`, `DualIconOffset` 10, 8). The first tree had the icons at 35 % opacity (Claude's slip) — the regenerated tree (`Tools/MakeWeaponWheelTree.ps1`) fixes it. **User:** delete `WheelCanvas`, paste, compile, save.
+  - [x] *(Built 2026-10-26, "apply and run".)* Icons **as big as fits each wedge** at their own proportions (`FitIconHeight`; replaces the shared height and `IconMaxWidth` / `IconMaxHeight`). Ring numbers `RingInnerRadius` 165, `RingOuterRadius` 295, `SegmentArcDegrees` 56, `IconMargin` 6.
+  - [x] *(Built 2026-10-26, "apply and run"; replaces the per-wedge fit, user: "pistols are rendering too big… duals are mushed together".)* One icon height again, set by the handguns: their fit in the pistols' wedge × `HandgunFill` 0.8. Long guns may run past their wedge. Dual stacking scales with the icon (`DualIconSpread` 0.3, 0.25 of the height; then, 2026-10-27, user: "the top left corner of one is the center of the other", 0.5, 0.5 of the icon's own width and height — built, "apply and run").
+  - [x] *(Tested 2026-10-27, user: "duals look good, wheel works".)* Handguns sit in their wedge; one height for every icon; duals corner-to-centre.
+  - [x] *(Built 2026-10-27, "apply and run".)* Floating drops (the Mossberg and the 1911): `AWeaponDrop` sizes its box from the mesh's own imported bounds, not the physics asset's capsule.
+  - [ ] Test: drop the Mossberg and the 1911 (enemy deaths) a few times; they lie on the floor. Optional, offered: dropped/picked-up 1911s show no magazine (the fitted one is on the weapon actor only).
   - [x] Playtest the keyboard flow: 1–6 → wheel; same key steps the type; click equips; combat keys dead while up (movement and camera free); time slow. *(Tested by the user 2026-10-24.)*
   - [x] **User (2026-10-24):** `IA_WeaponWheelCycle` mapped in `IMC_Default` — Mouse Wheel Axis, Gamepad D-pad Up, D-pad Down (Negate) (seen in the asset). Cycling: User-tested 2026-10-25.
   - [x] Icons and wheel art: the user's, in the weapon BPs and `WBP_WeaponWheel` (signed off 2026-10-24: "only thing left is map IA_WeaponWheelCycle").
@@ -592,22 +597,40 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(Bridge, 2026-10-25.)* 9mm Pistol (Beretta 92FS) + Dual 9mm Pistols — `BP_Pistol9mm` / `BP_DualPistol9mm`; the old pistol renamed ".45 Pistol" / "Dual .45 Pistols".
   - [ ] 9mm: sockets on `SK_Beretta_92FS` (`MuzzleFlash`, `AmmoEject` — user), grip offsets (PIE), icon, pickup, loadout/enemy pools, LOD reduction.
   - [ ] MAC-11 kept (user: "I will keep the mac-11") — a final MAC-11 model when there is one.
-  - [ ] Replace every gun on a MilitaryWeapSilver mesh (user, 2026-10-25): .45 pair + `BP_Pistol_EnemyOnly` (`Pistols_A`), both shotguns (`Shotgun_A`), `BP_CloseRangeRifle` (`Assault_Rifle_A`), `BP_BattleRifle` (`Sniper_Rifle_A`), `BP_GrenadeLauncher`. The 9mm, revolver and MAC meshes aren't silver but borrow its muzzle flashes and sounds.
+  - [ ] Replace every gun on a MilitaryWeapSilver mesh (user, 2026-10-25): .45 pair + `BP_Pistol_EnemyOnly` (`Pistols_A` — done 2026-10-26: the 1911), both shotguns (`Shotgun_A`), `BP_CloseRangeRifle` (`Assault_Rifle_A`), `BP_BattleRifle` (`Sniper_Rifle_A`), `BP_GrenadeLauncher`. The 9mm, revolver and MAC meshes aren't silver but borrow its muzzle flashes and sounds.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Weapon feedback standard (user: "It will now always play the Fire animation when firing. If it is none, it will not do it. We replace the notifies with our own ones so it does not double up"): `bUseAnimationDrivenFeedback` removed; `Fire()` plays `FireAnimation` if set (its Weapon Sound notifies make the sounds), else the Fire sound from code; flash always from code. Bridge: `P_Pistol_MuzzleFlash_01` on the .45 pair + `BP_Pistol_EnemyOnly`; `BP_PumpShotgun` → `Mossberg-500_Pump`. Spec: *Adding a weapon*.
-  - [ ] User: on `Fire_Pistol_W`, `Fire_Shotgun_NoDelay`, `Fire_SniperRifle_W` — delete the flash (particle) notifies, add a Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a Fire notify and no flash. Until then those guns fire silently.
+  - [ ] User: on `Fire_Shotgun_NoDelay`, `Fire_SniperRifle_W` (`Fire_Pistol_W` dropped 2026-10-26: the .45s moved to the 1911) — delete the flash (particle) notifies, add a Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a Fire notify and no flash. Until then those guns fire silently.
   - [ ] Test: every gun — one shot sound, one flash at the muzzle; the Mossberg pumps on fire.
   - [x] *(User, 2026-10-26.)* Mossberg pump: `PumpBoneName` None on `BP_PumpShotgun` (the procedural offset pushed the hand sideways — `grip`'s X isn't along the barrel); `Mossberg-500_Pump` retimed to the body's fire animation. Optional: `LeftHandGrip` onto `pump` so the hand rides it.
   - [x] *(User, 2026-10-26.)* Fire animations with Weapon Sound Fire notifies, wired: 9mm pair (`SK_Beretta_92FS_Fire`), MAC pair (`SK_SMG11_Nostock_Y_Skeleton_Fire`), revolver (`_357Revolver_Fire`; no cylinder turn yet).
-  - [ ] M4 (`SK_AR4`) ejection hatch: `b_gun_shelleject_hatch` closed in the ref pose — skeleton editing tool, or an M4 fire animation that opens it (user). Also the launcher's fire animation.
+  - [x] *(User, 2026-10-26: "set and working".)* M4 ejection hatch: `AR4_HatchOpen` (one frame) as `BP_CloseRangeRifle`'s `WeaponMesh` animation, plus an M4 fire animation. Also the launcher's fire animation.
+  - [x] *(Compiled 2026-10-26, "apply and run".)* Casing ejection timed by an **Eject** Weapon Sound notify on the gun's fire animation (found at BeginPlay; replaces `CasingEjectDelay` for that gun).
+  - [ ] User: Eject notifies on `Mossberg-500_Pump`, the M4, 9mm and MAC fire animations (not the revolver); test.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Long guns keep the left-hand IK when lowered (user's lowered idle/jog clips bring the hand near the grip; the IK closes the gap). Two-handed pistol unchanged.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Per-gun left-hand angle: `bLockLeftHandRotation` (weapon) + the `LeftHandGrip` socket's rotation; `Bopis.LeftHandGripCalibrate 1` shows the rotation for the current hand. AnimGraph: Modify Bone `ik_hand_l` + Copy Bone → `hand_l` after `TwoBoneIK_0`; saved.
   - [x] *(User, 2026-10-26.)* Calibrated and locked: `BP_PumpShotgun`, `BP_CloseRangeRifle`. Lock the silver placeholders' replacements as they arrive.
   - [x] *(Tested 2026-10-26, user: "lowered idle and jog is fine now".)* Lowered idle/jog — hand on the grip.
   - [x] *(User, 2026-10-26: "Mossberg hold is ok".)* Mossberg hold.
   - [ ] Deferred (user: "maybe fix this later but ignore for now"): lying backwards after a shootdodge, the left hand can't reach `LeftHandGrip`.
+  - [x] *(Compiled 2026-10-26, "apply and run".)* Magazine drops: `PlayWeaponEvent` (Mag Out drops `MagazineMesh` from the `Magazine` socket and hides that bone; Mag In / reload end shows it); magazines capped at 16. Meshes set on the 5.56 rifle, MAC pair, 9mm pair, .45 pair + enemy pistol.
+  - [x] *(Tested 2026-10-26, user: "mags drop, works".)* `Magazine` sockets on `SK_AR4` and `SK_Beretta_92FS`.
+  - [x] *(User, 2026-10-26: "already added and tested working".)* MAC and .45 sockets. The .45's (`Pistols_A`) was unsaved at 19:03 — moot since the .45s moved to the 1911.
+  - [ ] A mag-drop sound (`MagazineImpactSound`), if wanted.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Right-hand grip style: `EWeaponGripStyle` on the weapon; `RightHandGripPoses` map on the anim instance; finger layer (`LayeredBoneBlend_16`) in `ABP_Player`; saved.
   - [x] *(User + bridge, 2026-10-26.)* `StraightStockGripPose` authored; `ABP_Player` Right Hand Grip Poses `StraightStock` → it; `BP_PumpShotgun` Grip Style `Straight Stock`. *Tested (user): "grip works".*
-  - [ ] .45s: stay on the silver `Pistols_A` (user, 2026-10-25; an M1911 swap was reverted). Its missing magazine comes from the 1911 pack's `NonRigged_M1911_Magazine` — the user's design, later.
+  - [x] *(Superseded 2026-10-26: the .45s moved to the 1911 kit, below.)* .45s: stay on the silver `Pistols_A` (user, 2026-10-25; an M1911 swap was reverted).
+  - [x] *(2026-10-26, user: "extract the 1911 pistol model only".)* 1911 kit copied from the 4.27 `Pistol1911AnimSet` project (since deleted by the user) into `Content/Pistol1911_Animation_Kit/`. It has `SK_P1911` and `SK_P1911_M` on one skeleton, with mags, .45 rounds, the gun animations and the shot sound. The arms and template content were left out, and so were the three reload montages: their notify pulls in the kit's framework, and the sequences under them came across anyway.
+  - [x] *(Bridge, 2026-10-26, user: "replace the .45s with the 1911".)* `BP_Pistol`, `BP_DualPistols` (both meshes) and `BP_Pistol_EnemyOnly` → `SK_P1911` (the black one — user: "Use the black 1911 model", after a first pass on the blued `SK_P1911_M`), `Anim_P1911_M_Shot`, `pistol1911_mag`. Muzzle and magazine use the kit's `muzzle_socket` and `clipSocket`; grip z −2 → +2.5. The old `/Game/M1911/` (31 assets) was dereferenced and deleted.
+  - [x] *(Built 2026-10-26, "apply and run".)* `bShowMagazineMesh`: a gun whose mesh has no magazine (the black 1911) shows `MagazineMesh` fitted at the magazine socket, hidden and shown with the reload. Ticked on the three .45 Blueprints (bridge; compiled, saved). *Tested (user): "mag fitted works".*
+  - [ ] User:
+    - add an `AmmoEject` socket on `SK_P1911_M_Skeleton` (the slide's ejection port);
+    - check that `muzzle_socket` points down the barrel and that the dropped magazine lines up at `clipSocket`;
+    - on `Anim_P1911_M_Shot`, swap the PlaySound notify for a Weapon Sound **Fire** (+ **Eject**);
+    - tune the grips in PIE (single, dual, enemy).
+  - [ ] Test: one shot sound, flash at the muzzle, slide cycles, casing from the port, the magazine drops (and `mag_c`, the kit's second magazine, doesn't stay in the grip).
+  - [x] *(Built 2026-10-26, "apply and run".)* Lowered pistol: `LoweredPistolGripPose` (`ABP_Player`: `MM_Pistol_Idle_Hipfire`) closes the right hand on the gun while a pistol is down. Its lowered clips are unarmed, with an open hand.
+  - [x] *(Bridge, 2026-10-26.)* Slots: 4 SMGs, 5 rifles (`BP_CloseRangeRifle`), 6 snipers (`BP_BattleRifle`); the grenade launcher out of the game for now (kept, unobtainable).
+  - [x] *(Tested 2026-10-26, user: "grip works, slots work".)* The lowered pistol's right hand grips the gun; keys 4–6 and the wheel's segments.
   - [x] *(Bridge, 2026-10-25.)* "5.56 Assault Rifle" — `BP_CloseRangeRifle` on the FPS pack's M4 (`SK_AR4`), sockets on its muzzle/eject bones. Still: `LeftHandGrip`, grip offsets, and hitscan vs the old projectile round (user's call).
   - [ ] AK-74u — new Blueprint (Rifle anim type).
   - [ ] Pickups, enemy weapon pools, the wheel's icons; old placeholders onto the unused-content list.

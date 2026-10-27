@@ -13,9 +13,9 @@ class UStaticMesh;
 class USoundBase;
 
 /**
- *  A spent casing thrown from a gun's ejection port: a small physics body that bounces,
- *  rolls and settles, then goes after its life span. The world keeps at most
- *  UShellCasingSubsystem::MaxCasings; the oldest go first.
+ *  A spent casing thrown from a gun's ejection port — or a magazine dropped on a reload: a
+ *  physics body that bounces, rolls and settles, then goes after its life span. The world keeps
+ *  at most UShellCasingSubsystem::MaxCasings casings and MaxMagazines magazines; oldest go first.
  */
 UCLASS()
 class PROJECTBOPIS_API AShellCasing : public AActor
@@ -25,9 +25,10 @@ class PROJECTBOPIS_API AShellCasing : public AActor
 public:
 	AShellCasing();
 
-	/** Takes the casing's mesh and bounce sound, sizes its body to the mesh, and throws it. */
+	/** Takes the mesh and bounce sound, sizes its body to the mesh (the mesh's pivot stays on
+	    the spawn point), and throws it. bMagazine counts it against the magazine limit. */
 	void Launch(UStaticMesh* Mesh, float Scale, USoundBase* InImpactSound, const FVector& Velocity,
-		const FVector& AngularVelocityDegrees, float LifeSpan);
+		const FVector& AngularVelocityDegrees, float LifeSpan, bool bMagazine = false);
 
 protected:
 	virtual void BeginPlay() override;
@@ -58,10 +59,13 @@ class PROJECTBOPIS_API UShellCasingSubsystem : public UWorldSubsystem
 
 public:
 	static constexpr int32 MaxCasings = 64;
+	/** Magazines keep their own count, so a burst of casings doesn't sweep them away. */
+	static constexpr int32 MaxMagazines = 16;
 
-	void Register(AShellCasing* Casing);
+	void Register(AShellCasing* Casing, bool bMagazine = false);
 
 private:
 	/** Oldest first. Weak, so casings that run out their life span simply drop out. */
 	TArray<TWeakObjectPtr<AShellCasing>> Casings;
+	TArray<TWeakObjectPtr<AShellCasing>> Magazines;
 };

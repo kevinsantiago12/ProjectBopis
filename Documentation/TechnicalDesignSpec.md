@@ -47,6 +47,7 @@
   - [Reload](#reload)
   - [Directional hit indicator (2026-10-16)](#directional-hit-indicator-2026-10-16)
   - [Shell casings (2026-10-16)](#shell-casings-2026-10-16)
+  - [Magazine drops (2026-10-26)](#magazine-drops-2026-10-26)
   - [Pellets and damage falloff (2026-10-03)](#pellets-and-damage-falloff-2026-10-03)
 - [Explosives (2026-10-19)](#explosives-2026-10-19)
 - [Encounter triggers, ambushes and spawning (2026-10-19)](#encounter-triggers-ambushes-and-spawning-2026-10-19)
@@ -813,6 +814,18 @@ Lyra clips already carry.
 
 ### Weapon wheel (2026-10-23)
 
+**Slots since 2026-10-26** (user: "Rifles are on selection 5 on the weapon
+wheel and keys"; "move snipers to 6"): 1 free (melee), 2 pistols, 3
+shotguns, 4 SMGs (the MAC pair), 5 rifles (`BP_CloseRangeRifle`, was 4), 6
+snipers (`BP_BattleRifle`, was 5). Six segments, six keys, unchanged. **The
+grenade launcher is out of the game for now** (user: "I just did not want
+them in the game. I might put them back later") — nothing hands it out (no
+loadout, no placed pickup in `Lvl_Sandbox`/`Lvl_Linear`, no AI pool; only the
+vendor's `MilitaryWeapSilver/Showcase.umap` has one). Its Blueprints, pickups,
+round, `LauncherGrenade` ammo and code are kept; it still says slot 6, so
+choose its slot if it comes back. Hand grenades are unaffected. **Tested
+(user, 2026-10-26): "slots work".**
+
 A GTA V-style radial picker (user's spec, 2026-10-23): a fixed ring of
 segments, **one per weapon type (`WeaponSlot` 1–6), counter-clockwise from
 the top**; each shows the type's current weapon. While it's open **combat
@@ -839,16 +852,38 @@ segment per carried weapon; replaced the same day.)*
   `EquippedColor`, `SegmentColor`, `EmptyColor` for a type with nothing
   carried); `Icon_0..5` (Image) set to the type's current weapon's **`Icon`**
   (`AWeaponBase`, Weapon|UI) at **the texture's own proportions**, hidden
-  when empty. **All icons share one height** (user, 2026-10-24): the most
-  that lets every *carried* icon fit `IconMaxWidth` 110 (so the widest gun
-  sets it), capped at `IconMaxHeight` 50 for when nothing long is carried —
-  every carried weapon counts, not just those showing, so cycling never
-  resizes; size goes through the brush's `ImageSize`. **Dual-wield**
+  when empty. **Every icon one height, set by the handguns** (2026-10-26,
+  user: "allow the weapons to go out of the section BUT, keep the handgun to
+  fit nicely in the frame, then use that scale with everything else like
+  before"). `RefreshWidgets` takes the carried weapons of `HandgunSlot` (2)
+  and, for each icon, **`FitIconHeight(Index, Aspect)`**: the tallest icon
+  centred on the wedge's spot (`Radius` on its centre line,
+  `GetSegmentAngleDegrees`) whose corners stay inside `RingOuterRadius` and
+  between the wedge's edges (cross products), with its nearest point outside
+  `RingInnerRadius`, all by `IconMargin` (6). A halving search to half a
+  pixel. The smallest result × **`HandgunFill`** (0.8) is
+  `SharedIconHeight` for every icon at its own proportions. Long guns may
+  run past their wedge. Every carried handgun counts, so cycling them doesn't
+  resize; with none carried, the last height holds (40 to start).
+  Expected: handguns about 55 px tall, rifles about 190 px wide.
+  *History:* 10-24, a shared height from `IconMaxWidth` 110 /
+  `IconMaxHeight` 50 (about 31 px with a rifle); then earlier on 10-26, each
+  icon as big as its own wedge allowed ("The pistols are rendering too big
+  … the duals are mushed together too much"), replaced the same day. Ring
+  numbers as designed: `RingInnerRadius` 165, `RingOuterRadius` 295,
+  `SegmentArcDegrees` 56; keep them in step with the wedge art. Size goes
+  through the brush's `ImageSize`. **Dual-wield**
   (`IsDualWield()`): the icon shows twice, `IconDual_0..5` drawing the
   second, the second copy **behind the first, like a shadow** (user,
   2026-10-24: "one on top of each other to indicate dual"), the pair offset by
-  `DualIconOffset` (10, 8; was 30, 14) and centred on the single icon's spot by render translation; the
-  pair's spread counts against `IconMaxWidth`;
+  **`DualIconSpread`** (0.5, 0.5) *of the icon's own width and height*: the
+  copy's top-left corner on the first's centre (user, 2026-10-27: "more
+  separation for the duals, where the top left corner of one is the center
+  of the other"). Earlier: (0.3, 0.25) of the height (10-26), and before
+  that `DualIconOffset` in pixels (30, 14, then 10, 8). The pair is centred
+  on the single icon's spot by render translation and covers 1.5× an icon
+  each way. **Tested (user, 2026-10-27): "duals look good, wheel works".**
+  The rest of this item:
   `Count_0..5` (TextBlock) `k/n` when the type holds several, else hidden;
   `NameText` / `AmmoText` — the hovered type's weapon, else the one in hand,
   and `mag / reserve`. Anything else in the tree (the `Key_0..5` slot
@@ -979,7 +1014,7 @@ montages) and needs:
   `BP_Pistol_EnemyOnly` got `P_Pistol_MuzzleFlash_01` (their flash used to
   come from `Fire_Pistol_W`); `BP_PumpShotgun`'s `FireAnimation` is the
   user's `Mossberg-500_Pump`. Guns with a fire animation (and so silent until
-  it has a `Fire` notify): the .45 pair + enemy pistol (`Fire_Pistol_W`),
+  it has a `Fire` notify): the .45 pair + enemy pistol (`Fire_Pistol_W`; since 2026-10-26 the 1911's `Anim_P1911_M_Shot`, which sounds the kit's own cue until its notify is swapped),
   `BP_Shotgun` (`Fire_Shotgun_NoDelay`), `BP_BattleRifle`
   (`Fire_SniperRifle_W`), `BP_PumpShotgun` (`Mossberg-500_Pump`). Without
   one: the 9mm pair, MACs, revolver, 5.56 rifle, launcher.
@@ -991,11 +1026,17 @@ montages) and needs:
   `Mossberg-500_Pump`. Still without a fire animation: the 5.56 rifle and
   the launcher. **M4 hatch:** `SK_AR4`'s `b_gun_shelleject_hatch` is closed
   in the reference pose. Moving bones in the mesh editor's viewport is
-  preview-only and isn't saved; either edit the reference pose with the
-  Skeletal Mesh editor's skeleton editing tool (Accept, then save), or have
-  an M4 fire animation open it and end open — a gun's fire animation holds
-  its last frame, so it stays open after the first shot, like a real dust
-  cover.
+  preview-only and isn't saved, and the **skeleton editing tool doesn't
+  help either**: it moves joints *under* the mesh (re-rigging — the mesh
+  stays put), so the hatch never swings (user: "the edit skeleton is not
+  rotating the preview even when the value is changed"). Routes that work:
+  a **one-frame "hatch open" pose** on the M4's skeleton set as the weapon
+  mesh's own animation (`WeaponMesh` → Animation Mode *Use Animation Asset*,
+  that pose, not looping — open from the start, no code), and/or an M4 fire
+  animation that ends with it open (a gun's fire animation holds its last
+  frame; it then needs a `Fire` Weapon Sound notify, or the M4 goes silent).
+  **Done (user, 2026-10-26):** `AR4_HatchOpen` (one frame) as the
+  `WeaponMesh`'s animation, plus an M4 fire animation — "set and working".
 
 ## Ammo
 
@@ -1063,7 +1104,55 @@ for reloads — **the user's design, later** (a "Magazine In Hand" notify-state
 proposal was set aside: "I have my own ideas for that"). Notes on the 1911
 mesh for whenever it's used: barrel along X (the other pistols' along +Y; a
 yaw −90 reimport didn't take), no slide bone, no sockets, 6 material slots,
-11,474 verts, 1 LOD.
+11,474 verts, 1 LOD. *(That pack, `/Game/M1911/`, was deleted 2026-10-26 —
+below.)*
+
+**The .45s on the 1911 (2026-10-26).** User: "replace the .45s with the
+1911". The 1911 kit (`/Game/Pistol1911_Animation_Kit/`, extracted the same
+day from a UE 4.27 project the user has since deleted), variant
+**`SK_P1911`**, the plain black one (user: "Use the black 1911 model"; the
+first pass used the detailed, blued `SK_P1911_M`, which shares its skeleton
+and animations). Bridge, on `BP_Pistol`,
+`BP_DualPistols` (both meshes) and `BP_Pistol_EnemyOnly`; compiled, saved:
+- `WeaponMesh` (+ `OffhandMesh`) → `SK_P1911`; `FireAnimation` →
+  `Anim_P1911_M_Shot` (0.75 s; shared skeleton); `MagazineMesh` →
+  `pistol1911_mag` (the black one's; `SM_P1911_M_mag` goes with the blued).
+- **Sockets: the kit's own, on the skeleton** (so both variants have them):
+  `MuzzleSocketName` → `muzzle_socket` (bone `muzzle`, yaw −90),
+  `MagazineSocketName` → `clipSocket` (bone `mag`, roll 70 — where the kit
+  lines up its loose magazine). Their orientations are unverified: the bridge
+  reads socket transforms only relative to their bones. **No ejection
+  socket** — `CasingSocketName` stays `AmmoEject`, the user's to add.
+- **Layout** as `Pistols_A` and the Beretta: barrel along +Y, up +Z. About
+  `Pistols_A`'s size (black 25 × 3.5 × 15.7 cm, blued 26 × 3.7 × 15.8, vs
+  27 × 3.9 × 17); root at the frame
+  top by the trigger (z −8.4…7.4, vs −4.8…12.2). Grip rotation kept
+  (0, −3, 8); **grip z −2 → +2.5** on all three (off hand too) — a starting
+  point scaled from the user's Beretta tuning (+2.5 over the .45 for a gun
+  whose top sits 3.7 cm lower); tune in PIE.
+- **Bones:** `gun_root` → `grip` → `slider`, `hammer`, `trigger`, `mag`,
+  `mag_c`, `muzzle`, `slider_lock`, `safety`, `mag_release`. `mag_c` (with
+  `clip_dopSocket`) is the kit's second, reload magazine; if a magazine stays
+  in the grip after Mag Out hides `mag`, it's that one.
+- **The black `SK_P1911` has no magazine in its mesh** (the kit's own weapon
+  Blueprint fitted `pistol1911_mag` at `clipSocket` — hence its roll 70), so
+  the three .45s tick `bShowMagazineMesh` (see *Magazine drops*). The fitted
+  and the dropped magazine both sit on `clipSocket`: rotate that socket to
+  line up both.
+- **Unchanged:** `FireSound` (`PistolA_Fire_Cue`), `CasingMesh`
+  (`cal9mm_Cartridge`; the kit's `45_shell` is a real .45 casing),
+  `MuzzleFlash`, icons, anim types (single .45s are `PistolOneHanded` — no
+  `LeftHandGrip` socket needed).
+- **`Anim_P1911_M_Shot` still carries the kit's PlaySound notify**
+  (`pistol_1911_shot_Cue`), and notifies can't be read or edited over the
+  bridge. Until the user swaps it for a Weapon Sound `Fire` (+ `Eject`)
+  notify, the .45s sound the kit's cue, outside the weapon's sound slots;
+  after, `FireSound`.
+- **`/Game/M1911/` deleted** (31 assets, `AssetTools.delete`) once the three
+  Blueprints' `MagazineMesh` had moved off `NonRigged_M1911_Magazine` — the
+  asset registry and the binaries both showed no other referencers.
+  `Pistols_A` is now unused; it goes with the rest of `MilitaryWeapSilver`
+  once the other silver guns are replaced.
 
 **5.56 Assault Rifle (2026-10-25).** `BP_CloseRangeRifle`, renamed, on the FPS
 pack's M4 (`/Game/FPS_Weapon_Bundle/Weapons/Meshes/AR4/SK_AR4`; barrel +Y
@@ -1390,6 +1479,68 @@ the throw.
   case, `_Bullet` the head, `_Full` the round.)
 - **`CasingScale`** (per weapon, default 1, user-confirmed the casings look
   right): scales the mesh and its physics body together (2026-10-16).
+- **Timed by the fire animation (2026-10-26, user: "do the eject notify").**
+  `EWeaponSound::Eject` — no sound (`GetSound` returns none) — is a Weapon
+  Sound notify choice; `PlayWeaponEvent(Eject)` calls `EjectCasing(bOffhand)`.
+  At `BeginPlay` the weapon scans `FireAnimation->Notifies` for one
+  (`bFireAnimationEjects`); if found, `Fire()` no longer ejects and
+  `CasingEjectDelay` is ignored — the casing leaves when the animation says.
+  Otherwise the delay timer as before. Put Eject on the **gun's** fire
+  animation only (on a character montage it would add to the code ejection),
+  and on full-auto guns before the next shot restarts the clip. The revolver
+  has no `CasingMesh` (no per-shot casings).
+
+### Magazine drops (2026-10-26)
+User: "next is mag drops on reloads". The reload montages' existing **Weapon
+Sound** notifies mark the moments, so every reload (player, enemies, duals'
+off hand) drops with no animation work.
+- **`UAnimNotify_WeaponSound`** now calls **`AWeaponBase::PlayWeaponEvent(Event,
+  bOffhand)`**: the sound (`PlayWeaponSound`), plus **Mag Out →
+  `DropMagazine`** and **Mag In → the gun's own magazine shown again**.
+  `Fire()` still calls `PlayWeaponSound` directly.
+- **`DropMagazine`:** spawns an `AShellCasing` at the gun's **`Magazine`
+  socket** (`MagazineSocketName`) with **`MagazineMesh`**, at the socket's
+  scale (the gun's), the shooter's velocity, a slow random tumble
+  (120°/s); `MagazineImpactSound` (none set — no mag-drop sound in the
+  packs), `MagazineLifeSpan` 30 s. Then hides the **bone the socket sits
+  on** (`HideBoneByName`, children too — `b_gun_mag_bullets`,
+  `Magazine_Follower`); never the root. No `MagazineMesh` → nothing drops
+  (shotguns, revolver, launcher).
+- **Shown again** on Mag In, and in `FinishReload` / `CancelReload` (so
+  `CompleteReloadNow` too) on both meshes — a cut-short reload never leaves a
+  gun without its magazine.
+- **Guns whose mesh has no magazine: `bShowMagazineMesh`** (2026-10-26, user:
+  "the 1911 does not have a mag in by default"; "apply and run"). A
+  per-weapon checkbox (Weapon|Magazine, off by default). At `BeginPlay`,
+  **`FitMagazine`** seats a `UStaticMeshComponent` of `MagazineMesh` on the
+  magazine socket: created at runtime (`NewObject` → `SetupAttachment(Mesh,
+  MagazineSocketName)` → `RegisterComponent`), no collision, owned by the
+  weapon (so `SetActorHiddenInGame` hides it with the gun), one per mesh
+  (`FittedMagazine`, `OffhandFittedMagazine` for duals). `SetMagazineHidden`
+  hides and shows it with the bone, so Mag Out swaps it for the loose copy
+  and Mag In / reload end bring it back. A checkbox, not detection: a mesh
+  can have a magazine bone with nothing skinned to it (the black 1911's
+  `mag`). On: `BP_Pistol`, `BP_DualPistols`, `BP_Pistol_EnemyOnly`.
+  **Tested (user, 2026-10-26): "mag fitted works".**
+- **`AShellCasing::Launch(..., bMagazine)`**: the body now moves to the mesh's
+  bounds centre so the mesh's **pivot stays on the spawn point** (as a socket
+  preview shows it; casings shift by under a centimetre).
+  **`UShellCasingSubsystem`** keeps magazines in their own list,
+  **`MaxMagazines` 16**, so casings don't sweep them away.
+- **Set (bridge):** 5.56 rifle `SM_AR4_Mag_Empty` (bone `b_gun_mag`); MAC
+  pair `SM_SMG11_Mag_Empty_Y` (`b_gun_mag`); 9mm pair `SM_Magazine`
+  (`Magazine`); .45 pair + enemy pistol `NonRigged_M1911_Magazine`
+  (`Clip_Bone`) — since 2026-10-26 the 1911's `pistol1911_mag` at its
+  `clipSocket` (bone `mag`; see *The .45s on the 1911*). **Sockets (user):** a `Magazine` socket on each gun's
+  magazine bone, aligned by previewing the drop mesh on it and dragging the
+  preview (which moves the socket — wanted here; on the gun's skeleton only).
+  No socket → nothing drops.
+- Not in scope: a fresh magazine in the hand during the reload (user's
+  design, later).
+**Tested (user, 2026-10-26): "mags drop, works".** All four guns tested
+(user: "already added and tested working"). Sockets saved on `SK_AR4`,
+`SK_Beretta_92FS` and `SK_SMG11_Nostock_Y_Skeleton`; the .45's (`Pistols_A`)
+was in memory only at 19:03 — moot since the .45s moved to the 1911.
 
 ### Pellets and damage falloff (2026-10-03)
 
@@ -1515,7 +1666,8 @@ out of the air), which `AGrenade` already supports.
   explosives), `LauncherGrenade` ammo (cap 12), 6 rounds + 6, 0.8 s, 3.0 s
   reload, fires `BP_Grenade_Launched`, no spread or casings, its own
   `LeftHandGrip`. Pickups `BP_GrenadeLauncher_Pickup`,
-  `BP_AmmoPickup_LauncherGrenade` (3).
+  `BP_AmmoPickup_LauncherGrenade` (3). *(Out of the game since 2026-10-26,
+  kept for later — see* Weapon wheel*.)*
 
 **Revolver (2026-10-19).** `BP_Revolver`: `Pistol` (two-handed) hold, slot 2,
 no duals, `HighPowerPistol` (cap 60), 6 + 24, 60 damage, 0.45 s, 2.6 s
@@ -2325,7 +2477,14 @@ owned, weapon + rounds if not, duals unlocked by a second single).
     Pawn / Camera / Visibility / Projectile, simulating;
   - `MeshComponent` takes the weapon's mesh from its class defaults;
   - **`Launch`** fits the box to the mesh's local bounds, centres it, and
-    offsets the actor (`TeleportPhysics`) so the gun doesn't jump;
+    offsets the actor (`TeleportPhysics`) so the gun doesn't jump. **The
+    bounds are the mesh asset's own `GetImportedBounds()`** (2026-10-27),
+    not the component's `CalcBounds`, which can come from the physics asset:
+    the Mossberg's and the 1911's auto-generated capsule bodies made the box
+    far bigger than the gun, which then hung above the floor when the box
+    landed on certain faces (user: "they both end up like this sometimes").
+    Their own bounds are tight (Mossberg 4.6 × 112 × 19.6 cm, 1911
+    3.5 × 25 × 15.8; no bounds extensions);
   - **settles** once its speed stays < `SettleSpeed` 20 for `SettleTime` 0.25 s
     in a row (after `MinFlightTime` 0.3 s), or at `MaxFlightTime` 3 s;
   - **ignores `ECC_PhysicsBody`**, so it never comes to rest on a ragdoll;
@@ -3413,6 +3572,19 @@ upstream (`DefaultSlot`), so the grip holds through fire and reload.
 (authored on `CCMH_Skeleton`, which lists `SK_Mannequin` as compatible and
 vice versa) on `BP_PumpShotgun`. Edits to the pose flow through on save (and
 in PIE before saving) — no rebuild or re-hookup while it's the same asset.
+**Lowered pistol (2026-10-26, user: "when using one handed pistols and not
+raised. The right hand is not using the gunhold"; "apply and run").** A
+lowered pistol plays Lyra's *unarmed* idle and jog (`MM_Unarmed_Idle_Ready`,
+`BS_MM_Unarmed_Jog_Walk`), whose right hand is open, and the pistol grip has
+no style pose, so nothing closed it. New **`LoweredPistolGripPose`** on the
+anim instance (`ABP_Player`: `MM_Pistol_Idle_Hipfire`, whose first frame
+grips a pistol): `UpdateRightHandGrip` uses it when the grip style has no
+pose and a pistol hold (`bIsPistolHold` — single, two-handed and duals'
+right hand) is neither aimed nor raised, and no reload is playing; the same
+finger layer plays it. Raised, the clips' own fingers come back as the layer
+eases out. Duals' left hand stays open (a mirrored pose would be a separate
+change). Set over the bridge, an object reference: restart the editor before
+judging it in PIE (see the gotcha). **Tested (user, 2026-10-26): "grip works".**
 
 ### One-handed pistol (2026-10-07)
 `EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay

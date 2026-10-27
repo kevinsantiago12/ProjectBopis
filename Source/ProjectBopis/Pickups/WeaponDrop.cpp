@@ -5,6 +5,7 @@
 #include "Weapons/WeaponBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "ProjectBopis.h"
 
 AWeaponDrop::AWeaponDrop()
@@ -44,8 +45,11 @@ void AWeaponDrop::Launch(TSubclassOf<AWeaponBase> InWeaponClass, TSubclassOf<AWe
 	MeshComponent->SetSkeletalMeshAsset(WeaponMesh ? WeaponMesh->GetSkeletalMeshAsset() : nullptr);
 
 	// Fit the box to the gun and centre it, then shift the actor by the same amount so the
-	// gun stays exactly where the hand held it.
-	const FBox LocalBox = MeshComponent->CalcBounds(FTransform::Identity).GetBox();
+	// gun stays exactly where the hand held it. The mesh's own imported bounds, not the
+	// component's: those can come from the physics asset, and an auto-generated capsule can be
+	// far bigger than the gun, which left it hanging above the floor.
+	const USkeletalMesh* GunMesh = MeshComponent->GetSkeletalMeshAsset();
+	const FBox LocalBox = GunMesh ? GunMesh->GetImportedBounds().GetBox() : FBox(ForceInit);
 	if (LocalBox.IsValid)
 	{
 		Body->SetBoxExtent(LocalBox.GetExtent());

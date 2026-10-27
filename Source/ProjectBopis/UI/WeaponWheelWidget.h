@@ -26,7 +26,7 @@ enum class EWheelSegmentState : uint8
  * equips. The look lives in the designer (WBP_WeaponWheel): this class finds its widgets by
  * name and drives them while open —
  *   Segment_0..5        (Image)      tinted by state with the colours below
- *   Icon_0..5           (Image)      the weapon's icon; all icons share one height (IconMaxWidth)
+ *   Icon_0..5           (Image)      the weapon's icon; every icon one height, set by the handguns
  *   IconDual_0..5       (Image)      the second icon of a dual-wield pair; hidden otherwise
  *   Count_0..5          (TextBlock)  "2/3" when a type holds several; hidden otherwise
  *   NameText, AmmoText  (TextBlock)  the highlighted weapon (else the one in hand) and its ammo
@@ -97,8 +97,12 @@ protected:
 	/** Sets Image to Icon at Height and the texture's own proportions; hides it for null. */
 	void ShowIcon(UImage* Image, UTexture2D* Icon, float Height) const;
 
-	/** Segments round the ring, one per WeaponSlot from 1: six for pistols, shotguns, SMGs and
-	    rifles, sniper, launcher and the free slot 1. */
+	/** The biggest icon height (at Aspect, width over height) that fits segment Index's wedge,
+	    centred on its spot at Radius. */
+	float FitIconHeight(int32 Index, float Aspect) const;
+
+	/** Segments round the ring, one per WeaponSlot from 1: six for the free slot 1, pistols,
+	    shotguns, SMGs, rifles and snipers. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "1", ClampMax = "9"))
 	int32 NumSegments = 6;
 
@@ -115,22 +119,38 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "40.0"))
 	float Radius = 230.0f;
 
-	/** Every icon on the wheel shares one height, each at its own proportions: the most that
-	    lets every carried icon (a dual pair counting its spread) fit this width… */
-	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "8.0"))
-	float IconMaxWidth = 110.0f;
+	/** The ring as laid out in the designer (T_WheelSegment at 592: 165–295 px, wedges 56° of each
+	    60°), for fitting the handguns' icon inside its wedge, less IconMargin. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.0"))
+	float RingInnerRadius = 165.0f;
 
-	/** …and never more than this, for when nothing long is carried. Set it to the long guns'
-	    height to keep the icons one size whatever is carried. */
-	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "8.0"))
-	float IconMaxHeight = 50.0f;
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "1.0"))
+	float RingOuterRadius = 295.0f;
+
+	/** One wedge's angle, without the gap between wedges. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "1.0", ClampMax = "360.0"))
+	float SegmentArcDegrees = 56.0f;
+
+	/** Clear space kept between an icon and its wedge's edges (pixels). */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.0"))
+	float IconMargin = 6.0f;
+
+	/** WeaponSlot of the handguns. Every icon on the wheel takes the height at which the carried
+	    handguns fill HandgunFill of their wedge; longer guns may run past theirs. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "1", ClampMax = "9"))
+	int32 HandgunSlot = 2;
+
+	/** How much of their wedge the handguns fill: 1 is edge to edge (less IconMargin). */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.1", ClampMax = "1.0"))
+	float HandgunFill = 0.8f;
 
 	/** A dual-wield weapon shows its icon twice, the second copy behind the first like a shadow,
-	    this far from it (pixels; +X right, +Y down); the pair is centred where Icon_N sits.
-	    IconDual_N draws the copy. Both are placed by render translation, so one set on them in
-	    the designer is overridden. */
+	    this far from it as a fraction of the icon's own width and height (+X right, +Y down):
+	    (0.5, 0.5) puts the copy's top-left corner on the first's centre, at any size. The pair is
+	    centred where Icon_N sits. IconDual_N draws the copy. Both are placed by render
+	    translation, so one set on them in the designer is overridden. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout")
-	FVector2D DualIconOffset = FVector2D(10.0, 8.0);
+	FVector2D DualIconSpread = FVector2D(0.5, 0.5);
 
 	/** How far from the centre, as a fraction of Radius, the pointer must be to hover anything. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -183,6 +203,9 @@ private:
 
 	/** What OnHoverChanged last reported. */
 	int32 LastHovered = INDEX_NONE;
+
+	/** Every icon's height, from the handguns' fit; kept while no handgun is carried. */
+	float SharedIconHeight = 40.0f;
 
 	// The designer's widgets, found by name on initialise; null where the layout has none.
 	UPROPERTY(Transient)

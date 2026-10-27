@@ -14,7 +14,7 @@
 
 ---
 
-## 2026-10-24/25 — Weapon wheel, impact sounds, female CC, LFS, music, level exit, waves, CC skin, dual reload
+## 2026-10-24/26 — Weapon wheel, impact sounds, female CC, LFS, music, level exit, waves, CC skin, dual reload, final weapons (fire anims, hands, mag drops)
 - **User:** "This UI, I cant design it?" — it was drawn in code
   (`NativePaint`), so a Blueprint child showed an empty canvas. Now
   `UWeaponWheelWidget` keeps the logic (segments, key/pointer modes,
@@ -387,6 +387,36 @@
   is all"); dragging a preview asset moves its socket, here the CC body's
   mesh socket on `CCMH_Body_Male`, in memory only (file unchanged).
   Reloaded → "guns are back, grip works". Gotcha in the spec.
+- **Magazine drops** (user: "next is mag drops on reloads"; "apply and
+  run"). The Weapon Sound notify now calls `AWeaponBase::PlayWeaponEvent`:
+  the sound, plus Mag Out → `DropMagazine` (an `AShellCasing` with
+  `MagazineMesh` from the `Magazine` socket; the socket's bone hidden) and
+  Mag In → shown again (also on `FinishReload` / `CancelReload`).
+  `UShellCasingSubsystem` keeps magazines separately (16). First build failed
+  — a `bHidden` parameter shadowed `AActor::bHidden` (C4458) → renamed
+  `bHide` (presented, "apply and run"); built clean, bridge up, DLL newer.
+  Bridge: `MagazineMesh` on eight Blueprints; compiled, saved. Not tested —
+  needs the user's `Magazine` sockets.
+- **Mag drops tested** (user: "mags drop, works"). Sockets on disk: `SK_AR4`,
+  `SK_Beretta_92FS`; the MAC (`SK_SMG11_Nostock_Y`) and .45 (`Pistols_A`)
+  were saved without one at first; then "already added and tested
+  working" — the MAC's saved on its skeleton (19:03); the .45's still
+  unsaved at 19:03 (user to save `Pistols_A`).
+- **M4 hatch, in progress (user):** "the edit skeleton is not rotating the
+  preview even when the value is changed" — the skeleton editing tool moves
+  joints under the mesh (re-rigging), so it can't swing the hatch. Route: a
+  one-frame "hatch open" pose on the M4 skeleton as the `WeaponMesh`'s own
+  animation (Use Animation Asset), and/or a fire animation that ends open.
+  GDD (+ `.html`): a 2026-10-26 line for the day's player-visible changes.
+- **M4 hatch and fire animation done (user):** "made AR4_HatchOpen, made the
+  fire anim and its set and working now". Asked what times casing ejection:
+  `CasingEjectDelay` (0 = with the shot; pump 0.4 s), a timer in `Fire()`,
+  not the animation — an Eject notify on fire animations offered, not built.
+- **Eject notify** (user: "do the eject notify"; "apply and run"). New
+  `EWeaponSound::Eject` (no sound): `PlayWeaponEvent` throws the casing; a
+  gun whose fire animation has one (scanned at `BeginPlay`,
+  `bFireAnimationEjects`) skips the ejection in `Fire()`. Built clean, bridge
+  up, DLL newer. Not tested — needs the user's notifies.
 - **Blood: size and floating chunks (user).** Blood's DA Scale → 0.5 did
   nothing visible (component scale doesn't reach these sprite sizes); the
   user trimmed `NS_ImpactBlood` in the Niagara editor instead. Its chunks
@@ -396,6 +426,152 @@
   responses, docs — **rolled back** at the user's call, verified: config
   back to HEAD, all six Blueprints' responses as before). **Fix: Local
   Space off on BloodChunks1** (user: "that fixed it"). Gotcha in the spec.
+- **1911 kit extracted** (user: "extract the 1911 pistol model only … including
+  variants"). From the UE 4.27 project `Pistol1911AnimSet` (since deleted by the user), file-copied (the
+  same paths, so references hold; 5.8 loads 4.27 packages) into
+  `Content/Pistol1911_Animation_Kit/`: 47 files, 237 MB.
+  - **Both variants:** `SK_P1911` and `SK_P1911_M`, sharing
+    `SK_P1911_M_Skeleton`.
+  - **Mesh parts:** magazines `pistol1911_mag` and `SM_P1911_M_mag`, plus .45
+    rounds (`45_shell` / `45_bullet` / `45_core`, `bullet_lp_uv`), with their
+    materials and textures.
+  - **Gun animations** (`WeaponAnimations/`: shot, shot empty, reloads, idle
+    pose, `Anim_P1911_M_Shot_Montage`, `SK_P1911_M_AnimBP`).
+  - **The 1911 shot sound** (`pistol_1911_shot_Cue` + 5 waves).
+  - **Left out:**
+    - the arms, arms animations, character, camera shakes, map and
+      template Blueprints;
+    - `Bullet_Emissive` / `projectile_glow` (the template projectile's);
+    - the three reload montages, whose `ClipHideUnhide` notify drags in the
+      kit's whole weapon framework (the sequences under them were copied).
+  - All internal references resolve; LFS-tracked; loads in 5.8.
+    `Anim_P1911_M_Shot` plays the shot cue through a PlaySound notify.
+- **The .45s on the 1911** (user: "replace the .45s with the 1911";
+  bridge).
+  - **Blueprints:** `BP_Pistol`, `BP_DualPistols` (both meshes) and
+    `BP_Pistol_EnemyOnly` → `SK_P1911_M`, `FireAnimation`
+    `Anim_P1911_M_Shot`, `MagazineMesh` `SM_P1911_M_mag`.
+  - **Then the black one** (user: "Use the black 1911 model"):
+    `SK_P1911` on all four meshes, `MagazineMesh` `pistol1911_mag`; the
+    shared skeleton keeps the animation, sockets and grips. Compiled, saved,
+    binaries checked.
+- **Fitted magazine** (user: "the 1911 does not have a mag in by default";
+  "apply and run"). The black 1911's mesh has no magazine. The kit's
+  Blueprint fitted `pistol1911_mag` at `clipSocket` instead.
+  - **New:** `AWeaponBase::bShowMagazineMesh`, weapon-wide and off by
+    default. `FitMagazine` seats `MagazineMesh` at the magazine socket at
+    `BeginPlay`: a runtime `UStaticMeshComponent`, one per mesh for duals.
+    `SetMagazineHidden` hides and shows it with the bone.
+  - **Build:** rebuilt via the script (34 s); bridge up, `list_toolsets` OK;
+    DLL 22:50:16 is newer than the source (22:48:49).
+  - **Bridge:** ticked on `BP_Pistol`, `BP_DualPistols` and
+    `BP_Pistol_EnemyOnly`; compiled, saved.
+  - **Not tested.**
+- **Lowered pistol grip** (user: "when using one handed pistols and not
+  raised. The right hand is not using the gunhold"; "apply and run").
+  - **Cause:** a lowered pistol plays Lyra's unarmed idle and jog, which
+    have an open right hand, and the finger layer only applied grip styles
+    that have their own pose.
+  - **Fix:** `LoweredPistolGripPose` on the anim instance;
+    `UpdateRightHandGrip` plays it while a pistol hold is down and not
+    reloading. Set in `ABP_Player` to `MM_Pistol_Idle_Hipfire` (bridge;
+    compiled, saved).
+- **Slots and the launcher** (user: "Rifles are on selection 5 on the weapon
+  wheel and keys"; "move snipers to 6"; the launcher out "completely" but "I
+  did not want you to remove the grenade launcher BPs and code").
+  - **Slots:** `BP_CloseRangeRifle` 4 → 5, `BP_BattleRifle` 5 → 6 (bridge;
+    compiled, saved). The list of all weapons confirmed no other rifles or
+    snipers.
+  - **Launcher:** nothing gives it out, so it's out of the game as it
+    stands, with nothing deleted. A deletion plan was proposed and dropped.
+    Hand grenades are unchanged.
+  - **Comments:** `WeaponSlot` and `NumSegments` updated.
+- **Build:** one rebuild for both (22.8 s). The script stopped before opening
+  the editor: `Select-Object -First` ends a PowerShell 5.1 pipeline and its
+  script. A rerun built nothing and opened it. Bridge up, `list_toolsets`
+  OK; DLL 23:20:28 is newer than the source (23:19:59). Restart the editor
+  before testing the grip pose: it's an object reference set over the
+  bridge.
+- **Restarted** ("run the script"; nothing to build) **and tested** (user):
+  "grip works, slots work".
+- **Fitted magazine tested** (user): "mag fitted works".
+- **Wheel icons fill their wedge** (user: "make the weapon icon as big as
+  possible without going out of the section … not set. its based on what
+  the icon is"; "apply and run").
+  - **Change:** `UWeaponWheelWidget::FitIconHeight` fits each icon to its
+    own wedge at its own proportions: the ring 165–295, a 56° wedge, a 6 px
+    margin, and a dual pair's spread counted. `IconMaxWidth` /
+    `IconMaxHeight` and the shared height are gone.
+  - **Expected sizes:** flat top and bottom wedges much bigger; on the
+    diagonal sides, a rifle about 116 × 33 and a pistol about 96 × 69.
+  - **Build:** rebuilt (17 s); DLL 23:49:28 is newer than the source
+    (23:48:54); bridge up, `list_toolsets` OK. No Blueprint change needed.
+  - **Not tested.**
+- **Wheel icons, handgun scale** (user: "The pistols are rendering too big
+  right now. and the duals are mushed together too much … allow the weapons
+  to go out of the section BUT, keep the handgun to fit nicely in the frame,
+  then use that scale with everything else like before"; "apply and run").
+  - **One height again:** the carried handguns' fit in their wedge ×
+    `HandgunFill` 0.8 (`SharedIconHeight`; kept when no handgun is carried).
+    Long guns may overrun their wedge.
+  - **Duals:** `DualIconOffset` (pixels) became `DualIconSpread` (0.3, 0.25
+    of the height). That's the same look as the (10, 8) the user approved
+    at about 31 px.
+  - **Build:** rebuilt (19 s); DLL 23:59:21 is newer than the source
+    (23:58:44); bridge up, `list_toolsets` OK.
+  - **Not tested.**
+- **Dual icon separation** (2026-10-27, user: "more separation for the duals,
+  where the top left corner of one is the center of the other"; "apply and
+  run").
+  - **Change:** `DualIconSpread` is now a fraction of the icon's own width
+    and height, default (0.5, 0.5). The offset is `DualIconSpread * IconSize`,
+    with `IconSize` = (`SharedIconHeight` × aspect, `SharedIconHeight`).
+  - **Build:** rebuilt (18 s); DLL 00:03:20 is newer than the source
+    (00:02:55); bridge up, `list_toolsets` OK.
+  - **Tested (user):** "duals look good, wheel works".
+- **Floating drops** (user, with a screenshot of a dropped Mossberg hanging
+  above the floor: "the new shotgun and 1911 drops, they both end up like
+  this sometimes"; "apply and run").
+  - **Cause:** `AWeaponDrop::Launch` sized its box with
+    `MeshComponent->CalcBounds`, which can come from the physics asset. Both
+    guns have auto-generated capsule bodies; the silver guns, which drop
+    fine, have boxes. So the box came out bigger than the gun, which hung
+    inside it.
+  - **Fix:** the box now uses `USkeletalMesh::GetImportedBounds()`.
+  - **Build:** rebuilt (16 s); DLL 00:09:48 is newer than the source
+    (00:09:20); bridge up.
+  - **Bridge read:** both meshes' own bounds are tight, with no extensions.
+    The physics bodies can't be read over the bridge.
+  - **Not tested.**
+  - **Noted:** dropped and picked-up 1911s show no magazine, because the
+    fitted one is on the weapon actor. Offered, not built.
+  - **Sockets:** muzzle and magazine use the kit's skeleton sockets,
+    `muzzle_socket` and `clipSocket`. There's no ejection socket yet, so
+    `AmmoEject` is the user's to add.
+  - **Grip:** z −2 → +2.5, a starting point scaled from the Beretta's tuning.
+    The 1911's root sits ~4 cm higher in the gun than `Pistols_A`'s; same
+    axes.
+  - **Built:** compiled, saved; the binaries no longer mention `Pistols_A`,
+    `Fire_Pistol_W` or `/Game/M1911`.
+  - **Not swappable over the bridge:** notifies can't be read, so the kit's
+    PlaySound notify still sounds the shot. Details in the spec, *The .45s
+    on the 1911*.
+- **Old M1911 pack deleted** (user: "delete that so dereference any thing
+  using those assets"). `/Game/M1911/` held 31 assets: a rigged and an
+  unrigged M1911, its magazine and .45 round, textures, and a demo map.
+  - **Only users:** the three .45 Blueprints, via `MagazineMesh` (found by a
+    disk grep and by the asset registry's referencers check).
+  - **Deleted** with `AssetTools.delete`; the folder is gone on disk and
+    git shows 31 deletions (the rigged mesh's uncommitted socket edits go
+    with it).
+- **Docs repair.** Four stray `$1` lines, two in the spec and two here, came
+  from earlier perl swaps that wrote a literal `$1` in place of the matched
+  line. Each had dropped one line; all four were restored from the session's
+  backups:
+  - the M4 hatch bullet's ending;
+  - "Not in scope: a fresh magazine in the hand";
+  - the magazine-drops entry's ending;
+  - the GDD note.
 
 ### ▶ RESUME HERE
 **A. Next up**
@@ -414,17 +590,34 @@
    import one gun at a time (skeletal, +X barrel,
    moving parts as bones) — sockets and grip offsets are yours, Blueprints
    and wiring Claude's.
-5. **Fire notifies (feedback standard, plan item 33):** on `Fire_Pistol_W`
-   (.45s, enemy pistol), `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
+5. **Fire notifies (feedback standard, plan item 33):** on
+   `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
    `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
    Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
    Fire notify and no flash. Then test every gun: one shot sound, one flash.
-6. **M4 hatch** (`b_gun_shelleject_hatch`): skeleton editing tool or an M4
-   fire animation.
+6. **Eject notifies (user):** a Weapon Sound notify set to **Eject** on
+   `Mossberg-500_Pump` (as the pump comes back) and the M4, 9mm and MAC fire
+   animations (slide/bolt fully back; on the MAC before ~0.05 s). Not the
+   revolver. Test: one casing per shot, at the animated moment.
 7. **Deferred (user): prone on the back** after a shootdodge — the left hand
    can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
 8. **New long guns:** calibrate and tick `bLockLeftHandRotation`
    (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
+9. **The 1911 .45s (user).** On `SK_P1911_M_Skeleton`:
+   - add an `AmmoEject` socket at the slide's ejection port;
+   - check that `muzzle_socket` points down the barrel, and that the dropped
+     `pistol1911_mag` lines up at `clipSocket`.
+
+   On `Anim_P1911_M_Shot`:
+   - swap the kit's PlaySound notify for a Weapon Sound **Fire**, plus
+     **Eject** as the slide comes back;
+   - decide which shot sound: `FireSound` (`PistolA_Fire_Cue`) or the
+     kit's `pistol_1911_shot_Cue`.
+
+   Then tune the grips in PIE (single, dual, enemy), and test the slide, the
+   casing, the fitted magazine (`bShowMagazineMesh`; rotate `clipSocket` if it
+   sits wrong), the magazine drop and `mag_c`. Optional: `45_shell` as the .45
+   casing.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked

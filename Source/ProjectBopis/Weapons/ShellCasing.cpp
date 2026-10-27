@@ -40,7 +40,7 @@ void AShellCasing::BeginPlay()
 }
 
 void AShellCasing::Launch(UStaticMesh* Mesh, float Scale, USoundBase* InImpactSound, const FVector& Velocity,
-	const FVector& AngularVelocityDegrees, float LifeSpan)
+	const FVector& AngularVelocityDegrees, float LifeSpan, bool bMagazine)
 {
 	MeshComponent->SetStaticMesh(Mesh);
 	MeshComponent->SetRelativeScale3D(FVector(Scale));
@@ -53,6 +53,11 @@ void AShellCasing::Launch(UStaticMesh* Mesh, float Scale, USoundBase* InImpactSo
 	{
 		Body->SetBoxExtent(LocalBox.GetExtent().ComponentMax(FVector(0.3f)));
 		MeshComponent->SetRelativeLocation(-LocalBox.GetCenter());
+
+		// Keep the mesh where it was spawned — its pivot on the spawn point, as a socket preview
+		// shows it — by moving the body to its centre.
+		SetActorLocation(GetActorTransform().TransformPosition(LocalBox.GetCenter()), false, nullptr,
+			ETeleportType::TeleportPhysics);
 	}
 
 	Body->SetPhysicsLinearVelocity(Velocity);
@@ -61,7 +66,7 @@ void AShellCasing::Launch(UStaticMesh* Mesh, float Scale, USoundBase* InImpactSo
 
 	if (UShellCasingSubsystem* CasingSubsystem = GetWorld()->GetSubsystem<UShellCasingSubsystem>())
 	{
-		CasingSubsystem->Register(this);
+		CasingSubsystem->Register(this, bMagazine);
 	}
 }
 
@@ -78,17 +83,20 @@ void AShellCasing::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 	}
 }
 
-void UShellCasingSubsystem::Register(AShellCasing* Casing)
+void UShellCasingSubsystem::Register(AShellCasing* Casing, bool bMagazine)
 {
-	Casings.RemoveAll([](const TWeakObjectPtr<AShellCasing>& Entry) { return !Entry.IsValid(); });
-	Casings.Add(Casing);
+	TArray<TWeakObjectPtr<AShellCasing>>& List = bMagazine ? Magazines : Casings;
+	const int32 Max = bMagazine ? MaxMagazines : MaxCasings;
 
-	while (Casings.Num() > MaxCasings)
+	List.RemoveAll([](const TWeakObjectPtr<AShellCasing>& Entry) { return !Entry.IsValid(); });
+	List.Add(Casing);
+
+	while (List.Num() > Max)
 	{
-		if (AShellCasing* Oldest = Casings[0].Get())
+		if (AShellCasing* Oldest = List[0].Get())
 		{
 			Oldest->Destroy();
 		}
-		Casings.RemoveAt(0);
+		List.RemoveAt(0);
 	}
 }

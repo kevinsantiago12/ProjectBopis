@@ -13,7 +13,7 @@ void UAnimNotify_WeaponSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
 	// On a gun's own animation: that gun, and the hand whose mesh is playing it.
 	if (AWeaponBase* Weapon = Cast<AWeaponBase>(Owner))
 	{
-		Weapon->PlayWeaponSound(Sound, MeshComp == Weapon->GetOffhandMesh());
+		Weapon->PlayWeaponEvent(Sound, MeshComp == Weapon->GetOffhandMesh());
 		return;
 	}
 
@@ -22,7 +22,7 @@ void UAnimNotify_WeaponSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
 	const UWeaponHolderComponent* Holder = Character ? Character->GetWeaponHolder() : nullptr;
 	if (AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr)
 	{
-		Weapon->PlayWeaponSound(Sound, bOffhand);
+		Weapon->PlayWeaponEvent(Sound, bOffhand);
 	}
 }
 

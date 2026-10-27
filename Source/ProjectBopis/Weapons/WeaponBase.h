@@ -14,6 +14,7 @@ class AProjectileBase;
 class UWeaponHolderComponent;
 class UImpactEffectsData;
 class UStaticMesh;
+class UStaticMeshComponent;
 class UTexture2D;
 
 /** How enemies fire a weapon: a burst of shots at a set spacing, then a pause. */
@@ -137,7 +138,10 @@ enum class EWeaponSound : uint8
 	/** One shell, round or speedloader going in. */
 	RoundIn,
 	Pump,
-	Equip
+	Equip,
+	/** No sound: throws the spent casing. On a gun's fire animation it times the casing to
+	    the action (and replaces the ejection from code — see bFireAnimationEjects). */
+	Eject
 };
 
 UCLASS()
@@ -209,6 +213,10 @@ public:
 	    Silent if the weapon has no sound for it. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon|Sounds")
 	void PlayWeaponSound(EWeaponSound Sound, bool bOffhand = false);
+
+	/** A notify's moment in the weapon's handling (the Weapon Sound notify): plays its sound;
+	    Mag Out also drops the magazine, Mag In puts the gun's own back. */
+	void PlayWeaponEvent(EWeaponSound Event, bool bOffhand = false);
 	FVector GetGripLocationOffset() const { return GripLocationOffset; }
 	FRotator GetGripRotationOffset() const { return GripRotationOffset; }
 	bool LocksLeftHandRotation() const { return bLockLeftHandRotation; }
@@ -342,7 +350,8 @@ protected:
 
 	/** Number key that selects this weapon (Max Payne style categories). Weapons that share
 	    a slot are cycled by pressing the key again, in pickup order. 2 pistols, 3 shotguns,
-	    4 SMGs and rifles, 5 sniper; 1 is kept free for melee. */
+	    4 SMGs, 5 rifles, 6 snipers (and the launcher, out of the game for now); 1 is kept
+	    free for melee. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "1", ClampMax = "9"))
 	int32 WeaponSlot = 2;
 
@@ -544,6 +553,27 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
 	TObjectPtr<USoundBase> CasingImpactSound;
 
+	/** Dropped at the reload's Mag Out from MagazineSocketName, and the bone that socket sits on
+	    (the gun's own magazine) is hidden until Mag In. None: nothing drops (tube-fed guns, the
+	    revolver, the launcher). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Magazine")
+	TObjectPtr<UStaticMesh> MagazineMesh;
+
+	/** On the gun's magazine bone, placed so MagazineMesh lines up with the gun's magazine. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Magazine")
+	FName MagazineSocketName = TEXT("Magazine");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Magazine")
+	TObjectPtr<USoundBase> MagazineImpactSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Magazine", meta = (ClampMin = "0.1"))
+	float MagazineLifeSpan = 30.0f;
+
+	/** For a gun whose mesh has no magazine of its own (the black 1911): MagazineMesh is fitted into
+	    the gun at MagazineSocketName, and hidden and shown with the reload like a magazine bone. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Magazine")
+	bool bShowMagazineMesh = false;
+
 	/** The cone a shot goes out in, in degrees. Max Payne's guns are accurate: keep it small. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Accuracy", meta = (ClampMin = "0.0"))
 	float Spread = 0.5f;
@@ -628,6 +658,25 @@ protected:
 
 	/** Throws one spent casing from the ejection port of the main or off-hand gun. */
 	void EjectCasing(bool bOffhand);
+
+	void DropMagazine(bool bOffhand);
+	/** Shows or hides a mesh's own magazine: the bone MagazineSocketName sits on (never the root),
+	    and its fitted MagazineMesh if bShowMagazineMesh. */
+	void SetMagazineHidden(USkeletalMeshComponent* Mesh, bool bHide);
+
+	/** MagazineMesh seated in a mesh at MagazineSocketName (bShowMagazineMesh); null if it can't be. */
+	UStaticMeshComponent* FitMagazine(USkeletalMeshComponent* Mesh);
+
+	/** The magazines bShowMagazineMesh fits into the main and off-hand guns. */
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> FittedMagazine;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> OffhandFittedMagazine;
+
+	/** The fire animation carries an Eject notify, so the casing comes from it, not from Fire().
+	    Found once at BeginPlay. */
+	bool bFireAnimationEjects = false;
 
 	void FinishReload();
 

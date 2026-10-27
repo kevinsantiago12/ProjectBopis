@@ -9,12 +9,14 @@
 #include "Weapons/WeaponHolderComponent.h"
 #include "Weapons/ImpactEffectsData.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Weapons/ShellCasing.h"
+#include "Weapons/AnimNotify_WeaponSound.h"
 #include "Enemies/EnemyBase.h"
 #include "EngineUtils.h"
 
@@ -125,6 +127,8 @@ void AWeaponBase::FinishReload()
 	CurrentAmmoInMagazine += TakeReserve(Needed);
 
 	bIsReloading = false;
+	SetMagazineHidden(WeaponMesh, false);
+	SetMagazineHidden(OffhandMesh, false);
 }
 
 void AWeaponBase::CancelReload()
@@ -136,6 +140,8 @@ void AWeaponBase::CancelReload()
 
 	GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
 	bIsReloading = false;
+	SetMagazineHidden(WeaponMesh, false);
+	SetMagazineHidden(OffhandMesh, false);
 }
 
 float AWeaponBase::GetReloadProgress() const
@@ -271,7 +277,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	TimeSinceLastShot = 0.0f;
 
 	// The spent casing: out with the shot, or after a delay (a pump-action racks first).
-	if (CasingMesh)
+	if (CasingMesh && !bFireAnimationEjects)
 	{
 		const bool bOffhand = IsOffhandNext();
 		if (CasingEjectDelay > 0.0f)
@@ -418,6 +424,29 @@ void AWeaponBase::BeginPlay()
 	// Not in the constructor — MagazineSize is a per-Blueprint default and isn't
 	// applied yet at construction time.
 	CurrentAmmoInMagazine = MagazineSize;
+
+	// A fire animation with an Eject notify times the casing itself.
+	if (FireAnimation)
+	{
+		for (const FAnimNotifyEvent& Event : FireAnimation->Notifies)
+		{
+			const UAnimNotify_WeaponSound* WeaponNotify = Cast<UAnimNotify_WeaponSound>(Event.Notify);
+			if (WeaponNotify && WeaponNotify->Sound == EWeaponSound::Eject)
+			{
+				bFireAnimationEjects = true;
+				break;
+			}
+		}
+	}
+
+	if (bShowMagazineMesh)
+	{
+		FittedMagazine = FitMagazine(WeaponMesh);
+		if (bDualWield)
+		{
+			OffhandFittedMagazine = FitMagazine(OffhandMesh);
+		}
+	}
 }
 
 int32 AWeaponBase::GetReserveAmmo() const
@@ -479,6 +508,98 @@ void AWeaponBase::EjectCasing(bool bOffhand)
 	}
 }
 
+void AWeaponBase::PlayWeaponEvent(EWeaponSound Event, bool bOffhand)
+{
+	PlayWeaponSound(Event, bOffhand);
+
+	if (Event == EWeaponSound::MagOut)
+	{
+		DropMagazine(bOffhand);
+	}
+	else if (Event == EWeaponSound::MagIn)
+	{
+		SetMagazineHidden((bOffhand && OffhandMesh) ? OffhandMesh.Get() : WeaponMesh.Get(), false);
+	}
+	else if (Event == EWeaponSound::Eject)
+	{
+		EjectCasing(bOffhand);
+	}
+}
+
+void AWeaponBase::DropMagazine(bool bOffhand)
+{
+	USkeletalMeshComponent* Mesh = (bOffhand && OffhandMesh) ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (!MagazineMesh || !Mesh || !Mesh->DoesSocketExist(MagazineSocketName))
+	{
+		return;
+	}
+
+	// Out of the well as it sat in the gun, at the gun's scale, carried along with the shooter,
+	// with a slow tumble as it falls.
+	const FTransform Socket = Mesh->GetSocketTransform(MagazineSocketName);
+	const FVector Velocity = GetOwner() ? GetOwner()->GetVelocity() : FVector::ZeroVector;
+	const FVector Spin = FMath::VRand() * 120.0f;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AShellCasing* Magazine = GetWorld()->SpawnActor<AShellCasing>(AShellCasing::StaticClass(),
+		Socket.GetLocation(), Socket.Rotator(), Params))
+	{
+		Magazine->Launch(MagazineMesh, Socket.GetScale3D().X, MagazineImpactSound, Velocity, Spin,
+			MagazineLifeSpan, true);
+	}
+
+	SetMagazineHidden(Mesh, true);
+}
+
+void AWeaponBase::SetMagazineHidden(USkeletalMeshComponent* Mesh, bool bHide)
+{
+	if (!Mesh || !MagazineMesh || !Mesh->DoesSocketExist(MagazineSocketName))
+	{
+		return;
+	}
+
+	// A fitted magazine (bShowMagazineMesh) comes and goes with its gun's.
+	UStaticMeshComponent* Fitted = (Mesh == OffhandMesh) ? OffhandFittedMagazine.Get() : FittedMagazine.Get();
+	if (Fitted)
+	{
+		Fitted->SetHiddenInGame(bHide);
+	}
+
+	// The gun's own magazine is the bone the socket sits on — never the root, the whole gun.
+	const FName Bone = Mesh->GetSocketBoneName(MagazineSocketName);
+	if (Mesh->GetBoneIndex(Bone) <= 0)
+	{
+		return;
+	}
+
+	if (bHide)
+	{
+		Mesh->HideBoneByName(Bone, PBO_None);
+	}
+	else
+	{
+		Mesh->UnHideBoneByName(Bone);
+	}
+}
+
+UStaticMeshComponent* AWeaponBase::FitMagazine(USkeletalMeshComponent* Mesh)
+{
+	if (!MagazineMesh || !Mesh || !Mesh->DoesSocketExist(MagazineSocketName))
+	{
+		return nullptr;
+	}
+
+	// Seated on the socket, so the loose one DropMagazine lets go starts exactly where this sat.
+	UStaticMeshComponent* Magazine = NewObject<UStaticMeshComponent>(this);
+	Magazine->SetStaticMesh(MagazineMesh);
+	Magazine->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Magazine->SetupAttachment(Mesh, MagazineSocketName);
+	Magazine->RegisterComponent();
+	return Magazine;
+}
+
 USkeletalMeshComponent* AWeaponBase::GetFiringMesh() const
 {
 	return IsOffhandNext() ? OffhandMesh.Get() : WeaponMesh.Get();
@@ -510,6 +631,7 @@ USoundBase* AWeaponBase::GetSound(EWeaponSound Sound) const
 	case EWeaponSound::RoundIn: return RoundInSound;
 	case EWeaponSound::Pump:    return PumpSound;
 	case EWeaponSound::Equip:   return EquipSound;
+	case EWeaponSound::Eject:   return nullptr; // no sound of its own — the action's is Pump/Chamber
 	}
 	return nullptr;
 }

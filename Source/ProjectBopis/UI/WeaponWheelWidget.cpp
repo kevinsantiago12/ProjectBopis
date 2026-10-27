@@ -224,20 +224,23 @@ void UWeaponWheelWidget::RefreshWidgets()
 	const int32 Hovered = GetHoveredIndex();
 	const AWeaponBase* Equipped = GetEquippedWeapon();
 
-	// One height for every icon: the most that lets each carried icon fit IconMaxWidth (a dual
-	// pair counting its spread), capped at IconMaxHeight. All carried weapons count, not just
-	// the ones showing, so cycling a type doesn't resize the wheel.
-	float IconHeight = IconMaxHeight;
-	for (const TArray<TWeakObjectPtr<AWeaponBase>>& Segment : Segments)
+	// One height for every icon, set by the handguns: the most that lets each carried handgun
+	// fill HandgunFill of its wedge, so cycling them doesn't resize the wheel. Longer guns may
+	// run past their wedge at this height. With no handgun carried, the last height holds.
+	const int32 HandgunIndex = HandgunSlot - 1;
+	if (Segments.IsValidIndex(HandgunIndex))
 	{
-		for (const TWeakObjectPtr<AWeaponBase>& Carried : Segment)
+		float Fitted = TNumericLimits<float>::Max();
+		for (const TWeakObjectPtr<AWeaponBase>& Carried : Segments[HandgunIndex])
 		{
-			const AWeaponBase* Weapon = Carried.Get();
-			if (const UTexture2D* Icon = Weapon ? Weapon->GetIcon() : nullptr)
+			if (const UTexture2D* Icon = Carried.IsValid() ? Carried->GetIcon() : nullptr)
 			{
-				const float Width = IconMaxWidth - (Weapon->IsDualWield() ? FMath::Abs(DualIconOffset.X) : 0.0f);
-				IconHeight = FMath::Min(IconHeight, FMath::Max(1.0f, Width) / IconAspect(Icon));
+				Fitted = FMath::Min(Fitted, FitIconHeight(HandgunIndex, IconAspect(Icon)));
 			}
+		}
+		if (Fitted < TNumericLimits<float>::Max())
+		{
+			SharedIconHeight = Fitted * HandgunFill;
 		}
 	}
 
@@ -260,15 +263,17 @@ void UWeaponWheelWidget::RefreshWidgets()
 		UTexture2D* Icon = Weapon ? Weapon->GetIcon() : nullptr;
 		UImage* DualImage = IconDualImages.IsValidIndex(Index) ? IconDualImages[Index].Get() : nullptr;
 		const bool bDual = Icon && DualImage && Weapon->IsDualWield();
+		const FVector2D IconSize = Icon ? FVector2D(SharedIconHeight * IconAspect(Icon), SharedIconHeight) : FVector2D::ZeroVector;
+		const FVector2D DualOffset = DualIconSpread * IconSize;
 		if (UImage* IconImage = IconImages.IsValidIndex(Index) ? IconImages[Index].Get() : nullptr)
 		{
-			ShowIcon(IconImage, Icon, IconHeight);
-			IconImage->SetRenderTranslation(bDual ? -DualIconOffset * 0.5 : FVector2D::ZeroVector);
+			ShowIcon(IconImage, Icon, SharedIconHeight);
+			IconImage->SetRenderTranslation(bDual ? -DualOffset * 0.5 : FVector2D::ZeroVector);
 		}
 		if (DualImage)
 		{
-			ShowIcon(DualImage, bDual ? Icon : nullptr, IconHeight);
-			DualImage->SetRenderTranslation(DualIconOffset * 0.5);
+			ShowIcon(DualImage, bDual ? Icon : nullptr, SharedIconHeight);
+			DualImage->SetRenderTranslation(DualOffset * 0.5);
 		}
 
 		if (UTextBlock* Count = CountTexts.IsValidIndex(Index) ? CountTexts[Index].Get() : nullptr)
@@ -307,4 +312,53 @@ void UWeaponWheelWidget::ShowIcon(UImage* Image, UTexture2D* Icon, float Height)
 		Image->SetBrush(Brush);   // does nothing when the brush is unchanged
 	}
 	Image->SetVisibility(Icon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+}
+
+float UWeaponWheelWidget::FitIconHeight(int32 Index, float Aspect) const
+{
+	// The wedge in screen space (+Y down): the icon's spot at Radius on its centre line, and the
+	// directions of its two edges.
+	const float Angle = FMath::DegreesToRadians(GetSegmentAngleDegrees(Index));
+	const float HalfArc = FMath::DegreesToRadians(SegmentArcDegrees * 0.5f);
+	const FVector2D Centre = FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius;
+	const FVector2D EdgeA(FMath::Cos(Angle - HalfArc), FMath::Sin(Angle - HalfArc));
+	const FVector2D EdgeB(FMath::Cos(Angle + HalfArc), FMath::Sin(Angle + HalfArc));
+
+	// Whether an icon this tall fits: every corner inside the outer rim and between the two
+	// edges (the wedge is convex there), and its point nearest the centre outside the inner rim.
+	auto Fits = [&](float Height)
+	{
+		const FVector2D Half = FVector2D(Height * Aspect, Height) * 0.5;
+		for (const FVector2D& Sign : { FVector2D(-1.0, -1.0), FVector2D(1.0, -1.0), FVector2D(-1.0, 1.0), FVector2D(1.0, 1.0) })
+		{
+			const FVector2D Corner = Centre + Half * Sign;
+			if (Corner.Size() > RingOuterRadius - IconMargin
+				|| FVector2D::CrossProduct(EdgeA, Corner) < IconMargin
+				|| FVector2D::CrossProduct(Corner, EdgeB) < IconMargin)
+			{
+				return false;
+			}
+		}
+		const FVector2D Nearest(FMath::Clamp(0.0, Centre.X - Half.X, Centre.X + Half.X),
+			FMath::Clamp(0.0, Centre.Y - Half.Y, Centre.Y + Half.Y));
+		return Nearest.Size() >= RingInnerRadius + IconMargin;
+	};
+
+	// A bigger icon on the same spot always covers a smaller one, so halve the gap between too
+	// small and too big until it's under half a pixel.
+	float Low = 0.0f;
+	float High = RingOuterRadius * 2.0f;
+	while (High - Low > 0.5f)
+	{
+		const float Mid = (Low + High) * 0.5f;
+		if (Fits(Mid))
+		{
+			Low = Mid;
+		}
+		else
+		{
+			High = Mid;
+		}
+	}
+	return Low;
 }
