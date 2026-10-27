@@ -416,53 +416,244 @@ or later.
 
 ## Rendering target
 
-**Decided 2026-08-31 (6): Halo 1–2 fidelity. Baked lighting, minimal dynamic
-lighting, fun over fidelity.** The reasoning is in the design document; this
-section covers what it asks of the project.
+**Revised 2026-10-27 (user): Xbox 360 / Max Payne 3 fidelity, 60 fps.** The
+targets are in the design notes (Part 4, *Fidelity and performance
+targets*): the **GTX 1650 at 1080p High 60** is the real target; the **Steam
+Deck LCD at 800p native, High, 60** is the test machine (the only hardware
+available) and the baseline everything is tuned on; **Low** serves the GTX
+1050 Ti (900p 60) and 750 Ti (720p 30), estimated and untested. Supersedes
+the Halo 1–2 target of 2026-08-31.
 
-### Current state vs. target
+**One renderer on every tier:** baked lighting, no Lumen, no Nanite, no ray
+tracing. None of the target GPUs has ray-tracing hardware, Lumen at 1080p60
+doesn't fit a 1650, and one lighting model means one look to light and
+art-direct. Tiers differ only in quality values.
 
-The project is still on UE5 defaults, which are the opposite of this target:
+**The Deck stands in for the 1650:** about 1.9× the Deck's GPU for 2× its
+pixels, so roughly the same cost per pixel. Leave headroom on the Deck
+(**GPU ≈ 13 ms at High, 800p**) because the 1650 can't be measured.
 
-| Setting | Current | Target | Note |
+### Renderer switch (step 1)
+
+| Setting | Now | Target | Note |
 |---|---|---|---|
-| `r.AllowStaticLighting` | `False` | `True` | **Nothing can bake lightmaps until this is True.** Off by default in UE5. |
-| `r.DynamicGlobalIlluminationMethod` | `1` (Lumen) | `0` (None) | GI comes from lightmaps instead. |
-| `r.ReflectionMethod` | `1` (Lumen) | Reflection captures | Era-appropriate and cheap. |
-| `r.RayTracing` | `True` | `False` | Unused once Lumen is off. |
-| `r.Nanite.ProjectEnabled` | `True` | Open question | See below. |
+| `r.DynamicGlobalIlluminationMethod` | `1` (Lumen) | `0` (none) | GI from lightmaps |
+| `r.ReflectionMethod` | `1` (Lumen) | `2` (screen space) | Captures everywhere; SSR quality from scalability (off on Low) |
+| `r.Lumen.HardwareRayTracing` | `True` | `False` | |
+| `r.RayTracing`, `…RayTracingProxies.ProjectEnabled`, `r.PathTracing` | `True` | `False` | |
+| `r.Shadow.Virtual.Enable` | `1` | `0` | Classic shadow maps (cascades for the sun) |
+| `r.Nanite.ProjectEnabled` | `True` | `False` | Nanite meshes fall back; they need real LODs |
+| `r.AllowStaticLighting` | `False` | `True` | Nothing can bake until it is; editor restart |
+| `r.GenerateMeshDistanceFields` | `True` | `False` | The blood chunks' Niagara collision moves to the depth buffer |
+| `r.AntiAliasingMethod` | `0` (none) | `2` (TAA) | TSR costs a few ms on the Deck; FXAA for the 750 Ti |
+| Kept, measured on the Deck | | | Substrate (on, blendable GBuffer), sky atmosphere, virtual textures (audit in step 4) |
+| Shader formats | DX12 SM6, DX11 SM5 | unchanged | DX11 covers the 750 Ti |
 
-### What switching actually costs
+**Applied 2026-10-27** (user: "go ahead"). The 11 lines were edited in
+`DefaultEngine.ini` and the editor restarted. About 4,000 shaders
+recompiled in about 3 minutes, and the log confirms the settings (ray
+tracing disabled, `r.Nanite.ProjectEnabled 0`, `r.AllowStaticLighting 1`,
+Lumen hardware ray tracing 0). Fallout:
+- **Nanite** was on for only 15 meshes:
+  - 10 `LevelPrototyping` greybox shapes (cubes, ramps, cylinders, plane,
+    doors);
+  - the Kamz demo's `SM_Cube`;
+  - `SM_TargetBaseMesh`;
+  - 3 in the unused `Content/Weapons`.
 
-- **`AllowStaticLighting` requires an editor restart** and changes how every
-  existing asset is lit. It is not a reversible toggle mid-session.
-- **Meshes need lightmap UVs.** Vendor content (`MilitaryWeapSilver`, and anything
-  migrated from Lyra) was authored for dynamic lighting and may not have a
-  second UV channel. Unreal can generate them on import, but quality varies.
-- **Levels need relighting and a light build.** The FirstPerson template map
-  is lit dynamically; it would need static lights and a bake.
-- **Nanite and baked lighting coexist awkwardly.** Nanite geometry supports
-  static lighting but not well, and Nanite mostly buys detail density that
-  this target doesn't want. Probably worth disabling, but it's a separate
-  call from the lighting one and shouldn't be bundled with it.
+  All are simple shapes whose fallback is the mesh itself, so nothing to do.
+- **Blood chunks:** `NS_ImpactBlood` → BloodChunks1 → Collision uses
+  **Distance Field**, now gone. Set it to **Depth Buffer** (user, Niagara
+  editor). That also lets chunks land on people.
+- **Levels:** both have one movable sun, a sky light, sky atmosphere,
+  volumetric clouds and height fog, with no reflection captures. Shade and
+  interiors are flat (an unoccluded sky ambient, screen-space AO only) until
+  step 3. The volumetric clouds are the main remaining cost; a static sky
+  replaces them.
 
-### Implications for gameplay work
+### Quality tiers (starting values, to be confirmed on the Deck)
 
-**Policy change 2026-10-09 (user): dynamic lights are allowed.** The user
-decides static vs dynamic **per case** as content is built, rather than
-defaulting everything to baked. Niagara works with either: particles are lit
-by whatever lighting exists, and baked lighting only constrains particles that
-emit light themselves.
+| | High (Deck, 1650, 1660 Super) | Low (1050 Ti, 750 Ti) |
+|---|---|---|
+| Texture cap | 2K | 1K |
+| Texture pool | ~2 GB | ~1 GB (~700 MB on the 750 Ti's 2 GB) |
+| Shadows | 2 cascades, 2048, ~40 m | 1 cascade, 1024, ~25 m |
+| Ambient occlusion | Full resolution | Half resolution or off |
+| Reflections | Captures + low-quality SSR if the Deck has room | Captures |
+| Anti-aliasing | TAA | TAA / FXAA |
+| Skin, effects, view distance | Full | Cheaper skin, fewer particles, shorter distance |
 
-Still the default stance: muzzle flashes and impacts carry their read
-through emissive materials and particles, which is also what the era did.
-Use a per-shot point light only where it earns the cost.
+A High setting that misses 60 on the Deck gets cut or moved to Low; the Deck
+doesn't get a lower frame rate. A Deck device profile picks High at native
+800p with a 60 fps lock (detected by Steam's `SteamDeck=1`); PCs start from
+the hardware benchmark, later a graphics menu.
 
-The 2002 setting is a good fit: fluorescent interiors, wet concrete and neon
-signage read on strong shapes and colour, which is exactly what baked
-lighting plus emissive materials does well. If enemy readability-at-a-glance
-survives reconsideration, it'll come from silhouette, costume and behaviour
-rather than glow.
+**Applied 2026-10-27 (step 2, "apply and run"):**
+- **`Config/DefaultScalability.ini`:** High = engine level 2, Low = level 0.
+  Only differences from `BaseScalability.ini` are listed; Medium and Epic
+  are the engine's own and aren't targets.
+  - **High:** `r.ShadowQuality` 3, 2 cascades (2048 is the engine's),
+    `r.Shadow.DistanceScale` 1.0, no volumetric fog; `r.SSR.Quality` 1; one
+    AO level (the bake carries the large-scale shading); texture pool
+    2000 MB.
+  - **Low:** keeps sun shadows (`r.ShadowQuality` 2, 1 cascade at 1024 —
+    the engine's Low turns them off); the tonemapper at 3 keeps grain and
+    vignette; textures one mip down (`r.Streaming.MipBias` 1, so 2K shows
+    as 1K), pool 1000 MB, anisotropy 2.
+  - Hard texture caps (smaller builds) come in step 4.
+- **Suns:** Dynamic Shadow Distance (movable) **4000** on both levels'
+  directional lights (user). That gives High 40 m and Low about 24 m (the
+  engine's 0.6 scale).
+- **`UBopisGameInstance`** (`GameInstanceClass` in `DefaultEngine.ini`).
+  On first launch, outside the editor (`GIsEditor`), it runs the hardware
+  benchmark and applies its pick; the first run is detected by
+  `GetLastCPUBenchmarkResult() < 0`. On the Steam Deck (`SteamDeck=1`, set
+  by Steam and passed through by Proton) it then sets level 2, 1280×800
+  fullscreen, a 60 fps cap and VSync. After that the player's settings
+  stand.
+- **Editor preview:** the editor defaults to Epic, which isn't tuned; set
+  Engine Scalability Settings to **High** to see the Deck and 1650 picture.
+
+**Characters on screen (user, 2026-10-27).**
+- **Fights:** at most **6 enemies** (`AEncounterDirector::MaxAlive` 6) plus
+  the player.
+- **Walk-around sections, with civilians you can interact with:** at most
+  **12 NPCs**, never during fights. That case has no combat AI, ragdolls
+  or effects, but 12 CC bodies' draw calls, shadows and animation. It needs
+  its own Deck test scene once it exists.
+
+**No level art yet.** The levels are greybox, so today's quiet GPU time
+(~12 ms on the Deck) is mostly fixed costs with almost no environment.
+Real level art has to fit in what's left, so the fixed costs come down
+first: the volumetric clouds, sun shadows (stationary + baked), SSR and AO.
+Re-measure when art arrives. The bake (step 3) is a pipeline test until
+then.
+
+**Native resolution, always (user, 2026-10-27: "a clean image 100% render
+than any post processing stuff that would try to fake good graphics").**
+The first Deck build rendered at **71%**. On first run the hardware
+benchmark sets `sg.ResolutionQuality` from the GPU index
+(`PerfIndexValues_ResolutionQuality` 50/71/87/100), separately from the
+quality levels, and our level-2 setting didn't touch it. Now
+`DefaultEngine.ini` `[SystemSettings]` has **`r.ScreenPercentage=100`**,
+which outranks the scalability value and any saved settings, on every
+machine including the Deck's saved 71%. No upscaling and no dynamic
+resolution: performance has to come from real cuts. Post effects:
+- **Off:** motion blur, lens flare, auto exposure (project defaults).
+- **On:** bloom, one-level SSAO, low-quality SSR on High, the tonemapper.
+- **TAA** softens the image. FXAA (sharper, some shimmer) or none are the
+  alternatives: the user's call.
+
+**CPU:** game thread ≤ ~14 ms on the Deck (its 4-core CPU is likely the real
+limit at 60); ≤ 8 ms on the 1660 Super's class for 120. Enemy count,
+animation update rates (Animation Budget Allocator) and the ragdoll cap are
+tuned against it.
+
+### Plan (ProjectPlan item 34)
+1. Renderer switch (above), then fix the fallout: Nanite meshes, blood
+   chunks' collision, unlit levels until step 3.
+2. Scalability: High and Low values, the Deck device profile.
+3. Lighting: lightmap UVs, static lights (dynamic per case), GPU Lightmass
+   bake of `Lvl_Sandbox` and `Lvl_Linear`, reflection captures, **capsule
+   shadows** for characters.
+4. Content budgets: CC characters (2–3 LODs, fewer materials, 1K/2K
+   textures, cheaper skin), enemy animation budget, ragdoll cap, effect
+   overdraw, Nanite/VT audit; guns keep their budget.
+5. Deck build: a Windows build run through Proton, PSO precaching + a
+   bundled PSO cache (no shader compiles mid-fight), a worst-case benchmark
+   map, `stat unit` / `stat gpu` / Unreal Insights. First build after step 2,
+   again after 3 and 4.
+
+### Deck test builds (step 5, from 2026-10-27)
+- **Packaging** (`DefaultGame.ini`, `ProjectPackagingSettings`):
+  - Development (console and `stat` readouts; Shipping strips them);
+  - pak + IoStore, compressed;
+  - **`MapsToCook`: `Lvl_Sandbox`, `Lvl_Linear` only**. Before, there were
+    no settings, so all 16 maps, vendor demos included, were cooked.
+  - The code loads nothing by path at runtime (only editor sprites), so
+    cooking from the maps is safe. Add any map that's opened by name.
+- **Build:** `RunUAT BuildCookRun -platform=Win64 -clientconfig=Development
+  -build -cook -stage -pak -iostore -compressed -archive`, archived to
+  `ProjectBopis_Builds/DeckTest/` beside the project (outside git).
+  Both shader sets cook (DX12 SM6, DX11 SM5). **Close the editor first.**
+  With it open, two things fail: the `-build` step refuses to rebuild the
+  editor binaries while Live Coding holds them ("Unable to build while Live
+  Coding is active"; `-nocompileeditor` skips that when they are current);
+  and the cook process loads the MCP bridge plugin, which can't bind port
+  8000 while the editor has it. The cooker fails the whole cook on that one
+  logged error, even with every package cooked (2026-10-27: 3,888 packages,
+  1 error).
+- **Shaders:** UE5's PSO precaching is on by default. Judge hitching on a
+  second run, since Proton keeps its own cache. A recorded, bundled PSO
+  cache comes before release.
+- **Getting it on the Deck:** Developer Mode on the Deck; Valve's SteamOS
+  Devkit Client on the PC, paired over the network. Upload the build's
+  `Windows` folder, Steam Play (Proton) on. **Start command
+  `ProjectBopis/Binaries/Win64/ProjectBopis.exe Lvl_Linear
+  -ExecCmds="stat fps,stat unit"`**, the real game binary. The
+  top-level `ProjectBopis.exe` is only a launcher that checks for the
+  Visual C++ 2015–2022 runtime the Windows way and stops ("redistributable
+  required") under Proton, which supplies those DLLs itself (2026-10-27).
+  The build doesn't include UE's prerequisite installer; add it
+  (packaging: include prerequisites) only if the real binary turns out to
+  lack the DLLs.
+- **Reading it:**
+  - First check that the game is fullscreen 1280×800 and capped at 60, so
+    the Deck detection fired.
+  - Then note Frame / Game / GPU ms at three moments: walking, the biggest
+    fight, and slow-motion with a grenade and blood.
+  - Budgets: GPU ≤ ~13 ms, Game ≤ ~14 ms, Frame steady at 16.6.
+  - Note any stutters, first run against second.
+### First Deck measurement (2026-10-27)
+After step 2: High, 800p, the movable sun not yet baked, volumetric clouds
+still on. The build runs (via the real binary; see above).
+
+| | Measured | Budget |
+|---|---|---|
+| FPS | mostly 60; ~45 at level start/load; ~50 mid-fight, mostly right after a kill | 60 locked |
+| GPU | 12–20 ms | ≈ 13 |
+| Game | 8–18 ms | ≈ 14 |
+| Draw | 5–18 ms | — |
+
+- **GPU** is about on budget when quiet and over in fights; it needs the pass
+  breakdown.
+- **Game and Draw spike together after kills** (the user: "I have a feeling
+  the npc loading is hitching the fps"). Two suspects in the code:
+  1. **Respawns:** `AEncounterDirector::TrySpawnOne` brings in a
+     replacement 1–3 s after each death (`RespawnDelayMin`/`Max`), building
+     a CC character (body, apparel, weapon) in one frame, plus first-time
+     shader preparation for new outfit materials.
+  2. **The ragdoll start:** `ABopisCharacterBase::StartRagdoll` calls
+     `SetPhysicsAsset(RagdollPhysicsAsset, true)` at death, which rebuilds
+     every body and constraint of the CC body.
+- **Level start** is streaming plus first-use shaders; a bundled PSO cache
+  fixes that later.
+- **Next: an Unreal Insights trace** over Wi-Fi to confirm before fixing.
+  1. On the PC (192.168.1.43), run Unreal Insights or `UnrealTraceServer.exe
+     fork` (port 1981; allow it through the Windows firewall).
+  2. Add `-trace=default,gpu,loadtime -tracehost=192.168.1.43` to the Deck
+     start command.
+  3. Play: level start, a fight with several kills, slow motion with a
+     grenade. Then quit.
+  4. Claude exports the timings from the trace store
+     (`%LOCALAPPDATA%\UnrealEngine\Common\UnrealTrace\Store`) with Insights'
+     command line, and reads the spikes and GPU passes.
+- **Likely fixes,** depending on what the trace shows: spawn wave enemies
+  ahead (pooled or pre-spawned hidden at encounter start) or stagger and
+  preload them; keep one physics asset from the start instead of swapping
+  at death; for the GPU, step 3 (stationary sun, static sky) and shadow,
+  SSR and effects tuning.
+
+### Carried over from 2026-08-31
+- `AllowStaticLighting` needs an editor restart and changes how every asset
+  is lit; meshes need lightmap UVs (vendor content may lack a second UV
+  channel; Unreal can generate them, quality varies); levels need relighting
+  and a light build.
+- **Policy 2026-10-09 (user): dynamic lights are allowed**, decided per case.
+  Muzzle flashes and impacts read through emissive materials and particles; a
+  per-shot point light only where it earns it, never shadow-casting.
+- The 2002 setting suits it: fluorescent interiors, wet concrete and neon
+  read on strong shapes and colour.
 
 ---
 
@@ -915,7 +1106,19 @@ segment per carried weapon; replaced the same day.)*
   current weapon, kept between openings; `Open()` points each type at the
   equipped weapon where it has it. `CycleHovered(±1)` wraps, with
   `CycleRepeatDelay` 0.15 s so a held D-pad steps rather than spins.
-- **Pointing:** while open, `LookInput` feeds the wheel instead of the
+- **Pointing with the stick (2026-10-27, user: "the weapon wheel selection
+  on the right stick is not correct, its not going to where I am moving it
+  to").** The stick and mouse shared `LookInput` → `AddPointerDelta`,
+  which *adds* each frame's input: right for a mouse, wrong for a stick,
+  whose value is a direction — the pointer drifted on the sum. Now
+  `IA_Look` (the right stick) binds to **`StickLookInput`**, which on the
+  open pointer-mode wheel calls **`SetPointerFromStick`**: the pointer goes
+  to the rim in the stick's direction (`bFlipStickY`: on in C++, **off on
+  `WBP_WeaponWheel`** — the stick mapping already flips Y; user: "its
+  inverted up and down"), and a
+  stick pushed less than **`StickDeadZone`** (0.5) leaves it where it was,
+  so the choice holds as the stick springs back. `IA_MouseLook` keeps
+  `LookInput`. The rebinding after death is unchanged.- **Pointing (mouse):** while open, `LookInput` feeds the wheel instead of the
   camera — `AddPointerDelta` accumulates look input (mouse delta or stick
   value × `PointerScale` 10, Y flipped by `bFlipPointerY`) and clamps to the
   rim; inside `DeadZone` (0.3 × Radius) nothing is hovered.
@@ -970,7 +1173,7 @@ montages) and needs:
   magazine) — the pump code (`PumpBoneName`; it assumes the pump bone's
   parent has X along the barrel) and any gun-side reload animation need them.
 - **Budget** (provisional, 2026-10-25, until the deferred Steam Deck perf
-  test; third-person camera, Halo 1–2 fidelity): LOD0 **3–6k triangles** for
+  test; third-person camera; targets since 2026-10-27 in *Rendering target*): LOD0 **3–6k triangles** for
   pistols/SMGs, **6–12k** for long guns; LOD1 ~50%, LOD2 ~25%; 1 material
   (2 at most); one texture set, 2K long guns / 1K pistols and SMGs; ~5–15
   bones, rigid skinning. A dressed CC character is ~30k verts and 12 draw
@@ -1147,7 +1350,9 @@ and animations). Bridge, on `BP_Pistol`,
   (`pistol_1911_shot_Cue`), and notifies can't be read or edited over the
   bridge. Until the user swaps it for a Weapon Sound `Fire` (+ `Eject`)
   notify, the .45s sound the kit's cue, outside the weapon's sound slots;
-  after, `FireSound`.
+  after, `FireSound`. **Done and tested by the user (2026-10-27, "all
+  fine"):** the `AmmoEject` socket, the shot animation's Fire + Eject
+  notifies, the grips.
 - **`/Game/M1911/` deleted** (31 assets, `AssetTools.delete`) once the three
   Blueprints' `MagazineMesh` had moved off `NonRigged_M1911_Magazine` — the
   asset registry and the binaries both showed no other referencers.
@@ -2484,7 +2689,9 @@ owned, weapon + rounds if not, duals unlocked by a second single).
     far bigger than the gun, which then hung above the floor when the box
     landed on certain faces (user: "they both end up like this sometimes").
     Their own bounds are tight (Mossberg 4.6 × 112 × 19.6 cm, 1911
-    3.5 × 25 × 15.8; no bounds extensions);
+    3.5 × 25 × 15.8; no bounds extensions). **Tested (user, 2026-10-27):
+    "all fine".** Drops and pickups show the gun's mesh only, so a 1911
+    drop has no fitted magazine; offered, not wanted;
   - **settles** once its speed stays < `SettleSpeed` 20 for `SettleTime` 0.25 s
     in a row (after `MinFlightTime` 0.3 s), or at `MaxFlightTime` 3 s;
   - **ignores `ECC_PhysicsBody`**, so it never comes to rest on a ragdoll;

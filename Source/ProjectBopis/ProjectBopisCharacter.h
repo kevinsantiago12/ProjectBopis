@@ -293,6 +293,9 @@ protected:
 	/** Called from Input Actions for looking input */
 	void LookInput(const FInputActionValue& Value);
 
+	/** The right stick's look: as LookInput, except that the open wheel points where the stick points. */
+	void StickLookInput(const FInputActionValue& Value);
+
 	/** Handles aim inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoAim(float Yaw, float Pitch);

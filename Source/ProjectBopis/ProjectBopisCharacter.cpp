@@ -141,7 +141,7 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::MoveInput);
 
 		// Looking/Aiming
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::StickLookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::LookInput);
 
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &AProjectBopisCharacter::DoAimStart);
@@ -237,6 +237,20 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 	// pass the axis values to the aim input
 	DoAim(LookAxisVector.X, LookAxisVector.Y);
 
+}
+
+void AProjectBopisCharacter::StickLookInput(const FInputActionValue& Value)
+{
+	// A stick reports a direction, not movement: the held wheel takes it as where to point.
+	if (IsWeaponWheelOpen())
+	{
+		if (!WeaponWheel->IsKeyMode())
+		{
+			WeaponWheel->SetPointerFromStick(Value.Get<FVector2D>());
+		}
+		return;
+	}
+	LookInput(Value);
 }
 
 void AProjectBopisCharacter::DoAim(float Yaw, float Pitch)

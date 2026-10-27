@@ -455,6 +455,33 @@
     `SK_P1911` on all four meshes, `MagazineMesh` `pistol1911_mag`; the
     shared skeleton keeps the animation, sockets and grips. Compiled, saved,
     binaries checked.
+  - **Sockets:** muzzle and magazine use the kit's skeleton sockets,
+    `muzzle_socket` and `clipSocket`. There's no ejection socket yet, so
+    `AmmoEject` is the user's to add.
+  - **Grip:** z −2 → +2.5, a starting point scaled from the Beretta's tuning.
+    The 1911's root sits ~4 cm higher in the gun than `Pistols_A`'s; same
+    axes.
+  - **Built:** compiled, saved; the binaries no longer mention `Pistols_A`,
+    `Fire_Pistol_W` or `/Game/M1911`.
+  - **Not swappable over the bridge:** notifies can't be read, so the kit's
+    PlaySound notify still sounds the shot. Details in the spec, *The .45s
+    on the 1911*.
+- **Old M1911 pack deleted** (user: "delete that so dereference any thing
+  using those assets"). `/Game/M1911/` held 31 assets: a rigged and an
+  unrigged M1911, its magazine and .45 round, textures, and a demo map.
+  - **Only users:** the three .45 Blueprints, via `MagazineMesh` (found by a
+    disk grep and by the asset registry's referencers check).
+  - **Deleted** with `AssetTools.delete`; the folder is gone on disk and
+    git shows 31 deletions (the rigged mesh's uncommitted socket edits go
+    with it).
+- **Docs repair.** Four stray `$1` lines, two in the spec and two here, came
+  from earlier perl swaps that wrote a literal `$1` in place of the matched
+  line. Each had dropped one line; all four were restored from the session's
+  backups:
+  - the M4 hatch bullet's ending;
+  - "Not in scope: a fresh magazine in the hand";
+  - the magazine-drops entry's ending;
+  - the GDD note.
 - **Fitted magazine** (user: "the 1911 does not have a mag in by default";
   "apply and run"). The black 1911's mesh has no magazine. The kit's
   Blueprint fitted `pistol1911_mag` at `clipSocket` instead.
@@ -542,82 +569,204 @@
     (00:09:20); bridge up.
   - **Bridge read:** both meshes' own bounds are tight, with no extensions.
     The physics bodies can't be read over the bridge.
-  - **Not tested.**
+  - **Tested (user):** "all fine".
   - **Noted:** dropped and picked-up 1911s show no magazine, because the
-    fitted one is on the weapon actor. Offered, not built.
-  - **Sockets:** muzzle and magazine use the kit's skeleton sockets,
-    `muzzle_socket` and `clipSocket`. There's no ejection socket yet, so
-    `AmmoEject` is the user's to add.
-  - **Grip:** z −2 → +2.5, a starting point scaled from the Beretta's tuning.
-    The 1911's root sits ~4 cm higher in the gun than `Pistols_A`'s; same
-    axes.
-  - **Built:** compiled, saved; the binaries no longer mention `Pistols_A`,
-    `Fire_Pistol_W` or `/Game/M1911`.
-  - **Not swappable over the bridge:** notifies can't be read, so the kit's
-    PlaySound notify still sounds the shot. Details in the spec, *The .45s
-    on the 1911*.
-- **Old M1911 pack deleted** (user: "delete that so dereference any thing
-  using those assets"). `/Game/M1911/` held 31 assets: a rigged and an
-  unrigged M1911, its magazine and .45 round, textures, and a demo map.
-  - **Only users:** the three .45 Blueprints, via `MagazineMesh` (found by a
-    disk grep and by the asset registry's referencers check).
-  - **Deleted** with `AssetTools.delete`; the folder is gone on disk and
-    git shows 31 deletions (the rigged mesh's uncommitted socket edits go
-    with it).
-- **Docs repair.** Four stray `$1` lines, two in the spec and two here, came
-  from earlier perl swaps that wrote a literal `$1` in place of the matched
-  line. Each had dropped one line; all four were restored from the session's
-  backups:
-  - the M4 hatch bullet's ending;
-  - "Not in scope: a fresh magazine in the hand";
-  - the magazine-drops entry's ending;
-  - the GDD note.
+    fitted one is on the weapon actor. Offered, not built; the user's "all
+    fine" taken as not wanted.
+- **User items done and tested** ("all fine"): Eject notifies on the
+  Mossberg, M4, 9mm and MAC fire animations; the 1911's `AmmoEject` socket,
+  its shot notify (Fire + Eject) and grips.
+- **Committed by Claude** (user: "you commit this time, briefly list the
+  changes similar to my style"): `54daab6e` on `main` — 49 added, 34
+  modified, 31 deleted (the old `M1911`); the 1911 kit's 47 files in LFS.
+  Not pushed: the sandbox can't authenticate, so the user runs `git push`.
+  Committing goes back to the user.
+- **Docs:** this log's entries since the 1911 swap had been inserted inside
+  that entry (after its "Then the black one" sub-bullet); moved back into
+  order.
+- **New fidelity target** (user): "Xbox 360 levels of fidelity IE max payne 3
+  levels … on the Steam Deck", raised from Halo 1–2 "based on the assets we
+  have been using".
+  - **Targets (user's table):** 750 Ti 720p Low 30 (stretch), 1050 Ti 900p
+    Low 60, **Steam Deck LCD 800p native 60 (primary baseline, High
+    settings)**, **GTX 1650 1080p High 60 ("the real target")**, 1660 Super
+    1080p High 120 (optional). Only a Deck to test on.
+  - **Proposal agreed in outline, not yet built:** one baked-lighting
+    renderer on every tier (no Lumen, Nanite or ray tracing); High tuned on
+    the Deck with headroom, standing in for the 1650; Low for the older
+    cards. Five steps (plan item 34).
+  - **Findings:** Substrate is on (blendable GBuffer); AA was off
+    (`AntiAliasingMethod=0`); the shader formats already include DX11 SM5;
+    no groom hair in the project.
+  - **Recorded:** design notes Part 4, spec *Rendering target* (rewritten),
+    GDD fidelity paragraph + a 2026-10-27 line, plan item 34.
+- **Step 1, renderer switch, applied** (user: "all my levels are currently
+  direction light lit"; "go ahead").
+  - **Config:** 11 lines in `DefaultEngine.ini`. GI none, reflections
+    screen space, Lumen hardware ray tracing, ray tracing, its proxies and
+    path tracing off, virtual shadow maps off, Nanite off, static lighting
+    on, mesh distance fields off, TAA. Backup in the scratchpad; git has it
+    too.
+  - **Restart:** via the script. About 4,000 shaders recompiled in about 3
+    minutes; bridge up, `list_toolsets` OK. The log confirms the settings,
+    and its 14 warnings are all old ones (AmmoSet physics recompute etc.).
+  - **Nanite meshes:** only 15, all greybox or unused.
+  - **Blood chunks:** Collision Type Distance Field → Depth Buffer, left to
+    the user.
+  - **Levels:** each is one movable sun with sky light, atmosphere,
+    volumetric clouds and fog. Flat in shade until the bake; clouds to go.
+  - **Checked (user):** "blood fixed, levels look fine".
+- **Step 2, quality tiers** ("present step 2"; "apply and run").
+  - **New files:** `Config/DefaultScalability.ini`, with High at level 2
+    and Low at level 0, overriding the engine only where needed.
+    `UBopisGameInstance` (`BopisGameInstance.h/.cpp`), set as
+    `GameInstanceClass`.
+  - **First run:** on any machine, the benchmark picks the level. On the
+    Steam Deck it then sets High, 1280×800, a 60 cap and VSync. Never runs
+    in the editor.
+  - **Build:** rebuilt (26 s); DLL 00:59:06 is newer than the source
+    (00:58:20); bridge up, `list_toolsets` OK; no log errors.
+  - **Suns' shadow distance:** both have a custom value that couldn't be
+    read reliably from the files; the user sets 4000.
+  - **Not tested.** The Deck path needs a packaged build (step 5).
+- **Gamepad controls** set by the user in `IMC_Default` ("I did the control
+  changes"). Claude had suggested RB shootdodge, R3 focus, X reload, B roll,
+  Y grenade, L3 crouch.
+- **Wheel, right stick** (user: "its not going to where I am moving it to";
+  "just fix the wheel").
+  - **Cause:** the stick went through `AddPointerDelta`, which adds input
+    like a mouse; the pointer drifted on the sum.
+  - **Fix:** `IA_Look` now binds to `StickLookInput` →
+    `SetPointerFromStick`. The pointer goes straight to the rim in the
+    stick's direction; below `StickDeadZone` 0.5 it holds.
+  - **Build:** rebuilt (18 s); DLL 01:12:22 is newer than the source
+    (01:11:52); bridge up, `list_toolsets` OK.
+  - **Tested (user):** "its inverted up and down". **Flip Stick Y** is now
+    off on `WBP_WeaponWheel` (bridge; compiled, saved; a bool, so no restart
+    needed). The stick mapping already flips Y. Then: "stick works".
+- **First Deck build** (user: "option 1" — the SteamOS Devkit Client over
+  Wi-Fi; "apply and run").
+  - **Packaging settings** added to `DefaultGame.ini`: Development, pak +
+    IoStore, compressed, `MapsToCook` limited to `Lvl_Sandbox` and
+    `Lvl_Linear` (there were no packaging settings before, so every map was
+    cooked).
+  - **Build:** `RunUAT BuildCookRun` started in the background, archiving
+    to `ProjectBopis_Builds/DeckTest/`.
+  - **User:** Deck Developer Mode, the Devkit Client, the upload, then the
+    `stat unit` readings.
+  - **First try** failed in seconds: "Unable to build while Live Coding is
+    active" (editor open), so the retry used `-nocompileeditor`.
+  - **Second try** cooked all 3,888 packages in about 10 min but failed on
+    one logged error: the cook process's bridge plugin couldn't bind port
+    8000, which the editor held. The user closed the editor; third run
+    started.
+  - **Third try: BUILD SUCCESSFUL** in 1 min 41 s (shaders cached), 0
+    errors, 13 warnings. `ProjectBopis_Builds/DeckTest/Windows`, 2.3 GB with
+    the Development debug files. Next: the user uploads with the Devkit
+    Client and reads `stat unit`.
+  - **On the Deck:** "visual c++ 2015-2022 redistributable required", from
+    the top-level launcher's runtime check. Start command changed to
+    the real binary, `ProjectBopis/Binaries/Win64/ProjectBopis.exe` plus the
+    same arguments. Fallback if DLLs are really missing: include UE's
+    prerequisite installer and rebuild.
+- **First Deck measurement** (user: "it runs"):
+  - **FPS:** "Mostly 60 but at level start and level load it drops"
+    (to ~45); "drops to 50 ish mid fight primarily after a kill".
+  - **Timings:** Game 8–18, Draw 5–18, GPU 12–20 ms (budgets ≈ 14 / — /
+    ≈ 13).
+  - **User's hunch:** "the npc loading is hitching the fps".
+  - **Suspects in the code:** the director's immediate respawn on a kill
+    (`TrySpawnOne`, a whole CC character in one frame, plus new materials'
+    shaders), and the ragdoll's `SetPhysicsAsset(…, true)` rebuild at death.
+  - **Next:** an Unreal Insights trace over Wi-Fi to confirm, then fix.
+    PC 192.168.1.43; procedure in the spec, *First Deck measurement*. A
+    trace server was started for it, then stopped at wrap-up (user: "im
+    about to sleep now").
+- **New issue (user, on the Deck):** "the clothes freak out when killing
+  someone far away. I think its LOD related, because it fixes itself up
+  close". Not investigated yet. Suspects: apparel following the body by
+  leader pose while the ragdolling body sits at a lower LOD that drops
+  bones, the clothes then reaching for missing bones; cloth simulation
+  switching off at distance; update-rate optimisation on far meshes. The
+  Deck's 800p shrinks screen size, so lower LODs come in sooner.
+- **Design notes (user):** "we do not have level assets yet"; "walk around"
+  parts with civilians you can interact with, "up to 12 NPC max on screen …
+  But never for fights. Only 6 mooks per fight feels good at the moment".
+  - **Recorded:** design notes Part 4 (targets, a new *Walk-around
+    sections*), spec budgets, plan item 34, GDD.
+  - **Consequences:** the ~12 ms quiet GPU is greybox, so fixed costs must
+    come down before art; and a 12-civilian scene needs its own Deck test.
+  - **Correction:** the director's replacements come 1–3 s after a death
+    (`RespawnDelayMin`/`Max`), not in the same frame. Both suspects still
+    fit "after a kill": the ragdoll rebuild at the kill, the spawn a moment
+    later.
+- **Render resolution** (user: "it rendered at 71%… I would prefer a clean
+  image 100% render than any post processing stuff that would try to fake
+  good graphics").
+  - **Cause:** the first-run hardware benchmark sets `sg.ResolutionQuality`
+    from the GPU index, and the Deck landed in the 71% band. Our High
+    setting doesn't touch it.
+  - **Fix:** `DefaultEngine.ini` `[SystemSettings] r.ScreenPercentage=100`,
+    which outranks scalability and saved settings, so the Deck's saved 71%
+    is overridden too.
+  - **Build:** the Deck build was repackaged (editor closed).
+  - **Open:** the anti-aliasing choice (TAA, FXAA or none) and which post
+    effects stay. Recorded in the design notes and spec.
 
 ### ▶ RESUME HERE
 **A. Next up**
-1. **Gunfire audio refactor** (plan item 31; home test: "to refactored").
+1. **Fidelity and performance (plan item 34).** Steps 1–2 done; the first
+   Deck build runs: mostly 60 fps, GPU 12–20, Game 8–18, Draw 5–18 ms, with
+   drops at level start and right after kills.
+   - **Next:** an Unreal Insights trace from the Deck (spec, *First Deck
+     measurement*).
+     1. On the PC, run Unreal Insights and allow it through the firewall.
+     2. Devkit Client start command:
+        `ProjectBopis/Binaries/Win64/ProjectBopis.exe Lvl_Linear
+        -ExecCmds="stat fps,stat unit" -trace=default,gpu,loadtime
+        -tracehost=192.168.1.43`.
+     3. Play: level start, a fight with kills, slow motion with a grenade.
+        Quit.
+     4. Claude exports and reads it, then fixes the confirmed causes:
+        respawn hitch, ragdoll asset swap, GPU passes.
+   - **Still open (user):** both suns' Dynamic Shadow Distance (movable)
+     → 4000; editor Engine Scalability → High.
+   - **Then:** step 3, the bake.
+2. **Clean image (user):** pick TAA (soft) / FXAA (sharp, some shimmer) /
+   none, and which post effects stay (bloom, SSAO, SSR, tonemapper). 100%
+   resolution is already forced; re-upload the repackaged build before the
+   trace.
+3. **Clothes freak out on far kills** (user, Deck; "fixes itself up
+   close", user suspects LOD). Check the CC apparel's LOD setup:
+   - leader-pose LOD sync and bone reduction on the body's LODs;
+   - cloth simulation LOD;
+   - update-rate optimisation;
+
+   …all against a ragdoll at a distance.
+4. **Gunfire audio refactor** (plan item 31; home test: "to refactored").
    First: what exactly goes wrong — shots cutting each other off, or *all*
    sound dropping during bursts (the mixer's 32-voice ceiling → sound
    priorities/concurrency)? Then rework the fire-sound path.
-2. `SC_Music` sound class on `DarkCrimes` (bridge; plan item 27's last part).
-3. **Pump + grip (plan item 32):** user draws `Pump` on `MM_PumpShotgun_Fire`
+5. `SC_Music` sound class on `DarkCrimes` (bridge; plan item 27's last part).
+6. **Pump + grip (plan item 32):** user draws `Pump` on `MM_PumpShotgun_Fire`
    (the rack) and `HandGrip` at the end of `MM_Rifle_Equip`; then test the
    pump fire, a shotgun reload (ends with the last shell — no rack for now)
    and the equip landing. The slide's AnimBP waits for the final model.
-4. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
+7. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
    and `AmmoEject` on `SK_Beretta_92FS`, then tune grips in PIE. Still to
    decide: AR-15 replaces which rifle; AK-74u ammo; .45 vs 9mm ammo. Then
    import one gun at a time (skeletal, +X barrel,
    moving parts as bones) — sockets and grip offsets are yours, Blueprints
    and wiring Claude's.
-5. **Fire notifies (feedback standard, plan item 33):** on
+8. **Fire notifies (feedback standard, plan item 33):** on
    `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
    `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
    Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
    Fire notify and no flash. Then test every gun: one shot sound, one flash.
-6. **Eject notifies (user):** a Weapon Sound notify set to **Eject** on
-   `Mossberg-500_Pump` (as the pump comes back) and the M4, 9mm and MAC fire
-   animations (slide/bolt fully back; on the MAC before ~0.05 s). Not the
-   revolver. Test: one casing per shot, at the animated moment.
-7. **Deferred (user): prone on the back** after a shootdodge — the left hand
+9. **Deferred (user): prone on the back** after a shootdodge — the left hand
    can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
-8. **New long guns:** calibrate and tick `bLockLeftHandRotation`
+10. **New long guns:** calibrate and tick `bLockLeftHandRotation`
    (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
-9. **The 1911 .45s (user).** On `SK_P1911_M_Skeleton`:
-   - add an `AmmoEject` socket at the slide's ejection port;
-   - check that `muzzle_socket` points down the barrel, and that the dropped
-     `pistol1911_mag` lines up at `clipSocket`.
-
-   On `Anim_P1911_M_Shot`:
-   - swap the kit's PlaySound notify for a Weapon Sound **Fire**, plus
-     **Eject** as the slide comes back;
-   - decide which shot sound: `FireSound` (`PistolA_Fire_Cue`) or the
-     kit's `pistol_1911_shot_Cue`.
-
-   Then tune the grips in PIE (single, dual, enemy), and test the slide, the
-   casing, the fitted magazine (`bShowMagazineMesh`; rotate `clipSocket` if it
-   sits wrong), the magazine drop and `mag_c`. Optional: `45_shell` as the .45
-   casing.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked
@@ -628,8 +777,9 @@
    `CleanFlatIcons` and `Weapons` first (nothing uses them), then demo folders.
 3. **`AM_Pistol_Reload_Offhand`** → Chamber notify → tick **Offhand**, if not
    done yet.
-4. **Committed and pushed** by the user (`f7611c2c`, `4103f1da`, 2026-10-26);
-   working tree clean.
+4. **Committed by Claude** at the user's request: `54daab6e` (2026-10-27), on
+   `main`, **not pushed** — run `git push` (uploads the 1911 kit to LFS,
+   ~237 MB). The docs changed after it (this round).
 
 **C. Can be done remotely** (C++ — presented first, then "apply and run")
 1. Optional: `DualLoweredPlayRate` → `LoweredJogPlayRate` rename.

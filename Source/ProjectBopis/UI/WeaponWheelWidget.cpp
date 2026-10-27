@@ -83,6 +83,15 @@ void UWeaponWheelWidget::AddPointerDelta(const FVector2D& Delta)
 	Pointer = Pointer.GetClampedToMaxSize(Radius);
 }
 
+void UWeaponWheelWidget::SetPointerFromStick(const FVector2D& Stick)
+{
+	if (!bOpen || Stick.Size() < StickDeadZone)
+	{
+		return;
+	}
+	Pointer = FVector2D(Stick.X, bFlipStickY ? -Stick.Y : Stick.Y).GetSafeNormal() * Radius;
+}
+
 void UWeaponWheelWidget::SelectType(int32 Index)
 {
 	if (!bOpen || !Segments.IsValidIndex(Index))

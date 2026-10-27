@@ -58,10 +58,12 @@ everything.
 
 ### Fidelity target: fun over fidelity
 
-The visual bar is **early-2000s, Halo 1–2 era** — a deliberate choice that
-happens to sit naturally alongside a 2002 setting. Lighting leans baked,
-with real-time lights used where they earn their place, decided scene by
-scene.
+The visual bar is **the Xbox 360 era — Max Payne 3** — raised from an
+earlier early-2000s bar to match the art the game now uses. Lighting leans
+baked, with real-time lights used where they earn their place, decided scene
+by scene. It runs at **60 frames per second on a Steam Deck** at its native
+resolution and high settings, and at 1080p on a modest gaming PC; lower
+settings stretch it to older PCs.
 
 It buys performance headroom, which for a game built on large escalating
 shootouts converts directly into more enemies on screen and a steadier frame
@@ -516,3 +518,7 @@ a shooting range.
   magazines drop to the floor on reloads, and hands hold each gun the way it's
   built. The number keys now run pistols, shotguns, SMGs, rifles and sniper
   rifles; the grenade launcher is set aside for now.
+- 2026-10-27 — The visual target is raised to the Xbox 360 era (Max Payne 3),
+  running at 60 frames per second on the Steam Deck. Planned: calmer
+  walk-around stretches with civilians to interact with; fights stay at about
+  six enemies at a time.

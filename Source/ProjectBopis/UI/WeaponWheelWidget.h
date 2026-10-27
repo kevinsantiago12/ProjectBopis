@@ -52,9 +52,13 @@ public:
 	    of the gun in hand, on the first press — steps to its next weapon instead. */
 	void SelectType(int32 Index);
 
-	/** Moves the pointer: a mouse's movement, or a stick's value each frame (held over, it
-	    saturates at the rim). Inside DeadZone nothing is hovered. */
+	/** Moves the pointer by a mouse's movement (pixels); held over, it saturates at the rim.
+	    Inside DeadZone nothing is hovered. */
 	void AddPointerDelta(const FVector2D& Delta);
+
+	/** Points the pointer where a stick points (−1..1 each way), out at the rim. Pushed less than
+	    StickDeadZone (a light touch, or the stick springing back) it stays put, so the choice holds. */
+	void SetPointerFromStick(const FVector2D& Stick);
 
 	/** Steps the hovered type's current weapon forward (+1) or back (−1), wrapping. */
 	void CycleHovered(int32 Direction);
@@ -164,6 +168,14 @@ protected:
 	/** Look input counts up as positive; the screen counts down. Off if it points the wrong way. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout")
 	bool bFlipPointerY = true;
+
+	/** How far the stick must be pushed (0–1) before it points. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float StickDeadZone = 0.5f;
+
+	/** A stick counts up as positive; the screen counts down. Off if it points the wrong way. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout")
+	bool bFlipStickY = true;
 
 	/** Seconds between cycle steps, so a held D-pad steps rather than spins. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.0"))

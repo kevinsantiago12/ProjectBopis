@@ -765,7 +765,42 @@ say it in their gameplay sections, which were excluded by instruction.
 
 ---
 
-# PART 5 — OPEN ITEMS, TBDs AND RECONCILIATION
+## Fidelity and performance targets — *stated 2026-10-27*
+**Visual bar: the Xbox 360 era — Max Payne 3** ("if we can"). Supersedes the
+early-2000s Halo 1–2 bar of 2026-08-31, raised to match the assets in use
+(user: "That halo 1- 2 level of fidelity has been upped based on the assets we
+have been using"). Throw away "all the extra stuff that would cause
+performance issues".
+
+**Performance targets (user's table):**
+
+| Hardware | Resolution | Target | Priority |
+|---|---|---|---|
+| GTX 750 Ti | 720p, Low | 30 fps | Stretch goal |
+| GTX 1050 Ti | 900p, Low | 60 fps | Secondary |
+| Steam Deck LCD | 800p native | 60 fps | Primary baseline |
+| GTX 1650 | 1080p, High | 60 fps | Recommended |
+| GTX 1660 Super | 1080p, High | 120 fps | Optional |
+
+- The Steam Deck runs **High** settings at 800p native, 60 fps (user: "Steam
+  deck must be able to run … high settings").
+- **The GTX 1650 is the real target**; the Steam Deck is the only test
+  hardware ("I dont have any besides the deck").
+- **Characters on screen (user, 2026-10-27):** fights: **6 mooks per fight**
+  ("feels good at the moment"), never more. Walk-around sections: **up to
+  12 NPCs on screen**, never during fights.
+- **No level assets yet**: the levels are greybox.
+- **A clean image at native resolution** (user, 2026-10-27: "I would
+  prefer a clean image 100% render than any post processing stuff that would
+  try to fake good graphics"). Always 100% render resolution, no upscaling.
+  Post-processing that fakes detail is out; which effects count as that is
+  still to be confirmed with the user.
+
+## Walk-around sections — *stated 2026-10-27*
+The levels will have **"walk around" parts with civilians you can interact
+with** (user). Up to 12 NPCs on screen there; no fighting in them. What the
+interactions are is `[UNDECIDED]`.
+
 
 ## Input for the story rewrite
 
