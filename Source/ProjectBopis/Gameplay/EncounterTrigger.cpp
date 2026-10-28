@@ -214,6 +214,14 @@ void AEncounterTrigger::BeginPlay()
 		}
 	}
 
+	// Everyone it will bring in is built now, behind the level load, and put to sleep where the
+	// trigger stands: bringing one in only wakes it, so nothing is built mid-fight.
+	BuildReserves(INDEX_NONE, Spawns);
+	for (int32 WaveIndex = 0; WaveIndex < Waves.Num(); ++WaveIndex)
+	{
+		BuildReserves(WaveIndex, Waves[WaveIndex].Spawns);
+	}
+
 	// Watches the room from the start, for its waves and for its being cleared: one shot clear
 	// from the doorway, before the player walks in, counts too.
 	GetWorldTimerManager().SetTimer(RoomTimer, this, &AEncounterTrigger::UpdateRoom, 0.25f, true);
@@ -322,24 +330,21 @@ void AEncounterTrigger::SpawnOne(int32 WaveIndex, int32 Index)
 	const FTransform SpawnTransform(FRotator(0.0f, Spawn.SpawnPoint->GetActorRotation().Yaw, 0.0f),
 		Spawn.SpawnPoint->GetActorLocation() + FVector(0.0f, 0.0f, HalfHeight));
 
-	// Deferred, so its gun is chosen before it begins play and equips one.
-	AEnemyBase* Enemy = GetWorld()->SpawnActorDeferred<AEnemyBase>(Class, SpawnTransform, nullptr, nullptr,
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
-	if (!Enemy)
+	// Its reserve, built asleep at the start, wakes on the point; without one, it's built now.
+	TWeakObjectPtr<AEnemyBase> Reserve;
+	Reserves.RemoveAndCopyValue(FIntPoint(WaveIndex, Index), Reserve);
+	AEnemyBase* Enemy = Reserve.Get();
+	if (Enemy)
 	{
-		return;
+		Enemy->Wake(SpawnTransform);
 	}
-	if (Spawn.Weapon)
+	else
 	{
-		if (UWeaponHolderComponent* Holder = Enemy->GetWeaponHolder())
+		Enemy = BuildEnemy(Class, Spawn.Weapon, SpawnTransform, false);
+		if (!Enemy)
 		{
-			Holder->SetStartingWeaponClass(Spawn.Weapon);
+			return;
 		}
-	}
-	Enemy->FinishSpawning(SpawnTransform);
-	if (!IsValid(Enemy))
-	{
-		return;
 	}
 
 	if (!Spawn.Tag.IsNone())
@@ -448,4 +453,57 @@ void AEncounterTrigger::UpdateRoom()
 		}
 	}
 	OnCleared.Broadcast(this);
+}
+
+void AEncounterTrigger::BuildReserves(int32 WaveIndex, const TArray<FEncounterSpawn>& List)
+{
+	const FTransform Hideout(GetActorLocation());
+	for (int32 Index = 0; Index < List.Num(); ++Index)
+	{
+		const FEncounterSpawn& Spawn = List[Index];
+		const TSubclassOf<AEnemyBase> Class = Spawn.EnemyClass ? Spawn.EnemyClass : DefaultEnemyClass;
+		if (!Class || !Spawn.SpawnPoint)
+		{
+			continue;
+		}
+		if (AEnemyBase* Reserve = BuildEnemy(Class, Spawn.Weapon, Hideout, true))
+		{
+			Reserves.Add(FIntPoint(WaveIndex, Index), Reserve);
+		}
+	}
+}
+
+AEnemyBase* AEncounterTrigger::BuildEnemy(TSubclassOf<AEnemyBase> Class, TSubclassOf<AWeaponBase> Weapon,
+	const FTransform& Where, bool bAsleep)
+{
+	// Deferred, so its gun is chosen before it begins play and equips one. A reserve always
+	// spawns (it's hidden), and without a controller, so no AI runs until it wakes.
+	AEnemyBase* Enemy = GetWorld()->SpawnActorDeferred<AEnemyBase>(Class, Where, nullptr, nullptr,
+		bAsleep ? ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+			: ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
+	if (!Enemy)
+	{
+		return nullptr;
+	}
+	if (Weapon)
+	{
+		if (UWeaponHolderComponent* Holder = Enemy->GetWeaponHolder())
+		{
+			Holder->SetStartingWeaponClass(Weapon);
+		}
+	}
+	if (bAsleep)
+	{
+		Enemy->AutoPossessAI = EAutoPossessAI::Disabled;
+	}
+	Enemy->FinishSpawning(Where);
+	if (!IsValid(Enemy))
+	{
+		return nullptr;
+	}
+	if (bAsleep)
+	{
+		Enemy->Sleep();
+	}
+	return Enemy;
 }

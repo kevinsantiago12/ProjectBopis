@@ -438,14 +438,14 @@ pixels, so roughly the same cost per pixel. Leave headroom on the Deck
 | Setting | Now | Target | Note |
 |---|---|---|---|
 | `r.DynamicGlobalIlluminationMethod` | `1` (Lumen) | `0` (none) | GI from lightmaps |
-| `r.ReflectionMethod` | `1` (Lumen) | `2` (screen space) | Captures everywhere; SSR quality from scalability (off on Low) |
+| `r.ReflectionMethod` | `1` (Lumen) | `0` (captures only; was `2`, SSR, until the user dropped it 2026-10-27) | Reflection captures and the sky |
 | `r.Lumen.HardwareRayTracing` | `True` | `False` | |
 | `r.RayTracing`, `…RayTracingProxies.ProjectEnabled`, `r.PathTracing` | `True` | `False` | |
 | `r.Shadow.Virtual.Enable` | `1` | `0` | Classic shadow maps (cascades for the sun) |
 | `r.Nanite.ProjectEnabled` | `True` | `False` | Nanite meshes fall back; they need real LODs |
 | `r.AllowStaticLighting` | `False` | `True` | Nothing can bake until it is; editor restart |
 | `r.GenerateMeshDistanceFields` | `True` | `False` | The blood chunks' Niagara collision moves to the depth buffer |
-| `r.AntiAliasingMethod` | `0` (none) | `2` (TAA) | TSR costs a few ms on the Deck; FXAA for the 750 Ti |
+| `r.AntiAliasingMethod` | `0` (none) | `1` (FXAA; was `2`, TAA, until 2026-10-27) | Clean, no temporal blur; the era's method (user) |
 | Kept, measured on the Deck | | | Substrate (on, blendable GBuffer), sky atmosphere, virtual textures (audit in step 4) |
 | Shader formats | DX12 SM6, DX11 SM5 | unchanged | DX11 covers the 750 Ti |
 
@@ -479,8 +479,8 @@ Lumen hardware ray tracing 0). Fallout:
 | Texture pool | ~2 GB | ~1 GB (~700 MB on the 750 Ti's 2 GB) |
 | Shadows | 2 cascades, 2048, ~40 m | 1 cascade, 1024, ~25 m |
 | Ambient occlusion | Full resolution | Half resolution or off |
-| Reflections | Captures + low-quality SSR if the Deck has room | Captures |
-| Anti-aliasing | TAA | TAA / FXAA |
+| Reflections | Captures | Captures |
+| Anti-aliasing | FXAA (quality 3) | FXAA (quality 0) |
 | Skin, effects, view distance | Full | Cheaper skin, fewer particles, shorter distance |
 
 A High setting that misses 60 on the Deck gets cut or moved to Low; the Deck
@@ -493,7 +493,7 @@ the hardware benchmark, later a graphics menu.
   Only differences from `BaseScalability.ini` are listed; Medium and Epic
   are the engine's own and aren't targets.
   - **High:** `r.ShadowQuality` 3, 2 cascades (2048 is the engine's),
-    `r.Shadow.DistanceScale` 1.0, no volumetric fog; `r.SSR.Quality` 1; one
+    `r.Shadow.DistanceScale` 1.0, no volumetric fog; one
     AO level (the bake carries the large-scale shading); texture pool
     2000 MB.
   - **Low:** keeps sun shadows (`r.ShadowQuality` 2, 1 cascade at 1024 —
@@ -540,9 +540,13 @@ which outranks the scalability value and any saved settings, on every
 machine including the Deck's saved 71%. No upscaling and no dynamic
 resolution: performance has to come from real cuts. Post effects:
 - **Off:** motion blur, lens flare, auto exposure (project defaults).
-- **On:** bloom, one-level SSAO, low-quality SSR on High, the tonemapper.
-- **TAA** softens the image. FXAA (sharper, some shimmer) or none are the
-  alternatives: the user's call.
+- **On:** bloom, one-level SSAO, the tonemapper.
+- **Decided (user, 2026-10-27): FXAA, keep bloom and AO, no SSR.** Max
+  Payne 3 predates TAA: FXAA or MSAA on PC. MSAA needs UE5's forward
+  renderer (no SSR, fewer overlapping shadowed lights, often cheaper on
+  weak GPUs). It's a possible later experiment, not a toggle.
+  `r.AntiAliasingMethod` 1, `r.ReflectionMethod` 0, and the High SSR
+  override was removed from `DefaultScalability.ini`.
 
 **CPU:** game thread ≤ ~14 ms on the Deck (its 4-core CPU is likely the real
 limit at 60); ≤ 8 ms on the 1660 Super's class for 120. Enemy count,
@@ -638,11 +642,295 @@ still on. The build runs (via the real binary; see above).
   4. Claude exports the timings from the trace store
      (`%LOCALAPPDATA%\UnrealEngine\Common\UnrealTrace\Store`) with Insights'
      command line, and reads the spikes and GPU passes.
+  5. **Close Unreal Insights afterwards.** While it's open, every editor
+     session and packaging run auto-connects and records into the store
+     (log: "Unreal Insights instance detected, auto-connecting to local
+     trace server"). On 2026-10-27, leaving it open filled about 22 GB in
+     one evening, with editor sessions at 1 to 6.5 GB each.
+  6. **Clearing the store:** `Tools/ClearTraces.ps1` deletes every
+     `.utrace` / `.ucache` file, after checking Insights and the editor
+     are closed. The user runs it. The first two Deck traces are gone
+     (2026-10-28); their findings are in the sections below.
 - **Likely fixes,** depending on what the trace shows: spawn wave enemies
   ahead (pooled or pre-spawned hidden at encounter start) or stagger and
   preload them; keep one physics asset from the start instead of swapping
   at death; for the GPU, step 3 (stationary sun, static sky) and shadow,
   SSR and effects tuning.
+
+### First Deck trace (2026-10-27)
+**The trace.** Unreal Insights over Wi-Fi: 6 min 5 s on the Deck, 766 MB,
+`Store/001/20261027_204240.utrace`. The build had FXAA, 100% resolution and
+no SSR; the levels were greybox with the movable sun.
+
+**How to read one.** Export from the command line:
+- open with `UnrealInsights.exe -OpenTraceFile=<utrace>
+  -ExecOnAnalysisCompleteCmd=@=<rsp> -AutoQuit`;
+- `-NoUI` silently skips the commands, so leave it off;
+- unquoted paths in the `.rsp` file;
+- export commands: `TimingInsights.ExportThreads` / `ExportTimers` /
+  `ExportTimerStatistics <csv> -threads=…` / `ExportTimingEvents <csv>
+  -threads=… -timers=… -columns=…`;
+- thread names are `GameThread`, `RenderThread 0` and `GPU0-Graphics0`.
+
+**Starting the trace server.** The trace server only runs while a sponsor
+process lives: the editor or Unreal Insights. `UnrealTraceServer fork` and
+`daemon` fail from Claude's shell, so open Insights instead.
+
+**GPU (average per frame).**
+- The whole frame averages ~18 ms (about 55 fps); the scene render ~14 ms.
+- **`VolumetricCloud` 6.1 ms**: the biggest single cost. On some frames
+  `RenderCloud` adds ~2.4 ms more.
+- **The sky light's real-time capture** (`CaptureConvolveSkyEnvMap`):
+  0.85 ms every frame.
+- Cloud composite 0.38 ms; sky atmosphere LUTs 0.34 ms.
+- The rest of the frame:
+
+  | Pass | Average |
+  |---|---|
+  | Lighting | ~1.1 ms |
+  | Base pass | ~1.0 ms |
+  | Post | ~1.0 ms |
+  | Screen-space AO | ~0.9 ms |
+  | Translucency | 0.7 ms (peaks 10) |
+  | Subsurface | 0.3 ms |
+  | Shadow projection | 0.3 ms |
+
+- **Effects** (`FXSystemPreRender`): usually 0, peaks at 31 ms.
+- Decals: one 86 ms spike.
+
+**Game thread.**
+- **Level reloads.** Dying calls `RestartLevel` → `OpenLevel(current)`, a
+  full map reload. That's 9 freezes in 6 min, each ~400–490 ms of sync
+  loading, 50–70 ms of GC, then 7 construction scripts. That's loading, not
+  a gameplay hitch; a fade or checkpoint hides it later.
+- **Enemy spawns (the "after a kill" drop).** A replacement 1–3 s after a
+  death costs **~8–12 ms in one frame**: the construction script plus ~4
+  CC2 `Set Apparel` calls. There's no loading, since the assets are already
+  in memory. Up to ~34 ms when three spawn in the same second.
+- **The ragdoll physics-asset swap is ruled out:** at most 1.6 ms
+  (`USkeletalMeshComponent::OnCreatePhysicsState`).
+- **Periodic GC:** 15–20 ms (`IncrementalPurgeGarbage`).
+- **Constant:** CC2's `CC_SkelMesh_C` takes ~0.55 ms a frame (~77 calls a
+  frame), plus the player CC Blueprint's tick at ~0.3 ms.
+
+**Fixes, in order:**
+1. **Sky.** Remove the volumetric clouds and take the sky light off
+   real-time capture (capture once). That saves ~7 ms of GPU, which takes
+   the greybox to 60 and leaves room for level art. Later, an art sky: a
+   sky sphere or HDRI. **Done 2026-10-27 (bridge):** `VolumetricCloud_0`
+   removed from both levels; `SkyLight_0` `bRealTimeCapture` off in both.
+   The sky atmosphere stays.
+   - **Bridge gotcha:** in a one-file-per-actor level (`Lvl_Sandbox`),
+     `SceneTools.save_actor` / `save_assets` fail with "Asset does not
+     exist" for the actor packages. The user saves with Ctrl+S, which also
+     deletes removed actors' files. `Lvl_Linear` (actors in the map) saves
+     over the bridge.
+2. **Spawn cost.** Pre-spawn replacement enemies hidden, spread over frames
+   ahead of need, and wake them on respawn; or cheaper CC2 setup.
+3. **Effects GPU spikes:** measure again after 1.
+4. **GC tuning,** CC2 component ticks, and a fade on level restart.
+### Second Deck trace (2026-10-27, 23:18)
+**The trace.** `Store/001/20261027_231806.utrace` (900 MB), 7 min on
+`Lvl_Linear`, with 3 level loads (the start and 2 death restarts). The build
+had encounter reserves, controller aiming, the black screen and body LODs
+cut to 3. Exports are in the scratchpad (`trace2/`).
+
+- **Frames are steady:** outside the 5 s after loads, the game thread runs
+  at p50 16.7, p90 17.6 and p99 20.0 ms.
+- **GPU has headroom:** `SceneRender` averages 9.6 ms. The GPU "Frame" (16.7)
+  includes the VSync present wait.
+- **Level start:** settled within about 1 s of each load (the first frame
+  100–115 ms, then ≤ 31 ms, then 17). The black screen covers it.
+  - The death-restart load frame is 660–690 ms and sits on the old level's
+    last frame. A fade-out before the reload is still to do.
+  - The sky light's one-off capture (~9 ms of GPU) and the load-time GC
+    (65–86 ms) fall inside the load.
+- **Periodic GC:** now about 2 ms slices, which is fine.
+- **Remaining hitches: room spawns.** `Lvl_Linear` has no
+  `AEncounterDirector`; its rooms are 6 `AEncounterTrigger`s, which build
+  their wave enemies when triggered (`SpawnOne`). That costs 8–10 ms of
+  construction script plus about 4 CC2 `Set Apparel` calls per enemy.
+  - The result is frames of 34–66 ms: 7 builds per run, repeated each
+    attempt, worst with 2–3 in the same moment.
+  - The reserves fix covered only the director, which `Lvl_Sandbox` uses.
+  - **Fix:** the same approach for triggers. Build every wave enemy asleep
+    at level load and wake it on its spawn time.
+  - **Built 2026-10-27 ("apply and run"):**
+    - `AEncounterTrigger::BeginPlay` builds every `Spawns` and `Waves` entry
+      asleep at the trigger's location (`BuildReserves` / `BuildEnemy`).
+      They're keyed in `Reserves` (`TMap<FIntPoint(WaveIndex, Index),
+      TWeakObjectPtr>`, with `INDEX_NONE` for `Spawns`).
+    - `SpawnOne` wakes the reserve on its point, or builds one as before if
+      there's none, then applies tag, voice, ambush, hold, patrol and
+      `WaitForTrigger` as before.
+    - A blocked spawn point no longer refuses a woken reserve, the same as
+      the director.
+    - `BuildEnemy` mirrors `AEncounterDirector::BuildEnemy`. They could
+      merge into one on `AEnemyBase`.
+    - Every loop over all enemies was checked: sleepers aren't alerted,
+      have no collision, and get their tag only when they wake.
+  - **Sleepers showed at the triggers (user test, 2026-10-28).** CC2's
+    `CharacterCustomizer` component hides its character, loads the outfit
+    over a few frames (async loads, Delay, timers), then calls `Set Actor
+    Hidden In Game (false)`, which un-hid each sleeper one by one.
+    - **Fix:** `AEnemyBase` overrides `SetActorHiddenInGame` (virtual on
+      `AActor`, no `UFUNCTION` on the override) to
+      `Super(bNewHidden || bAsleep)`. Blueprint calls route to it, so
+      nothing can show a sleeper.
+    - CC2 still finishes the outfit while it sleeps. The director's
+      sleepers had the same problem out of view.
+- **`Lvl_Sandbox` first group not chasing (2026-10-28).** The director's first
+  group stood until it saw the player; replacements chased.
+  - **Cause:** the navmesh actor had `bForceRebuildOnLoad`, the 2026-10-16
+    workaround for nav not saving. The whole navmesh rebuilt at every load
+    (about 7 s in the editor), so the first group's moves failed with no
+    navmesh.
+  - **Fix (user, editor):** untick it, Build Paths, Save All. Unticking dirties
+    the actor, so the save writes the fresh tiles. Saved 00:33; the flag is
+    gone from the package. If the navmesh ever reverts again, change any
+    navmesh-actor setting before Save All. `Lvl_Linear` saves its nav in the
+    map and was never affected.
+
+### Level-start black screen (2026-10-27)
+**Why:** on the Deck, each level start climbed from 0 to 60 fps over about
+2 s. The spawns aren't the cause, since reserves are built before the first
+frame. It's the engine warming up: shaders (plus Proton's own pass) and texture
+streaming. The user asked for a black screen ("2 seconds maybe").
+
+**`AProjectBopisPlayerController`** (`BeginPlay`, for the local player):
+- **The black:** a Slate `SImage` (`WhiteBrush` tinted black) at viewport
+  Z-order 1000, so it covers the HUD too. The game is paused
+  (`SetGamePaused`), so enemies don't act and input does nothing.
+- **Timing:** an `FTSTicker` callback (`TickCurtain`) runs in real time, even
+  while paused.
+  - **Hold:** until frames have stayed at or under `SteadyFrameTime` (0.022 s,
+    1/45) for `SteadyTime` (0.5 s) in a row, within `MinBlackTime` 0.5 s and
+    `MaxBlackTime` 3 s.
+  - **Long frames:** a long frame counts for 0.25 s at most, because the
+    first frame's delta includes the load.
+  - **Fade-in:** unpause, then fade the black out over `FadeInTime` 0.4 s and
+    remove it.
+- **Cleanup:** `EndPlay` removes the ticker and the black.
+- **Restarts:** death restarts are level loads, so they get it too.
+- **Turning it off:** `bLevelStartCurtain` on `BP_PlayerController`.
+- **Watch for:** if part of the warm-up is game-thread work (AI or animation
+  starting up), it happens after the unpause and may show as a dip during
+  the fade-in.
+
+### Controller aiming: stick turning and soft lock (2026-10-27)
+**Why it was stiff.** The stick fed `AddControllerYaw/PitchInput` per frame:
+degrees per frame, scaled by the legacy ×2.5 (`bEnableLegacyInputScales=True`
+in `DefaultInput.ini`, pitch −2.5). So it ran slow, depended on the frame
+rate, and was linear.
+
+**New: `UGamepadAimComponent`** (`Gameplay/`), on `AProjectBopisCharacter` as
+`GamepadAim`.
+- **Stick turning (`ApplyStick`).** Degrees per **real** second
+  (`FApp::GetDeltaTime`, so Focus doesn't slow aiming), set straight onto the
+  control rotation; the camera manager still clamps pitch.
+  - **Speeds:** `YawSpeed` 250, `PitchSpeed` 160, × `AimSpeedScale` 0.55
+    while aiming.
+  - **Response curve:** push^`ResponseExponent` (2).
+  - **Boost:** `BoostYawSpeed` +180 after `BoostDelay` 0.25 s held hard
+    sideways (|X| ≥ 0.9), ramping over `BoostRampTime` 0.3 s.
+  - **Pitch sign:** the mapping negates Y, so up arrives as −1;
+    `bInvertPitch` flips it.
+  - **Mouse:** `LookInput` → `DoAim` is untouched.
+- **Soft lock** (`bSoftLock`).
+  - **Only when assisting:** the last look input came from the stick
+    (`SetUsingGamepad`; the mouse's `LookInput` clears it), a gun is held,
+    the player is alive and the wheel is shut.
+  - **Targets:** alive, not asleep, within `MaxRange` 4000, in sight from the
+    camera (ignoring both guns), and aimed at `TargetBone` `spine_03`.
+  - **Snap** (`SnapToTarget`, from `DoAimStart`): onto the enemy nearest the
+    crosshair within `SnapAngle` 12°, over `SnapTime` 0.12 s of real time.
+    It turns the shortest way round.
+  - **Slowdown:** within `SlowdownAngle` 6°, the stick speed is ×(1 −
+    `SlowdownStrength` 0.5 × closeness).
+  - **Follow:** within `FollowAngle` 6°, each tick (world time) the view
+    turns `FollowStrength` 0.5 × the line of sight's angular rate. That rate
+    is worked out from the two velocities, not last frame's direction, so
+    the camera's own turning doesn't feed back.
+- **User:** set any `Scalar` on the gamepad look mapping in `IMC_Default` to 1,
+  since speeds now live in code. Keep the Dead Zone and Negate.
+- **Mid-dive:** pulling LT snaps, as when standing. The dive's own framing
+  overrides the aim's arm length and shoulder offset, so there's no shoulder-in.
+  A magnifying gun's `ZoomedFOV` still applies mid-dive; the user kept it
+  ("if it snaps already, its fine"). The fix, if wanted: `!bDodgeCamera` on the
+  FOV branch of `UpdateCameraTransition`.
+- **Tested in the editor (2026-10-27):** "autoaim works". The Deck is next.
+
+### Encounter reserves: no building mid-fight (2026-10-27)
+The Deck trace showed each replacement enemy costing ~8–12 ms in one frame
+(the CC construction script + `Set Apparel`). User: "Still hitches on new
+enemies"; "apply and run".
+- **`AEncounterDirector`**:
+  - At `BeginPlay`, after filling `MaxAlive`, it builds the rest of the
+    fight **asleep** at its own location: `TotalEnemies − spawned`, or
+    **`MaxReserves`** (20, new) for an endless fight, capped by
+    `MaxReserves`.
+  - `TrySpawnOne` pops a reserve and **`Wake`s** it on the spawn point,
+    building only when none is left. The spawn code moved to
+    **`BuildEnemy(Where, bAsleep)`**: a sleeper spawns `AlwaysSpawn` with
+    `AutoPossessAI = Disabled`, set before `FinishSpawning`, so it gets no
+    AI controller.
+- **`AEnemyBase::Sleep`:**
+  - hidden, actor collision off, actor tick off;
+  - every ticking component's tick off, remembered in `SleepingTickers`;
+  - the equipped gun hidden, since it's a separate attached actor.
+- **`AEnemyBase::Wake(Where)`:**
+  - teleport, then `HomeLocation` set to the spawn point;
+  - shown, collision on, ticks restored, gun shown;
+  - `SpawnDefaultController()`: possession starts the StateTree, via
+    `ABopisAIController::OnPossess`.
+- **Kept out of the fight:** `Alert` ignores sleepers (allies pass alerts by
+  radius), and `FindSpot`'s ally spacing skips them. The other all-enemy
+  loops are harmless: sight ignores allies, and the ally-down bark and
+  grenade warning need an alerted enemy.
+- **Setup unchanged:** nothing else references the director; triggers and
+  events are untouched.
+- **Cost:**
+  - load ~10 ms per sleeper (Sandbox: 20 − 6 = 14, ~0.15 s);
+  - memory ~1–3 MB each, estimated: shared assets aren't duplicated, only
+    per-character components, animation instance and physics;
+  - nothing per frame.
+- **Later, for big levels:** build each arena's reserve on approach (an
+  optional distance on the director, no new trigger), spread over frames,
+  and free it after the arena.
+
+### CC clothing LOD fix (2026-10-27)
+User: clothes "busted" on far enemies, alive or dead, only on the Deck.
+- **Cause:** CC2 apparel follows the body by **leader pose**
+  (`CharacterCustomizer` → `SetLeaderPoseComponent`), so it takes the
+  body's LOD. The bodies and heads had **5** LODs; most apparel has **4**
+  (126 of 183 CCMH meshes; 20 have 3; 33 have 5). At body LOD4 (603
+  vertices), which drops bones, the clothes stay at their LOD3 and use bones
+  the body no longer updates, so they stretch.
+- **Why only the Deck:** at 800p, far characters reach LOD4; the Low tier's
+  `r.SkeletalMeshLODBias 2` would push them there too.
+- **Confirmed** with `r.SkeletalMeshLODBias` in play-in-editor: breaks at 4
+  (shirt and pants), fine at 3.
+- **Fix (user, editor):** LOD4 removed from `CCMH_Body_Male` and
+  `CCMH_Body_Female`. Bridge check: 4 LODs each, LOD3 ~1,090 vertices,
+  saved. Removed rather than given a far screen size, because the LOD bias
+  would still reach it.
+- **Body LOD3 removed too (2026-10-27).** The second Deck run showed `Chinos_01`
+  (3 LODs) breaking at distance. The user set both bodies' Number of LODs to 3.
+  Bridge check: Male 7,273 / 5,412 / 3,088 vertices, Female 7,241 / 5,367 /
+  3,043, saved. All 20 three-LOD clothing pieces are covered now. A far enemy's
+  body is LOD2 (about 3,000 vertices instead of about 1,090). That's small at
+  6 enemies or 12 civilians, and the body is mostly under clothes.
+- **Rule (the follower LOD limit):** every clothing piece needs at least as many
+  LODs as the body (now 3). The sweep found 4 with fewer: `Bikini_01_Top` and
+  `_Bottom` (2 LODs), male `Swim_Briefs_01` and female `Sports_Jersey_01` (1).
+  Keep them out of NPC outfits, or fix the piece if one is ever needed.
+  Raising Number of LODs doesn't restore authored LODs; it generates new ones
+  from LOD0, which may lose the body-shape morphs. The originals (5 LODs) are
+  in git at `6efc1724`.
+- **Why only the Deck showed it:** the High preset brings character LODs in
+  closer than Epic (the editor's setting).
+- The bridge can't read `LODInfo` (bones to remove, screen sizes); counts
+  come from `SkeletalMeshTools.get_lod_count` / `get_vertex_count`.
 
 ### Carried over from 2026-08-31
 - `AllowStaticLighting` needs an editor restart and changes how every asset

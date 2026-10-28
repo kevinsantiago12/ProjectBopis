@@ -68,6 +68,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Encounter")
 	bool bSpawnAlerted = true;
 
+	/** The fight's later enemies are built at level start, asleep, so a respawn only wakes one
+	    and nothing is built mid-fight (a CC enemy costs ~10 ms to build). Up to this many: the
+	    rest of TotalEnemies, or this many for an endless fight (then built as needed). */
+	UPROPERTY(EditAnywhere, Category = "Encounter", meta = (ClampMin = "0"))
+	int32 MaxReserves = 20;
+
 private:
 
 	/** Spawns one enemy at a suitable point. False if none is free (or the spawn failed). */
@@ -75,6 +81,12 @@ private:
 
 	/** A spawn point far enough from the player and not crowded, out of view if possible. */
 	AActor* PickSpawnPoint() const;
+
+	/** Spawns an enemy at Where with a gun from the pool; asleep (no controller) for the reserve. */
+	AEnemyBase* BuildEnemy(const FTransform& Where, bool bAsleep);
+
+	/** Built ahead, asleep; woken in turn by TrySpawnOne. */
+	TArray<TWeakObjectPtr<AEnemyBase>> Reserves;
 
 	TArray<TWeakObjectPtr<AEnemyBase>> Alive;
 	int32 SpawnedCount = 0;

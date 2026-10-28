@@ -238,6 +238,14 @@ private:
 	    what waits on it. */
 	void UpdateRoom();
 
+	/** Builds a list's entries asleep at the start (Spawns: WaveIndex INDEX_NONE), so bringing
+	    one in only wakes it and nothing is built mid-fight. */
+	void BuildReserves(int32 WaveIndex, const TArray<FEncounterSpawn>& List);
+
+	/** Spawns an enemy, deferred so its gun is chosen first; asleep (hidden, no AI) or set going. */
+	AEnemyBase* BuildEnemy(TSubclassOf<AEnemyBase> Class, TSubclassOf<AWeaponBase> Weapon,
+		const FTransform& Where, bool bAsleep);
+
 	bool bTriggered = false;
 
 	bool bCleared = false;
@@ -251,4 +259,7 @@ private:
 	double NextWaveAt = -1.0;
 
 	FTimerHandle RoomTimer;
+
+	/** The sleeping enemies, by (WaveIndex, Index): one for each spawn still to come. */
+	TMap<FIntPoint, TWeakObjectPtr<AEnemyBase>> Reserves;
 };

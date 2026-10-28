@@ -26,6 +26,18 @@ void AEncounterDirector::BeginPlay()
 			break;
 		}
 	}
+
+	// The rest of the fight is built now, behind the level load, and put to sleep where the
+	// director stands: a respawn only wakes one, so nothing is built mid-fight.
+	const int32 StillToCome = TotalEnemies > 0 ? TotalEnemies - SpawnedCount : MaxReserves;
+	const FTransform Hideout(GetActorLocation());
+	for (int32 Index = 0; Index < FMath::Min(StillToCome, MaxReserves); ++Index)
+	{
+		if (AEnemyBase* Reserve = BuildEnemy(Hideout, true))
+		{
+			Reserves.Add(Reserve);
+		}
+	}
 }
 
 void AEncounterDirector::Tick(float DeltaSeconds)
@@ -115,24 +127,23 @@ bool AEncounterDirector::TrySpawnOne()
 	const FTransform SpawnTransform(FRotator(0.0f, Point->GetActorRotation().Yaw, 0.0f),
 		Point->GetActorLocation() + FVector(0.0f, 0.0f, HalfHeight));
 
-	// Deferred, so its gun can be chosen before it begins play and equips one.
-	AEnemyBase* Enemy = GetWorld()->SpawnActorDeferred<AEnemyBase>(EnemyClass, SpawnTransform, nullptr, nullptr,
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
-	if (!Enemy)
+	// A reserve if there is one, woken on the point with nothing to build; else built now.
+	AEnemyBase* Enemy = nullptr;
+	while (!Enemy && Reserves.Num() > 0)
 	{
-		return false;
+		Enemy = Reserves.Pop().Get();
 	}
-	if (WeaponPool.Num() > 0)
+	if (Enemy)
 	{
-		if (UWeaponHolderComponent* Holder = Enemy->GetWeaponHolder())
+		Enemy->Wake(SpawnTransform);
+	}
+	else
+	{
+		Enemy = BuildEnemy(SpawnTransform, false);
+		if (!Enemy)
 		{
-			Holder->SetStartingWeaponClass(WeaponPool[FMath::RandRange(0, WeaponPool.Num() - 1)]);
+			return false;
 		}
-	}
-	Enemy->FinishSpawning(SpawnTransform);
-	if (!IsValid(Enemy))
-	{
-		return false;
 	}
 
 	Alive.Add(Enemy);
@@ -142,4 +153,38 @@ bool AEncounterDirector::TrySpawnOne()
 		Enemy->Alert(UGameplayStatics::GetPlayerPawn(this, 0));
 	}
 	return true;
+}
+
+AEnemyBase* AEncounterDirector::BuildEnemy(const FTransform& Where, bool bAsleep)
+{
+	// Deferred, so its gun can be chosen before it begins play and equips one. A reserve
+	// always spawns (it's hidden), and without a controller, so no AI runs until it wakes.
+	AEnemyBase* Enemy = GetWorld()->SpawnActorDeferred<AEnemyBase>(EnemyClass, Where, nullptr, nullptr,
+		bAsleep ? ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+			: ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
+	if (!Enemy)
+	{
+		return nullptr;
+	}
+	if (WeaponPool.Num() > 0)
+	{
+		if (UWeaponHolderComponent* Holder = Enemy->GetWeaponHolder())
+		{
+			Holder->SetStartingWeaponClass(WeaponPool[FMath::RandRange(0, WeaponPool.Num() - 1)]);
+		}
+	}
+	if (bAsleep)
+	{
+		Enemy->AutoPossessAI = EAutoPossessAI::Disabled;
+	}
+	Enemy->FinishSpawning(Where);
+	if (!IsValid(Enemy))
+	{
+		return nullptr;
+	}
+	if (bAsleep)
+	{
+		Enemy->Sleep();
+	}
+	return Enemy;
 }

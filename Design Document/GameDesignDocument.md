@@ -521,4 +521,5 @@ a shooting range.
 - 2026-10-27 — The visual target is raised to the Xbox 360 era (Max Payne 3),
   running at 60 frames per second on the Steam Deck. Planned: calmer
   walk-around stretches with civilians to interact with; fights stay at about
-  six enemies at a time.
+  six enemies at a time. Controllers get aim assist (a gentle lock-on) and
+  smoother turning.

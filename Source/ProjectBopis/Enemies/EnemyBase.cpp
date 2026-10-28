@@ -396,7 +396,7 @@ bool AEnemyBase::FindSpot(FVector& OutSpot, float RangeMin, float RangeMax, cons
 		}
 		for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
 		{
-			if (*It != this && !It->IsDead() && FVector::Dist2D(It->GetActorLocation(), Spot) < AllySpacing)
+			if (*It != this && !It->IsDead() && !It->IsAsleep() && FVector::Dist2D(It->GetActorLocation(), Spot) < AllySpacing)
 			{
 				Score -= 500.0f;
 			}
@@ -888,7 +888,7 @@ void AEnemyBase::UpdateFacing(float DeltaSeconds)
 
 void AEnemyBase::Alert(AActor* Target)
 {
-	if (bAlerted || IsDead() || !Target || bWaitingForTrigger)
+	if (bAlerted || IsDead() || !Target || bWaitingForTrigger || bAsleep)
 	{
 		return;
 	}
@@ -905,6 +905,65 @@ void AEnemyBase::Alert(AActor* Target)
 	TimeSinceSeenPlayer = 0.0f;
 	bSeenSinceAlert = false;
 	bSightingCalled = false;
+}
+
+void AEnemyBase::Sleep()
+{
+	bAsleep = true;
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+
+	// Every ticking component stops (movement, meshes, CC2's), and is remembered for waking.
+	SleepingTickers.Reset();
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (Component && Component->IsComponentTickEnabled())
+		{
+			Component->SetComponentTickEnabled(false);
+			SleepingTickers.Add(Component);
+		}
+	}
+
+	// Its gun is an actor of its own, attached to the hand.
+	if (UWeaponHolderComponent* Holder = GetWeaponHolder(); Holder && Holder->GetEquippedWeapon())
+	{
+		Holder->GetEquippedWeapon()->SetActorHiddenInGame(true);
+	}
+}
+
+void AEnemyBase::SetActorHiddenInGame(bool bNewHidden)
+{
+	Super::SetActorHiddenInGame(bNewHidden || bAsleep);
+}
+
+void AEnemyBase::Wake(const FTransform& Where)
+{
+	bAsleep = false;
+	SetActorTransform(Where, false, nullptr, ETeleportType::TeleportPhysics);
+	HomeLocation = Where.GetLocation();
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	for (const TWeakObjectPtr<UActorComponent>& Component : SleepingTickers)
+	{
+		if (Component.IsValid())
+		{
+			Component->SetComponentTickEnabled(true);
+		}
+	}
+	SleepingTickers.Reset();
+
+	if (UWeaponHolderComponent* Holder = GetWeaponHolder(); Holder && Holder->GetEquippedWeapon())
+	{
+		Holder->GetEquippedWeapon()->SetActorHiddenInGame(false);
+	}
+
+	// Its AI starts now: the controller's possession starts the behaviour.
+	if (!GetController())
+	{
+		SpawnDefaultController();
+	}
 }
 
 void AEnemyBase::TriggerAmbush(AActor* Target)

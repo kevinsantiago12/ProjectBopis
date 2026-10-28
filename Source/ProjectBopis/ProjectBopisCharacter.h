@@ -17,6 +17,7 @@ class UInputAction;
 class UFocusComponent;
 class UShootdodgeComponent;
 class URollComponent;
+class UGamepadAimComponent;
 class UPostProcessComponent;
 class AGrenade;
 struct FInputActionValue;
@@ -74,6 +75,10 @@ class AProjectBopisCharacter : public ABopisCharacterBase
 	/** Dodge roll. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URollComponent> Roll;
+
+	/** The controller's aim: stick turning and soft lock. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UGamepadAimComponent> GamepadAim;
 
 	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))

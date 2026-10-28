@@ -346,6 +346,21 @@ public:
 	    AlertAlliesDelay. Does nothing if already alerted, or dead. */
 	void Alert(AActor* Target);
 
+	/** Puts a just-spawned enemy to sleep in an encounter's reserve: hidden, no collision,
+	    nothing ticking, its gun hidden too, and no alerts reach it. It has no AI yet (the
+	    director spawns it without a controller); Wake brings it into play. */
+	void Sleep();
+
+	/** Brings a sleeping enemy into play at Where: shown, colliding and ticking again, its
+	    hold area centred there, and its AI controller spawned (which starts its behaviour). */
+	void Wake(const FTransform& Where);
+
+	bool IsAsleep() const { return bAsleep; }
+
+	/** Asleep, it stays hidden whoever asks: the Character Customizer shows its character once
+	    the outfit has loaded, which would otherwise show a sleeper where it waits. */
+	virtual void SetActorHiddenInGame(bool bNewHidden) override;
+
 	UFUNCTION(BlueprintPure, Category = "Enemy|Awareness")
 	bool IsAlerted() const { return bAlerted; }
 
@@ -569,6 +584,12 @@ private:
 
 	/** Where it was placed: the centre of its hold area. */
 	FVector HomeLocation = FVector::ZeroVector;
+
+	/** Asleep in an encounter's reserve (see Sleep). */
+	bool bAsleep = false;
+
+	/** The components that were ticking when it fell asleep, restarted on waking. */
+	TArray<TWeakObjectPtr<UActorComponent>> SleepingTickers;
 
 	/** Seconds left of the reaction beat after being alerted. */
 	float ReactionTimeLeft = 0.0f;

@@ -793,8 +793,19 @@ performance issues".
 - **A clean image at native resolution** (user, 2026-10-27: "I would
   prefer a clean image 100% render than any post processing stuff that would
   try to fake good graphics"). Always 100% render resolution, no upscaling.
-  Post-processing that fakes detail is out; which effects count as that is
-  still to be confirmed with the user.
+  Post-processing that fakes detail is out. **Decided 2026-10-27:** FXAA
+  rather than TAA (user asked "does mp3 use taa?"; it didn't — FXAA/MSAA
+  then), keep bloom and ambient occlusion, no screen-space reflections
+  ("go with FXAA, keep bloom and AO").
+
+## Controller aim assist (soft lock) — *stated 2026-10-27*
+User: "I need soft lock for controllers, Its hard to aim on controller at
+the moment. Also turning and aiming feels stiff."
+- **Parts:** snap on aim, slowdown near targets, and follow moving targets.
+- **When:** while aiming and in hip-fire; the snap happens on pulling the
+  aim trigger.
+- **Strength:** medium.
+- **Controller only;** the mouse is untouched.
 
 ## Walk-around sections — *stated 2026-10-27*
 The levels will have **"walk around" parts with civilians you can interact

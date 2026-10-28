@@ -712,60 +712,171 @@
   - **Build:** the Deck build was repackaged (editor closed).
   - **Open:** the anti-aliasing choice (TAA, FXAA or none) and which post
     effects stay. Recorded in the design notes and spec.
+- **Clean image decided** (user: "does mp3 use taa?" — it didn't, FXAA/MSAA
+  then; "go with FXAA, keep bloom and AO").
+  - **Config:** `r.AntiAliasingMethod` 2 → 1, `r.ReflectionMethod` 2 → 0
+    (captures only); the High SSR override removed from
+    `DefaultScalability.ini`.
+  - **Later, maybe:** MSAA via the forward renderer.
+  - **Next:** repackage (editor closed), then the Deck trace.
+- **Deck trace** (user: "done, trace captured"). 6 min, 766 MB; analysed
+  with Insights' command-line exports. Detail in the spec, *First Deck
+  trace*.
+  - **GPU:** the volumetric clouds cost 6.1 ms a frame, the sky light's
+    real-time capture 0.85 ms; the scene render is ~14 ms, the frame ~18 ms.
+  - **Game thread:** each enemy spawn costs ~8–12 ms in one frame
+    (construction script plus CC2 `Set Apparel`). That's the "after a kill"
+    drop.
+  - **Big freezes:** ~0.5 s level reloads on death (`RestartLevel` →
+    `OpenLevel`).
+  - **Ruled out:** the ragdoll swap (≤ 1.6 ms).
+  - **Trace server:** `UnrealTraceServer fork` and `daemon` fail from
+    Claude's shell (sponsor mode); opening Unreal Insights works.
+- **Sky fix** (user: "do it over the bridge").
+  - **Edits:** `VolumetricCloud_0` removed and the `SkyLight_0` real-time
+    capture turned off, in both levels.
+  - **`Lvl_Sandbox`** keeps one file per actor, which the bridge's
+    `save_actor` can't save ("Asset does not exist"). The user pressed
+    Ctrl+S; on disk, no cloud actor file is left and the sky light was
+    saved at 21:00.
+  - **`Lvl_Linear`** was saved over the bridge (21:00, no cloud in the
+    map).
+  - **Next:** repackage, re-measure on the Deck, then spawn pre-warming.
+- **Deck re-measure after the sky fix** (user): "GPU 8-16, mostly on 12. Still
+  hitches on new enemies" (was 12–20).
+- **Clothing LOD** (user: "busted LOD on clothing when enemies are far
+  away"; "I see the clothes busted on living enemies too"; "this only happens
+  in the deck").
+  - **Diagnosis:** leader-pose apparel is limited to its own LOD count.
+    Bodies and heads had 5 LODs, most apparel 4. Bias test: "breaks at 4,
+    shirt and pants".
+  - **Fix (user):** LOD4 removed from both CC bodies; bridge check: 4 LODs,
+    saved.
+  - **Withdrawn:** a proposed death-only `SetForcedLOD` change, never
+    applied.
+  - **Open:** 3-LOD apparel at bias 3. Details in the spec, *CC clothing LOD
+    fix*.
+- **Spawn hitch: encounter reserves** (user: "you mean you spawn all the
+  enemies in the level and just hide them?"; asked about memory for 50
+  enemies, an estimated ~1–3 MB each; "this does not change how I set up
+  the triggers and spawners yes?" — no; "apply and run").
+  - **Change:** the director builds the rest of each fight asleep at level
+    load and wakes one per respawn; `MaxReserves` 20.
+  - **Build:** rebuilt (28 s); DLL 21:47:03 is newer than the source
+    (21:46:22); bridge up.
+  - **Deck-tested (second build, 2026-10-27):** "it stayed at 60 even after
+    spawns". Details in the spec, *Encounter reserves*.
+  - **Found on that run:** the level start ramps from 0 to 60 fps over about
+    2 s. The user wants a black screen over it. Brown chinos break at
+    distance (body LOD3, see below). The user wants wheel cycling on the face
+    buttons, which do nothing while the wheel is open.
+  - **Chinos fix:** the user set both bodies to 3 LODs. Bridge check: Male
+    7,273 / 5,412 / 3,088 vertices, Female 7,241 / 5,367 / 3,043, saved
+    22:51. The earlier sweep's counts still hold (5 LODs: 33, 4: 126, 3: 20,
+    2: 2, 1: 2). The four pieces below 3 LODs (bikini, swim briefs, female
+    sports jersey) stay out of NPC outfits.
+  - **Level-start black screen** ("apply and run"): in
+    `AProjectBopisPlayerController`. Black (Slate, over the HUD) and paused
+    until frames stay steady for 0.5 s, within 0.5 to 3 s, then a 0.4 s
+    fade-in. Rebuilt (27 s); DLL 22:55:03 is newer than the source
+    (22:54:26); bridge up. **Not tested.**
+  - **Third Deck build + trace (23:18):** steady 60 outside loads (p99
+    20 ms); GPU scene about 9.6 ms; the level start settles within
+    about 1 s, under the black screen. The remaining 34–66 ms hitches are
+    `AEncounterTrigger` room waves building enemies when triggered; the
+    reserves fix only covered `AEncounterDirector`. The spec has it under
+    *Second Deck trace*. The user cleared about 22 GB of editor
+    auto-traces; Insights must be closed after captures.
+  - **Chinos:** Deck-tested, fixed.
+  - **Trigger reserves** ("apply and run"): `AEncounterTrigger` builds
+    every Spawns and Waves enemy asleep in `BeginPlay` and wakes it in
+    `SpawnOne`. Rebuilt (27 s); DLL 23:51:28 is newer than the source
+    (23:50:56); bridge up. **Not tested.**
+  - **User test:** the sleepers showed at the triggers, one by one. CC2 un-hides
+    its character once the outfit loads. **Fix** ("apply and run"):
+    `AEnemyBase::SetActorHiddenInGame` override keeps sleepers hidden.
+    Rebuilt (18 s); DLL 00:39:20 is newer than the source (00:38:55); bridge
+    up. **Not tested.**
+  - **`Lvl_Sandbox` first group not chasing:** caused by the navmesh's
+    `bForceRebuildOnLoad` (full rebuild at load). The user unticked it,
+    rebuilt and saved (00:33). **Not tested.**
+- **Controller aiming** (user: "I need soft lock for controllers, Its hard to
+  aim on controller at the moment. Also turning and aiming feels stiff").
+  - **Choices (asked):** snap on aim, slowdown and follow; while aiming and
+    in hip-fire; medium.
+  - **Stiffness found:** the stick turned in degrees per frame through the
+    legacy ×2.5 input scale.
+  - **New:** `UGamepadAimComponent`, with stick turning in degrees per real
+    second (curve, boost, slower while aiming) plus the soft lock. "apply
+    and run".
+  - **Build:** rebuilt (18 s); DLL 22:02:51 is newer than the source
+    (22:01:57); bridge up.
+  - **Tested in the editor:** "autoaim works". Mid-dive, LT snaps already
+    (no zoom for pistols); the user turned down a dive lock and an
+    automatic snap on diving, and left the magnifying guns' mid-dive zoom
+    as is.
+  - **User:** set the gamepad look mapping's Scalar to 1 if it has one.
+
+- **Session end (2026-10-28, 01:45):** "lets do it tomorrow". Built and
+  packaged today: encounter reserves (director and triggers), sleepers kept
+  hidden against CC2, controller aiming, the level-start black screen, body
+  LODs at 3, and the `Lvl_Sandbox` navmesh saved (user). Deck-confirmed:
+  director spawn hitch, aiming, chinos. Waiting on the 01:16 build's
+  results and a trace. Nothing committed since `6efc1724` (the user
+  commits).
 
 ### ▶ RESUME HERE
 **A. Next up**
-1. **Fidelity and performance (plan item 34).** Steps 1–2 done; the first
-   Deck build runs: mostly 60 fps, GPU 12–20, Game 8–18, Draw 5–18 ms, with
-   drops at level start and right after kills.
-   - **Next:** an Unreal Insights trace from the Deck (spec, *First Deck
-     measurement*).
-     1. On the PC, run Unreal Insights and allow it through the firewall.
-     2. Devkit Client start command:
-        `ProjectBopis/Binaries/Win64/ProjectBopis.exe Lvl_Linear
-        -ExecCmds="stat fps,stat unit" -trace=default,gpu,loadtime
-        -tracehost=192.168.1.43`.
-     3. Play: level start, a fight with kills, slow motion with a grenade.
-        Quit.
-     4. Claude exports and reads it, then fixes the confirmed causes:
-        respawn hitch, ragdoll asset swap, GPU passes.
+1. **Deck trace of the 01:16 build (plan item 34).** That build has the
+   trigger reserves, sleepers kept hidden, the `Lvl_Sandbox` navmesh fix and
+   the black screen. The user played it on the Deck; results weren't
+   reported yet. No trace was recorded: Insights was closed, so the trace
+   server wasn't running.
+   1. Open Unreal Insights on the PC (Claude can launch it).
+   2. Deck start command: `ProjectBopis/Binaries/Win64/ProjectBopis.exe
+      Lvl_Linear -ExecCmds="stat fps,stat unit" -trace=default,gpu,loadtime
+      -tracehost=192.168.1.43`.
+   3. Play through the rooms, then quit. Claude exports it (method in the
+      spec, *Second Deck trace*).
+   4. **Close Insights afterwards**, or every editor session records into
+      the store.
+   - **Check:** room spawns no longer give 34–66 ms frames; nobody at the
+     triggers; enemies dressed on arrival; the black screen and fade; the
+     `Lvl_Sandbox` first group chases.
+   - **Store:** emptied by the user (2026-10-28) with `Tools/ClearTraces.ps1`,
+     baseline included; its findings are in the spec.
    - **Still open (user):** both suns' Dynamic Shadow Distance (movable)
-     → 4000; editor Engine Scalability → High.
-   - **Then:** step 3, the bake.
-2. **Clean image (user):** pick TAA (soft) / FXAA (sharp, some shimmer) /
-   none, and which post effects stay (bloom, SSAO, SSR, tonemapper). 100%
-   resolution is already forced; re-upload the repackaged build before the
-   trace.
-3. **Clothes freak out on far kills** (user, Deck; "fixes itself up
-   close", user suspects LOD). Check the CC apparel's LOD setup:
-   - leader-pose LOD sync and bone reduction on the body's LODs;
-   - cloth simulation LOD;
-   - update-rate optimisation;
-
-   …all against a ragdoll at a distance.
-4. **Gunfire audio refactor** (plan item 31; home test: "to refactored").
+     → 4000; editor Engine Scalability → High (matches the Deck).
+   - **Later (item 34):** step 3 bake once level art exists; a fade-out
+     before death reloads (660–690 ms frozen frame); merge the two
+     `BuildEnemy` copies into `AEnemyBase`; build-on-approach reserves for
+     multi-arena levels; GC and CC2 tick costs.
+2. **Wheel cycle on the face buttons** (user, `IMC_Default`, no code):
+   probably done. The saved `IMC_Default` no longer has D-pad keys and now
+   has Face Button Left. Confirm it cycles both ways on the Deck.
+3. **Gunfire audio refactor** (plan item 31; home test: "to refactored").
    First: what exactly goes wrong — shots cutting each other off, or *all*
    sound dropping during bursts (the mixer's 32-voice ceiling → sound
    priorities/concurrency)? Then rework the fire-sound path.
-5. `SC_Music` sound class on `DarkCrimes` (bridge; plan item 27's last part).
-6. **Pump + grip (plan item 32):** user draws `Pump` on `MM_PumpShotgun_Fire`
+4. `SC_Music` sound class on `DarkCrimes` (bridge; plan item 27's last part).
+5. **Pump + grip (plan item 32):** user draws `Pump` on `MM_PumpShotgun_Fire`
    (the rack) and `HandGrip` at the end of `MM_Rifle_Equip`; then test the
    pump fire, a shotgun reload (ends with the last shell — no rack for now)
    and the equip landing. The slide's AnimBP waits for the final model.
-7. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
+6. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
    and `AmmoEject` on `SK_Beretta_92FS`, then tune grips in PIE. Still to
    decide: AR-15 replaces which rifle; AK-74u ammo; .45 vs 9mm ammo. Then
    import one gun at a time (skeletal, +X barrel,
    moving parts as bones) — sockets and grip offsets are yours, Blueprints
    and wiring Claude's.
-8. **Fire notifies (feedback standard, plan item 33):** on
+7. **Fire notifies (feedback standard, plan item 33):** on
    `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
    `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
    Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
    Fire notify and no flash. Then test every gun: one shot sound, one flash.
-9. **Deferred (user): prone on the back** after a shootdodge — the left hand
+8. **Deferred (user): prone on the back** after a shootdodge — the left hand
    can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
-10. **New long guns:** calibrate and tick `bLockLeftHandRotation`
+9. **New long guns:** calibrate and tick `bLockLeftHandRotation`
    (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
 
 **B. Editor / git**

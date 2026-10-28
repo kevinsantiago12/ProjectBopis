@@ -4,6 +4,7 @@
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Gameplay/RollComponent.h"
+#include "Gameplay/GamepadAimComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Camera/CameraComponent.h"
@@ -36,6 +37,7 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	WeaponWheelClass = UWeaponWheelWidget::StaticClass();
 	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
 	Roll = CreateDefaultSubobject<URollComponent>(TEXT("Roll"));
+	GamepadAim = CreateDefaultSubobject<UGamepadAimComponent>(TEXT("GamepadAim"));
 
 	// The player never staggers: being rooted mid-fight (or mid-dive) is no fun. Hits stay
 	// light reactions.
@@ -220,6 +222,8 @@ void AProjectBopisCharacter::MoveInput(const FInputActionValue& Value)
 
 void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 {
+	GamepadAim->SetUsingGamepad(false);
+
 	// get the Vector2D look axis
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
@@ -250,7 +254,8 @@ void AProjectBopisCharacter::StickLookInput(const FInputActionValue& Value)
 		}
 		return;
 	}
-	LookInput(Value);
+	GamepadAim->SetUsingGamepad(true);
+	GamepadAim->ApplyStick(Value.Get<FVector2D>(), bIsAiming);
 }
 
 void AProjectBopisCharacter::DoAim(float Yaw, float Pitch)
@@ -1312,6 +1317,7 @@ void AProjectBopisCharacter::DoAimStart()
 
 	// State only — Tick derives the stance and camera from this every frame.
 	bIsAiming = true;
+	GamepadAim->SnapToTarget();
 }
 
 void AProjectBopisCharacter::DoAimEnd()
