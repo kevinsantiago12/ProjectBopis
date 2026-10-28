@@ -443,14 +443,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Evasion", meta = (ClampMin = "0.0"))
 	float EvadeLingerTime = 2.0f;
 
-	/** Vanquish-style: keep the roll button held and the roll cuts into a crouch partway (see
-	    the Roll component's CrouchOutAfter): firing from the knee until it's let go. */
+	/** Vanquish-style: let go of the stick during a roll and it cuts into a kneel partway (the
+	    Roll component's CrouchOutAfter): firing from the knee, down until the stick, the
+	    crouch key or another roll gets it up. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Roll")
 	bool bPostRollCrouch = true;
 
-	/** Movement input is ignored while knelt: the roll's momentum slides into it. */
+	/** Knelt, the stick doesn't steer the slide; once it's settled (under PostRollStandSpeed),
+	    a push stands up and moves off. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Roll")
 	bool bPostRollCrouchHoldsPosition = true;
+
+	/** The roll button rolls only with the stick pushed past this (0..1; WASD is a full push);
+	    below it, the button is the crouch key. The same push stands up from a settled kneel. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Roll", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RollInputThreshold = 0.3f;
+
+	/** A kneel's slide counts as settled under this speed (cm/s). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Roll", meta = (ClampMin = "0.0"))
+	float PostRollStandSpeed = 50.0f;
 
 	/** An empty gun reloads by itself once the player is free to (standing or lying prone,
 	    not mid-dive or mid-roll), AutoReloadDelay after it ran dry. */
@@ -593,12 +604,12 @@ public:
 	    frame at the old height. */
 	void ApplyCameraHeight();
 
-	/** Drops into the post-roll kneel until the roll button is let go (the roll calls this
-	    when it's held past its CrouchOutAfter). */
+	/** Drops into the post-roll kneel (the roll calls this when the stick is let go past its
+	    CrouchOutAfter). */
 	void StartPostRollCrouch();
 
-	/** The roll button is down right now. */
-	bool IsRollHeld() const { return IsInputHeld(RollAction); }
+	/** The move stick is pushed past RollInputThreshold right now. */
+	bool IsPushingStick() const { return GetMovePush() >= RollInputThreshold; }
 
 	/** The roll may cut into a kneel (bPostRollCrouch on, alive). */
 	bool CanPostRollCrouch() const { return bPostRollCrouch && !IsDead(); }
@@ -698,10 +709,11 @@ private:
 	/** World time evasion was last under way. */
 	float LastEvadingTime = -1000.0f;
 
-	/** An input action is down right now (Enhanced Input's live value, not the last event). */
-	bool IsInputHeld(const UInputAction* Action) const;
+	/** How far the move stick is pushed right now (0..1; Enhanced Input's live value, not the
+	    last event). */
+	float GetMovePush() const;
 
-	/** Knelt after a roll, until the roll button is let go. */
+	/** Knelt after a roll, until the stick, the crouch key or another roll gets it up. */
 	bool bPostRollCrouching = false;
 
 	/** Turns the body toward the camera while bTurningToAim, then locks it there. */

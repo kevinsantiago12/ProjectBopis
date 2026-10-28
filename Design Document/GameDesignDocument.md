@@ -138,8 +138,10 @@ game's earlier first-person design.
   struggle to hit, with a moment of free slow motion partway through to line
   up the shots for coming out of it. You can't shoot mid-roll, but you can run
   straight out of the end of it.
-- **The kneel**, borrowed from Vanquish: keep the roll button held and the
-  roll ends in a crouch, firing from the knee for as long as you hold it.
+- **The kneel**, borrowed from Vanquish: let go of the stick during a roll
+  and it ends in a crouch, firing from the knee until you move off. Roll and
+  crouch share one button: with a direction it rolls, without one it
+  crouches.
 - Dives and rolls stay hard to hit for a couple of seconds after you land.
 - An empty gun reloads by itself, and reloading ends slow motion.
 
@@ -523,3 +525,8 @@ a shooting range.
   walk-around stretches with civilians to interact with; fights stay at about
   six enemies at a time. Controllers get aim assist (a gentle lock-on) and
   smoother turning.
+- 2026-10-28 — Roll and crouch on one button; the kneel after a roll no longer
+  needs a button held, so it works with a controller. The MAC-11 is replaced
+  by an Uzi, for the player and enemies. Pistols are carried with the hammer
+  cocked, and their slides lock back on the last shot until a reload. Picked
+  for later: a Benelli M4 semi-auto shotgun and an SVD sniper rifle.

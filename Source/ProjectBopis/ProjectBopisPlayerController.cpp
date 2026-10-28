@@ -9,11 +9,15 @@
 #include "Blueprint/UserWidget.h"
 #include "ProjectBopis.h"
 #include "Widgets/Input/SVirtualJoystick.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
+#include "GameFramework/Character.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Enemies/EnemyBase.h"
+#include "EngineUtils.h"
+#include "Gameplay/LevelStartSubsystem.h"
 
 AProjectBopisPlayerController::AProjectBopisPlayerController()
 {
@@ -45,7 +49,7 @@ void AProjectBopisPlayerController::BeginPlay()
 
 	}
 
-	// Level start: black and paused until the frames settle (TickCurtain), then a fade-in.
+	// Level start: black, the player's input off, until the scene's ready (TickCurtain), then a fade-in.
 	if (bLevelStartCurtain && IsLocalPlayerController())
 	{
 		if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
@@ -54,10 +58,34 @@ void AProjectBopisPlayerController::BeginPlay()
 				.Image(FCoreStyle::Get().GetBrush("WhiteBrush"))
 				.ColorAndOpacity(FLinearColor::Black);
 			Viewport->AddViewportWidgetContent(Curtain.ToSharedRef(), 1000);
-			UGameplayStatics::SetGamePaused(this, true);
 			CurtainTicker = FTSTicker::GetCoreTicker().AddTicker(
 				FTickerDelegate::CreateUObject(this, &AProjectBopisPlayerController::TickCurtain));
 		}
+	}
+
+	// No black screen after all (not this player's, or no viewport): nothing to wait for.
+	if (!Curtain.IsValid())
+	{
+		SetEnemiesHeld(false);
+	}
+}
+
+void AProjectBopisPlayerController::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// Before the level's actors begin play, so an enemy spawned at the start is held too.
+	if (bLevelStartCurtain && GetWorld() && GetWorld()->IsGameWorld())
+	{
+		SetEnemiesHeld(true);
+	}
+}
+
+void AProjectBopisPlayerController::SetEnemiesHeld(bool bHeld)
+{
+	if (ULevelStartSubsystem* LevelStart = GetWorld() ? GetWorld()->GetSubsystem<ULevelStartSubsystem>() : nullptr)
+	{
+		LevelStart->SetHolding(bHeld);
 	}
 }
 
@@ -75,16 +103,25 @@ bool AProjectBopisPlayerController::TickCurtain(float DeltaTime)
 		return false;
 	}
 
-	// Black and paused until the frames have run steady for SteadyTime in a row, within
-	// MinBlackTime and MaxBlackTime. The first frame's time includes the load itself, so a
-	// long frame counts for a quarter second at most.
+	// Black, the player's input off, until everyone's dressed and the frames have run steady
+	// for SteadyTime in a row since; at least MinBlackTime, at most MaxBlackTime. The first
+	// frame's time includes the load itself, so a long frame counts for a quarter second at most.
 	if (!bCurtainFading)
 	{
+		APawn* PlayerPawn = GetPawn();
+		if (PlayerPawn && PlayerPawn->InputEnabled())
+		{
+			PlayerPawn->DisableInput(this);
+		}
+
 		CurtainTime += FMath::Min(DeltaTime, 0.25f);
-		SteadyFor = DeltaTime <= SteadyFrameTime ? SteadyFor + DeltaTime : 0.0f;
+		SteadyFor = (DeltaTime <= SteadyFrameTime && IsSceneReady()) ? SteadyFor + DeltaTime : 0.0f;
 		if ((CurtainTime >= MinBlackTime && SteadyFor >= SteadyTime) || CurtainTime >= MaxBlackTime)
 		{
-			UGameplayStatics::SetGamePaused(this, false);
+			if (PlayerPawn)
+			{
+				PlayerPawn->EnableInput(this);
+			}
 			bCurtainFading = true;
 		}
 		return true;
@@ -97,6 +134,7 @@ bool AProjectBopisPlayerController::TickCurtain(float DeltaTime)
 	if (Opacity <= 0.0f)
 	{
 		RemoveCurtain();
+		SetEnemiesHeld(false);
 		return false;
 	}
 	return true;
@@ -112,6 +150,30 @@ void AProjectBopisPlayerController::RemoveCurtain()
 		}
 		Curtain.Reset();
 	}
+}
+
+bool AProjectBopisPlayerController::IsSceneReady() const
+{
+	// Shown, with a body: the Character Customizer hides its characters, and fills their
+	// meshes, only once their outfits have loaded. Sleepers stay hidden on purpose.
+	auto IsDressed = [](const ACharacter* Person)
+	{
+		return Person && !Person->IsHidden() && Person->GetMesh()
+			&& Person->GetMesh()->GetSkeletalMeshAsset();
+	};
+
+	if (!IsDressed(Cast<ACharacter>(GetPawn())))
+	{
+		return false;
+	}
+	for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+	{
+		if (!It->IsAsleep() && !It->IsDead() && !IsDressed(*It))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void AProjectBopisPlayerController::SetupInputComponent()

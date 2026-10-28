@@ -282,10 +282,16 @@ void AProjectBopisCharacter::DoMove(float Right, float Forward)
 		return;
 	}
 
-	// Knelt after a roll: the slide carries on, input doesn't steer it.
-	if (bPostRollCrouchHoldsPosition && bPostRollCrouching)
+	// Knelt after a roll: the slide carries on, input doesn't steer it. Once it's settled, a
+	// push past RollInputThreshold stands up and moves off.
+	if (bPostRollCrouching)
 	{
-		return;
+		const bool bSliding = GetVelocity().Size2D() > PostRollStandSpeed;
+		if ((bPostRollCrouchHoldsPosition && bSliding) || !IsPushingStick())
+		{
+			return;
+		}
+		bPostRollCrouching = false;
 	}
 
 	// Camera-relative in BOTH stances — this is the whole camera-relative model.
@@ -633,8 +639,9 @@ void AProjectBopisCharacter::DoFire()
 	}
 
 	// Getting up from a dive leaves you open: the gun stays quiet until you're on your feet.
-	// Same while winding up for one — the shooting starts with the leap — and mid-roll.
-	if ((Shootdodge && (Shootdodge->IsGettingUp() || Shootdodge->IsWindingUp())) || (Roll && Roll->IsRolling()))
+	// Same while winding up for one — the shooting starts with the leap — and mid-roll or just
+	// after (the gun still coming up).
+	if ((Shootdodge && (Shootdodge->IsGettingUp() || Shootdodge->IsWindingUp())) || (Roll && Roll->IsBlockingFire()))
 	{
 		return;
 	}
@@ -697,6 +704,15 @@ void AProjectBopisCharacter::DoRoll()
 	{
 		return;
 	}
+
+	// One button for both: pushed past RollInputThreshold, it rolls that way; otherwise it's
+	// the crouch key (down, or back up).
+	if (!IsPushingStick())
+	{
+		DoCrouchStart();
+		return;
+	}
+
 	// A roll is the way out of a kneel (or a crouch): up first, then roll.
 	bPostRollCrouching = false;
 	bCrouchRequested = false;
@@ -725,14 +741,16 @@ void AProjectBopisCharacter::StartPostRollCrouch()
 	}
 }
 
-bool AProjectBopisCharacter::IsInputHeld(const UInputAction* Action) const
+float AProjectBopisCharacter::GetMovePush() const
 {
 	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	const UEnhancedInputLocalPlayerSubsystem* Subsystem = PlayerController
 		? ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer())
 		: nullptr;
 	const UEnhancedPlayerInput* PlayerInput = Subsystem ? Subsystem->GetPlayerInput() : nullptr;
-	return PlayerInput && Action && PlayerInput->GetActionValue(Action).Get<bool>();
+	return (PlayerInput && MoveAction)
+		? FMath::Min(1.0f, PlayerInput->GetActionValue(MoveAction).Get<FVector2D>().Size())
+		: 0.0f;
 }
 
 float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -1216,6 +1234,14 @@ void AProjectBopisCharacter::DoCrouchStart()
 		return;
 	}
 
+	// Knelt after a roll: the press stands back up.
+	if (bPostRollCrouching)
+	{
+		bPostRollCrouching = false;
+		bCrouchRequested = false;
+		return;
+	}
+
 	// Only records the request — UpdateCrouch decides whether the character is
 	// actually down, since crouch only applies while standing still.
 	bCrouchRequested = bCrouchIsToggle ? !bCrouchRequested : true;
@@ -1237,13 +1263,8 @@ void AProjectBopisCharacter::UpdateCrouch()
 		return;
 	}
 
-	// Knelt after a roll, firing (Vanquish): down for as long as the roll button is held —
-	// let go and the normal rule below takes over again (standing, unless the player had
-	// asked to crouch anyway).
-	if (bPostRollCrouching && !IsRollHeld())
-	{
-		bPostRollCrouching = false;
-	}
+	// Knelt after a roll, firing (Vanquish): down until the stick, the crouch key or another
+	// roll gets it up (DoMove, DoCrouchStart, DoRoll).
 	if (bPostRollCrouching)
 	{
 		if (!bIsCrouched)

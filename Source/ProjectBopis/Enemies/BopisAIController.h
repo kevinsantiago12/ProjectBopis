@@ -52,4 +52,7 @@ private:
 
 	/** Hands the pawn's StateTree to the component and starts it. */
 	void StartBehaviour();
+
+	/** StartBehaviour is queued on the level start's hold (see ULevelStartSubsystem). */
+	bool bWaitingForLevelStart = false;
 };

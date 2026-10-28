@@ -48,8 +48,10 @@ protected:
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
 
-	/** Level start (restarts too): the screen stays black and the game paused until the frames
-	    run steady, the engine's warm-up (shaders, textures) hidden behind it, then fades in. */
+	/** Level start (restarts too): the screen stays black, the player's input off, until
+	    everyone's dressed (the Character Customizer shows its characters once their outfits
+	    load) and the frames run steady, then it fades in. The game runs meanwhile: pausing
+	    would stall the Customizer's own timers. */
 	UPROPERTY(EditAnywhere, Category = "Level Start")
 	bool bLevelStartCurtain = true;
 
@@ -66,13 +68,16 @@ protected:
 	float MinBlackTime = 0.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Level Start", meta = (ClampMin = "0.0"))
-	float MaxBlackTime = 3.0f;
+	float MaxBlackTime = 4.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Level Start", meta = (ClampMin = "0.01"))
 	float FadeInTime = 0.4f;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+
+	/** The enemies' hold goes on here, before anything in the level begins play. */
+	virtual void PostInitializeComponents() override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -83,10 +88,16 @@ protected:
 	bool ShouldUseTouchControls() const;
 
 private:
-	/** Runs the black every frame, paused or not (real seconds). False once it's gone. */
+	/** Runs the black every frame (real seconds). False once it's gone. */
 	bool TickCurtain(float DeltaTime);
 
 	void RemoveCurtain();
+
+	/** The player, and every enemy awake, shown with a body (the Character Customizer done). */
+	bool IsSceneReady() const;
+
+	/** The level start's hold on the enemies (see ULevelStartSubsystem). */
+	void SetEnemiesHeld(bool bHeld);
 
 	/** The black over the whole screen, HUD included. */
 	TSharedPtr<SImage> Curtain;

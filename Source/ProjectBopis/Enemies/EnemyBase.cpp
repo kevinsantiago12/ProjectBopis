@@ -21,6 +21,7 @@
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
+#include "Gameplay/LevelStartSubsystem.h"
 #include "Weapons/WeaponBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
@@ -59,6 +60,13 @@ void AEnemyBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	if (IsDead())
+	{
+		return;
+	}
+
+	// Held at the level start, behind the black screen: nothing aims, moves or shoots yet.
+	const ULevelStartSubsystem* LevelStart = GetWorld()->GetSubsystem<ULevelStartSubsystem>();
+	if (LevelStart && LevelStart->IsHolding())
 	{
 		return;
 	}

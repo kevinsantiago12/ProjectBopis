@@ -27,6 +27,7 @@ void URollComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	CooldownLeft = FMath::Max(0.0f, CooldownLeft - DeltaTime);
+	FireDelayLeft = FMath::Max(0.0f, FireDelayLeft - DeltaTime);
 
 	// This roll's slow motion counts down in real seconds — FApp's delta is from before the
 	// dilation — and ends on its own, even after the roll.
@@ -69,12 +70,12 @@ void URollComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 			}
 		}
 
-		// Roll button still held partway through: cut into a kneel (Vanquish), if the kneel
-		// is on (the character's bPostRollCrouch).
+		// The stick let go partway through: cut into a kneel (Vanquish), if the kneel is on
+		// (the character's bPostRollCrouch). Still pushed, it runs out below instead.
 		const FVector Input = Character->GetLastMovementInputVector();
 		const bool bPlaying = AnimInstance && AnimInstance->Montage_IsPlaying(RollMontage);
 		if (bPlaying && Position >= Length * CrouchOutAfter && Character->CanPostRollCrouch()
-			&& Character->IsRollHeld())
+			&& !Character->IsPushingStick())
 		{
 			EndRoll();
 			Character->StartPostRollCrouch();
@@ -170,6 +171,7 @@ void URollComponent::EndRoll()
 {
 	RollMontage = nullptr;
 	CooldownLeft = Cooldown;
+	FireDelayLeft = FireDelayAfterRoll;
 	if (Character)
 	{
 		Character->SetAnimationDrivenRotation(false);

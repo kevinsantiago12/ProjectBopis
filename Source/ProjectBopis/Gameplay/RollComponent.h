@@ -47,6 +47,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Roll")
 	bool IsRolling() const { return RollMontage != nullptr; }
 
+	/** No shooting: mid-roll, or the gun still coming up after one (FireDelayAfterRoll). */
+	bool IsBlockingFire() const { return IsRolling() || FireDelayLeft > 0.0f; }
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -73,6 +76,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Roll", meta = (ClampMin = "0.0"))
 	float Cooldown = 0.25f;
 
+	/** Seconds after a roll ends (into a kneel, running out or played out) before the gun can
+	    fire: the aim pose is still blending in, and a shot then goes into the floor. Game
+	    time, so it stretches with the roll's slow motion as the blend does. */
+	UPROPERTY(EditAnywhere, Category = "Roll", meta = (ClampMin = "0.0"))
+	float FireDelayAfterRoll = 0.2f;
+
 	/** How far through the roll (0..1) movement input may cut it short and take over —
 	    the rest is mostly getting back up. 1: always plays out. */
 	UPROPERTY(EditAnywhere, Category = "Roll", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -87,7 +96,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Roll")
 	bool bCarryMomentum = true;
 
-	/** Holding the roll button: this far through the roll (0..1) it cuts into a kneel (the
+	/** The stick let go: this far through the roll (0..1) it cuts into a kneel (the
 	    character's post-roll crouch) instead of playing out. */
 	UPROPERTY(EditAnywhere, Category = "Roll|Kneel", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CrouchOutAfter = 0.5f;
@@ -128,6 +137,7 @@ private:
 	TObjectPtr<UAnimMontage> RollMontage;
 
 	float CooldownLeft = 0.0f;
+	float FireDelayLeft = 0.0f;
 
 	/** This roll's slow motion has been tried (once per roll). */
 	bool bRollFocusDone = false;

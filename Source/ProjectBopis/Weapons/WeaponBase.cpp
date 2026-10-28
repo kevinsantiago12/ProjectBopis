@@ -28,6 +28,17 @@ namespace
 {
 	/** A gap this much longer than the weapon's rate ends a burst (the trigger let go). */
 	constexpr float BurstBreakTime = 0.15f;
+
+	/** Shows one frame of an animation on a gun without playing it, so its notifies don't fire. */
+	void HoldFrame(USkeletalMeshComponent* Mesh, UAnimSequence* Animation, float Time)
+	{
+		if (Mesh)
+		{
+			Mesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			Mesh->SetAnimation(Animation);
+			Mesh->SetPosition(Time, false);
+		}
+	}
 }
 
 // Sets default values
@@ -74,6 +85,12 @@ bool AWeaponBase::CanAcceptRound() const
 		&& (bInfiniteReserve || GetReserveAmmo() > 0);
 }
 
+void AWeaponBase::SetAmmoInMagazine(int32 Rounds)
+{
+	CurrentAmmoInMagazine = FMath::Clamp(Rounds, 0, MagazineSize);
+	UpdateRestPoses();
+}
+
 bool AWeaponBase::Reload(float Speed)
 {
 	if (!CanReload())
@@ -116,6 +133,7 @@ void AWeaponBase::LoadRound()
 	else
 	{
 		bIsReloading = false;
+		UpdateRestPoses();
 	}
 }
 
@@ -129,6 +147,9 @@ void AWeaponBase::FinishReload()
 	bIsReloading = false;
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
+
+	// The slide goes forward as the reload ends.
+	UpdateRestPoses();
 }
 
 void AWeaponBase::CancelReload()
@@ -142,6 +163,32 @@ void AWeaponBase::CancelReload()
 	bIsReloading = false;
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
+
+	// A shell reload broken off with rounds in closes the bolt; an empty gun stays locked.
+	UpdateRestPoses();
+}
+
+void AWeaponBase::UpdateRestPoses()
+{
+	auto Rest = [this](USkeletalMeshComponent* Mesh, bool bEmpty)
+	{
+		if (bEmpty && LastShotAnimation)
+		{
+			HoldFrame(Mesh, LastShotAnimation, LastShotAnimation->GetPlayLength());
+		}
+		else if (ReadyPose)
+		{
+			HoldFrame(Mesh, ReadyPose, 0.0f);
+		}
+	};
+
+	// Duals take turns, so the gun that isn't next runs dry a round sooner.
+	const bool bOffhandNext = IsOffhandNext();
+	Rest(WeaponMesh, CurrentAmmoInMagazine <= (bOffhandNext ? 1 : 0));
+	if (bDualWield)
+	{
+		Rest(OffhandMesh, CurrentAmmoInMagazine <= (bOffhandNext ? 0 : 1));
+	}
 }
 
 float AWeaponBase::GetReloadProgress() const
@@ -175,6 +222,7 @@ void AWeaponBase::CompleteReloadNow()
 			CurrentAmmoInMagazine += TakeReserve(1);
 		}
 		bIsReloading = false;
+		UpdateRestPoses();
 	}
 }
 
@@ -230,13 +278,19 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 
 	USkeletalMeshComponent* FiringMesh = GetFiringMesh();
 
+	// A gun's last round leaves it locked back. Duals take turns, so with fewer rounds left than
+	// guns, the one firing now won't fire again before a reload.
+	const int32 Guns = bDualWield ? 2 : 1;
+	UAnimSequence* ShotAnimation = (LastShotAnimation && CurrentAmmoInMagazine < Guns)
+		? LastShotAnimation : FireAnimation;
+
 	// The gun's own animation (if it has one) moves its parts, and its Weapon Sound notifies make
 	// its sounds — the shot is a Fire notify on it, played through PlayWeaponSound so the cues'
 	// attenuation and per-shooter voice limit still apply. Without one, the shot sounds from here.
 	// The flash is always ours, at the muzzle socket.
-	if (FireAnimation)
+	if (ShotAnimation)
 	{
-		FiringMesh->PlayAnimation(FireAnimation, false);
+		FiringMesh->PlayAnimation(ShotAnimation, false);
 	}
 	else
 	{
@@ -424,6 +478,7 @@ void AWeaponBase::BeginPlay()
 	// Not in the constructor — MagazineSize is a per-Blueprint default and isn't
 	// applied yet at construction time.
 	CurrentAmmoInMagazine = MagazineSize;
+	UpdateRestPoses();
 
 	// A fire animation with an Eject notify times the casing itself.
 	if (FireAnimation)

@@ -791,7 +791,67 @@ cut to 3. Exports are in the scratchpad (`trace2/`).
     navmesh-actor setting before Save All. `Lvl_Linear` saves its nav in the
     map and was never affected.
 
+### Third Deck trace (2026-10-28, 11:15)
+**The trace.** `20261028_111551.utrace` (422 MB), 3 min on `Lvl_Linear` with
+4 loads (the start and 3 death restarts). The build (10:59) had trigger
+reserves, sleepers kept hidden, the black screen, the one-button roll/kneel
+and the fire delay. Exports are in the scratchpad (`trace3/`).
+
+- **Room spawns fixed:** 0 construction scripts and 0 `Set Apparel` calls
+  outside the loads. Each load builds its 14 trigger enemies at about
+  7–8 ms each, behind the black screen.
+- **Gameplay frames:** p50 16.7, p90 17.9, p99 20.7 ms. Only 2 frames over
+  33 ms (worst 34 ms), down from 17 in the second trace.
+- **After each load:** the first frame is 90–110 ms, then a few 25–36 ms
+  frames for about 1–2.5 s. CC2 applies its outfits about a second after the
+  load (Delay). Mostly under the black screen; a stray 25 ms frame can land
+  in the fade.
+- **Death restart freeze:** the load frame is now 800–830 ms (660–690
+  before), because more enemies are built at load. It sits on the old
+  level's last frame. A fade-out before the reload (on the later list) hides
+  it.
+- **GPU:** `SceneRender` 11.0 ms average (9.6 last time; different play).
+- **GC:** small periodic slices, with 62–85 ms inside the loads.
+
 ### Level-start black screen (2026-10-27)
+**Revised 2026-10-28 (no pause; waits for the outfits).** User on the Deck:
+"the black screen is too quick still, I see the player pop in from nowhere,
+I see the weapon floating first then the player pops in".
+- **Cause:** the Character Customizer hides each character while it loads
+  the outfit on its own Delay/timers, then shows it. Paused, those don't run
+  (latent actions and timers stop with the world), so the outfits only went
+  on after the fade. The third trace has every `Set Apparel` about 1 s after
+  each load. The gun is its own actor, so it showed alone.
+- **Now:**
+  - The game isn't paused; the player pawn's input is off instead
+    (`DisableInput(this)` each black tick, `EnableInput` at the fade).
+  - `SteadyFor` only counts while `IsSceneReady()`: the player and every
+    awake, alive `AEnemyBase` is not hidden and has a skeletal mesh asset.
+    Sleepers are skipped.
+  - The outfits' own hitch then falls under the black.
+  - `MaxBlackTime` is 4 s (was 3).
+  - The AI and animation warm-up now also happens under the black.
+- **Enemies held until the fade is complete (2026-10-28).** User: "complete
+  the fade before activating any enemies"; "they moved on me before the fade
+  is done". New `ULevelStartSubsystem` (`UWorldSubsystem`, `Gameplay/`) with
+  `IsHolding()`, `SetHolding()` and a one-off `OnReleased` delegate.
+  - **On:** in the player controller's `PostInitializeComponents` (curtain
+    on, game world). That runs before the level's actors begin play, so the
+    director's start-up group is held too.
+  - **Off:** when the fade completes (`TickCurtain`), or in `BeginPlay` if no
+    curtain was made.
+  - **While on:**
+    - `ABopisAIController::StartBehaviour` queues itself on `OnReleased`
+      (`bWaitingForLevelStart`), so no StateTree runs and nobody moves.
+    - `AEnemyBase::Tick` returns after the death check: no aim, turn, patrol,
+      shoot or ally alert.
+    - Alerts still register; reaction time and the ally-alert countdown wait.
+  - Player input still returns as the fade starts.
+- **Build note:** a lambda parameter named `Character` failed with C4458
+  (shadows `AController::Character`), which Unreal builds treat as an error.
+  Renamed it `Person`.
+- The original description below is the 2026-10-27 version (paused).
+
 **Why:** on the Deck, each level start climbed from 0 to 60 fps over about
 2 s. The spawns aren't the cause, since reserves are built before the first
 frame. It's the engine warming up: shaders (plus Proton's own pass) and texture
@@ -1456,8 +1516,14 @@ segment per carried weapon; replaced the same day.)*
 For the final weapon assets (plan item 33) and any gun after. Every system is
 data-driven per weapon, so a new gun reuses an existing **anim type** (no new
 montages) and needs:
-- **Mesh:** a **skeletal** mesh (the weapon components are skeletal), barrel
-  along **+X**, cm scale. Moving parts as their own bones (slide/pump, bolt,
+- **Mesh:** a **skeletal** mesh (the weapon components are skeletal), cm
+  scale, barrel along **+Y**, up +Z.
+  - **Corrected 2026-10-28** (this said +X). The hand sockets expect +Y:
+    every existing gun is +Y with a grip rotation near (0, −3, 8).
+  - A mesh on another axis still works, but the turn goes into
+    `GripRotationOffset` and `OffhandGripRotationOffset`: the revolver uses
+    yaw −93, and the Uzi (+X) uses (−8, 87, 0) and offhand yaw 105.
+  - Sockets need X down the barrel either way. Moving parts as their own bones (slide/pump, bolt,
   magazine) — the pump code (`PumpBoneName`; it assumes the pump bone's
   parent has X along the barrel) and any gun-side reload animation need them.
 - **Budget** (provisional, 2026-10-25, until the deferred Steam Deck perf
@@ -1467,7 +1533,9 @@ montages) and needs:
   bones, rigid skinning. A dressed CC character is ~30k verts and 12 draw
   calls, so guns at these numbers add ~15–30% per body. Bought packs are
   often 20–60k (first-person): bring LOD0 down with the skeletal-mesh LOD
-  reduction rather than remodelling.
+  reduction rather than remodelling. Tick **Lock Mesh Edges** on the reduced
+  LODs when the gun is built from loose shells, as most bought guns are;
+  otherwise they open holes (the Uzi, 2026-10-28).
 - **Sockets** (user, placed visually): `MuzzleFlash` (X out of the barrel),
   `AmmoEject`, and `LeftHandGrip` on long guns and two-handed pistols.
 - **Blueprint** (bridge, from the matching existing one): mesh, `AnimType`,
@@ -1528,6 +1596,49 @@ montages) and needs:
   frame; it then needs a `Fire` Weapon Sound notify, or the M4 goes silent).
   **Done (user, 2026-10-26):** `AR4_HatchOpen` (one frame) as the
   `WeaponMesh`'s animation, plus an M4 fire animation — "set and working".
+- **Ready pose and lock-back on empty (compiled 2026-10-28, "apply and run").**
+  User: "The default pose of the pistol should be hammer back"; the slide locks
+  back when out of ammo. Two optional fields on `AWeaponBase` (Feedback):
+  - **`ReadyPose`:** a one-frame pose held while the gun is loaded and not
+    firing (the pistols: hammer back, slide forward).
+  - **`LastShotAnimation`:** played instead of `FireAnimation` on a gun's last
+    round. It ends locked back, and its last frame is held until the gun is
+    loaded. It needs `FireAnimation`'s Weapon Sound notifies too: `Fire`, and
+    `Eject` if `FireAnimation` has one, because `bFireAnimationEjects` is read
+    from `FireAnimation` only.
+  - **The rule** (the user's, for duals): in `Fire()`, after the round is
+    spent, it plays when the rounds left are fewer than the guns (1 single,
+    2 dual). The guns take turns, so each one locks on its own last shot.
+  - **`UpdateRestPoses()`:** sets each mesh from the count, without playing
+    anything (`HoldFrame`: `SetAnimation` + `SetPosition(Time, false)`, so no
+    notifies). A gun is locked if the rounds left are ≤ its place in the turn
+    order: 0 for the gun firing next, 1 for the other gun of a pair.
+    - Called from `BeginPlay`, `SetAmmoInMagazine` (pickups, the single that
+      comes with a dual pickup, enemy top-ups), `FinishReload`, the end of
+      `LoadRound`, `CancelReload` (also on a weapon swap) and
+      `CompleteReloadNow`.
+    - So the slide goes forward **at reload end**; a notify can time it later.
+  - **Behaviour without the fields:** a gun with neither set is unchanged, and
+    keeps any animation set on its mesh in the Blueprint (the M4's
+    `AR4_HatchOpen`).
+  - The dry-fire click is unchanged (open call). Dropped guns (`AWeaponDrop`)
+    aren't covered.
+  - **Guns that get it:** the 1911 (+ the enemy pistol), the Beretta, the
+    M4 / AR-15 if the mesh has a bolt bone, the Benelli M4, the SVD.
+  - **1911 (bridge, 2026-10-28):** `ReadyPose` = `SK_P1911_ReadyPose` (the
+    user's, in the kit's `Animations/P1911M/WeaponAnimations/`) and
+    `LastShotAnimation` = the kit's `Anim_P1911_M_Shot_Empty`, on `BP_Pistol`,
+    `BP_DualPistols` and `BP_Pistol_EnemyOnly`. Both are on
+    `SK_P1911_M_Skeleton`, which `SK_P1911` shares. `Anim_P1911_M_Shot_Empty`
+    came with no notifies; the user added Weapon Sound `Fire` + `Eject`.
+    **Tested 2026-10-28** (user: "1911 tested, works").
+  - **9mm (bridge, 2026-10-28):** `ReadyPose` = `SK_Beretta_92FS_ReadyPose`,
+    `LastShotAnimation` = `SK_Beretta_92FS_FireEmpty` (the user's, a copy of
+    `SK_Beretta_92FS_Fire` with its Fire + Eject notifies), both in
+    `/Game/Tactical_SemiAuto_Pistol/SkeletalMesh/`, on `BP_Pistol9mm` and
+    `BP_DualPistol9mm`. Tested 2026-10-28 (user: "9mm tested, works").
+  - **Not:** the Micro Uzi (closed bolt, no hold-open), AK-74u, Mossberg,
+    revolver, launcher.
 
 ## Ammo
 
@@ -1706,6 +1817,127 @@ user-placed `MuzzleFlash`/`AmmoEject` sockets (X forward). Single 0.06 s,
 12 damage, 32 rounds, reload 2.0, spread 1.2 → 1.5; dual 0.05 s, 64, 2.4,
 1.6 → 1.8; reserve 128; AI bursts 4–8 / 6–12, pauses 0.6–1.2.
 `BP_AmmoPickup_SMG` gives 32.
+
+**Uzi (2026-10-28, replacing the MAC pair).** A CGTrader Micro Uzi, sold as
+"rigged", is really 11 loose parts with pivots: no bones, no skin and no bind
+pose in the FBX, so Unreal could only import static meshes.
+- **First import (user, `/Game/MicroUzi/`):** 12 static meshes (`switch` is
+  a duplicate at 10× scale), the textures and `UZI`. All of it gets
+  replaced.
+  - `UZI` is an `FBXLegacyPhongSurfaceMaterial` instance with no textures:
+    the FBX points at the modeller's D: drive.
+  - `low_UZI_OcclusionRoughnessMetallic` came in as **BC5 / `TC_Normalmap`**.
+    It needs `TC_Masks` with sRGB off, or metallic is lost.
+  - Nanite is on for every part (it's off project-wide, so they'd use the
+    fallback; their `Triangles` tag shows the fallback count, 5.7k).
+- **Rig: `ArtSource/Weapons/Uzi/RigUzi.py`** (Blender 4.0, headless:
+  `blender --background --factory-startup --python RigUzi.py -- <fbx> <out dir>`).
+  - **Geometry:** each part's world transform is baked into its vertices.
+    It's turned 180° (barrel −X → **+X**), metres → **cm** (unit scale
+    0.01, so the FBX is 1 unit = 1 cm with no scale on any node), and
+    joined into one mesh.
+  - **Bones:** 7, each part skinned 100% to one: `root` (body, rear sight),
+    `bolt` (seen through the ejection port), `charging_handle` (top knob;
+    the file's `slide`), `mag`, `trigger`, `grip_safety` (`button`),
+    `selector` (`switch1`, left side). Each bone sits on its part's pivot,
+    is a child of `root`, and has no rotation (exported primary bone axis
+    X, secondary −Y).
+  - **Dropped:** the loose display round (`bullet`), and the folding stock
+    (`stock` + hinge `stock2`; user, 2026-10-28: "can we get rid of the
+    stock"). The receiver's stock-mount tabs stay, as on the real gun.
+  - **Output:** 10,334 triangles (11,550 with the stock), 1 material slot,
+    1 UV set; normals unchanged. `SK_Uzi.fbx`, `SK_Uzi.blend`, and
+    **`SM_Uzi_Mag.fbx`** (the drop mesh, pivot on the `mag` bone, so a
+    `Magazine` socket on `mag` with no offset fits it exactly).
+  - **Checked** by re-import (bones, rigid weights, bounds −13.9…14.1 cm)
+    and posed renders.
+- **Socket positions the script prints** (Unreal space, cm, relative to the
+  bone; the user still places them):
+  - `MuzzleFlash` on `root` (14.12, −0.13, 1.86)
+  - `AmmoEject` on `root` (−1.42, 1.50, 3.29), the ejection port, right side
+  - `Magazine` on `mag` (0, 0, 0)
+  - **Placed (user, 2026-10-28; read back, saved):** `MuzzleFlash` (15, 0,
+    2) with no rotation, so X runs down the barrel, 0.9 cm past the tip.
+    `AmmoEject` (−3, 0, 3) with no rotation. `Magazine` on `mag` at 0, so
+    `SM_Uzi_Mag` fits exactly. Only the eject socket's *location* matters:
+    `EjectCasing` takes the throw direction from the muzzle's X and world
+    up.
+- **Budget:** 10.3k triangles is about 2× the SMG budget, so LOD0 is
+  reduced in Unreal. Textures are 4K: Maximum Texture Size 1024.
+- **In Unreal (bridge, 2026-10-28, saved):**
+  - `SK_Uzi` + `SK_Uzi_Skeleton`: the bones came through under `root`
+    with no extra Armature bone, 1 slot (`UZI`).
+  - **No physics asset:** `AWeaponDrop` uses a box fitted to the mesh's
+    imported bounds.
+  - `SM_Uzi_Mag`: Nanite off, 1,731 triangles. Unreal warns about nearly
+    zero tangents in the model's UVs; harmless.
+  - Textures: ORM → `TC_Masks`, sRGB off, group World; all three
+    `MaxTextureSize` 1024.
+  - **`MI_Uzi`** (child of `M_TacticalPistol`: `BaseColor`, `Normal`, `ORM`;
+    `Tint` white like `MI_Pistol`, `Mask` left at the master's default) on
+    both meshes.
+  - The user's first-import static parts and the `UZI` material were deleted
+    over the bridge on 2026-10-28 (13 assets). A disk byte search and the
+    asset registry both showed nothing outside that set used them.
+    `/Game/MicroUzi/` now holds only `SK_Uzi`, `SK_Uzi_Skeleton`,
+    `SK_Uzi_Fire`, `SM_Uzi_Mag`, `MI_Uzi` and the three textures.
+    `AssetTools.delete` takes `{"path": ...}`, one asset per call.
+- **LODs (user, mesh editor):** the bridge has no skeletal LOD generation.
+  - **Settings:** 3 LODs at **50% / 33% / 25%**, not 50/25/12.5 (lower
+    settings opened holes in the thin separate parts).
+  - **Lock Mesh Edges** (`bLockEdges`, advanced Reduction Settings) on
+    LOD1 and LOD2. Without it they had holes: the body is 37 separate
+    shells with 603 open edges, and the magazine 10 shells with 107 open
+    edges and 16 non-manifold. The reducer moved each shell's border on its
+    own, opening gaps. Locking pins the borders. **Use it on any bought
+    hard-surface gun built from loose shells.**
+  - **Result:** 5,279 / 2,217 / 1,813 vertices (2,155 / 1,713 before the
+    lock), one section each. LOD0 is ~5.2k triangles, within the SMG
+    budget. The bridge can't read `LODInfo`, so the settings are the user's
+    report; the counts were read back.
+  - LOD1 and LOD2 run above the guideline (~66% and ~50% of LOD0, against
+    ~50% and ~25%). That's accepted: they only show small on screen, and the
+    gun is one draw call either way.
+- **Blueprints (bridge, 2026-10-28, compiled clean, saved):** `BP_Uzi` and
+  `BP_DualUzi`, duplicated from `BP_MAC11` / `BP_DualMAC11` in
+  `/Game/ThirdPerson/Blueprints/`. Kept from the MAC: stats, ammo, slot 4,
+  `AnimType`, sounds, `MuzzleFlash`, casing (9mm), socket names, and
+  `GripLocationOffset` (1, 0, −2).
+  - **Changed:**
+    - `DisplayName` "Uzi" / "Dual Uzis".
+    - Cross-links: `DualWieldClass` → `BP_DualUzi`; the dual's
+      `SingleWieldClass` and both `DropAsClass` → `BP_Uzi`.
+    - `WeaponMesh` (and the dual's `OffhandMesh`) → `SK_Uzi` at scale 1.0
+      (the MAC was 1.2).
+    - `MagazineMesh` → `SM_Uzi_Mag`.
+    - `FireAnimation` → None: the MAC's is on another skeleton, so the shot
+      sounds from code until the Uzi has its own.
+    - **Grip rotation:** the mesh barrel is +X, not the sockets' +Y.
+      `GripRotationOffset` is the MAC's (0, −3, 8) after a 90° yaw, which
+      works out to **(pitch −8, yaw 87, roll 0)**. The dual's
+      `OffhandGripRotationOffset` is (0, 15, 0) → **(0, 105, 0)**. These
+      are starting values; the user tunes them in play.
+  - **Still the MAC's:** the wheel `Icon` (a generic SMG icon).
+  - **Enemies (bridge, 2026-10-28):** the placed actor was `Lvl_Sandbox`'s
+    `EncounterDirector`. In its `WeaponPool`, `BP_MAC11` became `BP_Uzi`,
+    in the same slot; the rest of the pool is the enemy-only pistol, the pump
+    shotgun, the dual pistols and the 5.56 rifle. A byte search of all
+    Content (uassets, maps, external actors), `Config/` and `Source/` found
+    no other MAC reference. `BP_Player_CC` no longer references
+    `BP_DualMAC11`, and `BP_MAC11` / `BP_DualMAC11` now reference only each
+    other. **The save didn't take:** the actor's file stayed at its 10-23
+    version, still with `BP_MAC11`. A property set over the bridge doesn't
+    dirty an external actor's package, so the editor's Save skips it (the
+    same trap as the navmesh, *Gotchas*). Re-picking the value in Details
+    dirtied it, and the second save (17:52) took: the file now holds
+    `BP_Uzi` and no MAC. The grips were tuned in play by the user
+    the same day, and `SK_Uzi_Fire` (Fire + Eject) is the user's fire
+    animation on both Blueprints.
+- **Reimporting:** `SK_Uzi`'s source is `ArtSource/Weapons/Uzi/SK_Uzi.fbx`.
+  Re-run the script, then right-click → Reimport. The material and LOD
+  settings carry over and the LODs regenerate. The mesh still lists a
+  `stock` bone, with nothing skinned to it, because a reimport doesn't
+  remove bones. It's harmless; bounds X −13.9…14.1.
 
 **Gunfire concurrency (2026-10-19).** Fire sounds have long tails (SMG 5.9 s,
 sniper 5.3, shotgun 4.3), so rapid fire from several enemies ran out of voices.
@@ -5224,7 +5456,8 @@ are not yet playtested.
      (`FApp::GetDeltaTime`), once per roll; it runs its course even past the
      roll. *(User: "you cant shoot because you are in a roll, but you can line
      up shots".)* Skipped if the player's own Focus is on.
-  2. **Kneel cut-in:** roll button still held at `CrouchOutAfter` 0.5 →
+  2. **Kneel cut-in:** the stick let go (`!IsPushingStick()`) at or after
+     `CrouchOutAfter` 0.5 →
      `EndRoll`, `StartPostRollCrouch`, then `Montage_Stop(CrouchOutBlendTime
      0.15)` — in that order, so the roll blends out into a body that's already
      crouched (see the kneel).
@@ -5234,9 +5467,31 @@ are not yet playtested.
      move immediately after the roll".)*
   4. **Played out:** ends as the blend-out starts.
 - **`Cancel`** (death): stops the montage at once, ends the roll's Focus.
+- **Fire delay after a roll (2026-10-28).** User: "the roll transitions too
+  quickly to shooting, theres a couple of frames where he shoots the ground".
+  - `EndRoll` (every ending: kneel cut-in, move-out, played out, `Cancel`) sets
+    `FireDelayLeft = FireDelayAfterRoll` (0.2 s, Roll component, *Roll*).
+  - It counts down in game time, so it stretches with the roll's slow motion
+    as the aim-pose blend does.
+  - `IsBlockingFire()` = `IsRolling() || FireDelayLeft > 0`; `DoFire` checks
+    it in place of `IsRolling()`. A trigger held through the roll fires the
+    moment the window ends.
+  - Tested; the user tuned the value on the player Blueprint's Roll
+    component (the code default stays 0.2).
 - **Guards** on the character while `IsRolling()`: fire, jump, weapon select,
   reload, crouch update, shootdodge. `DoRoll` itself clears a kneel and
   uncrouches first.
+- **One button for roll and crouch (2026-10-28).** User: crouch and roll on
+  the same button — "If the player has no (use a threshold) input crouch,
+  otherwise roll in the input direction". `DoRoll` checks `IsPushingStick()`
+  (`GetMovePush() >= RollInputThreshold` 0.3); below it, it calls
+  `DoCrouchStart` instead.
+  - `GetMovePush()` reads `MoveAction`'s live Enhanced Input value: the stick's
+    magnitude after the IMC dead zone, clamped to 1, with WASD as a full push.
+  - Gamepad: map Roll to one button; crouch can leave the pad. Keyboard keeps
+    its crouch key, and the roll key with no WASD crouches too.
+  - This assumes toggle crouch (`bCrouchIsToggle`, the default). The roll
+    action has no Completed binding for hold mode.
 
 **Evasion linger** (`EvadeLingerTime` 2 s, `Combat|Evasion`):
 `IsEvading()` = `IsEvadingNow()` (the dive's flight or a roll) **or** within
@@ -5245,10 +5500,16 @@ landed dive and a finished roll stay evasive for 2 s. *(User: "Give a
 timewindow where the effect of the accuracy reduction is maintained".)*
 
 **The kneel — Vanquish's roll into a crouch** (character, `Combat|Roll`):
-- **Trigger:** hold the roll button through the roll. At the roll's
-  `CrouchOutAfter`, `URollComponent` cuts into the kneel. *(First built as
-  "fire held as the roll ends, kneel for 2 s"; the user moved it to the roll
-  button and a cut-in point the same session.)*
+- **Trigger (2026-10-28):** let go of the stick during the roll. At or after
+  `CrouchOutAfter`, with the stick under `RollInputThreshold`,
+  `URollComponent` cuts into the kneel. Still pushed, the roll runs out at
+  `MoveOutAfter`.
+  - **Why:** on a controller, holding the roll button (a right-hand button)
+    meant giving up the aim stick. User: "You cant use any inputs on the
+    right side of the controller because you need to aim"; "no input kneel
+    was what I was thinking too".
+  - **History:** first built as "fire held as the roll ends, kneel for
+    2 s", then "hold the roll button" (2026-10-15).
 - **On/off:** `bPostRollCrouch`. The cut-in checks `CanPostRollCrouch()`
   (`bPostRollCrouch` and alive), so with it off a held roll plays out
   normally instead of being cut short (2026-10-15).
@@ -5256,13 +5517,21 @@ timewindow where the effect of the accuracy reduction is maintained".)*
   `bPostRollCrouching` and calls `Crouch()` **at once** — waiting for the next
   `UpdateCrouch` let the roll blend into the standing pose first (the "stands
   up, then crouches" hitch).
-- **Lasts while the roll button is held** — no timer (`PostRollCrouchTime`
-  was removed). `UpdateCrouch` drops it the frame the button is up, and the
-  normal crouch rule takes over (standing, unless crouch was toggled).
-- **`bPostRollCrouchHoldsPosition`:** `DoMove` ignores input while knelt.
-- **`IsRollHeld()`** / private **`IsInputHeld(Action)`**: the live Enhanced
-  Input value (`UEnhancedInputLocalPlayerSubsystem::GetPlayerInput()->
-  GetActionValue`), not the last event.
+- **Latched (2026-10-28):** down with no button held, until one of:
+  - the stick: `DoMove`, once the slide has settled (speed under
+    `PostRollStandSpeed` 50 cm/s) and the push is past the threshold;
+  - the crouch key: `DoCrouchStart`, so the shared button with no stick
+    stands up;
+  - another roll: `DoRoll`, the button with the stick pushed.
+  - `UpdateCrouch` just keeps the character crouched while
+    `bPostRollCrouching`.
+  - `IsRollHeld()` / `IsInputHeld()` were removed, replaced by
+    `GetMovePush()` / `IsPushingStick()`.
+- **`bPostRollCrouchHoldsPosition`:** the stick doesn't steer the slide; once
+  settled, a push stands up and moves off.
+- **The dive from a kneel** is refused while crouched (`TryStart`), so the
+  player stands first. A one-press "stand and dive" was offered and is
+  undecided.
 - **Camping heat:** *(revised 2026-10-17)* the clock no longer pauses for the
   kneel. It waits only **while evading** (`IsEvading()`: a dive or roll and
   its `EvadeLingerTime` linger), then runs as normal — knelt, crouched or
@@ -5775,7 +6044,12 @@ follows below (moved here from ProjectPlan.md on 2026-10-24 — add new ones the
   every load, editor and game — then Save All (now dirty, it saved).
   `RuntimeGeneration=Dynamic` stays in `DefaultEngine.ini`. The bridge's
   `save_actor` / `save_assets` can't save external-actor packages ("Asset does
-  not exist"); use the editor's Save All. The `Unable to find RecastNavMesh
+  not exist"); use the editor's Save All. **Also (2026-10-28):** a property
+  set on a placed actor with `ObjectTools.set_properties` doesn't dirty its
+  external package either. Save All then skips it and the change is lost on
+  reload. After a bridge edit to a `Lvl_Sandbox` actor, touch the value in
+  Details (or move the actor and back) before saving, and check that the
+  file's date changes. The `Unable to find RecastNavMesh
   instance … UCrowdManager` warning only appears while a PIE world tears down.
 - **An anim node reads values it uses at initialization from its last update, not
   this frame's** (2026-10-16). A blend space's Start Position (bound to a

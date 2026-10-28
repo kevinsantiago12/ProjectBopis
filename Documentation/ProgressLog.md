@@ -825,30 +825,115 @@
   results and a trace. Nothing committed since `6efc1724` (the user
   commits).
 
+- **One-button roll / crouch, stick-release kneel (2026-10-28)** (user: the
+  held roll button for the kneel is hard on a controller, since the right
+  thumb is aiming; "I want the crouch and roll on the same button, If the
+  player has no (use a threshold) input crouch, otherwise roll").
+  - **Roll button:** rolls when the stick is past `RollInputThreshold` 0.3,
+    otherwise acts as the crouch key.
+  - **Kneel:** let go of the stick mid-roll to kneel; it stays down until
+    the stick (after the slide), crouch, or another roll.
+  - **Build:** "apply and run"; rebuilt (30 s); DLL 10:22:06 is newer than
+    the source (10:21:20); bridge up. **Tested:** "roll works, kneel works".
+  - **User:** in `IMC_Default`, Roll on one pad button; crouch can come
+    off the pad.
+- **Fire delay after a roll (2026-10-28)** (user: a couple of frames of shots
+  into the ground as a roll hands back; "delay allowance to shoot a split
+  second, or make tunable").
+  - `URollComponent::FireDelayAfterRoll` 0.2 s (game time), set in `EndRoll`;
+    `DoFire` checks `IsBlockingFire()`.
+  - **Build:** "apply and run"; rebuilt (17 s); DLL 10:37:38 is newer than
+    the source (10:37:13); bridge up. **Tested:** "no more ground shots but I
+    tuned it". The user set their own `FireDelayAfterRoll` on the player
+    Blueprint; the code default stays 0.2.
+
+- **Fourth Deck build (10:59) + trace (11:15, 2026-10-28):** the room-spawn
+  hitches are gone (no enemy built outside loads; 2 frames over 33 ms in
+  3 min, worst 34). The death-restart load freeze is 800–830 ms on the old
+  level's last frame; the fade-out before reload is now worth doing. Spec:
+  *Third Deck trace*. Insights closed after export.
+
+- **Black screen waits for the outfits (2026-10-28)** (user: the player popped
+  in after the fade, the gun floating first).
+  - **Cause:** the pause stalled the Character Customizer's Delay/timers,
+    so outfits went on after the fade.
+  - **Now:** no pause, the player's input off, and the fade waits for
+    everyone shown with a body plus 0.5 s steady (cap 4 s).
+  - **Build:** "apply and run". The first build failed on my lambda
+    parameter shadowing `AController::Character`; renamed, rebuilt (6 s);
+    DLL 11:26:45 is newer than the source (11:26:39); bridge up. **Not
+    tested.**
+
+- **Enemies held until the fade completes (2026-10-28)** (user: "they moved
+  on me before the fade is done").
+  - **New:** `ULevelStartSubsystem` hold, on from the player controller's
+    `PostInitializeComponents` and off at the end of the fade. The AI
+    behaviour start is queued; the enemy tick is skipped.
+  - **Build:** "apply and run"; rebuilt (16 s); DLL 11:33:32 is newer than
+    the source (11:33:05); bridge up. **Not tested.**
+
+- **Uzi replaces the MAC-11 (2026-10-28)** (user: "I want to replace the
+  Mac11 with an Uzi"; the MAC assets stay, unused, for now).
+  - **Rig:** the CGTrader "rigged" FBX was loose parts with no skeleton.
+    Rigged in Blender with `ArtSource/Weapons/Uzi/RigUzi.py`: 7 rigid bones,
+    stock dropped (user).
+  - **Assets:** imported over the bridge to `/Game/MicroUzi/` (`SK_Uzi`,
+    `SM_Uzi_Mag`, `MI_Uzi`, textures at 1024). LODs 50/33/25 with Lock Mesh
+    Edges, and the sockets, by the user.
+  - **Blueprints:** `BP_Uzi` / `BP_DualUzi`, duplicated from the MACs. The
+    grip rotation turns the +X barrel to the project's +Y; the intake
+    checklist's "+X" was wrong and is corrected. Grips tuned, and
+    `SK_Uzi_Fire` (Fire + Eject) added, by the user.
+  - **Cleanup:** the folder's 13 unused first-import assets (12 loose parts
+    and the `UZI` material) were deleted over the bridge (user: "delete
+    anything that is not being used").
+  - **Enemies:** `Lvl_Sandbox`'s `EncounterDirector` `WeaponPool` swapped
+    `BP_MAC11` → `BP_Uzi` over the bridge, but **it is not on disk**. The
+    actor's file (`__ExternalActors__/…/9/3Y/KJ4PQW6EIDQPYM8PA5TIB8`) is
+    still the 10-23 version with the MAC, because the bridge's edit didn't
+    dirty the package, so Save skipped it (same as the navmesh, spec
+    *Gotchas*). **Fixed:** the user re-picked the entry and saved (17:52).
+    The file now holds `BP_Uzi`, no MAC.
+- **Ready pose and lock-back on empty (2026-10-28)** (user: "The default pose
+  of the pistol should be hammer back"; slides lock back when empty).
+  - **Code:** `ReadyPose` + `LastShotAnimation` on `AWeaponBase`. For duals
+    the last-shot animation plays when the rounds left are fewer than the
+    guns (the user's rule).
+  - **Build:** "apply and run"; built clean; DLL 16:07:51 is newer than the
+    source (16:06:27); bridge up.
+  - **Wired over the bridge, tested by the user ("works"):**
+    - the 1911 trio: `SK_P1911_ReadyPose` + the kit's
+      `Anim_P1911_M_Shot_Empty`, with notifies added by the user;
+    - the 9mm pair: `SK_Beretta_92FS_ReadyPose` +
+      `SK_Beretta_92FS_FireEmpty`.
+  - **Weapon picks (user):** a **Benelli M4** replaces the SPAS-12 plan,
+    and an **SVD** is the sniper; both lock back. Not needed for the Uzi
+    (closed bolt), the AK-74u, the Mossberg or the revolver. Spec: *Ready
+    pose and lock-back on empty*.
+- **Mossberg:** Eject notify added on `Mossberg-500_Pump` (user), so the
+  casing is timed to the rack.
+
 ### ▶ RESUME HERE
 **A. Next up**
-1. **Deck trace of the 01:16 build (plan item 34).** That build has the
-   trigger reserves, sleepers kept hidden, the `Lvl_Sandbox` navmesh fix and
-   the black screen. The user played it on the Deck; results weren't
-   reported yet. No trace was recorded: Insights was closed, so the trace
-   server wasn't running.
-   1. Open Unreal Insights on the PC (Claude can launch it).
-   2. Deck start command: `ProjectBopis/Binaries/Win64/ProjectBopis.exe
-      Lvl_Linear -ExecCmds="stat fps,stat unit" -trace=default,gpu,loadtime
-      -tracehost=192.168.1.43`.
-   3. Play through the rooms, then quit. Claude exports it (method in the
-      spec, *Second Deck trace*).
-   4. **Close Insights afterwards**, or every editor session records into
-      the store.
-   - **Check:** room spawns no longer give 34–66 ms frames; nobody at the
-     triggers; enemies dressed on arrival; the black screen and fade; the
-     `Lvl_Sandbox` first group chases.
-   - **Store:** emptied by the user (2026-10-28) with `Tools/ClearTraces.ps1`,
-     baseline included; its findings are in the spec.
-   - **Still open (user):** both suns' Dynamic Shadow Distance (movable)
-     → 4000; editor Engine Scalability → High (matches the Deck).
-   - **Later (item 34):** step 3 bake once level art exists; a fade-out
-     before death reloads (660–690 ms frozen frame); merge the two
+0. **Deck testing is on hold** (user, 2026-10-28: "lets do the Deck test later.
+   Lets keep building on the PC for now until I want to test it again"). Build
+   and test in the editor only; package for the Deck only when the user asks.
+   Batch these for the next Deck run:
+   - the black screen waiting for dressed characters (no floating gun, no
+     pop-in);
+   - enemies held until the fade completes;
+   - the death-restart freeze (800–830 ms in the third trace);
+   - trace it (open Insights first, `Tools/ClearTraces.ps1` after).
+1. **Test in the editor** (built 2026-10-28, not tested): the black screen waits
+   for everyone dressed; enemies stand still through the black and the fade,
+   then go (`Lvl_Sandbox` director group, `Lvl_Linear` rooms and patrols,
+   restarts); player input returns as the fade starts.
+   - **Suggested next:** a fade to black before a death restart, to hide the
+     0.8 s freeze on the old level's last frame.
+   - **Undecided:** should the dive button stand up from a kneel and dive?
+   - **Still open (user):** both suns' Dynamic Shadow Distance (movable) →
+     4000; editor Engine Scalability → High.
+   - **Later (item 34):** step 3 bake once level art exists; merge the two
      `BuildEnemy` copies into `AEnemyBase`; build-on-approach reserves for
      multi-arena levels; GC and CC2 tick costs.
 2. **Wheel cycle on the face buttons** (user, `IMC_Default`, no code):
@@ -863,17 +948,23 @@
    (the rack) and `HandGrip` at the end of `MM_Rifle_Equip`; then test the
    pump fire, a shotgun reload (ends with the last shell — no rack for now)
    and the equip landing. The slide's AnimBP waits for the final model.
-6. **Final weapons (plan item 33):** 9mm pistols made — place `MuzzleFlash`
-   and `AmmoEject` on `SK_Beretta_92FS`, then tune grips in PIE. Still to
-   decide: AR-15 replaces which rifle; AK-74u ammo; .45 vs 9mm ammo. Then
-   import one gun at a time (skeletal, +X barrel,
-   moving parts as bones) — sockets and grip offsets are yours, Blueprints
-   and wiring Claude's.
-7. **Fire notifies (feedback standard, plan item 33):** on
-   `Fire_Shotgun_NoDelay` (semi-auto shotgun) and
-   `Fire_SniperRifle_W` (battle rifle), delete the flash notifies and add a
-   Weapon Sound **Fire** notify at the shot; check `Mossberg-500_Pump` has a
-   Fire notify and no flash. Then test every gun: one shot sound, one flash.
+6. **Final weapons (plan item 33):**
+   - **Uzi left:** pickups and the wheel icon. The MAC Blueprints are
+     unused; delete them later.
+   - **Next models:** the Benelli M4 (`BP_Shotgun`), the SVD
+     (`BP_BattleRifle`), the AR-15, the AK-74u.
+   - **For each:** import skeletal, barrel along **+Y**, moving parts as
+     bones. Sockets and grips are yours; Blueprints and wiring are Claude's.
+     Guns that lock back also get a `ReadyPose` + `LastShotAnimation`.
+   - **Still to decide:** which rifle the AR-15 replaces; AK-74u ammo;
+     .45 vs 9mm ammo.
+7. **Silent placeholders:**
+   - `BP_Shotgun` (`Fire_Shotgun_NoDelay`) and `BP_BattleRifle`
+     (`Fire_SniperRifle_W`) have no Fire notify, and an old particle notify
+     gives a second flash.
+   - Suggested: clear their `FireAnimation` (bridge, ask first) so they
+     sound from code until the Benelli and SVD replace them.
+   - Then test every gun: one shot sound, one flash.
 8. **Deferred (user): prone on the back** after a shootdodge — the left hand
    can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
 9. **New long guns:** calibrate and tick `bLockLeftHandRotation`

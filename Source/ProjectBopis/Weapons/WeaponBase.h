@@ -261,8 +261,8 @@ public:
 	int32 GetMagazineSize() const { return MagazineSize; }
 
 	/** Loads the magazine directly (clamped to its size) — for a weapon picked up with a
-	    given number of rounds rather than a full magazine. */
-	void SetAmmoInMagazine(int32 Rounds) { CurrentAmmoInMagazine = FMath::Clamp(Rounds, 0, MagazineSize); }
+	    given number of rounds rather than a full magazine. Sets the guns' resting poses to match. */
+	void SetAmmoInMagazine(int32 Rounds);
 
 	/** The dual-wield version of this weapon, if it has one. */
 	TSubclassOf<AWeaponBase> GetDualWieldClass() const { return DualWieldClass; }
@@ -482,6 +482,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UAnimSequence> FireAnimation;
 
+	/** Held on the weapon's own mesh while it's loaded and not firing: the gun as it's carried
+	    (the pistols' hammer back). A one-frame pose. None: the mesh keeps what it's set to. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UAnimSequence> ReadyPose;
+
+	/** Played instead of FireAnimation on a gun's last round: it ends with the slide or bolt
+	    locked back, and the gun holds that until it's loaded. Needs FireAnimation's Weapon Sound
+	    notifies too (Fire, and Eject if it has one). None: the gun doesn't lock back. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UAnimSequence> LastShotAnimation;
+
 	/** Pump guns: the slide's bone. The mesh's post-process AnimBP moves it, and the holder's
 	    left hand follows it. None: no pump. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pump")
@@ -679,6 +690,10 @@ protected:
 	bool bFireAnimationEjects = false;
 
 	void FinishReload();
+
+	/** Rests each gun to match the rounds left: locked back (LastShotAnimation's last frame) if
+	    it won't fire again before a reload, otherwise ReadyPose. */
+	void UpdateRestPoses();
 
 	/** PerRound reloads: moves up to RoundsPerLoad rounds in, then re-arms itself until full or dry. */
 	void LoadRound();

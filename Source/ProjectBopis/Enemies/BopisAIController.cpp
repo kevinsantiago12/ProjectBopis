@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/StateTreeAIComponent.h"
 #include "StateTree.h"
+#include "Gameplay/LevelStartSubsystem.h"
 
 ABopisAIController::ABopisAIController()
 {
@@ -69,6 +70,19 @@ void ABopisAIController::OnPossess(APawn* InPawn)
 
 void ABopisAIController::StartBehaviour()
 {
+	// Held at the level start, behind the black screen: starts once it has fully faded in.
+	ULevelStartSubsystem* LevelStart = GetWorld()->GetSubsystem<ULevelStartSubsystem>();
+	if (LevelStart && LevelStart->IsHolding())
+	{
+		if (!bWaitingForLevelStart)
+		{
+			bWaitingForLevelStart = true;
+			LevelStart->OnReleased.AddUObject(this, &ABopisAIController::StartBehaviour);
+		}
+		return;
+	}
+	bWaitingForLevelStart = false;
+
 	const AEnemyBase* Enemy = Cast<AEnemyBase>(GetPawn());
 	if (Enemy && Enemy->GetBehaviour() && !StateTree->IsRunning())
 	{
