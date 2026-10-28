@@ -807,6 +807,22 @@ the moment. Also turning and aiming feels stiff."
 - **Strength:** medium.
 - **Controller only;** the mouse is untouched.
 
+## Healing — *stated 2026-10-28*
+**One healing item: first aid** (user).
+- **Use:** tap to use one. It heals **half of max health** at once, capped
+  at full.
+- **Carrying:** at most **3**.
+- **Feedback:** **no animation**, just a sound cue and a brief white flash
+  over the screen.
+- **Considered and dropped:**
+  - a pocket bottle of gin (user: "I dont want a drunkard label");
+  - painkillers, injected or as capsules: the pills are Max Payne's
+    signature, and an injection risks a similar label.
+
+  The user wanted something that dulls pain, and settled on plain first aid.
+- **Still open:** where kits come from (placed in levels, enemy drops) and
+  how many the player starts with.
+
 ## Walk-around sections — *stated 2026-10-27*
 The levels will have **"walk around" parts with civilians you can interact
 with** (user). Up to 12 NPCs on screen there; no fighting in them. What the

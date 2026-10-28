@@ -529,4 +529,6 @@ a shooting range.
   needs a button held, so it works with a controller. The MAC-11 is replaced
   by an Uzi, for the player and enemies. Pistols are carried with the hammer
   cocked, and their slides lock back on the last shot until a reload. Picked
-  for later: a Benelli M4 semi-auto shotgun and an SVD sniper rifle.
+  for later: a Benelli M4 semi-auto shotgun and an SVD sniper rifle. Healing
+  arrives: first-aid kits, up to three carried, each restoring half of your
+  health at the press of a button.

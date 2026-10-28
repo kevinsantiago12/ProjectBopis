@@ -1988,6 +1988,58 @@ rounds.
 - `BP_AmmoPickup_Pistol` (`ThirdPerson/Blueprints/Pickups/`): the
   `cal45_PaperBoxOpen` mesh, offset −60 so it sits on the floor.
 
+### First aid (2026-10-28)
+Design (notes, Part 4 *Healing*): the only healing item. Tap to use; it heals
+half of max health; carry up to 3; no animation, only a sound and a white
+flash. Built with "apply and run": rebuilt clean in 28 s; the DLL (19:04:51)
+is newer than the source (19:04:08); bridge up.
+- **The pool:** kits live in the ammo pool like grenades, as
+  `EAmmoType::FirstAid` (appended last, so saved enum values are
+  unchanged). The holder's `MaxAmmoByType` caps them: **FirstAid = 3** on
+  `BP_PlayerCharacter` and `BP_Player_CC`. Without that entry the cap falls
+  back to `DefaultMaxAmmo` (240). `bStartWithFullAmmo` only fills the
+  carried weapons' types, so it doesn't hand out kits.
+- **`UHealthComponent::Heal(Amount)`:** adds up to `MaxHealth`; does nothing
+  once depleted (no revive).
+- **`AProjectBopisCharacter::DoHeal`** on `HealAction` (Started, i.e. a tap):
+  - **Refused:** dead, the weapon wheel open, or at full health (so a kit is
+    never wasted).
+  - **Otherwise:** `TakeAmmo(FirstAid, 1)` →
+    `Heal(MaxHealth × FirstAidHealFraction 0.5)` → `FirstAidSound`
+    (`PlaySound2D`) → `StartCameraFade(FirstAidFlashAlpha 0.6 → 0,
+    FirstAidFlashDuration 0.3 s, white)`.
+  - Works mid-roll and mid-dive, since there's no animation.
+  - The flash runs in game time, so it lasts longer in slow motion.
+  - A camera fade replaces any running fade. The level exit's fade to black
+    runs with input off, and at level start the player is at full health,
+    so in practice the two don't meet.
+- **`StartingFirstAidKits`** (0) on the character, added to the pool in
+  `BeginPlay`. How many the player starts with is a design question.
+- **HUD: its own element** (user: "Do not shove it into WBP Health").
+  - **`UFirstAidWidget`** (`UI/FirstAidWidget.h/.cpp`, a
+    `UPlayerHUDElementWidget`) with `GetFirstAidCount()` (BlueprintPure).
+    The layout goes in a Blueprint child, `WBP_FirstAid`, placed in
+    `WBP_PlayerHUD`.
+  - It was first put on `UHealthWidget`, then moved here, and
+    `UHealthWidget` reverted. Rebuilt in 18 s; the DLL (19:23:26) is newer
+    than the source (19:22:55); bridge up.
+  - The cap (3) isn't exposed: the holder's `GetMaxAmmo` is protected. Add
+    a getter if the HUD needs it.
+- **Assets (bridge, 2026-10-28):**
+  - `IA_Heal` is a copy of `IA_Grenade`, so it's digital. It's set as
+    `HealAction` on both player Blueprints.
+  - `BP_FirstAidPickup` (`ThirdPerson/Blueprints/Pickups/`) is a copy of
+    `BP_AmmoPickup_Grenade`: `AmmoType` FirstAid, `Amount` 1, mesh
+    `/Game/UltimateHealthPack/Meshes/SM_FirstAidKit` at scale 1 and z −4.
+    It keeps the grenade pickup's `PickupSound`
+    (`Pistol_ReloadMagInsert02`).
+  - The pack (`/Game/UltimateHealthPack/`, 150 MB, 90 assets) has no sounds.
+    It also has `SM_FirstAidKit02`, `SM_MedicalPouch`, and
+    `MI_FirstAidKit01–03` colour variants.
+- **Bridge note:** `get_properties` returns a `TMap<EAmmoType,int32>` as a
+  dict with lower-camel enum keys (`sMG`, `firstAid`). `set_properties`
+  accepted `FirstAid`.
+
 **`AWeaponPickup`:**
 - Its own `WeaponClass`; the mesh is taken from the class's default object in
   `OnConstruction`, so no per-pickup mesh setup.

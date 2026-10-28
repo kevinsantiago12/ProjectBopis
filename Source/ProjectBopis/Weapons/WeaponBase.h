@@ -97,7 +97,9 @@ enum class EAmmoType : uint8
 	AutoShotgun,
 	PumpShotgun,
 	Grenade,
-	LauncherGrenade
+	LauncherGrenade,
+	/** First-aid kits: not ammo, but carried, capped and picked up the same way (as grenades). */
+	FirstAid
 };
 
 /** How the gun's stock meets the shooting hand: a pistol grip, or a straight stock whose wrist

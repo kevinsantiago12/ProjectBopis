@@ -25,3 +25,13 @@ bool UHealthComponent::ApplyDamage(float Amount)
 	Health = FMath::Max(bUnkillable ? 1.0f : 0.0f, Health - Amount);
 	return IsDepleted();
 }
+
+void UHealthComponent::Heal(float Amount)
+{
+	if (Amount <= 0.0f || IsDepleted())
+	{
+		return;
+	}
+
+	Health = FMath::Min(MaxHealth, Health + Amount);
+}

@@ -142,6 +142,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* GrenadeAction;
 
+	/** First aid: tap to use a kit. */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* HealAction;
+
 	/** Weapon wheel: hold to open, release to equip what's pointed at. The number keys keep
 	    working beside it; the wheel is there for a controller. */
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -368,6 +372,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoThrowGrenade();
 
+	/** Uses a first-aid kit from input. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoHeal();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -416,6 +424,26 @@ protected:
 	/** World speed during the death slow motion. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.05", ClampMax = "1.0"))
 	float DeathTimeDilation = 0.2f;
+
+	/** First-aid kits carried at the start. They live in the ammo pool (EAmmoType::FirstAid), so
+	    the holder's MaxAmmoByType caps them and ammo pickups of that type add to them. */
+	UPROPERTY(EditAnywhere, Category = "Health|First Aid", meta = (ClampMin = "0"))
+	int32 StartingFirstAidKits = 0;
+
+	/** Share of max health one kit gives back, capped at full. */
+	UPROPERTY(EditAnywhere, Category = "Health|First Aid", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FirstAidHealFraction = 0.5f;
+
+	/** Played as the kit is used — 2D, it's the player's own. */
+	UPROPERTY(EditAnywhere, Category = "Health|First Aid")
+	TObjectPtr<USoundBase> FirstAidSound;
+
+	/** The white flash on use: how white it starts (0..1) and how long it takes to clear. */
+	UPROPERTY(EditAnywhere, Category = "Health|First Aid", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FirstAidFlashAlpha = 0.6f;
+
+	UPROPERTY(EditAnywhere, Category = "Health|First Aid", meta = (ClampMin = "0.0"))
+	float FirstAidFlashDuration = 0.3f;
 
 	/** Camping: staying within this distance (cm) of one spot counts as staying put. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))

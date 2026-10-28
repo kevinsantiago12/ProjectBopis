@@ -121,6 +121,12 @@ void AProjectBopisCharacter::BeginPlay()
 	{
 		Holder->AddAmmo(EAmmoType::Grenade, StartingGrenades);
 	}
+
+	// First aid shares the pool too.
+	if (UWeaponHolderComponent* Holder = GetWeaponHolder(); Holder && StartingFirstAidKits > 0)
+	{
+		Holder->AddAmmo(EAmmoType::FirstAid, StartingFirstAidKits);
+	}
 }
 
 void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -184,6 +190,12 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		{
 			EnhancedInputComponent->BindAction(GrenadeAction, ETriggerEvent::Started, this,
 				&AProjectBopisCharacter::DoThrowGrenade);
+		}
+
+		if (HealAction)
+		{
+			EnhancedInputComponent->BindAction(HealAction, ETriggerEvent::Started, this,
+				&AProjectBopisCharacter::DoHeal);
 		}
 
 		if (WeaponWheelAction)
@@ -1126,6 +1138,40 @@ void AProjectBopisCharacter::DoThrowGrenade()
 	bThrowPending = true;
 	ThrowPendingTime = 0.0f;
 	UpdatePendingThrow(0.0f);
+}
+
+void AProjectBopisCharacter::DoHeal()
+{
+	UHealthComponent* HealthComp = GetHealthComponent();
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	if (IsDead() || !HealthComp || !Holder || IsWeaponWheelOpen())
+	{
+		return;
+	}
+
+	// No animation, so it works mid-roll and mid-dive. At full health a kit would be wasted.
+	if (HealthComp->GetHealth() >= HealthComp->GetMaxHealth())
+	{
+		return;
+	}
+
+	if (Holder->TakeAmmo(EAmmoType::FirstAid, 1) <= 0)
+	{
+		return;
+	}
+
+	HealthComp->Heal(HealthComp->GetMaxHealth() * FirstAidHealFraction);
+
+	if (FirstAidSound)
+	{
+		UGameplayStatics::PlaySound2D(this, FirstAidSound);
+	}
+
+	// A white flash that clears on its own.
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()); PC && PC->PlayerCameraManager)
+	{
+		PC->PlayerCameraManager->StartCameraFade(FirstAidFlashAlpha, 0.0f, FirstAidFlashDuration, FLinearColor::White);
+	}
 }
 
 void AProjectBopisCharacter::UpdatePendingThrow(float DeltaSeconds)

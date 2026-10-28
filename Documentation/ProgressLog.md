@@ -912,6 +912,44 @@
     pose and lock-back on empty*.
 - **Mossberg:** Eject notify added on `Mossberg-500_Pump` (user), so the
   casing is timed to the rack.
+- **Pushed (2026-10-28, user):** `36bc08ba` "Weapon Updates. Roll Update" on
+  `feature/HardwarTargetAdjust`. It holds all of the above plus the morning's
+  roll/crouch, fire-delay and level-start work, and `.gitattributes` gains
+  `*.blend` → LFS. The doc edits made after it (this entry, the director
+  fix notes) are uncommitted.
+- **Fifth build, `Lvl_Sandbox`, no trace (2026-10-28):** user: "Package me
+  a build for Sandbox, no trace". Same packaging as before (editor closed,
+  archived to `ProjectBopis_Builds/DeckTest/`); start command with
+  `Lvl_Sandbox` and no `-trace`.
+  - **Result:** BUILD SUCCESSFUL in 2 min 37 s; cook 0 errors and 13
+    warnings, all old (unsaved ammo-pack meshes, a CC smartphone animation,
+    two Blueprint member references, the MCP plugin notice); 2.23 GB. The
+    editor was reopened afterwards.
+  - **Shell note:** run `RunUAT.bat` from PowerShell (`& $uat @args`).
+    Through Git Bash's `cmd //c` the quoted path breaks ("is not
+    recognized").
+- **First aid (2026-10-28)** (user: "Healing item, we only have one … heal on
+  tap. Max 3, heals half health").
+  - **Choice:** gin (user: "I dont want a drunkard label") and painkillers
+    were dropped. The user chose "just use first aid then. No animation,
+    just a sound cue and momentary white screen". Design notes Part 4,
+    *Healing*.
+  - **Build:** "apply and run"; rebuilt in 28 s; DLL newer; bridge up.
+    Kits are an ammo-pool type, `EAmmoType::FirstAid`. Spec: *First aid*.
+  - **Assets (bridge):** `IA_Heal`, `BP_FirstAidPickup` (the user's
+    UltimateHealthPack `SM_FirstAidKit`), and the cap of 3 and `HealAction`
+    on both player Blueprints.
+  - **HUD:** the count moved off `UHealthWidget` to its own `UFirstAidWidget`
+    (user: "Do not shove it into WBP Health"). "apply and run"; rebuilt in
+    18 s; DLL newer; bridge up.
+  - **User setup:**
+    - `IA_Heal` mapped in `IMC_Default`;
+    - `WBP_FirstAid` (parent `FirstAidWidget`) placed in `WBP_PlayerHUD`;
+    - `FirstAidSound` set to the engine's `1kSineTonePing`, a placeholder;
+    - `BP_FirstAidPickup`s placed in `Lvl_Linear`.
+  - **Tested (user): "first aid tested, works".** Plan item 36 is done.
+  - **Open:** a real heal sound; kit sources (placed only, or enemy drops
+    too) and the starting count are design calls.
 
 ### ▶ RESUME HERE
 **A. Next up**
@@ -969,6 +1007,9 @@
    can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
 9. **New long guns:** calibrate and tick `bLockLeftHandRotation`
    (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
+10. **First aid follow-ups** (item 36 done and tested): swap the placeholder
+    `1kSineTonePing` for a real heal sound; decide where kits come from
+    (placed only, or enemy drops too) and the starting count.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked
@@ -979,9 +1020,9 @@
    `CleanFlatIcons` and `Weapons` first (nothing uses them), then demo folders.
 3. **`AM_Pistol_Reload_Offhand`** → Chamber notify → tick **Offhand**, if not
    done yet.
-4. **Committed by Claude** at the user's request: `54daab6e` (2026-10-27), on
-   `main`, **not pushed** — run `git push` (uploads the 1911 kit to LFS,
-   ~237 MB). The docs changed after it (this round).
+4. **Git:** the user commits and pushes. Latest: `36bc08ba` "Weapon Updates.
+   Roll Update" on `feature/HardwarTargetAdjust`, pushed 2026-10-28; the
+   doc edits after it are uncommitted.
 
 **C. Can be done remotely** (C++ — presented first, then "apply and run")
 1. Optional: `DualLoweredPlayRate` → `LoweredJogPlayRate` rename.

@@ -19,6 +19,9 @@ public:
 	/** Takes Amount off health. Returns true only for the blow that empties it. */
 	bool ApplyDamage(float Amount);
 
+	/** Gives Amount back, up to MaxHealth. Nothing once depleted — healing doesn't revive. */
+	void Heal(float Amount);
+
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealth() const { return Health; }
 

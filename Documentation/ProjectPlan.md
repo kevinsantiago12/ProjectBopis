@@ -681,6 +681,13 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(2026-10-27, user: "go with FXAA, keep bloom and AO".)* FXAA (`r.AntiAliasingMethod` 1); bloom and SSAO kept; SSR off (`r.ReflectionMethod` 0, captures only). A forward-renderer + MSAA test is a possible later experiment. User: Deck Developer Mode + SteamOS Devkit Client, upload, read `stat unit` at three moments.)*
 - [x] **35. Controller soft lock** *(Built 2026-10-27, "apply and run"; tested in the editor, user: "autoaim works". Deck next. `UGamepadAimComponent`. Stick turning in degrees per second with a curve and boost; snap on aim, slowdown and follow at medium, in aiming and hip-fire. Spec: *Controller aiming*.)* (user, 2026-10-27: "add controller soft lock to the things to do"). Aim help for gamepad play (the Deck). Design to agree with the user before building: how strong it is, which targets, and whether it's on in slow motion and shootdodges.
 - [ ] Later: archetypes composed from data (harder variants now have the burst/pause multipliers and the hit-chance values to vary).
+- [x] **36. First aid (healing)** (user, 2026-10-28: "Healing item, we only have one … heal on tap. Max 3, heals half health"; "just use first aid then. No animation, just a sound cue and momentary white screen"). Spec: *First aid*.
+  - [x] C++ (compiled 2026-10-28, "apply and run"): `EAmmoType::FirstAid` (kits live in the ammo pool, like grenades); `UHealthComponent::Heal`; `DoHeal` on a `HealAction` (tap; refused at full health, dead or with the wheel open; works mid-roll and mid-dive since there's no animation); `FirstAidSound` (2D) and a white camera flash; `StartingFirstAidKits`. HUD count on its own `UFirstAidWidget` (compiled 2026-10-28; first put on `UHealthWidget`, moved at the user's call).
+  - [x] Setup (bridge, 2026-10-28, saved): `IA_Heal` (copy of `IA_Grenade`); `HealAction` and `MaxAmmoByType` FirstAid = 3 on `BP_PlayerCharacter` and `BP_Player_CC`.
+  - [x] Pickup (bridge, 2026-10-28, saved): `BP_FirstAidPickup`, a copy of `BP_AmmoPickup_Grenade`, set to FirstAid with Amount 1 and `SM_FirstAidKit`.
+  - [x] User (2026-10-28): `IA_Heal` mapped in `IMC_Default`; `WBP_FirstAid` (parent `FirstAidWidget`) placed in `WBP_PlayerHUD`; `FirstAidSound` set to the engine's `1kSineTonePing` (placeholder until a real cue); `BP_FirstAidPickup`s placed in `Lvl_Linear`.
+  - [x] Tested by the user (2026-10-28: "first aid tested, works").
+  - [ ] Later: a real heal sound; where kits come from in levels (placed only, or enemy drops too) and the starting count — design call.
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4
