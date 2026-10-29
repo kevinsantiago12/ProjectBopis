@@ -532,3 +532,9 @@ a shooting range.
   for later: a Benelli M4 semi-auto shotgun and an SVD sniper rifle. Healing
   arrives: first-aid kits, up to three carried, each restoring half of your
   health at the press of a button.
+- 2026-10-29 — Ammo split further by gun: the .45 and 9mm pistols no longer
+  share rounds. The Uzi becomes the machine pistol, with its own ammo, and an
+  MP5 submachine gun is planned with ammo of its own. The sniper rifle gets
+  its own ammo pickups, and so do the rifle and both shotguns. On-screen
+  messages ("Picked up 24 .45 rounds") stack up to five at a time and fade
+  after a few seconds.

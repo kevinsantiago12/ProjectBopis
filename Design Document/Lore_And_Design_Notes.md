@@ -520,6 +520,14 @@ gives what fits and leaves the rest. Pickups don't respawn.
 - **Ammo is shared per type**, Max Payne style: all weapons that take the same
   ammo draw on one supply. Each type has a carry maximum (pistol 180, SMG 300,
   rifle 300; the rest provisional).
+- **Ammo split (user decisions, 2026-10-29):**
+  - **.45 and 9mm pistol ammo are separate:** "the 9mm pistol and .45 pistol
+    have split ammo".
+  - **Machine pistol and submachine gun ammo are separate too.** The Uzi is
+    renamed **Machine Pistol**, and an **MP5**, to be added later, is the
+    **Submachine Gun**.
+  - **The SVD sniper gets its own ammo** pickups.
+  - The pistols' carry maximum applies to each of .45 and 9mm (180 each).
 - **Weapon drops:**
   - if you already have the weapon, it gives its ammo;
   - if not, you get the weapon with the rounds it was dropped with.

@@ -84,15 +84,23 @@ inline bool IsPistolAnimType(EWeaponAnimType Type)
 		|| Type == EWeaponAnimType::Dual;
 }
 
-/** Which ammo a weapon takes. Each weapon keeps its own reserve; an ammo pickup of a
-    type tops up the carried weapon(s) that use that type. */
+/** Which ammo a weapon takes. The holder keeps one shared reserve per type: every carried gun
+    of a type draws on it, and a pickup of that type tops it up. */
 UENUM(BlueprintType)
 enum class EAmmoType : uint8
 {
-	Pistol,
+	/** .45: the 1911s. */
+	Pistol45,
+	/** 9mm: the Berettas. */
+	Pistol9mm,
+	/** .357: the revolver. */
 	HighPowerPistol,
-	SMG,
+	/** The Uzis. */
+	MachinePistol,
+	/** The MP5 (to come). */
+	SubmachineGun,
 	Rifle,
+	/** The SVD (BP_BattleRifle). */
 	Sniper,
 	AutoShotgun,
 	PumpShotgun,
@@ -623,7 +631,7 @@ protected:
 
 	/** The ammo this weapon takes. Pickups of this type refill its reserve. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
-	EAmmoType AmmoType = EAmmoType::Pistol;
+	EAmmoType AmmoType = EAmmoType::Pistol45;
 
 	/** Rounds added to the holder's shared pool when this weapon is picked up. The cap
 	    lives on the holder, per ammo type. */

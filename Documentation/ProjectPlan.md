@@ -688,6 +688,20 @@ archetype-composition idea, not extended from the old classes.
   - [x] User (2026-10-28): `IA_Heal` mapped in `IMC_Default`; `WBP_FirstAid` (parent `FirstAidWidget`) placed in `WBP_PlayerHUD`; `FirstAidSound` set to the engine's `1kSineTonePing` (placeholder until a real cue); `BP_FirstAidPickup`s placed in `Lvl_Linear`.
   - [x] Tested by the user (2026-10-28: "first aid tested, works").
   - [ ] Later: a real heal sound; where kits come from in levels (placed only, or enemy drops too) and the starting count — design call.
+- [x] **37. Ammo split** (user, 2026-10-29: "the 9mm pistol and .45 pistol have split ammo"; Uzi → Machine Pistol, a later MP5 → Submachine Gun, "Machine Pistol Ammo and Submachine Gun ammo will split too"; "add ammo for SVD sniper"). Spec: *Ammo split*.
+  - [x] C++ ("apply and run", built 2026-10-29): `EAmmoType` `Pistol` → `Pistol45`, `SMG` → `MachinePistol`, new `Pistol9mm` and `SubmachineGun`; defaults `Pistol45`; enum redirect in `DefaultEngine.ini`.
+  - [x] Bridge (saved 2026-10-29): 9mm pair → `Pistol9mm`; Uzis, MAC-11s, `BP_AmmoPickup_SMG` → `MachinePistol`; new `BP_AmmoPickup_9mm` (24) and `BP_AmmoPickup_Sniper` (12, one `BP_BattleRifle` magazine); `Pistol9mm` cap 180 on both players. No old names left in the saved files.
+  - [x] User test (2026-10-29: "pickups tested, works").
+  - [x] Bridge (saved 2026-10-29, user: "do the renames, make the boxes too"): `BP_AmmoPickup_45` and `BP_AmmoPickup_MachinePistol` (renamed, redirectors left); new `BP_AmmoPickup_Rifle` (30), `_AutoShotgun` (12), `_PumpShotgun` (8); AmmoSet meshes on all the new boxes.
+  - [ ] Later: the SVD's 10-round magazine (and the Benelli's) when the models arrive; a `SubmachineGun` cap with the MP5; optional *Update Redirector References* on `Pickups/`.
+- [x] **38. Gameplay message feed** (user, 2026-10-29: "a general message UI like 'Picked up x ammo', 'Quick Saved' … It has to stack … 5 messages at once"). Spec: *Gameplay message feed*.
+  - [x] C++ ("apply and run", built 2026-10-29): `UGameMessageSubsystem` (local player; `ShowGameMessage`, also a Blueprint node; 5 lines, 3 s each, real time); `UGameMessageWidget` (Text Blocks `Message_0`..`Message_4`, fade-out); `AAmmoPickup::PickupMessage` with `{Amount}`.
+  - [x] Bridge (saved 2026-10-29): `PickupMessage` on all 10 ammo boxes and `BP_FirstAidPickup` (grenades and kits use plural forms).
+  - [x] Merging (built 2026-10-29, "apply and run"; user: "update the number of the existing message instead of pushing another new message"): `ShowCountedGameMessage` adds to a live line with the same pattern and moves it to the newest place; a repeated plain message refreshes its line.
+  - [x] User: `WBP_GameMessages` placed in `WBP_PlayerHUD`; ammo-box pickups tested (2026-10-29: "widget made, pickups tested, works").
+  - [x] Weapon pickups and drops (built 2026-10-29, "apply and run"): "Picked up {DisplayName}" for a new gun or the dual unlock; the ammo message when already carried. Ammo wording moved to one table in code (`ShowAmmoMessage`), so boxes and guns merge; the per-box `PickupMessage` field was removed.
+  - [x] User test (2026-10-29: "weapon pickups tested, works").
+  - [ ] Later: save messages once a save system exists.
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4

@@ -3,6 +3,7 @@
 #include "Pickups/AmmoPickup.h"
 #include "ProjectBopisCharacter.h"
 #include "Weapons/WeaponHolderComponent.h"
+#include "UI/GameMessageSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -51,6 +52,7 @@ void AAmmoPickup::TryGiveAmmo(AActor* Collector)
 	}
 
 	Amount -= Taken;
+	UGameMessageSubsystem::ShowAmmoMessage(this, AmmoType, Taken);
 
 	if (PickupSound)
 	{

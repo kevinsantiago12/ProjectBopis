@@ -1661,7 +1661,9 @@ pool, so the single and dual pistols share their rounds.
   - `TakeAmmo(Type, Wanted)` and `GetReserveAmmo(Type)`;
   - caps in `MaxAmmoByType` on `BP_PlayerCharacter` (Pistol **180**, SMG **300**,
     Rifle **300**, HighPowerPistol 60, Sniper 40, AutoShotgun 40,
-    PumpShotgun 40), fallback `DefaultMaxAmmo` 240.
+    PumpShotgun 40), fallback `DefaultMaxAmmo` 240. *(Renamed and split
+    2026-10-29: see* Ammo split *below. `BP_Player_CC` holds its own copy of
+    the map, so a cap change goes on both.)*
 - **`AWeaponBase`:**
   - keeps its own **magazine**;
   - its reserve calls go through `ReserveSource` (set by the holder in
@@ -1680,6 +1682,69 @@ Pistol, `GetAmmoType()`). Mapping: `BP_Pistol`/`BP_DualPistols` → Pistol,
 SMG are for weapons not built yet. Set on the Blueprints 2026-10-08. Anim type
 and ammo type are independent (`BP_Pistol` is `PistolOneHanded`, duals `Dual`,
 both Pistol ammo).
+
+**Ammo split (2026-10-29).** User: "the 9mm pistol and .45 pistol have split
+ammo"; the Uzi becomes the "Machine Pistol" and a later MP5 the "Submachine
+Gun", with "Machine Pistol Ammo and Submachine Gun ammo" split too; "add ammo
+for SVD sniper".
+- **`EAmmoType` now:** `Pistol45`, `Pistol9mm`, `HighPowerPistol` (.357),
+  `MachinePistol`, `SubmachineGun`, `Rifle`, `Sniper`, `AutoShotgun`,
+  `PumpShotgun`, `Grenade`, `LauncherGrenade`, `FirstAid`. The pools are per
+  gun family, not per calibre: the Uzi and the MP5 are both 9mm in reality
+  but don't share with each other or the Beretta.
+- **Renames, with a redirect:** `Pistol` → `Pistol45` and `SMG` →
+  `MachinePistol`. `DefaultEngine.ini` `[CoreRedirects]` has
+  `+EnumRedirects=(OldName="/Script/ProjectBopis.EAmmoType",ValueChanges=(("Pistol","Pistol45"),("SMG","MachinePistol")))`.
+  Assets store enum values by name, and the redirect loaded them cleanly
+  (the Uzis, the SMG box and both players' cap maps came back under the new
+  names with their values). Every asset that stored the old names was then
+  set explicitly and resaved, and none contains them now. Keep the redirect
+  for anything not yet resaved.
+- **Defaults:** `AWeaponBase::AmmoType` and `AAmmoPickup::AmmoType` default
+  to `Pistol45`, so the 1911s (`BP_Pistol`, `BP_DualPistols`,
+  `BP_Pistol_EnemyOnly`) and `BP_AmmoPickup_Pistol` (24) are .45 with nothing
+  stored.
+- **Set on the Blueprints:**
+  - `BP_Pistol9mm` and `BP_DualPistol9mm` → `Pistol9mm`;
+  - `BP_Uzi`, `BP_DualUzi`, `BP_MAC11`, `BP_DualMAC11` and
+    `BP_AmmoPickup_SMG` (32) → `MachinePistol`.
+- **New boxes:**
+  - `BP_AmmoPickup_9mm`, a copy of the pistol box, 24 rounds;
+  - `BP_AmmoPickup_Sniper`, a copy of the pistol box (same mesh for now), 12
+    rounds, which is one `BP_BattleRifle` magazine. The placeholder's
+    magazine is 12; the SVD's real one holds 10.
+- **Caps (both players):** `Pistol9mm` 180 (the .45's). `SubmachineGun` has
+  no entry yet, so it falls back to 240 until the MP5 sets one.
+- **Boxes renamed and completed (2026-10-29, user: "do the renames, make
+  the boxes too"):**
+  - **Renamed** with the bridge's `AssetTools.move`:
+    `BP_AmmoPickup_Pistol` → `BP_AmmoPickup_45`, `BP_AmmoPickup_SMG` →
+    `BP_AmmoPickup_MachinePistol`.
+    - Redirectors stay at the old paths. The only users are six placed boxes
+      in `Lvl_Sandbox` (external actors), which load through them.
+    - Content Browser → *Update Redirector References* on `Pickups/` would
+      resave those actors and delete the redirectors.
+  - **New boxes:** copies of the .45 box, each holding one magazine of its
+    gun, with meshes from `/Game/AmmoSet/Models/`:
+
+    | Box | Type | Rounds | Mesh |
+    |---|---|---|---|
+    | `BP_AmmoPickup_45` | Pistol45 | 24 | `cal45_PaperBoxOpen` |
+    | `BP_AmmoPickup_9mm` | Pistol9mm | 24 | `cal9mm_PaperBoxClosed` |
+    | `BP_AmmoPickup_MachinePistol` | MachinePistol | 32 | `cal9mm_PaperBoxOpen` |
+    | `BP_AmmoPickup_Rifle` | Rifle | 30 (`BP_CloseRangeRifle`) | `cal5_45_PaperBoxOpen` |
+    | `BP_AmmoPickup_AutoShotgun` | AutoShotgun | 12 (`BP_Shotgun`, a placeholder) | `cal12Gauge_PaperBoxClosed` |
+    | `BP_AmmoPickup_PumpShotgun` | PumpShotgun | 8 (`BP_PumpShotgun`) | `cal12Gauge_PaperBoxOpen` |
+    | `BP_AmmoPickup_Sniper` | Sniper | 12 (`BP_BattleRifle`, a placeholder) | `cal__62_PaperBox_Open` |
+
+  - **Look-alikes:** the 9mm and machine pistol boxes are the same 9mm box
+    (closed vs open), and the two shotgun boxes are the same 12-gauge box. The
+    pickup message names which one you got.
+  - **Transforms:** the new boxes keep the .45 box's mesh transform. A bigger
+    mesh (12-gauge) may need its height retuned.
+  - **Bridge note:** `is_dirty` on an unloaded level's external actor throws
+    "Asset does not exist". Also, `find_assets` lists redirectors, which have
+    no CDO.
 
 **.45 and 9mm pistols (2026-10-25).** User: "I have added the Beretta. Create
 a weapon and dual for it. Name it 9mm Pistol. Rename the current pistol to .45
@@ -2065,6 +2130,85 @@ is newer than the source (19:04:08); bridge up.
 
 **Later:** enemy drops can spawn `AWeaponPickup`s, filling the rounds from the
 enemy's magazine instead of Random.
+
+### Gameplay message feed (2026-10-29)
+User: "a general message UI like 'Picked up x ammo', 'Quick Saved' etc. … It
+has to stack so that it can show multiple messages lets go with 5 messages at
+once".
+- **`UGameMessageSubsystem`** (`UI/`), a `ULocalPlayerSubsystem`:
+  - **Lifetime:** one per player, created by the engine. It isn't on the
+    character, so the feed outlives a death restart or a level load.
+  - **Posting:** `ShowGameMessage(WorldContext, Text, Seconds = 3)` is static
+    and also a Blueprint node. It goes to the first local player's feed.
+    `AddMessage` ignores empty text.
+  - **Storage:** `TArray<FGameMessage>` (text and `EndTime`), oldest first,
+    capped at `MaxMessages` = 5 (`static constexpr`). A new line drops
+    expired ones, then the oldest if full.
+  - **Clock:** `FPlatformTime::Seconds()`, so Focus and shootdodge slow motion
+    and pauses don't stretch a line.
+  - **Merging (2026-10-29).** User: "if the same message appears, i want it
+    to update the number of the existing message instead of pushing another
+    new message and push it to the start of the stack … I dont want stacking
+    45 ammo pickups with different nummber".
+    - Each line has a `Key`: its wording before the count is filled in.
+    - `ShowCountedGameMessage(WorldContext, Pattern, Amount, Seconds)` adds
+      `Amount` to a live line with the same pattern (the running total is in
+      `FGameMessage::Amount`), re-formats `{Amount}`, and moves the line to
+      the newest place with its time reset.
+    - Plain `ShowGameMessage` keys on its text, so a repeat refreshes and
+      moves the line instead of stacking.
+    - Shared by both: `AddLine` removes expired lines and the line with the
+      same key, then adds.
+    - Same wording, same line: both shotgun boxes ("shotgun shells") merge
+      with each other.
+- **`UGameMessageWidget`** (a HUD element):
+  - **Lines:** found by name in `NativeOnInitialized`, Text Blocks
+    `Message_0`..`Message_4` (the wheel's `Count_%d` pattern).
+  - **Each tick:** fills them oldest first, so the newest is at the bottom.
+    The rest collapse, so a bottom-anchored Vertical Box grows upward.
+  - **Fade:** `FadeOutTime` 0.5 s of render opacity at the end of a line's
+    life.
+  - **Allocation:** the live list is a `TInlineAllocator<5>` array, so there
+    is no allocation per frame.
+- **Ammo wording is one table in code** (since 2026-10-29, the weapon-pickup
+  change). `AmmoMessagePattern(EAmmoType)` in `GameMessageSubsystem.cpp`
+  holds it, and `ShowAmmoMessage(WorldContext, Type, Amount)` posts it,
+  counted.
+  - **Why code:** ammo boxes and guns taken for their rounds call the same
+    function, so they word a type identically and merge into one line. A
+    per-box field couldn't be found from a gun.
+  - **Callers:** `AAmmoPickup` and `AWeaponPickup`.
+  - **The old field:** the per-box `AAmmoPickup::PickupMessage` was removed.
+    The values the bridge had set on the 11 boxes are orphaned data, which
+    loading ignores and the next save drops.
+  - **The table** (shotgun types share a line):
+- *Superseded.* `AAmmoPickup::PickupMessage` (FText, default "Picked up {Amount}
+  rounds") was posted with `ShowCountedGameMessage(this, PickupMessage, Taken)`.
+  A partial take reports what was actually taken, and boxes picked up while
+  the line is up add to it. It was set per box as follows; the code table
+  keeps the same wording:
+
+  | Box | Message |
+  |---|---|
+  | .45 / 9mm / machine pistol / rifle / sniper / .357 boxes | "Picked up {Amount} … rounds" |
+  | both shotgun boxes | "Picked up {Amount} shotgun shells" |
+  | grenade and launcher-grenade boxes | `{Amount}\|plural(one=grenade,other=grenades)` |
+  | first aid | `{Amount}\|plural(one=kit,other=kits)` |
+
+  Empty means no message.
+- **Weapon pickups and drops (2026-10-29).** User: "weapon pickup do not give
+  me a message, if I already have the weapon it should give me the picked up
+  ammo message as well". `AWeaponPickup::TryGive` (enemy drops become one when
+  they land) posts:
+  - **New gun:** "Picked up {DisplayName}" (`ShowWeaponMessage`, plain).
+  - **Second copy:** the same, with the dual class's name ("Dual 9mm
+    Pistols").
+  - **Already carried:** `ShowAmmoMessage` for what it gave, merging with
+    box lines of that type.
+  - **Names:** they come from each gun's `DisplayName` (the wheel name).
+- **Layout:** `WBP_GameMessages` (user, made and tested 2026-10-29) in
+  `WBP_PlayerHUD`.
+- **Not yet:** save messages (no save system yet).
 
 ### Equip animation (2026-10-08)
 - **Trigger:** `UWeaponHolderComponent::EquipWeapon` ends by calling

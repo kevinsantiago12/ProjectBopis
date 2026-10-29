@@ -4,9 +4,20 @@
 #include "ProjectBopisCharacter.h"
 #include "Weapons/WeaponBase.h"
 #include "Weapons/WeaponHolderComponent.h"
+#include "UI/GameMessageSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	/** "Picked up 9mm Pistol": the weapon's display name. */
+	void ShowWeaponMessage(const UObject* WorldContextObject, TSubclassOf<AWeaponBase> WeaponClass)
+	{
+		const FText& Name = WeaponClass->GetDefaultObject<AWeaponBase>()->GetDisplayName();
+		UGameMessageSubsystem::ShowGameMessage(WorldContextObject, FText::Format(NSLOCTEXT("GameMessages", "Weapon", "Picked up {0}"), Name));
+	}
+}
 
 AWeaponPickup::AWeaponPickup()
 {
@@ -66,6 +77,7 @@ void AWeaponPickup::TryGive(AActor* Collector)
 	if (!Holder->FindCarriedWeapon(WeaponClass))
 	{
 		Holder->GiveWeapon(WeaponClass, RoundsRemaining);
+		ShowWeaponMessage(this, WeaponClass);
 		Consume();
 		return;
 	}
@@ -75,6 +87,7 @@ void AWeaponPickup::TryGive(AActor* Collector)
 	if (DualClass && !Holder->FindCarriedWeapon(DualClass))
 	{
 		Holder->GiveWeapon(DualClass, RoundsRemaining);
+		ShowWeaponMessage(this, DualClass);
 		Consume();
 		return;
 	}
@@ -88,6 +101,7 @@ void AWeaponPickup::TryGive(AActor* Collector)
 	}
 
 	RoundsRemaining -= Taken;
+	UGameMessageSubsystem::ShowAmmoMessage(this, AmmoType, Taken);
 	if (RoundsRemaining <= 0)
 	{
 		Consume();

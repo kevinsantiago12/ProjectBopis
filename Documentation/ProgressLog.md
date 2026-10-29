@@ -951,6 +951,65 @@
   - **Open:** a real heal sound; kit sources (placed only, or enemy drops
     too) and the starting count are design calls.
 
+## 2026-10-29
+- **Ammo split** (user: "the 9mm pistol and .45 pistol have split ammo";
+  the Uzi is renamed Machine Pistol and a later MP5 is the Submachine Gun, with
+  "Machine Pistol Ammo and Submachine Gun ammo" split; "add ammo for SVD
+  sniper"). Plan item 37; spec *Ammo split*; design notes Part 4.
+  - **Build:** "apply and run"; built in 28 s; DLL 21:16:56 is newer than the
+    source (21:16:14); bridge up.
+  - **Code:** `EAmmoType`: `Pistol` → `Pistol45`, `SMG` → `MachinePistol`;
+    new `Pistol9mm` and `SubmachineGun`; defaults are `Pistol45`.
+  - **Redirect:** an enum redirect in `DefaultEngine.ini` loaded the old
+    names cleanly.
+  - **Bridge, saved:**
+    - the 9mm pair → `Pistol9mm`;
+    - the Uzis, MAC-11s and SMG box → `MachinePistol`;
+    - new `BP_AmmoPickup_9mm` (24) and `BP_AmmoPickup_Sniper` (12);
+    - a `Pistol9mm` cap of 180 on both players. `BP_Player_CC` keeps its own
+      cap map, so it needed setting separately.
+  - **Checked:** no saved file still has the old names.
+  - **Boxes (user: "do the renames, make the boxes too"):**
+    - renamed to `BP_AmmoPickup_45` and `BP_AmmoPickup_MachinePistol`; the
+      old paths are redirectors, used by six placed boxes in `Lvl_Sandbox`;
+    - new rifle (30), auto shotgun (12) and pump shotgun (8) boxes;
+    - every new box got an AmmoSet calibre mesh.
+    No C++ was needed.
+  - **Not yet tested by the user.**
+- **Gameplay message feed** (user: "a general message UI like 'Picked up x
+  ammo', 'Quick Saved' … stack … 5 messages at once"). Plan item 38; spec
+  *Gameplay message feed*.
+  - **Build:** "apply and run"; built in 21 s; DLL 21:47:12 is newer than the
+    source (21:46:39); bridge up.
+  - **Code:**
+    - `UGameMessageSubsystem` on the local player: `ShowGameMessage`, 5 lines
+      kept, 3 s each in real time;
+    - `UGameMessageWidget`, which drives Text Blocks `Message_0`..`Message_4`
+      and fades them out;
+    - `AAmmoPickup::PickupMessage`.
+  - **Bridge, saved:** messages on all 10 ammo boxes and the first-aid box.
+  - **Merging** (user: "if the same message appears, i want it to update the
+    number of the existing message … push it to the start of the stack").
+    - **Build:** "apply and run"; built in 17 s; DLL 22:17:35 is newer than
+      the source (22:17:09); bridge up.
+    - **What it does:** `ShowCountedGameMessage` keys a line on its pattern
+      and adds to the live total, moving the line to the newest place with
+      its time reset. A repeated plain message refreshes its line.
+    - **Pickups** use it.
+  - **User:** "widget made, pickups tested, works".
+  - **Weapon pickups** (user: "weapon pickup do not give me a message, if I
+    already have the weapon it should give me the picked up ammo message as
+    well").
+    - **Build:** "apply and run"; built in 18 s; DLL 22:35:26 is newer than
+      the source (22:34:58); bridge up.
+    - **Messages:** "Picked up {DisplayName}" for a new gun or the dual
+      unlock. A gun already carried gives the ammo message.
+    - **Wording:** ammo wording moved to one table in code
+      (`ShowAmmoMessage`), so box and gun lines merge. The per-box
+      `PickupMessage` field was removed.
+    - **Tested (user): "weapon pickups tested, works".** Plan item 38 is
+      done; save messages wait for a save system.
+
 ### ▶ RESUME HERE
 **A. Next up**
 0. **Deck testing is on hold** (user, 2026-10-28: "lets do the Deck test later.
@@ -994,8 +1053,8 @@
    - **For each:** import skeletal, barrel along **+Y**, moving parts as
      bones. Sockets and grips are yours; Blueprints and wiring are Claude's.
      Guns that lock back also get a `ReadyPose` + `LastShotAnimation`.
-   - **Still to decide:** which rifle the AR-15 replaces; AK-74u ammo;
-     .45 vs 9mm ammo.
+   - **Still to decide:** which rifle the AR-15 replaces; AK-74u ammo.
+     (.45 vs 9mm: split, 2026-10-29, item 37.)
 7. **Silent placeholders:**
    - `BP_Shotgun` (`Fire_Shotgun_NoDelay`) and `BP_BattleRifle`
      (`Fire_SniperRifle_W`) have no Fire notify, and an old particle notify
@@ -1010,6 +1069,15 @@
 10. **First aid follow-ups** (item 36 done and tested): swap the placeholder
     `1kSineTonePing` for a real heal sound; decide where kits come from
     (placed only, or enemy drops too) and the starting count.
+11. **Ammo split (item 37):**
+    - **Test:** the 1911 and Beretta don't share; Uzi ammo still works; the
+      sniper box feeds `BP_BattleRifle`.
+    - **Boxes done:** renamed, plus rifle and shotgun boxes. Optional:
+      *Update Redirector References* on `Pickups/`. Levels with the Beretta
+      need 9mm boxes placed; the 12-gauge boxes may need their height tuned.
+12. **Message feed (item 38):** done and tested (boxes, guns, drops,
+    merging). Later: save messages once saving exists. The ammo wording is
+    the table in `GameMessageSubsystem.cpp`.
 
 **B. Editor / git**
 1. **Repo cleanup:** the LFS push finished (local `main` = `origin/main`, checked

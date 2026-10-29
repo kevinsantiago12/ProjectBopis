@@ -44,7 +44,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup")
-	EAmmoType AmmoType = EAmmoType::Pistol;
+	EAmmoType AmmoType = EAmmoType::Pistol45;
 
 	/** Rounds in this pickup. Counts down as they're taken. Editable per placed
 	    instance, so one Blueprint per type covers every box size. */
