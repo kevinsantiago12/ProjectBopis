@@ -20,7 +20,8 @@ namespace
 		case EAmmoType::HighPowerPistol: return NSLOCTEXT("GameMessages", "HighPowerPistol", "Picked up {Amount} .357 rounds");
 		case EAmmoType::MachinePistol:   return NSLOCTEXT("GameMessages", "MachinePistol", "Picked up {Amount} machine pistol rounds");
 		case EAmmoType::SubmachineGun:   return NSLOCTEXT("GameMessages", "SubmachineGun", "Picked up {Amount} submachine gun rounds");
-		case EAmmoType::Rifle:           return NSLOCTEXT("GameMessages", "Rifle", "Picked up {Amount} rifle rounds");
+		case EAmmoType::Rifle:           return NSLOCTEXT("GameMessages", "Rifle", "Picked up {Amount} 5.56 rounds");
+		case EAmmoType::Carbine:         return NSLOCTEXT("GameMessages", "Carbine", "Picked up {Amount} 5.45 rounds");
 		case EAmmoType::Sniper:          return NSLOCTEXT("GameMessages", "Sniper", "Picked up {Amount} sniper rounds");
 		case EAmmoType::AutoShotgun:
 		case EAmmoType::PumpShotgun:     return NSLOCTEXT("GameMessages", "Shotgun", "Picked up {Amount} shotgun shells");

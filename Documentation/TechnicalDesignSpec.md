@@ -38,6 +38,7 @@
   - [Weapon sounds (2026-10-23)](#weapon-sounds-2026-10-23)
   - [Footsteps (2026-10-23)](#footsteps-2026-10-23)
   - [Weapon wheel (2026-10-23)](#weapon-wheel-2026-10-23)
+  - [Weapon Blueprint names (2026-10-30)](#weapon-blueprint-names-2026-10-30)
   - [Adding a weapon — intake checklist (2026-10-25)](#adding-a-weapon--intake-checklist-2026-10-25)
 - [Ammo](#ammo)
   - [Shared ammo pool (2026-10-08)](#shared-ammo-pool-2026-10-08)
@@ -1512,6 +1513,77 @@ segment per carried weapon; replaced the same day.)*
 
 ---
 
+### Weapon Blueprint names (2026-10-30)
+User: "rename all the Weapon Blueprint appropriately … Use By Role, Remove
+the Mac Already." Named for the gun's role in the game, not its model, so a
+model swap doesn't strand the name. Renamed by the bridge (`AssetTools.move`),
+in `/Game/ThirdPerson/Blueprints/`:
+
+| Was | Now | Model |
+|---|---|---|
+| `BP_Pistol` | `BP_Pistol45` | 1911 |
+| `BP_DualPistols` | `BP_DualPistol45` | 1911 pair |
+| `BP_Pistol_EnemyOnly` | `BP_Pistol45_EnemyOnly` | 1911 |
+| `BP_Uzi` | `BP_MachinePistol` | Uzi |
+| `BP_DualUzi` | `BP_DualMachinePistol` | Uzi pair |
+| `BP_Shotgun` | `BP_AutoShotgun` | Benelli M4 |
+| `BP_CloseRangeRifle` | `BP_AssaultRifle` | M4 (AR4) |
+| `BP_BattleRifle` | `BP_SniperRifle` | Dragunov SVD |
+
+- **Kept:** `BP_Pistol9mm`, `BP_DualPistol9mm`, `BP_Revolver`,
+  `BP_PumpShotgun`, `BP_GrenadeLauncher`, and the weapon pickups
+  (`BP_PumpShotgun_Pickup`, `BP_Revolver_Pickup`,
+  `BP_GrenadeLauncher_Pickup`).
+- **Added 2026-10-30:** the AK-74u as **`BP_AssaultCarbine`**, beside the
+  M4 (see *AK-74u*).
+- **References:** the rename fixed and saved `BP_Player_CC`, `BP_Kamz`,
+  `BP_EnemyBase` and `BP_PlayerCharacter`.
+  - `Lvl_Linear` and one `Lvl_Sandbox` external actor (the bridge can't save
+    those) still point at the old names through **redirectors**, left for
+    `BP_Pistol`, `BP_DualPistols`, `BP_Pistol_EnemyOnly`, `BP_Uzi` and
+    `BP_CloseRangeRifle`. They work as they are. To clear them, run *Fix Up
+    Redirectors* on the Blueprints folder in the editor, which resaves those
+    levels.
+- **In-game names (`DisplayName`, 2026-10-30).** The user gave a table of
+  "Real-world inspiration → In-game name" (canon in the lore notes, *Weapons
+  and carrying*). Set on the CDOs by the bridge, compiled and saved. The
+  bytes show only the new name in each file. The pickup message ("Picked up
+  {DisplayName}") and the weapon wheel read these.
+
+  | Blueprint | `DisplayName` |
+  |---|---|
+  | `BP_Pistol45`, `BP_Pistol45_EnemyOnly` | .45 Pistol |
+  | `BP_DualPistol45` | Dual .45 Pistols |
+  | `BP_Pistol9mm` | 9mm Pistol |
+  | `BP_DualPistol9mm` | Dual 9mm Pistols |
+  | `BP_PumpShotgun` | Pump-Action Shotgun |
+  | `BP_AutoShotgun` | Semi-Auto Shotgun |
+  | `BP_AssaultCarbine` | AKS-74U |
+  | `BP_AssaultRifle` | M4 Carbine |
+  | `BP_SniperRifle` | Sniper Rifle (was "Battle Rifle") |
+  | `BP_MachinePistol` | Machine Pistol |
+  | `BP_DualMachinePistol` | Dual Machine Pistols |
+  | `BP_Revolver` | .357 Revolver |
+  | `BP_GrenadeLauncher` | Grenade Launcher (unchanged) |
+
+  - **Duals:** the user's table names singles only. The pairs follow the
+    existing "Dual … Pistols" pattern (Claude's default).
+  - **Gotcha:** a bridge script that reads `DisplayName` across the whole
+    Blueprints folder logs errors on the non-weapon CDOs, and that hides the
+    script's return value. The sets had run anyway. Read the result from the
+    `.uasset` bytes, or list the weapon Blueprints by name.
+- **Code comments** still say `BP_BattleRifle`, `BP_Pistol` and
+  `BP_DualPistols` (`WeaponBase.h`, `WeaponHolderComponent.cpp`). They're
+  comments only; update them with the next C++ change to those files.
+- **MAC-11 removed:** `BP_MAC11`, `BP_DualMAC11` (they only referred to each
+  other) and the bundle's `SMG11` meshes, materials and textures (only its
+  demo map `Weapons_Showcase` used them).
+  - Three were left loaded in the editor, the bridge's delete couldn't take
+    them, and the user removes them in the Content Browser: `SM_SMG11_Y`,
+    `M_SMG11_Color` and `M_SMG11`.
+- **Doc history** below keeps the old names as they were at the time; this
+  table maps them.
+
 ### Adding a weapon — intake checklist (2026-10-25)
 For the final weapon assets (plan item 33) and any gun after. Every system is
 data-driven per weapon, so a new gun reuses an existing **anim type** (no new
@@ -1745,6 +1817,44 @@ for SVD sniper".
   - **Bridge note:** `is_dirty` on an unloaded level's external actor throws
     "Asset does not exist". Also, `find_assets` lists redirectors, which have
     no CDO.
+
+**Carbine ammo and the five-magazine caps (2026-10-30).**
+- **`EAmmoType::Carbine`** (5.45, the AK-74u). User: AK-74u ammo is "Its
+  own". It sits after `Rifle`; assets store enum values by name, so the
+  insert shifts nothing saved. Built with "apply and run".
+  - **Messages:** `Rifle` now reads "Picked up {Amount} 5.56 rounds" (it was
+    "rifle rounds"); `Carbine` reads "… 5.45 rounds".
+  - **`BP_AmmoPickup_Carbine`:** a copy of the rifle box (same
+    `cal5_45_PaperBoxOpen` mesh), `Carbine`, 30 rounds (one AK magazine).
+- **Caps = five magazines** (user: "adjust the max ammo for all the weapons
+  to be 5 magazines worth, in the case of pistols, use the Dual max as the
+  mag"; "for uzis, use the dual as well"). Set on both players'
+  `WeaponHolder.MaxAmmoByType` (`BP_PlayerCharacter`, `BP_Player_CC`):
+
+  | Type | Magazine counted | Was | Now |
+  |---|---|---|---|
+  | `Pistol45` | dual .45, 16 | 180 | 80 |
+  | `Pistol9mm` | dual 9mm, 32 | 180 | 160 |
+  | `HighPowerPistol` | revolver, 6 | 60 | 30 |
+  | `MachinePistol` | dual Uzi, 64 | 300 | 320 |
+  | `Rifle` | M4, 30 | 300 | 150 |
+  | `Carbine` | AK-74u, 30 | – | 150 |
+  | `Sniper` | SVD, 10 | 40 | 50 |
+  | `AutoShotgun` | Benelli, 8 | 40 | 40 |
+  | `PumpShotgun` | Mossberg, 6 | 40 | 30 |
+  | `LauncherGrenade` | launcher, 6 | 12 | 30 |
+
+  - **Unchanged:** `Grenade` 5 and `FirstAid` 3 (not magazines).
+    `SubmachineGun` still has no entry (240 fallback) until the MP5 has a
+    magazine.
+  - **Starting reserves above a cap** (dual .45 120, SVD 60) just fill to
+    the cap: `AddAmmo` clamps.
+  - **Rule for new guns:** cap = 5 × magazine, using the dual magazine for
+    guns with a dual version.
+  - **What it means in play** (user: "actually its mag + 5x mag"): the cap
+    is on the reserve pool only. The loaded magazine lives in the weapon, so
+    a full load is one magazine in the gun plus five in reserve (dual .45:
+    16 + 80).
 
 **.45 and 9mm pistols (2026-10-25).** User: "I have added the Beretta. Create
 a weapon and dual for it. Name it 9mm Pistol. Rename the current pistol to .45
@@ -2373,6 +2483,283 @@ anim changes on the Benelli looks more convincing".
     referencers).
   - **The Beretta's barrel recoil** (6 mm with the slide, as in the 92FS's
     short-recoil action) was kept at the user's call.
+
+**Dragunov SVD (2026-10-30, for `BP_BattleRifle`).** User: "I added the
+sniper pack, theres a Dragunov in there but the Rifle, mag and scope are
+separate meshes. Can you help normalize this to our specs?"
+- **The pack:** `/Game/SniperRiflePack/` (526 MB). It holds four rifles
+  (AWM, Dragunov, R700, SV98M), each as a skeletal rifle, a separate skeletal
+  and static magazine, and a static scope. There's also a generic
+  `BP_Sniper` and a showcase level.
+  - **Dragunov:** `SKM_Dragunov` with bones `Body`, `Trigger` and
+    `Charging_Handle`, rigid-skinned. It's already **barrel +Y, cm**: the
+    muzzle is at y 110.7, the butt at −27.9, and the handle on the right
+    (−X). It's 138.6 cm long, against a real SVD's 122.5.
+  - **Counts:** rifle 15.5k triangles, magazine 4.1k, scope (PSO-1) 7.2k
+    plus a collision hull. One LOD each. 4K textures on the pack's own master
+    (Diffuse, Normal, ORM). Texture set `_1`; `_2` is unused.
+  - **Placement:** `BP_Sniper`'s defaults hold the magazine at
+    (−0.11, 24.30, 0) and the scope at (−0.38, 16.91, 15.74). These are the
+    Dragunov's: render-checked, the magazine sits in the well against its
+    latch and the scope bracket on the left rail.
+- **Sources:** the user exported the three pieces from Unreal into
+  `ArtSource/Weapons/Dragunov/Source/` (the bridge can't export). Unreal
+  FBXs come in at cm once the scene unit scale is 0.01 before the import.
+  - The armature objects arrive scaled (9.4 and 1.25), but world-space
+    vertices and bone heads are right.
+- **Rig: `ArtSource/Weapons/Dragunov/RigDragunov.py`** (Blender 4.0,
+  headless, the Benelli's pattern).
+  - Merges rifle, magazine and scope at the pack offsets. The barrel stays
+    +Y, so nothing turns.
+  - **Root in the pistol grip:** the bounds centre of the rifle's vertices at
+    y −4.5…5, z −3.5…1, on the bore's centre line. Cross-sections show the
+    grip spans y −3…+3 there. In the pack's frame that's
+    (−0.25, −0.58, −1.20), 1.3 cm from the pack's own origin.
+  - **Bones:** 4, children of `root`, unrotated (bone X across the gun, so a
+    socket wanting X down the barrel takes yaw 90).
+    - `bolt` (the pack's `Charging_Handle`: the handle and carrier) at
+      (−3.51, 32.01, 10.06);
+    - `trigger` (the pack's pin) at (−0.06, 9.47, 5.58);
+    - `magazine` at the magazine's own origin, (0.14, 24.88, 1.20).
+  - **Slots:** `Body` (rifle and magazine share a texture set), `Scope` and
+    `Lens` (the glass, 224 triangles on its own small set). First UV set
+    only; the scope's lightmap UVs and collision hull are dropped. Normals
+    unchanged (agreement 0.976 before and after).
+  - **Output:** `SK_Dragunov.fbx` + `.blend`. 26,778 triangles, 20,668
+    vertices, 138.6 cm.
+  - **Checked:** Workbench renders at rest and posed (bolt back 8 cm,
+    magazine dropped 15 cm, trigger 15°). All move cleanly.
+  - **Quirk, left as authored:** the scope mount's clamp reaches about 1.4 cm
+    inside the receiver's left wall. It shows through the port only while
+    the bolt is back.
+- **In Unreal (bridge, 2026-10-30, saved), `/Game/Dragunov/`:**
+  - `SK_Dragunov` + `SK_Dragunov_Skeleton`, no materials or physics asset
+    imported. Bones `root, bolt, trigger, magazine`; 21,587 render vertices;
+    1 LOD.
+  - **Moved in from the pack** (redirectors left behind), so the gun is
+    self-contained:
+    - the textures, renamed into `Dragunov/Textures/`: `T_Dragunov_*`,
+      `T_Dragunov_Scope_*` and `T_Dragunov_Lens_*`, all max 2048;
+    - `SM_Dragunov_Mag`, the dropped magazine. Its bounds match the skinned
+      magazine exactly, so a `Magazine` socket on `magazine` at zero offset
+      lines it up.
+  - **Materials:** `MI_Dragunov_Body`, `_Scope` and `_Lens` are children of
+    `M_TacticalPistol` (`BaseColor`, `Normal`, `ORM`; `Tint` white), on the
+    three slots. `SM_Dragunov_Mag` gets `MI_Dragunov_Body`.
+- **Next (user):**
+  - **LODs:** 26.8k triangles against the 6–12k long-gun budget. Use the
+    Benelli recipe (reduce LOD0, *Lock Mesh Edges*, 3 LODs).
+  - **Sockets**, as suggested by the script, on `root` unless noted:
+    - `MuzzleFlash` (0, 111.28, 9.92), **yaw 90**;
+    - `AmmoEject` (−4.92, 30.90, 10.46), the right wall by the bolt;
+    - `LeftHandGrip` (0, 45, 8.30), under the handguard, to tune;
+    - `Magazine` on `magazine` at (0, 0, 0).
+- **User, done 2026-10-30:** LODs 8,956 / 5,113 / 5,113 vertices. Sockets,
+  all on `root` with yaw 90: `MuzzleFlash` (0, 114, 10), `AmmoEject`
+  (0, 26, 11), `LeftHandGrip` (0, 41, 9).
+- **`BP_BattleRifle` wired (bridge, 2026-10-30, compiled, saved; user: "wire
+  up BP_BattleRifle"):**
+  - **`Magazine` socket added** on `magazine` at zero (it was missing).
+  - **`LeftHandGrip` set for the lock:** rotation **(pitch −29, yaw 151,
+    roll 103)**, the Mossberg's unchanged (both meshes are barrel +Y, up +Z,
+    left +X). Location **(6.5, 41, 9.5)**: the user's spot along the
+    handguard, moved 6.5 left and 0.5 up.
+    - The socket is where the wrist (`hand_l`'s origin) goes, so it sits
+      beside the handguard, not in it. The Benelli's tested socket is
+      likewise 5.5 left of its forend centre.
+  - **`WeaponMesh`:** `SK_Dragunov`, **scale 0.93** uniform (129 cm,
+    about 5% over a real SVD, as the Benelli at 1.4 is over a real M4),
+    `AnimationSingleNode`. The old `Sniper_Rifle_A` was 111.5 cm at 1.0.
+  - **Weapon:**
+    - `FireAnimation`, `ReadyPose` and `LastShotAnimation` → None until the
+      Dragunov has its own. `Fire_SniperRifle_W` was another skeleton's, with
+      no Fire notify (the second silent placeholder), so the shot now sounds
+      and flashes from code.
+    - `MagazineSize` 12 → **10**; `MagazineMesh` `SM_Dragunov_Mag` on
+      `Magazine`.
+    - `bLockLeftHandRotation` on.
+    - `GripLocationOffset` (1, 0, −2) → **(0, 0, 0)** (the root is in the
+      grip). `GripRotationOffset` (0, −3, 8) kept, the usual +Y value.
+  - **Kept:** `Sniper` ammo, `AnimType` Rifle, `GripStyle` PistolGrip, slot
+    6, sounds, flash, the 7.62 casing, zoom, `ReloadDuration` 2.2,
+    `DisplayName` "Battle Rifle" (renamed "Sniper Rifle" 2026-10-30, see
+    *Weapon Blueprint names*).
+  - **`BP_AmmoPickup_Sniper`:** `Amount` 12 → **10**, still one magazine.
+  - **Tested (user, 2026-10-30):** "tested, works".
+- **Animations (2026-10-30; user: "do the animations").**
+  - **Script:** `ArtSource/Weapons/Dragunov/AnimDragunov.py` keys the rig in
+    `SK_Dragunov.blend` at 60 fps, linear, one FBX per animation (mesh
+    included for the importer).
+    - **Posed in armature space** (the world here) rather than in pose-bone
+      axes: the barrel runs to Blender −Y, so the bolt moves back along
+      +Y, and the trigger turns about X through its pin (positive swings the
+      blade back). Round-trip check: bolt exactly 8.00 / 7.50 cm back; the
+      blade 3 cm below the pin moves 0.42 cm back when pulled.
+  - **`A_Dragunov_Fire` (0.167 s):** carrier 0 → 8 cm back at frame 3, held
+    to 4, home at 8, still at 10; trigger 8° from frame 0, released by 8. A
+    little slower than the Benelli (a heavier action); the rifle fires every
+    0.6 s.
+  - **`A_Dragunov_LastShot` (0.167 s):** carrier 8 cm back at frame 3,
+    settling to 7.5 (the bolt stop) by 5 and held; trigger released by 8.
+  - **`A_Dragunov_Ready`:** the bind pose, 2 frames.
+  - **Checked:** renders of the carrier and charging handle back, with the
+    port open and no clipping.
+  - **Imported (bridge, saved)** into `/Game/Dragunov/Animations/` on
+    `SK_Dragunov_Skeleton`. Spare meshes deleted, `_Anim` renamed.
+    - **Gotcha:** renaming `_Anim` onto the spare's name fails in the same
+      script that deleted the spare. It worked on a second call.
+  - **Notifies (user):** Weapon Sound `Fire` at frame 0 and `Eject` at frame
+    3 (carrier fully back) on Fire and LastShot; none on Ready. Bytes
+    confirm one `Fire` and one `Eject` in each.
+  - **Wired (bridge, 2026-10-30, compiled, saved; user: "wire them up"):**
+    `BP_BattleRifle`'s `FireAnimation` `A_Dragunov_Fire`,
+    `LastShotAnimation` `A_Dragunov_LastShot`, `ReadyPose`
+    `A_Dragunov_Ready`. The shot sound now comes from the `Fire` notify, and
+    the casing from `Eject` (`bFireAnimationEjects`).
+- **Cleanup (user's call):** the rest of the pack (AWM, R700, SV98M, the
+  showcase level, `BP_Sniper`).
+
+**AK-74u (2026-10-30, `BP_AssaultCarbine`).** User: "The M4 Stays, that is
+the accurate rifle with less ROF, AK74u is fast fire rate, high damage but
+also inaccurate spread"; "The AK74 asset is in the FPS Pack already"; "go,
+make the AK-74u".
+- **Mesh:** the FPS bundle's `SK_KA74U_Y` (the +Y variant; `_X` is the
+  bundle's X-barrel copy). Already skeletal: `b_gun_Root` with `mag`
+  (+`mag_bullets`), `trigger`, `magrel`, `shelleject`, `stock`
+  (+`stock_ring`), `muzzleflash`, `firemode`. 73.8 cm (stock out), 9,134
+  vertices, 1 LOD. Slots `M_KA74U` and `M_762x39_Empty` (the bundle's own
+  materials, as on the M4).
+  - **Correction (2026-10-30, from the FBX):** `b_gun_shelleject` is the
+    **bolt carrier with its charging handle** (165 vertices, x −4.9…1.1,
+    y 12.5…21.3, z 8.6…11.8; the handle sits on the right). So the AK
+    *can* have a fire animation (made 2026-10-30, *Fire animation*
+    below).
+- **Stockless (user: "can we make the AK Stockless?").** It's a new mesh,
+  not a hidden bone: pickups and drops show the class's mesh, so hiding the
+  bone in code would leave the stock on them.
+  - **Source:** the user's FBX export of `SK_KA74U_Y`, in
+    `ArtSource/Weapons/AK74U/Source/`. The dialog named it `SM_KA74U_Y.FBX`,
+    but it's the skeletal mesh.
+  - **`ArtSource/Weapons/AK74U/StripStockAK.py`:** deletes every vertex on
+    `b_gun_stock` (997) and `b_gun_stock_ring` (178) and nothing else. Now
+    8,927 triangles, 50.3 cm (Unreal y −3.6…46.7). Render-checked: the
+    receiver ends at its rear trunnion, with no holes.
+  - **Round trip** with AnimPass's settings (unit scale 0.01 before the
+    import; export primary Y / secondary X, `armature_nodetype` NULL, no
+    leaf bones, all bones).
+    - **Gotcha:** Blender turns the root bone into the armature object, so
+      the body's root-skinned vertices come in with no group and export
+      unweighted. Unreal binds unweighted vertices to the root on import:
+      no warnings, asset validated.
+  - **In Unreal (bridge, saved):** `/Game/AK74U/SK_KA74U_Stockless` on the
+    existing `SK_KA74U_Y_Skeleton` (the bones match, the stock bones stay
+    unweighted), bounds y −3.62…46.68. Both materials set. Our three sockets
+    copied from `SK_KA74U_Y` (they're on the mesh; the bundle's two are on
+    the skeleton and came along). Now `BP_AssaultCarbine`'s mesh.
+    - Same root and axes, so the grip offsets, sockets and magazine drop
+      are unchanged.
+- **Bundle frames (learned from the M4, `SK_AR4`, same bundle):**
+  - The bones are turned relative to the mesh: the muzzle bone's Z runs
+    out of the barrel, hence the M4's tested `MuzzleFlash` (0, 0, 1)
+    pitch 90.
+  - The static magazines are built in the magazine bone's frame, and that
+    frame matches the bundle's **X** variant. The M4 drops
+    `SM_AR4_Mag_Empty` on `b_gun_mag` at zero, so the AK uses
+    **`SM_KA74U_Mag_Empty_X`**, not `_Y`.
+  - The bundle's own AK sockets (`Muzzle`, roll −90; `ShellEjectionSocket`
+    on the root) don't put X down the barrel, so they're unused.
+- **Sockets added (bridge, saved)**, copied from the M4's, bone-relative:
+  `MuzzleFlash` on `b_gun_muzzleflash` (0, 0, 1) pitch 90; `AmmoEject` on
+  `b_gun_shelleject` (0, 0, −3) pitch 90; `Magazine` on `b_gun_mag` at zero.
+  **`LeftHandGrip` not added:** it lives on `b_gun_Root`, which sits at a
+  different place per gun. The user places it; until then the hand follows
+  the clip.
+- **`BP_AssaultCarbine`** (a copy of `BP_AssaultRifle`, compiled, saved):
+  - `SK_KA74U_Y` (since swapped for `SK_KA74U_Stockless`, above) at the
+    M4's scale 1.1; grip offsets the M4's (1, 0, −2), (0, 0, 0) as a start.
+  - **Stats vs the M4:** `TimeBetweenShots` 0.075 (800 a minute; M4 0.1),
+    `BaseDamage` 38 (30), `Spread` 1.5 (0.6), `SustainedSpread` 4 (2),
+    `MovingSpreadMultiplier` 1.8 (1.5). Magazine 30, `Carbine` ammo,
+    `StartingReserveAmmo` 60, slot 5, `DisplayName` "AK-74u" (renamed
+    "AKS-74U" 2026-10-30).
+  - `DropAsClass` → itself (the copy pointed at the M4's). `FireAnimation`
+    → None (the M4's `A_AR4_Fire` is on the AR4 skeleton), so the shot sounds
+    and flashes from code. `bLockLeftHandRotation` off until the socket is
+    calibrated.
+  - **Sounds:** the Real_Recorded AKM set: `AKM_Single_Shot_Cue`,
+    `AKM_Mag_Out_Cue`, `AKM_Mag_IN_Cue`, `AKM_Cocking_Cue` (Chamber),
+    `AKM_Draw_Cue` (Equip). The shot cue got the revolver's `ATT_Gunshot` and
+    concurrency override (8 per owner, StopOldest, 0.25 s steal); the four
+    handling cues got `ATT_WeaponFoley`. Volumes untouched.
+  - Casing `cal5_45_Cartrige` and the M4's flash; icon still the M4's
+    (`modern_rifle__12_`).
+- **Test loadout:** added to `BP_Player_CC`'s `StartingLoadout`.
+- **Found on the way, not fixed:** the M4's `M4_Single_Shot_Cue` has **no
+  attenuation or concurrency override** (full volume at any distance, 16
+  voices), unlike the revolver/SMG/MilitaryWeapSilver cues. Other fire cues
+  added since 10-23 may share this; audit them all.
+- **Tested (user, 2026-10-30):** "tested, works" (stockless, flash,
+  casings, magazine drop, sounds).
+- **Fire animation (2026-10-30; user: "do the fire animation").**
+  - **Script:** `ArtSource/Weapons/AK74U/AnimAK.py` keys the stockless
+    FBX's rig in AnimPass's way (the same bundle as the M4): unit scale
+    0.01 before the import, posed in world space (barrel −Y, so back is
+    +Y; the trigger turns about X through its pin), exported primary Y /
+    secondary X, all bones. 60 fps, linear.
+    - **Gotcha:** the armature object is rotated (the root bone became
+      it), so a pose bone's own space isn't the world's. A test move along
+      armature +Y went *up*. Pose from `arm.matrix_world @
+      bone.matrix_local`, as the script does.
+  - **`A_AK74U_Fire` (0.117 s, 7 frames):**
+    - **Carrier** (`b_gun_shelleject`): 8 cm back at frame 1, held to 2,
+      home at 4. The AK fires every 4.5 frames, so the cycle ends before
+      the next shot.
+    - **Why 8 cm:** at 8 the charging handle reaches the rear of the port
+      and the port is open; at 9.5 it runs past the port. 8 is also the
+      SVD's.
+    - **Trigger:** 8° (as the M4's; the blade moves 0.42 cm back), held to
+      frame 5 and released by 7. It stays pulled past the next shot, so a
+      burst never flickers it, and it lets go after the last one. The
+      gun rests on the last frame (no `ReadyPose`), which is the bind pose.
+    - **No `LastShotAnimation`:** the AK has no bolt hold-open.
+  - **Checked:** re-imported: carrier 8.00 / 8.00 / 4.00 / 0 cm on frames
+    1–4, blade 0.42 cm, no other bone moves. Renders of the carrier back:
+    handle at the rear of the port, port open, no clipping.
+  - **Imported (bridge, saved):** `/Game/AK74U/Animations/A_AK74U_Fire` on
+    `SK_KA74U_Y_Skeleton` (10 bones digested, validated). Imported under a
+    temporary name, so the `_Anim` rename worked in a second call without
+    colliding with the spare mesh (deleted).
+  - **Notifies (user):** Weapon Sound `Fire` at frame 0 and `Eject` at
+    frame 1 (carrier back). Bytes confirm one `Fire` and one `Eject`. The
+    `AmmoEject` socket rides on the carrier, so the casing leaves from the
+    rear of the port.
+    - **Gotcha:** `ObjectTools.get_properties` can't read an
+      AnimSequence's `Notifies`, so the bridge can't check notify frames.
+  - **Wired (bridge, 2026-10-30, compiled, saved; user: "wire them up"):**
+    `BP_AssaultCarbine`'s `FireAnimation` is `A_AK74U_Fire`.
+    `LastShotAnimation` and `ReadyPose` stay None. The shot sound now
+    comes from the `Fire` notify and the casing from `Eject`
+    (`bFireAnimationEjects`).
+  - **Tested (user, 2026-10-30):** "tested, works".
+- **Next (user):** `LeftHandGrip` on `b_gun_Root`, then calibrate and lock;
+  LODs if wanted; an AK icon.
+
+**MP5 (planned, 2026-10-30).** User: "Add MP5 SMG. A fast laser accuracy low
+damage SMG." It's the Submachine Gun of the 2026-10-29 ammo split (see *Ammo
+split*).
+- **Role vs the rest:** a high rate of fire, near-zero spread and low damage
+  per round. It's the opposite trade from the AKS-74U, which is fast, hits
+  hard and sprays.
+- **Not built.** No MP5 is in the project: the FPS bundle has none. A model
+  is needed from the user.
+- **When built:**
+  - `EAmmoType::SubmachineGun` already exists. It gets its five-magazine
+    cap on both players; until then it falls back to 240.
+  - Its own ammo box.
+  - The usual intake: the spec's *Adding a weapon*.
+  - Numbers to agree with the user then (rate, damage, spread, magazine).
+  - In-game name: the lore notes call it the Submachine Gun.
+  - Whether it also comes as a dual pair is open.
 
 **Gunfire concurrency (2026-10-19).** Fire sounds have long tails (SMG 5.9 s,
 sniper 5.3, shotgun 4.3), so rapid fire from several enemies ran out of voices.

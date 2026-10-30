@@ -99,8 +99,11 @@ enum class EAmmoType : uint8
 	MachinePistol,
 	/** The MP5 (to come). */
 	SubmachineGun,
+	/** 5.56: the M4. */
 	Rifle,
-	/** The SVD (BP_BattleRifle). */
+	/** 5.45: the AK-74u. */
+	Carbine,
+	/** The SVD (BP_SniperRifle). */
 	Sniper,
 	AutoShotgun,
 	PumpShotgun,

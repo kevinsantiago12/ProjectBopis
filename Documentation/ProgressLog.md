@@ -1201,6 +1201,100 @@
     mid-reload rescales what's left of the weapon timer and the montage
     together, from where they are.
   - **Tested (user): "tested, works".**
+- **Dragunov from the sniper pack** (user: "the Rifle, mag and scope are
+  separate meshes. Can you help normalize this to our specs?").
+  - The user exported the three pieces to `ArtSource/Weapons/Dragunov/Source/`.
+  - `RigDragunov.py` merges them where the pack's `BP_Sniper` holds them.
+    The barrel was already +Y and cm; the root is in the pistol grip; bones
+    `root, bolt, trigger, magazine`; slots `Body, Scope, Lens`. 26.8k
+    triangles. Render-checked at rest and posed.
+  - **In Unreal (bridge, saved):** `/Game/Dragunov/` has `SK_Dragunov`,
+    three material instances on `M_TacticalPistol`, the textures (moved in,
+    max 2048) and `SM_Dragunov_Mag` for the magazine drop.
+  - **User:** LODs and sockets added. **`BP_BattleRifle` wired** (bridge,
+    saved): `SK_Dragunov` at 0.93, magazine 10 with the magazine drop,
+    left-hand lock (Mossberg rotation, socket moved beside the handguard),
+    grip offset zeroed, fire animation cleared. The sniper box now gives 10.
+    `Magazine` socket added. **Tested (user): "tested, works".**
+  - **Animations** (user: "do the animations"): `AnimDragunov.py` →
+    `A_Dragunov_Fire`, `A_Dragunov_LastShot` (bolt held at 7.5 cm) and
+    `A_Dragunov_Ready`. Round-trip and render-checked, imported and saved.
+    The user added `Fire` + `Eject`; **wired onto `BP_BattleRifle`**
+    (bridge, saved). **Not yet tested.**
+- **Weapon Blueprints renamed by role** (user: "rename all the Weapon
+  Blueprint appropriately … Use By Role, Remove the Mac Already"). Eight
+  renames, e.g. `BP_Shotgun` → `BP_AutoShotgun` and `BP_BattleRifle` →
+  `BP_SniperRifle`; the map is in the spec, *Weapon Blueprint names*.
+  Referencing Blueprints saved; the levels go through redirectors until a
+  *Fix Up Redirectors*.
+  - **MAC-11 removed:** both Blueprints and the bundle's `SMG11` assets.
+    Three stayed loaded in the editor (user to delete).
+  - **Design (user):** "The M4 Stays, that is the accurate rifle with less
+    ROF, AK74u is fast fire rate, high damage but also inaccurate spread."
+    Recorded in the lore notes and GDD.
+  - **Next:** the AK-74u, from the FPS bundle ("can we make that next?").
+- **AK-74u ammo and the carry caps** ("apply and run"; user: AK ammo "Its
+  own"; "adjust the max ammo for all the weapons to be 5 magazines worth …
+  use the Dual max as the mag … for uzis, use the dual as well").
+  - **C++ (compiled):** `EAmmoType::Carbine` (5.45); the rifle message now
+    says "5.56 rounds" and the carbine's "5.45 rounds".
+  - **Bridge (saved):** both players' caps set to five magazines (table in
+    the spec, e.g. .45 80, 9mm 160, Uzi 320, rifle and carbine 150, SVD
+    50); new `BP_AmmoPickup_Carbine` (30).
+  - **Not yet tested.** Next: `BP_AssaultCarbine`.
+  - **"mag + 5x mag" (user):** already the case. The cap is on the reserve
+    only, and the loaded magazine sits in the gun. Docs clarified, caps
+    unchanged.
+- **AK-74u built** (user: "go, make the AK-74u"; bridge, saved):
+  - `BP_AssaultCarbine` on the bundle's `SK_KA74U_Y`.
+  - **Sockets** carried over from the M4: same bundle, so the same bone
+    frames.
+  - **Magazine drop:** `SM_KA74U_Mag_Empty_X`, the variant built in the
+    magazine bone's frame.
+  - **Stats and ammo** as agreed; `Carbine` ammo.
+  - **Sounds:** the AKM set. The shot cue got `ATT_Gunshot` and the voice
+    limit.
+  - **Test loadout:** added to `BP_Player_CC`.
+  - **No fire animation:** the AK has no bolt bone.
+  - **Found:** the M4's shot cue has no attenuation or voice limit; audit
+    all fire cues.
+  - **Not yet tested.**
+- **AK made stockless** (user: "can we make the AK Stockless?"):
+  - The user exported `SK_KA74U_Y`.
+  - `StripStockAK.py` removed the stock and sling ring (1,175 vertices),
+    leaving 50.3 cm and 8,927 triangles.
+  - Imported as `/Game/AK74U/SK_KA74U_Stockless` on the same skeleton, with
+    the sockets and materials copied, and swapped onto `BP_AssaultCarbine`
+    (bridge, saved).
+  - **Correction:** `b_gun_shelleject` is the bolt carrier with its
+    charging handle, so a fire animation is possible.
+  - **Tested** (user): "tested, works".
+- **AK fire animation** (user: "do the fire animation"):
+  - `ArtSource/Weapons/AK74U/AnimAK.py` → `A_AK74U_Fire`, 0.117 s. The
+    carrier and charging handle go 8 cm back at frame 1 and are home by 4,
+    inside the 4.5 frames between shots. The trigger is held to frame 5, so
+    it doesn't flicker in a burst.
+  - Checked by re-import (exact travel, nothing else moves) and renders
+    (handle at the rear of the port, no clipping).
+  - Imported (bridge, saved) to `/Game/AK74U/Animations/`.
+  - **Gotcha:** the armature object is rotated, so the first test renders
+    moved the carrier up. Pose in world space (spec *AK-74u*).
+  - **Notified and wired** (user added `Fire` f0 + `Eject` f1, confirmed by
+    bytes; "wire them up"): `BP_AssaultCarbine`'s `FireAnimation`
+    (bridge, compiled, saved).
+  - **Tested** (user): "tested, works".
+- **In-game weapon names** (the user's table, "Real-world inspiration → In-game
+  name"; bridge, compiled, saved):
+  - .45 Pistol, 9mm Pistol, Pump-Action Shotgun, Semi-Auto Shotgun, AKS-74U,
+    M4 Carbine, Sniper Rifle, Machine Pistol, .357 Revolver.
+  - The dual pairs follow the "Dual … Pistols" pattern: Dual .45 Pistols,
+    Dual 9mm Pistols, Dual Machine Pistols.
+  - Canon in the lore notes, and the GDD (md + html) has the arsenal table.
+    The spec maps each Blueprint to its name.
+- **To do: MP5** (user: "Add MP5 SMG. A fast laser accuracy low damage
+  SMG"). It's plan item 40, the Submachine Gun of the ammo split. Not built:
+  there's no MP5 model in the project, so the user supplies one. Recorded in
+  the lore notes, the GDD and the spec (*MP5 (planned)*).
 
 ### ▶ RESUME HERE
 **A. Next up**
@@ -1262,20 +1356,46 @@
        shot (tested).
      - **Done:** the old 1911 shot and its kit montage are deleted, and the
        Benelli source FBX is in `ArtSource`.
-   - **Next model:** the SVD (`BP_BattleRifle`), which locks back too.
-     It also clears the second silent placeholder (item 7).
+   - **SVD (`BP_BattleRifle`), in progress 2026-10-30:** `SK_Dragunov` is
+     built, imported and wired onto `BP_BattleRifle` (spec *Dragunov SVD*).
+     The second silent placeholder (item 7) is gone with it.
+     Tested. Animations made, notified (user) and wired. Now
+     `BP_SniperRifle` (renamed 2026-10-30).
+     **User next:** test the shot sound, casing, bolt cycle, lock-open on
+     the last round and close on reload. (`DisplayName` is now "Sniper
+     Rifle".) Cleanup of the rest of the sniper pack is the user's call.
+   - **Renames (2026-10-30):** weapon Blueprints are named by role (spec
+     *Weapon Blueprint names*). **User:** run *Fix Up Redirectors* on
+     `ThirdPerson/Blueprints` sometime, and delete the three leftover
+     `SMG11` assets.
+   - **AK-74u built, stockless** (`BP_AssaultCarbine` on
+     `SK_KA74U_Stockless`, spec *AK-74u*), in `BP_Player_CC`'s test
+     loadout. Tested. **Fire animation** `A_AK74U_Fire` made, notified and
+     wired (2026-10-30). In-game name "AKS-74U". **User next:**
+     - (the fire animation is tested: "tested, works");
+     - place `LeftHandGrip` on `b_gun_Root`, calibrate it
+       (`Bopis.LeftHandGripCalibrate 1`, lock off) and tick
+       `bLockLeftHandRotation`;
+     - LODs and an AK icon (it has the M4's).
+   - **To do: MP5 submachine gun** (plan item 40; user: "Add MP5 SMG. A
+     fast laser accuracy low damage SMG"). It needs a model from you, since
+     none is in the project. Then the usual intake, `SubmachineGun` ammo
+     with a five-magazine cap and its box, and stats agreed with you. A dual
+     pair is an open question.
+   - **Fire-cue audit (deferred):** `M4_Single_Shot_Cue` has no
+     `ATT_Gunshot` or voice limit, so it's full volume at any range. Check
+     every gun's fire cue against the revolver's settings.
    - **For each:** import skeletal, barrel along **+Y**, moving parts as
      bones. Sockets and grips are yours; Blueprints and wiring are Claude's.
      Guns that lock back also get a `ReadyPose` + `LastShotAnimation`.
-   - **Still to decide:** which rifle the AR-15 replaces; AK-74u ammo.
+   - **Still to decide:** which rifle the AR-15 replaces. (AK-74u ammo:
+     its own, decided 2026-10-30.)
      (.45 vs 9mm: split, 2026-10-29, item 37.)
 7. **Silent placeholders:**
    - **`BP_Shotgun`: fixed 2026-10-30.** Its `FireAnimation` was cleared
      when the Benelli went on.
-   - `BP_BattleRifle` (`Fire_SniperRifle_W`) still has no Fire notify, and
-     an old particle notify gives a second flash.
-   - Suggested: clear their `FireAnimation` (bridge, ask first) so they
-     sound from code until the Benelli and SVD replace them.
+   - **`BP_BattleRifle`: fixed 2026-10-30.** Its `FireAnimation`
+     (`Fire_SniperRifle_W`) was cleared when the Dragunov went on.
    - Then test every gun: one shot sound, one flash.
 7b. **Focus reload speed: done 2026-10-30** (item 39, tested). Tune
    `FocusReloadSpeed` (3) on `BP_PlayerCharacter` if it's ever wanted

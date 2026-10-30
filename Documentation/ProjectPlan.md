@@ -626,6 +626,30 @@ archetype-composition idea, not extended from the old classes.
     - [x] User: `Fire` + `Eject` on `A_Uzi_Fire`. Claude (bridge, 2026-10-30, saved): `BP_Uzi` + `BP_DualUzi` wired; `SK_Uzi_Fire` deleted (no referencers).
     - [x] User test: Uzi bursts ("tested, works").
   - [ ] **SVD** — the sniper; replaces `BP_BattleRifle`'s silver `Sniper_Rifle_A` (user, 2026-10-28). Its bolt locks back on empty, and pulling the charging handle releases it.
+    - [x] Skeletal mesh (2026-10-30; user: "the Rifle, mag and scope are separate meshes. Can you help normalize this to our specs?"): the user's exports from the sniper pack → `ArtSource/Weapons/Dragunov/RigDragunov.py` → bridge import of `SK_Dragunov` (bones `root, bolt, trigger, magazine`; slots `Body, Scope, Lens`) in `/Game/Dragunov/`, with `MI_Dragunov_*` on `M_TacticalPistol`, the textures moved in (max 2048) and `SM_Dragunov_Mag`. Spec: *Dragunov SVD*.
+    - [x] User (2026-10-30): LODs (8,956 / 5,113 / 5,113 vertices) and sockets `MuzzleFlash`, `AmmoEject`, `LeftHandGrip`. Claude added `Magazine`.
+    - [x] *(Bridge, 2026-10-30, saved; user: "wire up BP_BattleRifle".)* `SK_Dragunov` at scale 0.93; magazine 10 + `SM_Dragunov_Mag`; left-hand lock with the Mossberg's rotation on `LeftHandGrip` (moved beside the handguard); grip offset zeroed; fire animation cleared (sound and flash from code); `BP_AmmoPickup_Sniper` 12 → 10.
+    - [x] User test (2026-10-30: "tested, works"): hold, left hand, magazine drop, muzzle flash, casings, scale.
+    - [x] Fire/LastShot/Ready animations (2026-10-30; `AnimDragunov.py`, imported to `/Game/Dragunov/Animations/`, saved).
+    - [x] User: notifies (`Fire` f0 + `Eject` f3 on Fire and LastShot). *(Bridge, 2026-10-30, saved:)* wired onto `BP_BattleRifle` (`FireAnimation`, `LastShotAnimation`, `ReadyPose`).
+    - [ ] User test: one shot sound, casing on the bolt's way back, bolt cycling, locks open on the last round, closes on reload.
+    - [x] *(2026-10-30.)* `DisplayName` → "Sniper Rifle" (in the rename below).
+    - [ ] Cleanup (user's call): the rest of `/Game/SniperRiflePack/`.
+  - [x] *(Bridge, 2026-10-30, saved.)* Weapon Blueprints renamed by role (user: "Use By Role, Remove the Mac Already"); spec *Weapon Blueprint names*. The MAC-11 Blueprints and `SMG11` assets are deleted (three left for the user to delete in the editor). User: *Fix Up Redirectors* on `ThirdPerson/Blueprints` when convenient.
+  - [x] *(Bridge, 2026-10-30, compiled, saved.)* In-game names from the user's table: .45 Pistol, 9mm Pistol, Pump-Action Shotgun, Semi-Auto Shotgun, AKS-74U, M4 Carbine, Sniper Rifle, Machine Pistol, .357 Revolver; the pairs "Dual .45 Pistols", "Dual 9mm Pistols", "Dual Machine Pistols". Spec: *Weapon Blueprint names*.
+  - [ ] **AK-74u** (user, 2026-10-30: "The M4 Stays, that is the accurate rifle with less ROF, AK74u is fast fire rate, high damage but also inaccurate spread"; "The AK74 asset is in the FPS Pack already, can we make that next?") as `BP_AssaultCarbine`, from `SK_KA74U_Y`.
+    - [x] *(Compiled 2026-10-30, "apply and run".)* Its own ammo (user: "Its own"): `EAmmoType::Carbine` (5.45) + message; `BP_AmmoPickup_Carbine` (30). Spec: *Carbine ammo and the five-magazine caps*.
+    - [x] *(Bridge, 2026-10-30, saved.)* All carry caps set to five magazines (dual magazine for pistols and Uzis), both players; `Carbine` 150.
+    - [x] *(Bridge, 2026-10-30, saved; user: "go, make the AK-74u".)* `BP_AssaultCarbine`: copy of `BP_AssaultRifle` on `SK_KA74U_Y` (scale 1.1); sockets `MuzzleFlash`, `AmmoEject`, `Magazine` (from the M4's); drop `SM_KA74U_Mag_Empty_X`; 0.075 s, 38 damage, spread 1.5, sustained 4, moving ×1.8; `Carbine`, 30; "AK-74u"; AKM sounds (shot cue given `ATT_Gunshot` + voice limit); in `BP_Player_CC`'s test loadout. No fire animation at first (the bolt bone was missed; made below). Spec: *AK-74u*.
+    - [x] *(2026-10-30; user: "can we make the AK Stockless?")* Stockless: `StripStockAK.py` on the user's FBX export → `/Game/AK74U/SK_KA74U_Stockless` (same skeleton, sockets copied), on `BP_AssaultCarbine`.
+    - [x] *(User, 2026-10-30: "tested, works".)* Test: flash, casings, magazine drop, sounds, feel.
+    - [ ] User: `LeftHandGrip` on `b_gun_Root` (on `SK_KA74U_Stockless`), calibrate (`Bopis.LeftHandGripCalibrate 1`) and lock; LODs; icon.
+    - [x] **Fire animation** (user, 2026-10-30: "do the fire animation"). `b_gun_shelleject` is the bolt carrier with its charging handle. Spec: *AK-74u*, *Fire animation*.
+      - [x] `ArtSource/Weapons/AK74U/AnimAK.py` → `A_AK74U_Fire` (carrier 8 cm back at frame 1, home at 4; trigger held to 5, released by 7; 0.117 s). Checked by re-import and renders; imported (bridge, saved) to `/Game/AK74U/Animations/` on `SK_KA74U_Y_Skeleton`.
+      - [x] User: Weapon Sound `Fire` at frame 0, `Eject` at frame 1 (bytes confirm both).
+      - [x] *(Bridge, 2026-10-30, compiled, saved.)* `FireAnimation` = `A_AK74U_Fire` on `BP_AssaultCarbine`.
+      - [x] User test (2026-10-30: "tested, works"): shot sound, casing timing, handle cycling, trigger in a burst.
+  - [ ] Audit every gun's fire cue for `ATT_Gunshot` + the concurrency override: `M4_Single_Shot_Cue` has neither (found 2026-10-30).
   - [x] *(Bridge, 2026-10-25.)* 9mm Pistol (Beretta 92FS) + Dual 9mm Pistols — `BP_Pistol9mm` / `BP_DualPistol9mm`; the old pistol renamed ".45 Pistol" / "Dual .45 Pistols".
   - [ ] 9mm: sockets on `SK_Beretta_92FS` (`MuzzleFlash`, `AmmoEject` — user), grip offsets (PIE), icon, pickup, loadout/enemy pools, LOD reduction.
   - [ ] **Uzi replaces the MAC-11** (user, 2026-10-28: "I want to replace the Mac11 with an Uzi"; this supersedes "I will keep the mac-11"). The model is a rigged CGTrader FBX with separate parts, about 10k vertices and 4K textures. Bring LOD0 to about 5–6k triangles with the LOD reduction, and set the textures' Maximum Texture Size to 1024. The MAC assets stay in the project unused for now ("we can remove stuff much later on"). Assumed: it replaces both the single and dual MAC, plus the enemies who carry it.
@@ -733,6 +757,12 @@ archetype-composition idea, not extended from the old classes.
 - [x] **39. Reload speed follows Focus** (user, 2026-10-30: "When on focus, your reload speed is accelerated. When in the middle of the reload and you get off focus, it should go back to normal speed from that frame … should work both ways"). Spec: *Focus reload speed*.
   - [x] C++ ("apply and run", built 2026-10-30): `FocusReloadSpeed` 3; `GetReloadSpeed` / `UpdateReloadSpeed` on the player; `AWeaponBase::SetReloadSpeed` (timer restarted with the remaining time scaled, `ReloadCycleStart` keeps the progress); `ABopisCharacterBase::SetReloadPlayRate`. `bStopFocusOnReload` removed: reloading no longer ends Focus (design change, lore notes + GDD updated).
   - [x] User test (2026-10-30: "tested, works"): Focus on → reload fast; off mid-reload → the rest at normal speed; on mid-reload → speeds up.
+- [ ] **40. MP5 submachine gun** (user, 2026-10-30: "Add MP5 SMG. A fast laser accuracy low damage SMG"). The Submachine Gun of item 37's ammo split. Spec: *MP5 (planned)*.
+  - [ ] User: the model. None is in the project; the FPS bundle has none.
+  - [ ] Intake (spec *Adding a weapon*): Blueprint, sockets, magazine drop, sounds, fire animation, icon.
+  - [ ] Stats agreed with the user: fast rate, near-zero spread, low damage per round.
+  - [ ] `SubmachineGun` ammo: five-magazine cap on both players, plus an ammo box.
+  - [ ] Open: a dual pair?
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4

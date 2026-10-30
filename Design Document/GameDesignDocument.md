@@ -165,13 +165,27 @@ of the arsenal rather than one option among many.
 
 ### What exists today
 
-Three weapons are built and working as a test bed — a semi-automatic pistol,
-a full-automatic close-range rifle, and a semi-automatic scoped rifle — with
-distinct handling, ammunition and reloading. Their
-current art is placeholder sci-fi and will be replaced. Their *roles* were
-designed for the previous premise and are open to revision.
+The arsenal is built from period firearms, each with its own handling,
+ammunition and reloading. In the game they go by plain names:
 
-Two more now exist alongside them: **shotguns** — a semi-automatic one with
+| In-game name | Inspired by |
+|---|---|
+| .45 Pistol | Colt 1911 |
+| 9mm Pistol | Beretta 92 |
+| .357 Revolver | a .357 revolver |
+| Machine Pistol | Uzi |
+| Pump-Action Shotgun | Mossberg 500 |
+| Semi-Auto Shotgun | Benelli M4 |
+| M4 Carbine | M4 |
+| AKS-74U | AKS-74U |
+| Sniper Rifle | SVD Dragunov |
+
+The pistols and the machine pistol also come as dual pairs, and there is a
+grenade launcher. A submachine gun inspired by the MP5 is planned: it fires
+fast and with pinpoint accuracy, but each round hits lightly. The weapons' *roles*
+were first designed for the previous premise and are open to revision.
+
+Among them are **shotguns** — a semi-automatic one with
 fast follow-up shots and a pump-action one, both loaded a couple of shells at a
 time. In the spirit of DOOM's shotgun, they still hit at a distance; the price
 is a very slow reload — and **dual pistols**. Dual pistols fire left, right, left, right for as long as
@@ -540,3 +554,11 @@ a shooting range.
   its own ammo pickups, and so do the rifle and both shotguns. On-screen
   messages ("Picked up 24 .45 rounds") stack up to five at a time and fade
   after a few seconds.
+- 2026-10-30 — The Benelli M4 semi-auto shotgun and the SVD sniper rifle are
+  in, their bolts cycling with each shot and staying open on the last. Every
+  gun's moving parts were reworked to the same standard. In slow motion you
+  now reload quickly instead of losing the slow motion. A second assault
+  rifle is planned: an AK-74u that fires fast and hits hard but sprays, beside
+  the accurate, slower-firing M4. The MAC-11 is gone from the project. The
+  AKS-74U is now in, stockless, with its own ammunition, and every gun has
+  its in-game name (see Weapons).

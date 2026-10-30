@@ -526,8 +526,38 @@ gives what fits and leaves the rest. Pickups don't respawn.
   - **Machine pistol and submachine gun ammo are separate too.** The Uzi is
     renamed **Machine Pistol**, and an **MP5**, to be added later, is the
     **Submachine Gun**.
+  - **The MP5's role (user, 2026-10-30):** "Add MP5 SMG. A fast laser
+    accuracy low damage SMG." It fires fast and very accurately but hits
+    lightly.
   - **The SVD sniper gets its own ammo** pickups.
   - The pistols' carry maximum applies to each of .45 and 9mm (180 each).
+- **Assault rifles (user decision, 2026-10-30):** two of them. "The M4
+  Stays, that is the accurate rifle with less ROF, AK74u is fast fire rate,
+  high damage but also inaccurate spread." The AK-74u takes **its own ammo**
+  (5.45), separate from the M4's 5.56. **The MAC-11 is removed** ("Remove the
+  Mac Already"); the Uzi took its place on 2026-10-28.
+- **Carry maximums (user decision, 2026-10-30):** "5 magazines worth" for
+  every gun's ammo, counting the dual guns' combined magazine for the pistols
+  and the Uzis. That's on top of the magazine in the gun ("mag + 5x mag"). This replaces the 2026-10-08 numbers above (pistol 180, SMG
+  300, rifle 300).
+- **In-game weapon names (user decision, 2026-10-30):**
+
+  | Real-world inspiration | In-game name |
+  |---|---|
+  | 1911 | .45 Pistol |
+  | Beretta 92 | 9mm Pistol |
+  | Mossberg 500 | Pump-Action Shotgun |
+  | Benelli M4 | Semi-Auto Shotgun |
+  | AKS-74U | AKS-74U |
+  | M4 | M4 Carbine |
+  | SVD | Sniper Rifle |
+  | Uzi | Machine Pistol |
+  | Revolver | .357 Revolver |
+
+  - **Dual pairs** follow the existing pattern (implementation default, not
+    stated by the user): Dual .45 Pistols, Dual 9mm Pistols, Dual Machine
+    Pistols.
+  - The grenade launcher keeps "Grenade Launcher".
 - **Weapon drops:**
   - if you already have the weapon, it gives its ammo;
   - if not, you get the weapon with the rounds it was dropped with.
