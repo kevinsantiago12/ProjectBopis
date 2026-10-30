@@ -1010,6 +1010,174 @@
     - **Tested (user): "weapon pickups tested, works".** Plan item 38 is
       done; save messages wait for a save system.
 
+## 2026-10-30
+- **Benelli M4 skeletal mesh** (user: "I added the BenelliM4 but its all
+  separate parts as well with no skeleton. See if you can build a skeletal
+  mesh yourself please"). Plan item 33; spec *Benelli M4*.
+  - **Rig:** `ArtSource/Weapons/BenelliM4/RigBenelli.py` (headless Blender,
+    the Uzi's pattern) turns 28 loose parts with a shared pivot into
+    `SK_Benelli`.
+    - **Bones:** `root`, `bolt`, `trigger`, `carrier`, `shell`, placed from
+      each part's shape.
+    - **Mesh:** 3 slots, 31.5k triangles, 76 cm long.
+    - **Checked:** renders at rest and posed.
+  - **Textures:** `PackORM.py` packs AO, roughness and metallic into ORM
+    maps.
+  - **Bridge, saved:**
+    - the import;
+    - ORM texture settings;
+    - normals green-flipped (they're OpenGL);
+    - `MI_Benelli_Body/Stock/Shell` on `M_TacticalPistol`, assigned.
+  - **User next:**
+    - look it over;
+    - LODs (31.5k triangles, Lock Mesh Edges);
+    - the sockets;
+    - keep or drop the side-saddle shells.
+  - **Then (ask):** wire `BP_Shotgun`, and clean up the first-import
+    assets.
+  - **LOD0 (user):** reduced to about 8k triangles, "still looks ok". The
+    side-saddle shells stay. On disk, `SK_Benelli` was still the 09:56
+    import when this was noted, so it needed a save in the editor.
+  - **Root moved into the pistol grip** (user). The script shifts the gun so
+    the grip's middle is the origin.
+  - **Pump: none.**
+    - The user asked for a rigged forend, then: "No Pump, IF the M4 Super 90
+      can function without pumping". It can, being gas-operated.
+    - The forend bone was taken back out. Renders also showed the model has
+      no room for a stroke and no tube under the forend.
+  - **User next:** right-click `SK_Benelli` → Reimport (the 10:29 FBX), then
+    save.
+  - **User:** "reimported and saved, sockets added". On the mesh:
+    - `MuzzleFlash` (55, 0, 8), `AmmoEject` (15, 0, 8) and `LeftHandGrip`
+      (27, 0, 5), all on `root`;
+    - 3 LODs.
+  - **`BP_Shotgun` wired** (user: "wire up BP_Shotgun"; bridge, compiled,
+    saved).
+    - **Mesh:** `SK_Benelli` at scale 1.2, single-node mode.
+    - **Fire animation:** cleared, which also fixes the placeholder's
+      silent shot and double flash.
+    - **Pump bone:** cleared.
+    - **Grip:** (0, 0, 0) / (−8, 87, 0), the Uzi's rotation, as starting
+      values.
+    - **Not yet tested by the user.**
+  - **Left hand like the pump shotgun and the M4** (user; bridge, saved).
+    - The Mossberg's tuned `LeftHandGrip` was converted onto the Benelli:
+      (18.6, −5.5, 7.5) / (−29, 61, 103), and `bLockLeftHandRotation` is on.
+    - Its source FBX was read in Blender to confirm the `pump` bone's frame.
+    - This replaced the user's in-progress socket at (26, −1, 7).
+    - **Tested (user): "left hand tested, works".**
+  - **Animations** (user: "do the animations").
+    - **Script:** `AnimBenelli.py` keys the rig. `A_Benelli_Fire` (the
+      bolt cycles 6 cm, the trigger pulls), `A_Benelli_LastShot` (the bolt
+      held 5.5 cm back) and `A_Benelli_Ready` (the bind pose), at 60 fps.
+    - **Import (bridge):** onto `SK_Benelli_Skeleton`. The importer needs a
+      mesh in the FBX, so the spare meshes it made were deleted and the
+      `_Anim` assets renamed.
+    - **`ReadyPose`** is set on `BP_Shotgun`.
+    - **Waiting on the user:** `Fire` + `Eject` notifies on the fire and
+      last-shot animations. Then the bridge wires them; until then the shot
+      sounds from code.
+    - **User: "notifies added".** A byte check found `Fire` + `Eject` in
+      both. The bridge set `FireAnimation` and `LastShotAnimation` on
+      `BP_Shotgun` (saved 11:41).
+    - **Tested (user): "tested, works".**
+  - **Cleanup** (user: "do the cleanup"; bridge).
+    - **Deleted:** 45 first-import assets (28 static parts, 5 Phong
+      instances, 12 Metallic/AO/Roughness/Specular textures). The asset
+      registry showed no outside referencers; none blocked, none failed.
+    - **Left:** `/Game/BenelliM4/` is 17 assets, 71 MB (was 102 MB).
+  - **Benelli M4 is done** (plan item 33). Open: an optional 2K reimport of
+    the kept textures.
+- **Magazines** (user: "Change pump to 6 shots, M4 to 8"; bridge, saved):
+  `BP_Shotgun` (Benelli) 8, `BP_PumpShotgun` 6.
+- **Gun animation pass** (user: "go through the animations I made for the
+  pump, beretta 9mm, 1911 and M4 … and tweak them? Your anim changes on the
+  Benelli looks more convincing").
+  - **What's wired now:**
+    - pump: `Mossberg-500_Pump`, 0.67 s, keyed in the editor;
+    - Beretta: `SK_Beretta_92FS_Fire` and `_FireEmpty`, 0.23 s, editor;
+    - 1911: `Anim_P1911_M_Shot` and `_Shot_Empty`, 0.75 s, from the kit,
+      with the user's notifies;
+    - M4: `SK_AR4_Fire`, 0.23 s, editor.
+  - **Blocker:** the bridge can't read or write animation keys. Only the
+    Mossberg's source rig is on disk; the Beretta, 1911 and AR4 sources are
+    on the pack authors' machines.
+  - **Plan:** the user exports the six animations to FBX. Blender reworks
+    them in the Benelli's style (fast linear slam back, brief hold, quick
+    return). The user reimports each onto its own asset (Reimport → new
+    file), which keeps the notifies.
+  - **Exports in** (`ArtSource/Weapons/AnimPass/`).
+    - **Static exports:** the Beretta, AR4 and Mossberg came out static.
+      Editor-keyed animations keep their keys in a layer the FBX export
+      skips, so these three were rebuilt from the rest pose. The 1911 is the
+      kit's FBX animation; its values were kept, but it's retimed with the
+      shot on frame 0 and the tail cut.
+    - **The reimport plan changed:** the new animations are new assets,
+      because a reimport onto the old assets would have stacked the old
+      editor layer on top.
+  - **Built:** `AnimPass.py` made seven animations; each checked by
+    re-import and renders.
+    - The 1911 trigger is cut to 3.5 mm (it hid inside the frame).
+    - The AR4 dust cover is 150° open on every frame.
+  - **Imported (bridge, saved)** onto each gun's skeleton.
+  - **Waiting on the user's notifies:** `Fire` f0 + `Eject` f2, and for the
+    Mossberg `Fire` f0, `Pump` f5, `Eject` f11. Then the bridge wires them.
+  - **Beretta barrel recoil kept** (user: "keep it").
+  - **User: "notifies added".** Bytes show `Fire` + `Eject` on five. Wired
+    (bridge, saved):
+    - the 9mm pair: Fire, LastShot and `A_Beretta_Ready`;
+    - the three 1911 Blueprints: Fire, LastShot;
+    - `BP_CloseRangeRifle`: Fire.
+  - **`A_Mossberg_Fire` had no notifies** (not on disk, nothing unsaved), so
+    `BP_PumpShotgun` stays on `Mossberg-500_Pump`.
+  - **Then:** the user saved `Fire` + `Eject` on it, and `BP_PumpShotgun`
+    is wired (bridge, saved). No `Pump` notify shows in the file; the rack
+    is silent until one is added at f5.
+  - **`Pump` added** (bytes confirm `Fire`, `Pump`, `Eject`).
+  - **Tested (user): "tested all, works".** The animation pass is done.
+  - **Old animations deleted** (user: "delete the old animations"; bridge,
+    referencer-checked): six went.
+    - **Stuck:** `Anim_P1911_M_Shot` (held by the kit's unused montage,
+      whose delete didn't take). The user can delete both in the Content
+      Browser.
+    - **`AR4HatchOpen` is in use** (the rifle mesh's Anim to Play). Kept,
+      pending the user's call.
+  - **Uzi** (user: "Check the Uzi anims too").
+    - `SK_Uzi_Fire` ran 0.233 s against a 0.06 s fire rate, so bursts only
+      showed its start.
+    - `AnimUzi.py` → `A_Uzi_Fire`: 0.05 s, the bolt 4.5 cm back at f1 and
+      home at f3. Render-checked and imported (bridge, saved).
+    - **Waiting on the user:** `Fire` f0 + `Eject` f1. Then it's wired onto
+      both Uzis and `SK_Uzi_Fire` is deleted.
+    - **Done:** the user added the notifies; `BP_Uzi` + `BP_DualUzi` are
+      wired (bridge, saved) and `SK_Uzi_Fire` is deleted.
+    - **Tested (user): "tested, works".**
+  - **`AR4HatchOpen` cleared and deleted** (user: "clear the hatch and
+    delete it"; bridge, saved). The rifle spawns with the cover shut and
+    the first shot opens it.
+    - **Tested (user): "tested, works".**
+- **`ArtSource/` and the repo** (user asked whether it goes in). It does:
+  it's been tracked since `9f72cd7e` (2026-10-23).
+  - **LFS:** `.fbx` (also `.FBX`, since `core.ignorecase` is true),
+    `.blend` and `.png` go through LFS. The `.py` scripts are plain git.
+  - **Not in the game:** it sits outside `Content/`, so it never ships.
+  - **New today, untracked:** `ArtSource/Weapons/BenelliM4/`,
+    `ArtSource/Weapons/AnimPass/`, `Uzi/AnimUzi.py`, `Uzi/A_Uzi_Fire.fbx`.
+    About 28 MB for the whole folder.
+  - **Gap:** `RigBenelli.py`, `PackORM.py` and the Mossberg check read
+    sources in the user's Downloads (`Downloads/BenelliM4/`,
+    `Downloads/Mossberg/`). Those aren't in the repo, so rebuilding the
+    Benelli on another machine needs them copied into `ArtSource` first.
+  - **Closed for the rig** (user: "copy the Benelli FBX into ArtSource"):
+    `Shotgun+2.fbx` is in `ArtSource/Weapons/BenelliM4/Source/` (MD5
+    matches). The texture PNGs stay in Downloads.
+- **The last two 1911 assets deleted** (user: "can you delete those 2").
+  - `Anim_P1911_M_Shot` went on the retry.
+  - The montage's file survived two force deletes, as the editor was likely
+    holding it. It was already gone from memory, so the orphaned `.uasset`
+    was removed from disk.
+  - git shows all three kit files deleted.
+
 ### ▶ RESUME HERE
 **A. Next up**
 0. **Deck testing is on hold** (user, 2026-10-28: "lets do the Deck test later.
@@ -1050,15 +1218,38 @@
      unused; delete them later.
    - **Next models:** the Benelli M4 (`BP_Shotgun`), the SVD
      (`BP_BattleRifle`), the AR-15, the AK-74u.
+   - **Benelli (2026-10-30):** `SK_Benelli` is built and imported with its
+     materials.
+     - **Done:** LOD0 ~8k with the shells kept, reimported (root in the
+       grip), sockets, `BP_Shotgun` wired.
+     - **User:** test and tune the grip; check the left hand (converted from
+       the Mossberg, lock on); decide the magazine size.
+     - **Animations made** (`A_Benelli_Fire`, `_LastShot`, `_Ready`;
+       ReadyPose wired).
+     - **Done and tested** (2026-10-30): animations wired, first import
+       cleaned up.
+     - **Magazines (user):** Benelli 8, pump 6 (bridge, saved). The shotgun
+       ammo boxes still give 12 and 8.
+     - **Animation pass done and tested.** Old animations deleted, except
+       `Anim_P1911_M_Shot` + its kit montage (the user deletes them in the
+       Content Browser).
+     - **Uzi animation** rebuilt and tested.
+     - **`AR4HatchOpen`** cleared and deleted: the cover opens on the first
+       shot (tested).
+     - **Done:** the old 1911 shot and its kit montage are deleted, and the
+       Benelli source FBX is in `ArtSource`.
+   - **Next model:** the SVD (`BP_BattleRifle`), which locks back too.
+     It also clears the second silent placeholder (item 7).
    - **For each:** import skeletal, barrel along **+Y**, moving parts as
      bones. Sockets and grips are yours; Blueprints and wiring are Claude's.
      Guns that lock back also get a `ReadyPose` + `LastShotAnimation`.
    - **Still to decide:** which rifle the AR-15 replaces; AK-74u ammo.
      (.45 vs 9mm: split, 2026-10-29, item 37.)
 7. **Silent placeholders:**
-   - `BP_Shotgun` (`Fire_Shotgun_NoDelay`) and `BP_BattleRifle`
-     (`Fire_SniperRifle_W`) have no Fire notify, and an old particle notify
-     gives a second flash.
+   - **`BP_Shotgun`: fixed 2026-10-30.** Its `FireAnimation` was cleared
+     when the Benelli went on.
+   - `BP_BattleRifle` (`Fire_SniperRifle_W`) still has no Fire notify, and
+     an old particle notify gives a second flash.
    - Suggested: clear their `FireAnimation` (bridge, ask first) so they
      sound from code until the Benelli and SVD replace them.
    - Then test every gun: one shot sound, one flash.

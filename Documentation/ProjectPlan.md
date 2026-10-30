@@ -596,7 +596,35 @@ archetype-composition idea, not extended from the old classes.
 - [ ] **33. Final weapon assets** (user, 2026-10-25: "replace the pump shotgun assets, replace the semi-shotgun with a spas-12. Add single and dual berettas (different from the pistol). Replace the mac with micro uzi. Add new Ar-15 model, Add AK74u"). Intake checklist: the spec's *Adding a weapon*.
   - [ ] Design calls (user): which rifle the AR-15 replaces (`BP_CloseRangeRifle` or `BP_BattleRifle`); AK-74u ammo (shared Rifle or its own); whether the .45 and 9mm share Pistol ammo. *(Decided 2026-10-25: the MAC-11 stays — Micro Uzi dropped; the Beretta is one-handed like the .45.)*
   - [ ] Pump shotgun — the Mossberg 500 (`/Game/Mossberg/Mossberg-5001`, material set up 2026-10-25: `MI_Mossberg500`) onto `BP_PumpShotgun`; its slide AnimBP on the `pump` bone (plan item 32's deferred part).
-  - [ ] **Benelli M4** — replaces `BP_Shotgun` (semi-auto). User, 2026-10-28: "im gonna use a Benelli M4 and an SVD" — replaces the SPAS-12 plan. Its bolt locks open on the last shell.
+  - [x] **Benelli M4** — replaces `BP_Shotgun` (semi-auto). User, 2026-10-28: "im gonna use a Benelli M4 and an SVD" — replaces the SPAS-12 plan. Its bolt locks open on the last shell.
+    - [x] Skeletal mesh (2026-10-30; user: "its all separate parts as well with no skeleton. See if you can build a skeletal mesh yourself"): `ArtSource/Weapons/BenelliM4/RigBenelli.py` + `PackORM.py`; bridge import of `SK_Benelli` (bones `root, bolt, trigger, carrier, shell`), ORM textures, `MI_Benelli_Body/Stock/Shell` on `M_TacticalPistol`. Spec: *Benelli M4*.
+    - [x] User: LOD0 reduced to ~8k triangles ("still looks ok"); the side-saddle shells stay.
+    - [x] Root moved into the pistol grip (rig script re-run 2026-10-30). No pump (M4 is gas-operated; user's call), so no forend bone.
+    - [x] User: reimported, saved, 3 LODs; sockets `MuzzleFlash`, `AmmoEject`, `LeftHandGrip`.
+    - [x] `BP_Shotgun` wired (bridge, 2026-10-30, saved): `SK_Benelli` at scale 1.2, single-node mode, `FireAnimation` cleared (sound and flash from code), pump bone cleared, grip (0,0,0) / (−8, 87, 0) as starting values.
+    - [x] Left hand like the Mossberg and M4 (bridge, 2026-10-30): `LeftHandGrip` (18.6, −5.5, 7.5) / (−29, 61, 103), converted from the Mossberg's tuned socket; `bLockLeftHandRotation` on.
+    - [ ] User test: grip location/rotation in play; the left hand on the forend (calibrate only if it looks off); muzzle flash and casing positions; `MagazineSize` (12 now, real 5–7 + 1).
+    - [x] Left hand tested by the user ("works").
+    - [x] Animations (2026-10-30): `AnimBenelli.py` → `A_Benelli_Fire`, `A_Benelli_LastShot`, `A_Benelli_Ready` in `/Game/BenelliM4/Animations/` (bridge, saved); `ReadyPose` set on `BP_Shotgun`.
+    - [x] User: `Weapon Sound` notifies (`Fire`, `Eject`) on both. Claude (bridge, 2026-10-30, saved): `FireAnimation` = `A_Benelli_Fire`, `LastShotAnimation` = `A_Benelli_LastShot`.
+    - [x] User test (2026-10-30: "tested, works").
+    - [x] Cleanup (bridge, 2026-10-30): 45 first-import assets deleted (28 static parts, 5 Phong instances, 12 unused textures); no outside referencers. `/Game/BenelliM4/` is 17 assets, 71 MB.
+    - [x] Magazine sizes (user, 2026-10-30: "Change pump to 6 shots, M4 to 8"; bridge, saved): `BP_Shotgun` 8, `BP_PumpShotgun` 6.
+    - [ ] Open: optional 2K reimport of the six kept 4K textures; the shotgun ammo boxes still give 12 (auto) and 8 (pump).
+  - [x] **Gun animation pass** (user, 2026-10-30: "go through the animations I made for the pump, beretta 9mm, 1911 and M4 animations and tweak them? Your anim changes on the Benelli looks more convincing"). Targets: `Mossberg-500_Pump` (0.67 s), `SK_Beretta_92FS_Fire` / `_FireEmpty` (0.23 s), `Anim_P1911_M_Shot` / `_Shot_Empty` (0.75 s), `SK_AR4_Fire` (0.23 s). Spec: *Gun animation pass*.
+    - [x] User exports in `ArtSource/Weapons/AnimPass/`. The Beretta, AR4 and Mossberg exports came out static (editor keys don't export), so they're rebuilt; the 1911 keeps the kit's values.
+    - [x] `AnimPass.py` → `A_Beretta_Fire/FireEmpty/Ready`, `A_P1911_Fire/FireEmpty`, `A_AR4_Fire`, `A_Mossberg_Fire`; checked by renders; imported (bridge, saved).
+    - [x] User: notifies on the Beretta ×2, 1911 ×2 and AR4. Claude (bridge, 2026-10-30, saved): wired onto the 9mm pair (+ `A_Beretta_Ready`), the three 1911 Blueprints and `BP_CloseRangeRifle`.
+    - [x] User: `Fire` + `Eject` on `A_Mossberg_Fire`. Claude (bridge, 2026-10-30, saved): `BP_PumpShotgun` wired.
+    - [x] User: `Pump` notify on `A_Mossberg_Fire` (saved; bytes show `Fire`, `Pump`, `Eject`).
+    - [x] User test (2026-10-30: "tested all, works").
+    - [x] Old animations deleted (bridge, 2026-10-30): `Mossberg-500_Pump`, `SK_Beretta_92FS_Fire` / `_FireEmpty` / `_ReadyPose`, `SK_AR4_Fire`, `Anim_P1911_M_Shot_Empty`.
+    - [x] `Anim_P1911_M_Shot` + the kit's unused `Anim_P1911_M_Shot_Montage` deleted (2026-10-30: bridge for the shot; the montage's orphaned file removed from disk after the editor's force delete left it).
+    - [x] Benelli source `Shotgun+2.fbx` copied into `ArtSource/Weapons/BenelliM4/Source/`.
+    - [x] `AR4HatchOpen` cleared from the rifle mesh and deleted (bridge, 2026-10-30): the cover is shut until the first shot. Tested by the user ("tested, works").
+    - [x] Uzi: `AnimUzi.py` → `A_Uzi_Fire` (0.05 s, fits the 0.06 s fire rate), imported (bridge, saved).
+    - [x] User: `Fire` + `Eject` on `A_Uzi_Fire`. Claude (bridge, 2026-10-30, saved): `BP_Uzi` + `BP_DualUzi` wired; `SK_Uzi_Fire` deleted (no referencers).
+    - [x] User test: Uzi bursts ("tested, works").
   - [ ] **SVD** — the sniper; replaces `BP_BattleRifle`'s silver `Sniper_Rifle_A` (user, 2026-10-28). Its bolt locks back on empty, and pulling the charging handle releases it.
   - [x] *(Bridge, 2026-10-25.)* 9mm Pistol (Beretta 92FS) + Dual 9mm Pistols — `BP_Pistol9mm` / `BP_DualPistol9mm`; the old pistol renamed ".45 Pistol" / "Dual .45 Pistols".
   - [ ] 9mm: sockets on `SK_Beretta_92FS` (`MuzzleFlash`, `AmmoEject` — user), grip offsets (PIE), icon, pickup, loadout/enemy pools, LOD reduction.
