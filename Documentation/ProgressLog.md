@@ -1291,6 +1291,19 @@
     Dual 9mm Pistols, Dual Machine Pistols.
   - Canon in the lore notes, and the GDD (md + html) has the arsenal table.
     The spec maps each Blueprint to its name.
+- **Pack cleanup** (user: "remove the unused assets in FPS pack except the
+  knife. Remove the other unused assets in Sniper Pack"):
+  - **What's used** came from a bridge-free reference scan of everything
+    outside the packs: 41 of 273 assets.
+  - **Deleted:** 232 assets, 573 MB.
+    - The bridge took 199. The 33 still loaded (all git-tracked) were
+      removed on disk after the user closed the editor.
+    - All of `SniperRiflePack` is gone; the Dragunov never depended on it.
+  - **Checked:** the bundle holds exactly the 41 used assets, with no broken
+    references.
+  - **Correction to what Claude first said:** most of it wasn't
+    recoverable from git. The 199 the bridge deleted were never committed,
+    so only Fab can bring them back.
 - **To do: MP5** (user: "Add MP5 SMG. A fast laser accuracy low damage
   SMG"). It's plan item 40, the Submachine Gun of the ammo split. Not built:
   there's no MP5 model in the project, so the user supplies one. Recorded in
@@ -1363,11 +1376,20 @@
      `BP_SniperRifle` (renamed 2026-10-30).
      **User next:** test the shot sound, casing, bolt cycle, lock-open on
      the last round and close on reload. (`DisplayName` is now "Sniper
-     Rifle".) Cleanup of the rest of the sniper pack is the user's call.
+     Rifle".) The sniper pack is deleted (pack cleanup).
    - **Renames (2026-10-30):** weapon Blueprints are named by role (spec
      *Weapon Blueprint names*). **User:** run *Fix Up Redirectors* on
-     `ThirdPerson/Blueprints` sometime, and delete the three leftover
-     `SMG11` assets.
+     `ThirdPerson/Blueprints` sometime. (The `SMG11` leftovers went in the
+     pack cleanup.)
+   - **Pack cleanup done (2026-10-30, spec *Pack cleanup*):**
+     - `SniperRiflePack` is gone and `FPS_Weapon_Bundle` is down to its 41
+       used assets.
+     - **Reopen the editor** and check the M4, AK, grenade and knife still
+       load.
+     - Commit when ready. The 199 bridge-deleted assets were never in git;
+       the 33 tracked deletions show as `D`.
+     - **Optional:** the orphaned `__ExternalActors__/Demo` and
+       `__ExternalObjects__/Demo` folders (a map that no longer exists).
    - **AK-74u built, stockless** (`BP_AssaultCarbine` on
      `SK_KA74U_Stockless`, spec *AK-74u*), in `BP_Player_CC`'s test
      loadout. Tested. **Fire animation** `A_AK74U_Fire` made, notified and

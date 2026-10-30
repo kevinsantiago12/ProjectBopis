@@ -39,6 +39,7 @@
   - [Footsteps (2026-10-23)](#footsteps-2026-10-23)
   - [Weapon wheel (2026-10-23)](#weapon-wheel-2026-10-23)
   - [Weapon Blueprint names (2026-10-30)](#weapon-blueprint-names-2026-10-30)
+  - [Pack cleanup (2026-10-30)](#pack-cleanup-2026-10-30)
   - [Adding a weapon — intake checklist (2026-10-25)](#adding-a-weapon--intake-checklist-2026-10-25)
 - [Ammo](#ammo)
   - [Shared ammo pool (2026-10-08)](#shared-ammo-pool-2026-10-08)
@@ -1580,9 +1581,62 @@ in `/Game/ThirdPerson/Blueprints/`:
   demo map `Weapons_Showcase` used them).
   - Three were left loaded in the editor, the bridge's delete couldn't take
     them, and the user removes them in the Content Browser: `SM_SMG11_Y`,
-    `M_SMG11_Color` and `M_SMG11`.
+    `M_SMG11_Color` and `M_SMG11`. *Deleted in the pack cleanup
+    (2026-10-30, see Pack cleanup).*
 - **Doc history** below keeps the old names as they were at the time; this
   table maps them.
+
+### Pack cleanup (2026-10-30)
+User: "remove the unused assets in FPS pack except the knife. Remove the
+other unused assets in Sniper Pack."
+- **Method (bridge-free).** A script read the package paths out of every
+  `.uasset`/`.umap` outside the two packs, plus `Config/`, `Source/` and
+  the `.uproject`. It then followed references inside the packs from what
+  was used, and kept the knife's three folders and what they need.
+  - The script was a session scratch file, not kept in the repo.
+  - Matching allows for FName number splitting (`X_2` is stored as `X` plus
+    a number) and reports any folder-path hits. There were none.
+- **Result:** 273 packages; 41 kept (54 MB); 232 deleted (573 MB).
+  - **`SniperRiflePack`: all of it.** The Dragunov is self-contained in
+    `/Game/Dragunov/`: its instances parent to
+    `Tactical_SemiAuto_Pistol/Materials/M_TacticalPistol`, not the pack.
+  - **`FPS_Weapon_Bundle` keeps:**
+    - **AR4:** `SK_AR4` + skeleton + physics, `A_AR4_Fire`,
+      `SM_AR4_Mag_Empty`, `M_AR4` + its textures.
+    - **KA74U:** `SK_KA74U_Y` + skeleton + physics (the stockless mesh's
+      skeleton; the mesh is the skeleton's preview), `SM_KA74U_Mag_Empty_X`,
+      `M_KA74U`, `M_762x39_Empty` + their textures.
+    - **G67 grenade:** `SM_G67` (ammo box), `SM_G67_Thrown`, `M_G67` +
+      textures.
+    - **M9 knife:** everything in its folders, plus `M_Weapon_Master_USE`,
+      which pulls in `T_KA74U_*` and `T_Stripes__Pattern`.
+  - **Gone from the bundle:** the showcase map, KA-47, KA-Val, the
+    accessories, RDS, the SMG11 leftovers, every other ammunition mesh, the
+    X variants, the gold and camo skins, and the other patterns.
+- **How it went:**
+  - **Bridge `AssetTools.delete`:** 16 whole folders plus single assets,
+    retried in passes. It took 199.
+  - **33 left on disk:**
+    - 19 were still loaded (dirty, no referencers).
+    - 14 the registry had dropped, but their files stayed.
+    - All 33 were the git-tracked ones.
+  - **Fix:** removed on disk with the editor closed (user closed it), then
+    the empty folders.
+  - **Checked:** exactly the 41 kept files remain, and none of their
+    `/Game/FPS_Weapon_Bundle/…` references is broken.
+- **Recovery:**
+  - The 199 deleted by the bridge were **never committed** (the sniper
+    pack had no files in git; the bundle had 74), so git can't bring them
+    back. Re-add the pack from Fab if one is ever needed.
+  - The 33 deleted on disk show as `D` in git until committed.
+- **Gotchas:**
+  - A list written by Python on Windows has CRLF endings: strip `\r` before
+    using it as paths in bash. The first delete loop matched nothing.
+  - A bridge script that deletes many assets can leave the loaded ones;
+    plan on an editor-closed pass.
+- **Found, not touched:** `Content/__ExternalActors__/Demo/` and
+  `__ExternalObjects__/Demo/` (17 small files) belong to a
+  `/Game/Demo/ThirdPerson` map that no longer exists.
 
 ### Adding a weapon — intake checklist (2026-10-25)
 For the final weapon assets (plan item 33) and any gun after. Every system is
@@ -2616,8 +2670,9 @@ separate meshes. Can you help normalize this to our specs?"
     `LastShotAnimation` `A_Dragunov_LastShot`, `ReadyPose`
     `A_Dragunov_Ready`. The shot sound now comes from the `Fire` notify, and
     the casing from `Eject` (`bFireAnimationEjects`).
-- **Cleanup (user's call):** the rest of the pack (AWM, R700, SV98M, the
-  showcase level, `BP_Sniper`).
+- **Cleanup:** the rest of the pack (AWM, R700, SV98M, the showcase level,
+  `BP_Sniper`). *Done 2026-10-30: the whole `SniperRiflePack` is deleted
+  (see Pack cleanup).*
 
 **AK-74u (2026-10-30, `BP_AssaultCarbine`).** User: "The M4 Stays, that is
 the accurate rifle with less ROF, AK74u is fast fire rate, high damage but
