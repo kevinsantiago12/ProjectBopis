@@ -365,6 +365,7 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 		RollHeldReloadWeapon = nullptr;
 	}
 	UpdateAutoReload(DeltaSeconds);
+	UpdateReloadSpeed();
 	UpdatePendingThrow(DeltaSeconds);
 	UpdateCrouch();
 
@@ -1075,7 +1076,7 @@ void AProjectBopisCharacter::DoReload()
 	{
 		return;
 	}
-	const float Speed = bInAir ? AirReloadSpeed : 1.0f;
+	const float Speed = GetReloadSpeed();
 
 	// The montage only plays if a reload actually started, so mashing the key on a
 	// full magazine does nothing rather than replaying the animation.
@@ -1086,13 +1087,6 @@ void AProjectBopisCharacter::DoReload()
 	}
 
 	PlayReloadAnimation(Holder->GetEquippedWeapon(), Speed);
-
-	// Reloading breaks the moment: slow motion ends — but not mid-dive, where it would end the
-	// dive's own slow motion with it.
-	if (bStopFocusOnReload && !bInAir && Focus && Focus->IsFocusActive())
-	{
-		Focus->StopFocus();
-	}
 }
 
 void AProjectBopisCharacter::DoThrowGrenade()
@@ -1270,6 +1264,33 @@ void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 	{
 		EmptyGunTime = 0.0f;
 		DoReload();
+	}
+}
+
+float AProjectBopisCharacter::GetReloadSpeed() const
+{
+	if (Shootdodge && Shootdodge->IsAirborne())
+	{
+		return AirReloadSpeed;
+	}
+	return Focus && Focus->IsFocusActive() ? FocusReloadSpeed : 1.0f;
+}
+
+void AProjectBopisCharacter::UpdateReloadSpeed()
+{
+	// A reload runs at the speed that fits now, not the one it started with: Focus coming on
+	// mid-reload speeds up the rest of it, and going off slows it back down from where it is.
+	UWeaponHolderComponent* Holder = GetWeaponHolder();
+	AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	if (!Weapon || !Weapon->IsReloading())
+	{
+		return;
+	}
+	const float Speed = GetReloadSpeed();
+	if (!FMath::IsNearlyEqual(Speed, Weapon->GetReloadSpeed()))
+	{
+		Weapon->SetReloadSpeed(Speed);
+		SetReloadPlayRate(Weapon, Speed);
 	}
 }
 

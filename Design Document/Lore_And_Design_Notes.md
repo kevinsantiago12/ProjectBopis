@@ -606,8 +606,15 @@ player", after the shootdodge.
 - **The kneel (Vanquish):** keep the roll button held and the roll cuts into a
   crouch, shooting from the knee for as long as it's held; letting go returns
   to normal movement.
-- **Reloading:** an empty gun reloads by itself; reloading ends slow motion;
-  lying prone after a dive, you reload on the floor instead of getting up.
+- **Reloading:** an empty gun reloads by itself; lying prone after a dive,
+  you reload on the floor instead of getting up. ~~Reloading ends slow
+  motion~~ (replaced 2026-10-30, below).
+- **Reloading in Focus (user decision, 2026-10-30):** "When on focus, your
+  reload speed is accelerated. When in the middle of the reload and you get
+  off focus, it should go back to normal speed from that frame of the reload.
+  So that you can use the focus to quick reload over and over." It works both
+  ways: Focus coming on mid-reload speeds up the rest of it. Reloading no
+  longer ends Focus.
 - *Considered and dropped:* holding roll into a prone slide (the kneel took
   that button); slow motion held after the roll.
 

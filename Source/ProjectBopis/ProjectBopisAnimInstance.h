@@ -544,6 +544,12 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
 	double ShootdodgeLeftHandAlpha = 0.0;
 
+	/** Long guns in a shootdodge: where the left hand grips, relative to hand_r. It's the weapon's
+	    LeftHandGrip, slid back along the barrel when the back poses (and those next to them) hold
+	    it further out than the left arm can reach. The gun itself never moves for it. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Shootdodge")
+	FVector ShootdodgeLeftHandGripLocation = FVector::ZeroVector;
+
 	/** Long guns' share of the aim correction: on each of the chest bones (spine_04/05), each
 	    upper arm, and each of neck_01/head (component space). The pistol share stays on
 	    ShootdodgeAimCorrection; each fades with ShootdodgeLongGunAlpha. */
@@ -638,6 +644,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
 	float LongGunArmMaxAngle = 60.0f;
 
+	/** Long guns: how far short of the left arm's full stretch the grip is kept, in cm, so the
+	    elbow keeps a bend. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float LeftHandReachMargin = 3.0f;
+
+	/** Long guns: furthest the left hand slides back along the gun from LeftHandGrip to stay in
+	    reach, in cm. Past it the hand falls short. */
+	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0"))
+	float LeftHandMaxSlide = 15.0f;
+
 	/** Long guns: most the head turns to look at the target, in degrees. */
 	UPROPERTY(EditDefaultsOnly, Category = "Shootdodge", meta = (ClampMin = "0.0", ClampMax = "120.0"))
 	float HeadLookMaxAngle = 60.0f;
@@ -675,6 +691,11 @@ protected:
 private:
 
 	void UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	void UpdateShootdodgeLeftHandSlide(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
+
+	/** Long guns: the left hand's slide back along the gun right now, eased (cm). */
+	double LeftHandSlide = 0.0;
 
 	/** The shootdodge's up/down aim limits for the gun in hand: long guns' or pistols'. */
 	float AimPitchMin() const { return bIsPistolHold ? ShootdodgeAimPitchMin : LongGunAimPitchMin; }

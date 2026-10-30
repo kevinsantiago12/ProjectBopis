@@ -889,6 +889,26 @@ void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon, float P
 	}
 }
 
+void ABopisCharacterBase::SetReloadPlayRate(const AWeaponBase* Weapon, float PlayRate)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!Weapon || !AnimInstance || !ActiveReloadMontage)
+	{
+		return;
+	}
+
+	// Kept for the per-round loop, which restarts the montage at this rate.
+	ActiveReloadPlayRate = PlayRate;
+	AnimInstance->Montage_SetPlayRate(ActiveReloadMontage, PlayRate);
+	if (Weapon->IsDualWield())
+	{
+		if (TObjectPtr<UAnimMontage>* FoundOffhand = OffhandReloadMontages.Find(Weapon->GetAnimType()); FoundOffhand && *FoundOffhand)
+		{
+			AnimInstance->Montage_SetPlayRate(*FoundOffhand, PlayRate);
+		}
+	}
+}
+
 void ABopisCharacterBase::PlayFootstep(bool bLeft)
 {
 	USkeletalMeshComponent* Body = GetMesh();

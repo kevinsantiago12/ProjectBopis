@@ -143,7 +143,9 @@ game's earlier first-person design.
   crouch share one button: with a direction it rolls, without one it
   crouches.
 - Dives and rolls stay hard to hit for a couple of seconds after you land.
-- An empty gun reloads by itself, and reloading ends slow motion.
+- An empty gun reloads by itself. In slow motion you reload quickly, so
+  Focus doubles as a way to reload under fire; let it go mid-reload and the
+  rest of the reload carries on at normal speed.
 
 ### Open
 

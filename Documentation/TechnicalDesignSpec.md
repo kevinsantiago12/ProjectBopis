@@ -2687,8 +2687,8 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
     3×. `Reload(Speed)` divides the timers, and
     `PlayReloadAnimation(Weapon, PlayRate)` plays the montage(s) at the same
     rate (`ActiveReloadPlayRate`, kept for the Loop restarts).
-  - It doesn't end the dive's slow motion (`bStopFocusOnReload` is skipped in
-    the air).
+  - It doesn't end the dive's slow motion. (Since 2026-10-30 no reload ends
+    Focus; the speed now follows the moment, see *Focus reload speed*.)
   - Auto-reload works in the air too (`bAirAutoReload`).
   - The user found 3× readable. At 5× the montage blends, which don't scale
     with play rate, washed it out. Scaling the blends is noted for anything
@@ -5785,8 +5785,34 @@ camera, and Start/Loop/Land/Prone are no longer dynamic montages.
   - The nodes sit right after the twist, before the corrections.
 - **Shootdodge branch order now:** SM → rifle arm layer → dual left-arm layer
   → L2C → twist ×3 → lift ×4 → pistol correction (spine_03/05) → long-gun
-  chest/arms/head → off-hand `upperarm_l` → recoil ×3 → long-gun left-hand IK
-  → leg-fix Copy Bones → pelvis → foot IK ×2 → C2L.
+  chest/arms/head → off-hand `upperarm_l` → recoil ×3 → long-gun left-hand
+  IK (`TwoBoneIK_3`) → leg-fix Copy Bones → pelvis → foot IK ×2 → C2L.
+- **Left-hand slide, so the hand reaches (2026-10-30; tested, user: "not
+  perfect but serviceable").** User: in the back poses and those next to
+  them, dive and prone, the left hand fell short of `LeftHandGrip` on long
+  guns.
+  - **Cause:** the arm turns and the back lift turn each upper arm about its
+    own shoulder. The gun rides the right hand, so off the shoulder line the
+    grip drifts further from the left shoulder than the arm stretches. The
+    IK then points the arm straight and stops short.
+  - **First fix, dropped (don't retry):** pulling the gun in toward the left
+    shoulder (a Two Bone IK on `hand_r`). In those poses the shoulder is
+    toward the head, so the stock went through the head (user, same day).
+    Moving the gun to meet the hand has that risk in general.
+  - **Fix:** `UpdateShootdodgeLeftHandSlide`. The gun stays put; the left
+    hand's target slides back along the barrel (the muzzle's X axis, in
+    `hand_r`'s space) toward the receiver until it's in reach.
+    - Reach = the left arm's two reference bone lengths minus
+      `LeftHandReachMargin` (3 cm, keeps an elbow bend).
+    - The slide is the smaller root of |shoulder→grip − t·barrel| = reach;
+      if the barrel line never comes within reach, its closest point. Capped
+      at `LeftHandMaxSlide` (15 cm, keeps clear of the right hand), scaled by
+      `ShootdodgeLeftHandAlpha`, eased at `AimCorrectionSpeed`.
+    - Only the left arm moves, so neither the shoulder nor the grip depends
+      on it: no last-frame correction needed.
+  - **AnimGraph:** `TwoBoneIK_3`'s effector reads
+    **`ShootdodgeLeftHandGripLocation`** (the slid grip) instead of
+    `LeftHandGripLocation`. The standing IK still reads the real grip.
 - **Open:** looking down through the legs on back dives. The lift seemed
   enough; a camera pitch clamp for back dives was proposed but not built.
   The wind-up still shows the dash's empty-handed arms with long guns.
@@ -6125,8 +6151,33 @@ corner peeks). Off: the old crouch.
   reloads by itself once the player is free to (standing or prone, not
   mid-dive or mid-roll, not equipping) — `UpdateAutoReload`, through
   `DoReload`.
-- **Reloading ends Focus** (`bStopFocusOnReload`): a reload that actually
-  starts calls `StopFocus`.
+- ~~**Reloading ends Focus** (`bStopFocusOnReload`)~~: removed 2026-10-30;
+  reloading now speeds up in Focus instead (see *Focus reload speed*,
+  below).
+- **Focus reload speed (2026-10-30; tested, user: "tested, works").** User: "When
+  on focus, your reload speed is accelerated. When in the middle of the
+  reload and you get off focus, it should go back to normal speed from that
+  frame... both ways."
+  - `AProjectBopisCharacter::GetReloadSpeed()`: `AirReloadSpeed` (3) in a
+    dive's flight, else `FocusReloadSpeed` (3) while `IsFocusActive()` (any
+    slow motion: the player's own, a kill's, a roll's), else 1. Focus runs
+    the world at 0.3, so 3 is roughly a normal reload in real time.
+  - `DoReload` starts at that speed; `UpdateReloadSpeed` (Tick, player
+    only) re-picks it every frame and, on a change, calls
+    `AWeaponBase::SetReloadSpeed` and `ABopisCharacterBase::SetReloadPlayRate`.
+  - **`SetReloadSpeed`:** a timer can't change pace, so it restarts with the
+    remaining time × old/new speed, same callback (`FinishReload` or
+    `LoadRound`). Later shell cycles use the new speed. Floor 0.001 s (a zero
+    rate clears a timer).
+  - **`ReloadCycleStart`** keeps `GetReloadProgress` continuous across the
+    restart: progress = start + (1 − start) × elapsed/rate. It's reset on
+    `Reload` and on each new shell cycle. The roll's keep check reads it.
+  - **`SetReloadPlayRate`:** `Montage_SetPlayRate` on `ActiveReloadMontage`
+    and the duals' off-hand montage, and updates `ActiveReloadPlayRate` for
+    the per-round Loop restarts. Timer and montage scale their remaining time
+    by the same factor, so they stay in step.
+  - A reload started in the air carries into the landing at whatever the
+    slow motion then gives (3 while it lasts, 1 once it ends).
 - **Prone reload:** lying prone after a dive, `DoReload` reloads on the floor
   instead of getting up; the rest of a dive (wind-up, flight, landing,
   get-up) refuses it.

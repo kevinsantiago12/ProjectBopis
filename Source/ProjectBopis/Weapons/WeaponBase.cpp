@@ -100,6 +100,7 @@ bool AWeaponBase::Reload(float Speed)
 
 	bIsReloading = true;
 	ReloadSpeed = FMath::Max(Speed, 0.01f);
+	ReloadCycleStart = 0.0f;
 
 	if (ReloadStyle == EReloadStyle::PerRound)
 	{
@@ -127,6 +128,7 @@ void AWeaponBase::LoadRound()
 
 	if (CanAcceptRound())
 	{
+		ReloadCycleStart = 0.0f;
 		GetWorldTimerManager().SetTimer(ReloadTimerHandle, this,
 			&AWeaponBase::LoadRound, TimePerRound / ReloadSpeed, false);
 	}
@@ -199,7 +201,34 @@ float AWeaponBase::GetReloadProgress() const
 	}
 	const FTimerManager& Timers = GetWorldTimerManager();
 	const float Rate = Timers.GetTimerRate(ReloadTimerHandle);
-	return Rate > 0.0f ? FMath::Clamp(Timers.GetTimerElapsed(ReloadTimerHandle) / Rate, 0.0f, 1.0f) : 0.0f;
+	const float Cycle = Rate > 0.0f ? FMath::Clamp(Timers.GetTimerElapsed(ReloadTimerHandle) / Rate, 0.0f, 1.0f) : 0.0f;
+	// After a speed change the timer restarted partway through; the cycle carries on from there.
+	return ReloadCycleStart + (1.0f - ReloadCycleStart) * Cycle;
+}
+
+void AWeaponBase::SetReloadSpeed(float Speed)
+{
+	Speed = FMath::Max(Speed, 0.01f);
+	if (!bIsReloading || FMath::IsNearlyEqual(Speed, ReloadSpeed))
+	{
+		return;
+	}
+
+	// A timer can't change pace, so it restarts with what's left of this cycle at the new speed:
+	// the time remaining, scaled by old speed over new. Later cycles (the next shells) run at the
+	// new speed from the start. (A zero rate would clear the timer, hence the floor.)
+	FTimerManager& Timers = GetWorldTimerManager();
+	const float Remaining = FMath::Max(Timers.GetTimerRemaining(ReloadTimerHandle) * ReloadSpeed / Speed, 0.001f);
+	ReloadCycleStart = GetReloadProgress();
+	ReloadSpeed = Speed;
+	if (ReloadStyle == EReloadStyle::PerRound)
+	{
+		Timers.SetTimer(ReloadTimerHandle, this, &AWeaponBase::LoadRound, Remaining, false);
+	}
+	else
+	{
+		Timers.SetTimer(ReloadTimerHandle, this, &AWeaponBase::FinishReload, Remaining, false);
+	}
 }
 
 void AWeaponBase::CompleteReloadNow()

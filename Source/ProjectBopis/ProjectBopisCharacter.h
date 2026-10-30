@@ -499,10 +499,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "0.0"))
 	float AutoReloadDelay = 0.2f;
 
-	/** Starting a reload ends Focus (slow motion) if it's on. */
-	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
-	bool bStopFocusOnReload = true;
-
 	/** Rolling mid-reload: with at least this much of a magazine reload done, it's carried
 	    through and the gun is reloaded when the roll ends; with less, it's cancelled. (A
 	    shotgun's shell in progress always goes in after the roll.) */
@@ -513,6 +509,12 @@ protected:
 	    together: a quick reload in the air instead of flying on dry. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
 	float AirReloadSpeed = 3.0f;
+
+	/** Reloading in Focus (any slow motion) runs this many times as fast, timer and montage
+	    together. It follows Focus mid-reload: on, the rest speeds up; off, it's back to normal
+	    from that frame. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
+	float FocusReloadSpeed = 3.0f;
 
 	/** An empty gun quick-reloads itself mid-dive too (with auto-reload on). */
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload")
@@ -753,6 +755,13 @@ private:
 
 	/** Reloads an empty gun by itself, once the player is free to. */
 	void UpdateAutoReload(float DeltaSeconds);
+
+	/** How fast a reload should run right now: AirReloadSpeed in a dive's flight,
+	    FocusReloadSpeed in Focus, else 1. */
+	float GetReloadSpeed() const;
+
+	/** Keeps a running reload at GetReloadSpeed as Focus comes and goes. */
+	void UpdateReloadSpeed();
 
 	/** Seconds the equipped gun has been empty with a reload possible. */
 	float EmptyGunTime = 0.0f;

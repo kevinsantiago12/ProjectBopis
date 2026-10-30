@@ -301,6 +301,12 @@ public:
 	    wind-up and each round as they come; it's only used for magazine reloads. */
 	float GetReloadProgress() const;
 
+	/** Changes a running reload's speed from here on: the rest of it, from where it is, runs
+	    Speed times as fast (as Reload). Nothing if no reload is running. */
+	void SetReloadSpeed(float Speed);
+
+	float GetReloadSpeed() const { return ReloadSpeed; }
+
 	/** Finishes a reload on the spot: a magazine fills now; a per-round weapon gets the cycle
 	    that was under way. (A roll that carried the reload through.) */
 	void CompleteReloadNow();
@@ -724,6 +730,10 @@ protected:
 
 	/** The running reload's speed (see Reload). */
 	float ReloadSpeed = 1.0f;
+
+	/** How far through the current timer's cycle the reload was when a speed change restarted
+	    the timer (0 for a cycle that started fresh). GetReloadProgress counts on from there. */
+	float ReloadCycleStart = 0.0f;
 
 	bool bOffhandFiresNext = false;
 	bool bLastShotWasOffhand = false;

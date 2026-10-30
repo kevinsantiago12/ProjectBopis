@@ -667,7 +667,7 @@ archetype-composition idea, not extended from the old classes.
   - [x] *(User, 2026-10-26.)* Calibrated and locked: `BP_PumpShotgun`, `BP_CloseRangeRifle`. Lock the silver placeholders' replacements as they arrive.
   - [x] *(Tested 2026-10-26, user: "lowered idle and jog is fine now".)* Lowered idle/jog — hand on the grip.
   - [x] *(User, 2026-10-26: "Mossberg hold is ok".)* Mossberg hold.
-  - [ ] Deferred (user: "maybe fix this later but ignore for now"): lying backwards after a shootdodge, the left hand can't reach `LeftHandGrip`.
+  - [x] *(Tested 2026-10-30, user: "tested, works... not perfect but serviceable".)* Lying backwards after a shootdodge (and the back diagonals, dive and prone), the left hand couldn't reach `LeftHandGrip`. Fixed with the left-hand slide: `ShootdodgeLeftHandGripLocation` on the dive's left-hand IK, see the spec's *Left-hand slide*. A first try that pulled the gun in put the stock through the head and was removed.
   - [x] *(Compiled 2026-10-26, "apply and run".)* Magazine drops: `PlayWeaponEvent` (Mag Out drops `MagazineMesh` from the `Magazine` socket and hides that bone; Mag In / reload end shows it); magazines capped at 16. Meshes set on the 5.56 rifle, MAC pair, 9mm pair, .45 pair + enemy pistol.
   - [x] *(Tested 2026-10-26, user: "mags drop, works".)* `Magazine` sockets on `SK_AR4` and `SK_Beretta_92FS`.
   - [x] *(User, 2026-10-26: "already added and tested working".)* MAC and .45 sockets. The .45's (`Pistols_A`) was unsaved at 19:03 — moot since the .45s moved to the 1911.
@@ -730,6 +730,9 @@ archetype-composition idea, not extended from the old classes.
   - [x] Weapon pickups and drops (built 2026-10-29, "apply and run"): "Picked up {DisplayName}" for a new gun or the dual unlock; the ammo message when already carried. Ammo wording moved to one table in code (`ShowAmmoMessage`), so boxes and guns merge; the per-box `PickupMessage` field was removed.
   - [x] User test (2026-10-29: "weapon pickups tested, works").
   - [ ] Later: save messages once a save system exists.
+- [x] **39. Reload speed follows Focus** (user, 2026-10-30: "When on focus, your reload speed is accelerated. When in the middle of the reload and you get off focus, it should go back to normal speed from that frame … should work both ways"). Spec: *Focus reload speed*.
+  - [x] C++ ("apply and run", built 2026-10-30): `FocusReloadSpeed` 3; `GetReloadSpeed` / `UpdateReloadSpeed` on the player; `AWeaponBase::SetReloadSpeed` (timer restarted with the remaining time scaled, `ReloadCycleStart` keeps the progress); `ABopisCharacterBase::SetReloadPlayRate`. `bStopFocusOnReload` removed: reloading no longer ends Focus (design change, lore notes + GDD updated).
+  - [x] User test (2026-10-30: "tested, works"): Focus on → reload fast; off mid-reload → the rest at normal speed; on mid-reload → speeds up.
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4

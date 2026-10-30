@@ -149,6 +149,7 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateProneReloadLayers(DeltaSeconds);
 	UpdateProneFeet(*Character, DeltaSeconds);
 	UpdateShootdodgeAimCorrection(*Character, Weapon, DeltaSeconds);
+	UpdateShootdodgeLeftHandSlide(*Character, Weapon, DeltaSeconds);
 	UpdateHeadLook(*Character, DeltaSeconds);
 	UpdateBlade(*Character, Weapon, DeltaSeconds);
 	UpdateLean(*Character, DeltaSeconds);
@@ -469,6 +470,53 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	ShootdodgeChestAimCorrection = FQuat::Slerp(FQuat::Identity, HalfTurn, ShootdodgeLongGunAlpha).Rotator();
 	ShootdodgeArmAimCorrection = ArmAimCorrectionTotal.Rotator();
 	ShootdodgeHeadCorrection = FQuat::Slerp(FQuat::Identity, HeadCorrectionTotal, 0.5f).Rotator();
+}
+
+void UProjectBopisAnimInstance::UpdateShootdodgeLeftHandSlide(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
+{
+	// Long guns in the dive: the left hand reaches for the grip from its own shoulder, but the
+	// back poses (and those next to them) hold the gun further out than that arm can reach. The
+	// hand then slides back along the gun, toward the receiver, until it's in reach. The gun
+	// stays put: bringing it in to the hand instead pushed the stock through the head.
+	const USkeletalMeshComponent* Mesh = Character.GetMesh();
+	double Target = 0.0;
+	FVector BarrelInHand = FVector::ZeroVector;
+	if (ShootdodgeLeftHandAlpha > KINDA_SMALL_NUMBER && Weapon && Mesh && Mesh->GetSkinnedAsset())
+	{
+		const FReferenceSkeleton& RefSkeleton = Mesh->GetSkinnedAsset()->GetRefSkeleton();
+		const int32 Elbow = RefSkeleton.FindBoneIndex(TEXT("lowerarm_l"));
+		const int32 Hand = RefSkeleton.FindBoneIndex(LeftHandBone);
+		if (Elbow != INDEX_NONE && Hand != INDEX_NONE)
+		{
+			// The arm's full stretch: its two bones' lengths in the reference pose.
+			const TArray<FTransform>& RefPose = RefSkeleton.GetRefBonePose();
+			const double Reach = RefPose[Elbow].GetLocation().Size() + RefPose[Hand].GetLocation().Size()
+				- LeftHandReachMargin;
+
+			// Shoulder to grip, and the barrel, in the mesh's space (last frame's pose). The slide
+			// only moves the left arm, so neither end depends on it.
+			const FTransform HandR = Mesh->GetSocketTransform(RightHandBone, RTS_Component);
+			const FVector ToGrip = HandR.TransformPosition(LeftHandGripLocation)
+				- Mesh->GetSocketTransform(TEXT("upperarm_l"), RTS_Component).GetLocation();
+			const FVector Barrel = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
+				Weapon->GetMuzzleTransform().GetUnitAxis(EAxis::X));
+			BarrelInHand = HandR.InverseTransformVectorNoScale(Barrel);
+
+			// The shortest slide back, t, that brings the grip within reach: |ToGrip - t * Barrel| = Reach.
+			// If no slide along the gun gets there, as close as the gun comes.
+			const double Along = FVector::DotProduct(ToGrip, Barrel);
+			const double Beyond = ToGrip.SizeSquared() - Reach * Reach;
+			if (Beyond > 0.0 && Along > 0.0)
+			{
+				const double Discriminant = Along * Along - Beyond;
+				const double Slide = Discriminant >= 0.0 ? Along - FMath::Sqrt(Discriminant) : Along;
+				Target = FMath::Min<double>(Slide, LeftHandMaxSlide) * ShootdodgeLeftHandAlpha;
+			}
+		}
+	}
+	const float Alpha = FMath::Clamp(DeltaSeconds * AimCorrectionSpeed, 0.0f, 1.0f);
+	LeftHandSlide = FMath::Lerp(LeftHandSlide, Target, Alpha);
+	ShootdodgeLeftHandGripLocation = LeftHandGripLocation - BarrelInHand * LeftHandSlide;
 }
 
 void UProjectBopisAnimInstance::UpdateProneReloadLayers(float DeltaSeconds)

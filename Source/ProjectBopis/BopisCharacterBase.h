@@ -187,6 +187,9 @@ public:
 	/** Plays the reload montage(s) for a reload the weapon just started. */
 	void PlayReloadAnimation(const AWeaponBase* Weapon, float PlayRate = 1.0f);
 
+	/** Changes the playing reload's speed from this frame on (the off hand's too, for duals). */
+	void SetReloadPlayRate(const AWeaponBase* Weapon, float PlayRate);
+
 	/** A foot has just planted (the AnimBP reads plants off the pose): a step on whatever is
 	    under that foot. */
 	void PlayFootstep(bool bLeft);

@@ -1177,6 +1177,30 @@
     holding it. It was already gone from memory, so the orphaned `.uasset`
     was removed from disk.
   - git shows all three kit files deleted.
+- **Long guns, left hand in the back dive and prone poses** (user: "left
+  hand is not reaching the left hand grip"; the item deferred on 10-26).
+  - **Cause:** the arm turns and the back lift turn each upper arm about its
+    own shoulder, so off the shoulder line the grip drifts out of the left
+    arm's reach. The IK then straightens the arm and stops short.
+  - **First try, removed:** pulling the gun in toward the left shoulder (a
+    Two Bone IK on `hand_r`). The left hand reached, but in those poses the
+    shoulder is toward the head, so the stock went through the head.
+  - **Fix:** `UpdateShootdodgeLeftHandSlide`. The gun stays put and the left
+    hand's target slides back along the barrel (max 15 cm) until it's in
+    reach. The dive's left-hand IK (`TwoBoneIK_3`) reads
+    `ShootdodgeLeftHandGripLocation`. "apply and run": compiled, rewired and
+    saved.
+  - **Tested (user): "tested, works... not perfect but serviceable".**
+    Tuning, if it's revisited: `LeftHandMaxSlide`, `LeftHandReachMargin`.
+- **Reload speed follows Focus** (plan item 39; user: "When on focus, your
+  reload speed is accelerated... should work both ways").
+  - **Design change:** reloading no longer ends Focus. The lore notes and the
+    GDD (md + html) are updated.
+  - **Code** ("apply and run", built): `FocusReloadSpeed` 3. The player
+    re-picks the reload speed every frame (air 3, Focus 3, else 1). A change
+    mid-reload rescales what's left of the weapon timer and the montage
+    together, from where they are.
+  - **Tested (user): "tested, works".**
 
 ### ▶ RESUME HERE
 **A. Next up**
@@ -1253,8 +1277,13 @@
    - Suggested: clear their `FireAnimation` (bridge, ask first) so they
      sound from code until the Benelli and SVD replace them.
    - Then test every gun: one shot sound, one flash.
-8. **Deferred (user): prone on the back** after a shootdodge — the left hand
-   can't reach `LeftHandGrip` ("maybe fix this later but ignore for now").
+7b. **Focus reload speed: done 2026-10-30** (item 39, tested). Tune
+   `FocusReloadSpeed` (3) on `BP_PlayerCharacter` if it's ever wanted
+   faster; past 3 the montage blends start to smear the animation.
+8. **Long guns, left hand in the back poses: done 2026-10-30** (the
+   left-hand slide; user: "not perfect but serviceable"). If revisited, tune
+   `LeftHandMaxSlide` (15) and `LeftHandReachMargin` (3) in the ABP's Class
+   Defaults; don't go back to pulling the gun in.
 9. **New long guns:** calibrate and tick `bLockLeftHandRotation`
    (`Bopis.LeftHandGripCalibrate 1` in the lowered idle, lock off).
 10. **First aid follow-ups** (item 36 done and tested): swap the placeholder
