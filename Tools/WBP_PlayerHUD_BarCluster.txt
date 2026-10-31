@@ -1,0 +1,52 @@
+Begin Object Class=/Script/UMG.CanvasPanel Name="BarCluster"
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Background"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_FocusBar"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_HealthBar"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Accent"
+   End Object
+   Begin Object Name="Slot_Background"
+      LayoutData=(Offsets=(Left=-30.000000,Top=-22.000000,Right=563.000000,Bottom=130.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      ZOrder=-1
+      Parent="/Script/UMG.CanvasPanel'BarCluster'"
+      Content="/Script/UMG.Image'Background'"
+   End Object
+   Begin Object Name="Slot_FocusBar"
+      LayoutData=(Offsets=(Left=45.000000,Top=55.000000,Right=328.000000,Bottom=30.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      ZOrder=0
+      Parent="/Script/UMG.CanvasPanel'BarCluster'"
+      Content="/Game/UI/WBP_Focus.WBP_Focus_C'FocusBar'"
+   End Object
+   Begin Object Name="Slot_HealthBar"
+      LayoutData=(Offsets=(Left=37.000000,Top=16.000000,Right=376.000000,Bottom=29.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      ZOrder=1
+      Parent="/Script/UMG.CanvasPanel'BarCluster'"
+      Content="/Game/UI/WBP_Health.WBP_Health_C'HealthBar'"
+   End Object
+   Begin Object Name="Slot_Accent"
+      LayoutData=(Offsets=(Left=0.000000,Top=0.000000,Right=76.000000,Bottom=86.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      ZOrder=2
+      Parent="/Script/UMG.CanvasPanel'BarCluster'"
+      Content="/Script/UMG.Image'Accent'"
+   End Object
+   Slots(0)="/Script/UMG.CanvasPanelSlot'Slot_Background'"
+   Slots(1)="/Script/UMG.CanvasPanelSlot'Slot_FocusBar'"
+   Slots(2)="/Script/UMG.CanvasPanelSlot'Slot_HealthBar'"
+   Slots(3)="/Script/UMG.CanvasPanelSlot'Slot_Accent'"
+End Object
+Begin Object Class=/Script/UMG.Image Name="Background"
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_Background.MI_HUD_Background'",ImageSize=(X=563.000000,Y=130.000000))
+End Object
+Begin Object Class=/Game/UI/WBP_Focus.WBP_Focus_C Name="FocusBar"
+End Object
+Begin Object Class=/Game/UI/WBP_Health.WBP_Health_C Name="HealthBar"
+End Object
+Begin Object Class=/Script/UMG.Image Name="Accent"
+   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/UI/HUD/T_HUD_Accent.T_HUD_Accent'",ImageSize=(X=76.000000,Y=86.000000))
+End Object

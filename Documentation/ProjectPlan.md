@@ -781,9 +781,30 @@ archetype-composition idea, not extended from the old classes.
 - [x] **42. Damage flash** (user, 2026-10-30: "red screen flash on death and on damage that does more than 25% health in a short period"; "let me tweak the damage window and the Red color (black to full red)"; permission to build it). Spec: *Damage flash*.
   - [x] *(Built by Claude 2026-10-30, compiled clean.)* On the player, *Health|Damage Flash*: 25% of max health within 1 s (world) → a red camera fade (0.4 → 0, 0.4 s real); death → 0.7 over 0.8 s; `DamageFlashRed` 0..1 (black → full red); `HeavyDamageWindow`, `HeavyDamageFraction` and the alphas/durations all editable.
   - [x] User test (2026-10-31, the same "tested" as the kill cam; no issue reported).
+- [x] **42b. Hit pulse, heavy flash, low health** (user, 2026-10-31: "I need better feedback on when you are taking damage" → "do the hit pulse first"). Spec: *Damage flash → Hit pulse*.
+  - [x] *(Applied by Claude on the user's say-so, "apply and run", 2026-10-31; compiled clean.)* `M_HitPulse` post-process material (bridge, saved) on the camera; `PulseHit` on every hit (min 0.35 + share × 4), fading over 0.3 s real; assigned on `BP_Player_CC` (bridge, saved).
+  - [x] User test and tune (*Health|Hit Pulse*; the reach via `Inner`/`Outer` on `M_HitPulse`).
+  - [x] *(2026-10-31, user: "do all the way up to 3"; applied on "apply and run", compiled clean.)* Layer 2: heavy flash at 15% / 0.5 s (bridge, saved). Layer 3: low health below 30%: red edge + desaturation in `M_HitPulse` (bridge, saved), `UpdateLowHealth` (beat 1→2 Hz, optional heartbeat sound).
+  - [x] *(2026-10-31, applied on "apply and run", compiled clean.)* Low health at 20% (was 30%); heartbeat sound removed (user: "no heartbeat sound"). Out-of-combat recovery: below 20%, after `OutOfCombatDelay` 5 s with no shot fired / damage taken / near miss (`NoteCombat`), heal 2%/s up to 20%.
+  - [x] Line moved to 30% (user: "make the cap 30%", "the low health status goes up as well"): `LowHealthFraction` 0.3 on `BP_Player_CC` (bridge, saved). The low-health look and the recovery cap share it. The C++ default stays 0.2.
+  - [x] `RecoverRate` 0.01 on `BP_Player_CC` (user: "double the recovery time"; bridge, saved). User: "mark the task as done" (2026-10-31).
 - [x] **43. Dying bodies through walls / floating** (user, 2026-10-31: riddled enemies "goes thru walls", and "on a slope or if he gets thrown by the death anim off a platform, enemy would float in the air"). Spec: *Taking bullets and dying → Dying bodies adrift*.
   - [x] *(Applied by Claude on the user's say-so 2026-10-31, compiled clean.)* `IsDyingBodyAdrift()`: a dying body (death animation or riddled) whose line crosses a wall, or that has no ground within `DyingGroundReach` (35 cm) under its hips and feet, drops into a ragdoll.
   - [x] User test (2026-10-31, "tested, works"): riddled against a wall, on a slope, off a platform edge; a death in the open still plays its animation and the riddled dance.
+- [ ] **44. HUD: cinematic minimal** (user, 2026-10-31: "I want the cinematic minimal UI from this image"; GPT made the art; "try to make it so we can extend the length of the bars without it looking stretched"). Spec: *HUD: cinematic minimal*.
+  - [x] Art cut (Claude, 2026-10-31): seamless bar tiles (health, focus, empty) + the accent, 4× upscaled, in `ArtSource/UI/HUD/`; `M_HUDBar` Custom node written (`HUDBar_Custom.hlsl`).
+  - [x] Import the four textures; build `M_HUDBar`, `MI_HUDBar_Health`, `MI_HUDBar_Focus` (bridge, 2026-10-31, saved in `/Game/UI/HUD`).
+  - [x] C++ (applied by Claude on the user's say-so, "apply and run script", compiled clean 2026-10-31): `UHUDBarWidget` (`UI/HUDBarWidget.h/.cpp`) drives `Fill`, `Length` and `Height` on an optional Image named `Bar`; `UHealthWidget` / `UFocusWidget` derive from it.
+  - [x] User: `WBP_Health` / `WBP_Focus` — ProgressBar → Image named `Bar` (brush `MI_HUDBar_Health` / `_Focus`). The bridge can't edit widget trees. Tested in PIE 2026-10-31 (user: "Done, it works").
+  - [x] Lay out the accent and bars bottom left in `WBP_PlayerHUD` (2026-10-31: `BarCluster` pasted from `Tools/MakeHUDBarClusterTree.ps1`; user: "Looks right").
+  - [ ] The rest of the strip: weapon icon (+ getter), ammo, first aid, grenades, condensed font.
+- [ ] **45. Pistol kick and bladed-run head bob** (user, 2026-10-31: "when shooting pistols, I am not getting any motion on the shooting shoulder, it looks stiff"; "when running bladed raised, the head is bobbing up and down but the body is still"). Spec: *One-handed pistol → Bladed stance*.
+  - [x] *(Applied by Claude 2026-10-31, compiled clean; **rolled back** the same day, user: "The arm movement increased but I dont see the kick in the shoulder" / "roll back". Files restored from git.)* Corrections held during the recoil spring + `BladeShoulderKick` on `upperarm_r`.
+  - [ ] Shoulder kick, deferred (user: "dont fix the kick now"): the user wants the shoulder itself (clavicle) to move, not the arm.
+  - [x] Head bob on the bladed run, found (user: "freearmphysics actually stopped it"): the CC head mesh copied the body's pose before the physics step, so with the free arm on physics it got last frame's ("his neck is extending up and down"). `ABopisCharacterBase::BeginPlay` puts the `Head`-tagged mesh in `TG_PostPhysics`. *(Applied by Claude on the user's say-so, compiled clean.)*
+  - [x] User test (2026-10-31, "that looks fine now"); `_13` blend depth back to 3 (user: "put it back to 3"; bridge, compiled, saved).
+  - [x] Neck/head freeze in the blade (`LayeredBoneBlend_17`), tried 2026-10-31; user: "that did not work either, rollback that". Removed through the bridge, never saved.
+  - [x] Bladed stride follow, tried 2026-10-31 (spine rocks with the hips): user "still bobbing … look better", then "his waist it twisting now, so roll that back". Source restored from git.
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4
@@ -833,6 +854,7 @@ Moved to [TechnicalDesignSpec.md](TechnicalDesignSpec.md) → *Engineering gotch
 
 ## Changelog
 
+- 2026-10-31 — Item 44 (HUD: cinematic minimal) added; its art step ticked.
 - 2026-10-25 (3) — Home test pass: items 10, 20, 28, 29 ticked; item 25's lock/death/cycling, item 22's clothing layers and item 27's test ticked (27 keeps the `SC_Music` asset open). Item 31 (gunfire audio refactor) added.
 - 2026-10-25 (2) — Item 30 (dual reload holds the torso and off-hand shoulder) added, built and ticked (user-tested).
 - 2026-10-25 — Item 22: bare-skin seams fixed (skin push moved to WPO) and CC parts shadow each other (Self Shadow Only off); both ticked. Items 27–29 (music, level exit, room cleared + waves) added on 2026-10-24, compiled, not yet tested.

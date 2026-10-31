@@ -118,6 +118,7 @@ void AProjectileBase::CheckNearMiss()
 
 	bNearMissReported = true;
 	const APawn* Shooter = GetInstigator();
+	Player->NoteCombat();
 	Player->AddHitIndicator(Shooter ? Shooter->GetActorLocation() : SpawnLocation, false);
 }
 

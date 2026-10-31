@@ -36,8 +36,8 @@ float filled = saturate(front - px + 0.5);
 float4 f = Texture2DSample(FillTex, FillTexSampler, float2(px / (Height * FillAspect), UV.y));
 float4 t = Texture2DSample(TrackTex, TrackTexSampler, float2(px / (Height * TrackAspect), UV.y));
 
-float3 fillRgb = lerp(f.rgb, OutlineColor, outline);
-float3 trackRgb = lerp(t.rgb, TrackOutlineColor, outline);
+float3 fillRgb = lerp(f.rgb, OutlineColor.rgb, outline);
+float3 trackRgb = lerp(t.rgb, TrackOutlineColor.rgb, outline);
 
 float3 rgb = lerp(trackRgb, fillRgb, filled);
 float a = cover * lerp(t.a * TrackOpacity, f.a, filled);

@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/PlayerHUDElementWidget.h"
+#include "UI/HUDBarWidget.h"
 #include "FocusWidget.generated.h"
 
-/** Focus meter readout. */
+/** Focus meter: M_HUDBar on the "Bar" Image in WBP_Focus. */
 UCLASS()
-class PROJECTBOPIS_API UFocusWidget : public UPlayerHUDElementWidget
+class PROJECTBOPIS_API UFocusWidget : public UHUDBarWidget
 {
 	GENERATED_BODY()
 
@@ -19,4 +19,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	bool IsFocusActive() const;
+
+protected:
+	virtual float GetBarFill() const override { return GetMeterFraction(); }
 };

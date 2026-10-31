@@ -19,6 +19,8 @@ class UShootdodgeComponent;
 class URollComponent;
 class UGamepadAimComponent;
 class UKillCamComponent;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
 class UPostProcessComponent;
 class AGrenade;
 struct FInputActionValue;
@@ -479,6 +481,58 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0"))
 	float DeathFlashDuration = 0.8f;
 
+	/** Hit pulse: every hit taken reddens the screen's edges for a moment, stronger the bigger
+	    the hit. A post-process material with a scalar Intensity and a vector PulseColor. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Pulse")
+	TObjectPtr<UMaterialInterface> HitPulseMaterial;
+
+	/** The weakest pulse (0..1): a graze still shows. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Pulse", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HitPulseMin = 0.35f;
+
+	/** How much stronger per share of full health a hit takes: a hit of 10% adds 0.1 x this. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Pulse", meta = (ClampMin = "0.0"))
+	float HitPulsePerHealth = 4.0f;
+
+	/** Real seconds the pulse takes to fade from full. */
+	UPROPERTY(EditAnywhere, Category = "Health|Hit Pulse", meta = (ClampMin = "0.01"))
+	float HitPulseFadeTime = 0.3f;
+
+	/** Low health: below this share of full health the screen's edges stay red and the colour
+	    drains toward grey, more the lower it goes (all of it at none). Drives M_HitPulse's
+	    LowHealth and LowHealthBeat. */
+	UPROPERTY(EditAnywhere, Category = "Health|Low Health", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LowHealthFraction = 0.2f;
+
+	/** How fast the effect follows health (a heal fades it, a hit deepens it). */
+	UPROPERTY(EditAnywhere, Category = "Health|Low Health", meta = (ClampMin = "0.1"))
+	float LowHealthBlendSpeed = 3.0f;
+
+	/** The red edge throbs like a heartbeat: beats per second at the threshold, and near death. */
+	UPROPERTY(EditAnywhere, Category = "Health|Low Health", meta = (ClampMin = "0.0"))
+	float LowHealthBeatRateMin = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Health|Low Health", meta = (ClampMin = "0.0"))
+	float LowHealthBeatRateMax = 2.0f;
+
+	/** How much of the red edge each beat takes away between beats (0: steady). */
+	UPROPERTY(EditAnywhere, Category = "Health|Low Health", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LowHealthThrob = 0.4f;
+
+	/** Below LowHealthFraction and out of combat for OutOfCombatDelay, health slowly comes back
+	    up to that line, and the low-health look fades with it. Never past it: that's the
+	    first-aid kits' job. */
+	UPROPERTY(EditAnywhere, Category = "Health|Recovery")
+	bool bRecoverOutOfCombat = true;
+
+	/** World seconds out of combat (no shot fired, no hit taken, no near miss) before it starts. */
+	UPROPERTY(EditAnywhere, Category = "Health|Recovery", meta = (ClampMin = "0.0", EditCondition = "bRecoverOutOfCombat"))
+	float OutOfCombatDelay = 5.0f;
+
+	/** Share of full health recovered per world second. */
+	UPROPERTY(EditAnywhere, Category = "Health|Recovery", meta = (ClampMin = "0.0", EditCondition = "bRecoverOutOfCombat"))
+	float RecoverRate = 0.02f;
+
 	/** Camping: staying within this distance (cm) of one spot counts as staying put. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))
 	float CampRadius = 250.0f;
@@ -689,6 +743,10 @@ public:
 	/** Marks a shot from Source on the HUD: bHit red, otherwise a grey near miss (rationed). */
 	void AddHitIndicator(const FVector& Source, bool bHit);
 
+	/** In combat now: one of your shots, a hit taken, or a near miss. Restarts the count to
+	    out-of-combat recovery. */
+	void NoteCombat();
+
 	/** Puts a line of dialogue on the HUD for this many seconds (empty, or 0, clears it). */
 	void ShowSubtitle(const FText& Line, float Seconds)
 	{
@@ -778,6 +836,27 @@ private:
 
 	/** Hits within the last HeavyDamageWindow: world time and damage. */
 	TArray<TPair<float, float>> RecentDamage;
+
+	/** Raises the hit pulse to at least this hit's strength. */
+	void PulseHit(float Damage);
+
+	/** The hit pulse material on the camera, and its strength now (fading in real time). */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> HitPulseInstance;
+	float HitPulse = 0.0f;
+
+	/** Low health: eases the effect toward the health now and beats the edge. */
+	void UpdateLowHealth(float RealDelta);
+
+	/** The low-health effect's strength now (0..1), and the heartbeat's phase (0..1). */
+	float LowHealthLevel = 0.0f;
+	float LowHealthBeatPhase = 0.0f;
+
+	/** Below the low-health line and out of combat long enough: health creeps back up to it. */
+	void UpdateRecovery(float DeltaSeconds);
+
+	/** World time of the last shot fired, hit taken or near miss (NoteCombat). */
+	float LastCombatTime = -1000.0f;
 
 	/** Mid-dive (the flight) or mid-roll, this very moment — IsEvading adds the linger. */
 	bool IsEvadingNow() const;

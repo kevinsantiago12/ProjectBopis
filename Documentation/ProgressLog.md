@@ -1438,9 +1438,179 @@
   - **Spec:** *Taking bullets and dying → Dying bodies adrift*.
   - **Tested** (user: "tested, works. put that in the docs"). Plan item 43
     is done.
+- **HUD: cinematic minimal (plan item 44, started):**
+  - **The look** (user: "I want the cinematic minimal UI from this image"):
+    panel 1 of a GPT mockup. A white/gold accent, a red health bar over a
+    shorter blue Focus bar, then weapon icon, ammo, first aid and grenades.
+  - **The art is GPT's.** The user generated a sheet (composite | HEALTH |
+    FOCUS | ACCENT | EMPTY), and Claude cut it with `CutHUDSheet.py` into
+    `ArtSource/UI/HUD/`:
+    - seamless bar tiles (health, focus, empty);
+    - the accent;
+    - all 4× Lanczos upscaled (user: "upscale the png so we can 100% prevent
+      pixelation").
+  - **Bars of any length** (user: "extend the length of the bars without it
+    looking stretched"). `M_HUDBar` draws the 45° ends, the end outlines and
+    the fill front in pixels and tiles the texture. The Custom node code is in
+    `HUDBar_Custom.hlsl`. It was checked in a numpy preview at 180–480 px, and
+    against GPT's composite.
+  - **Not in Unreal yet** (user: "lets do it tomorrow"). Spec: *HUD:
+    cinematic minimal* (instance values, layout, hookup).
+  - **Tried and dropped:**
+    - a flag-triangle cap and a procedural grunge (files still in the folder,
+      superseded);
+    - Blender silhouette and line-art weapon icons (deleted; user: "Dont like
+      em, lets use the icons instead" — the Handcrafted pack stays);
+    - textured weapon renders through the editor viewport (user: "forget this
+      actually"; deleted).
+  - **Weapon icons in use** (listed for the user):
+    - the revolver shares `modern_pistol__1_` with the enemy-only .45;
+    - the rifle and the carbine share `modern_rifle__12_`.
+  - **Bridge note:** this session's `unreal-mcp` tools dropped and didn't come
+    back after a reconnect. Claude reached the editor's endpoint directly with
+    a scratch client instead, which needs no repo files.
+  - **Possible leftover:** `Lvl_Linear` may show unsaved changes from the
+    render booth's spawn/remove. Its contents are unchanged, so save it or
+    discard the changes.
+- **Stiff pistol shoulder** (user: "when shooting pistols, I am not getting
+  any motion on the shooting shoulder, it looks stiff"):
+  - **Cause:** the blade's arm and hand aim corrections re-aimed the kicked
+    pose at the crosshair every frame, so the kick was cancelled within
+    about 0.1 s. The kick only ever bent the forearm.
+  - **Fix:** the corrections hold while the recoil spring is up, and a
+    one-handed shot now also lifts the arm at the shoulder
+    (`BladeShoulderKick` 15°).
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (12:57:13) is newer than the source, the bridge answered, and the
+    log is clean.
+  - **Rolled back** (user: "The arm movement increased but I dont see the
+    kick in the shoulder", "roll back the bladed fix"). Both anim instance
+    files were restored from git; the change was never committed.
+    - **What the user wants:** the shoulder itself (the clavicle) to move,
+      not the arm.
+    - **Deferred** (user: "dont fix the kick now").
+    - **The editor DLL still has the rolled-back code until the next
+      rebuild.**
+- **Head bobbing on the bladed run** (user: "when running bladed raised,
+  the head is bobbing up and down but the body is still"; "The bob is only
+  for bladed stance").
+  - **Not C++:** the blade's head turn is a constant, lean is off while
+    raised, and head-look is for enemies.
+  - **Bridge read of `ABP_Player`** (user: "go ahead with the bridge for
+    the head bob"; read-only):
+    - `LayeredBoneBlend_10` (`pelvis`) puts the mirrored strafe run on the
+      whole body.
+    - `TwoWayBlend_0` (by `StrafeBladeAlpha`) then picks `_13`: `spine_01`,
+      mesh-space rotation, blend depth 3, laying the DefaultSlot hip-fire
+      idle over everything from `spine_01` up.
+    - Then the two aim offsets, the lean nodes `ModifyBone_36`–`38`
+      (`spine_01`–`03`), and the blade turns: `_28`/`_29`
+      (`spine_03`/`05`), `_30`/`_31` (`neck_01`/`head`), `_32`
+      (`upperarm_r`), `_33` (`hand_r`).
+    - Then the recoil nodes, the left-hand IK, the finger, free-arm and
+      dual layers, `_4`, and Rotate Root.
+    - Nothing after the blade layer moves the neck or head on its own.
+  - **Bladed-only suspect:** `_13`'s blend depth 3 keeps about ⅔ and ⅓ of
+    the run's sway on `spine_01`/`02`. (`_13` was made 2026-10-22 to spread
+    the waist twist for the CC waistband.)
+  - **Not the cause:** depth set 3 → 0 through the bridge and compiled.
+    The user first reported "bob is gone, waist looks fine. saved it"
+    (`ABP_Player` saved 13:44), then "bob is actually still there". The
+    asset is saved at depth 0, and whether to put it back to 3 is open.
+  - **Still open:** the graph shows no node that moves the head on its own
+    in the bladed stance. Next: see it (a clip or screenshots), or test the
+    CC head mesh's copied pose.
+  - **Rebuild** (user: "run the script"): this clears the rolled-back kick
+    code from the editor DLL. Compiled clean; the DLL (13:45:45) is newer
+    than the restored source (13:29), the bridge answered, and the log is
+    clean.
+
+- **Bladed head bob, found** (user: "freearmphysics actually stopped it"):
+  - **Cause:** `BP_Player_CC`'s head is a separate mesh copying the body's
+    pose. When body bones simulate, the body's pose is only finished after
+    the physics step, so the head copied last frame's and the neck
+    stretched with every stride. The bladed stance is the free arm's case.
+  - **Fix:** `ABopisCharacterBase::BeginPlay` puts the `Head`-tagged mesh in
+    `TG_PostPhysics`. It also covers enemies' hit reactions and the
+    riddled dance.
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (14:59:31) is newer than the source, the bridge answered, and the
+    log is clean.
+  - **Earlier tries that weren't it:** `_13` blend depth 0 (now back to 3),
+    a neck freeze (removed) and a stride follow (rolled back).
+  - **Tested** (user: "that looks fine now, put it back to 3"). `_13` is
+    back to depth 3 through the bridge, compiled and saved.
+
+- **Hit pulse** (user: "I need better feedback on when you are taking
+  damage" → "do the hit pulse first"):
+  - **What it does:** every hit reddens the screen's edges, more for a
+    bigger hit, fading in 0.3 s real time.
+  - **Material:** `M_HitPulse` (post process, a Custom node on the edge
+    mask), built and saved through the bridge.
+  - **Code:** a dynamic instance on the player camera's post-process
+    blendables, driven by `PulseHit` and `Tick`.
+  - **Assignment:** set on `BP_Player_CC` through the bridge, saved.
+  - **Build:** applied by Claude on the user's say-so ("apply and run"),
+    compiled clean. The DLL (15:49:43) is newer than the source, the bridge
+    answered, and the log is clean.
+  - **Spec:** *Damage flash → Hit pulse*. Recorded in the lore notes, and
+    the GDD (md + html) has a sentence.
+
+- **Damage feedback layers 2 and 3** (user: "do all the way up to 3"):
+  - **Layer 2:** `HeavyDamageFraction` 0.15 and `HeavyDamageWindow` 0.5 on
+    `BP_Player_CC` (bridge, saved).
+  - **Layer 3:** below 30% health the edges stay red with a heartbeat throb
+    (1→2 Hz) and the picture drains toward grey. `M_HitPulse` was extended
+    through the bridge and saved, plus `UpdateLowHealth` in C++. The
+    optional heartbeat sound has no asset yet.
+  - **Build:** applied on the user's say-so ("apply and run"), compiled
+    clean. The DLL (16:03:36) is newer than the source, the generated code
+    has the new settings, the bridge answered, and the log is clean.
+
+- **Low health at 20%, no heartbeat, out-of-combat recovery** (user: "no
+  heartbeat sound. make the low health state at 20%, also gameplay change,
+  if you go below 20% health and you go out of combat, recover health slowly
+  up to 20% removing the low health state"; "need to be X amount of secons
+  out of combat"; "use your shots, damage taken, and near misses instead"):
+  - **Combat clock:** `NoteCombat()` is stamped by your shots, damage taken
+    and near misses.
+  - **Recovery:** after 5 s out of combat, health below 20% climbs at 2% per
+    second, up to 20%, which fades the low-health look out.
+  - **Build:** applied on the user's say-so ("apply and run"), compiled
+    clean. The DLL (16:17:07) is newer than the source, the bridge
+    answered, the log is clean, and `BP_Player_CC` was read back with the
+    new defaults.
+
+- **Low-health line to 30%** (user: "make the cap 30%"; "the low health
+  status goes up as well"): `LowHealthFraction` 0.3 on `BP_Player_CC`
+  (bridge, compiled, saved). The low-health look and the recovery cap share
+  the line, so no code changed. The separate-cap code Claude presented was
+  dropped before applying.
+
+- **Recovery time doubled, damage feedback done** (user: "double the
+  recovery time. And mark the task as done"):
+  - `RecoverRate` 0.02 → 0.01 on `BP_Player_CC` (bridge, saved): 0 → 30%
+    in 30 s.
+  - Plan item 42b is done: hit pulse, heavy flash at 15%/0.5 s, low health at
+    30%, out-of-combat recovery.
 
 ### ▶ RESUME HERE
 **A. Next up**
+00. **HUD bars (plan item 44), next session** (user: "lets do it tomorrow").
+    Spec: *HUD: cinematic minimal*.
+    - **Ask first:** may Claude import the four `ArtSource/UI/HUD` textures
+      and build `M_HUDBar` + `MI_HUDBar_Health` / `_Focus` through the
+      bridge? Or does the user build them from the spec?
+    - **Then:**
+      - in `WBP_Health` / `WBP_Focus`, swap the ProgressBar for an Image;
+      - feed `Fill`, via Blueprint or C++ the user types;
+      - lay out the accent and bars in `WBP_PlayerHUD`;
+      - test the drain.
+    - **Optional:** a full-size GPT sheet in the folder re-cuts with real 4K
+      detail.
+    - **Optional:** delete the superseded flag-cap and grunge files.
+00b. **Shoulder kick, deferred** (user: "dont fix the kick now"). The user
+    wants the shoulder itself (the clavicle) to move, not the arm.
 0. **Deck testing is on hold** (user, 2026-10-28: "lets do the Deck test later.
    Lets keep building on the PC for now until I want to test it again"). Build
    and test in the editor only; package for the Deck only when the user asks.

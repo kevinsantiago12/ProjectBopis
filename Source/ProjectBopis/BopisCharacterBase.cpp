@@ -736,6 +736,20 @@ void ABopisCharacterBase::BeginPlay()
 	Super::BeginPlay();
 
 	PhysicalAnimation->SetSkeletalMeshComponent(GetMesh());
+
+	// A CC head is a mesh of its own, copying the body's pose. Whenever part of the body is on
+	// physics (the free arm, a hit reaction), the body's pose is only finished after the physics
+	// step, so a head copying it before then gets last frame's: running, the neck stretches and
+	// shrinks with every step. Copied after physics, it always has this frame's.
+	TArray<USkeletalMeshComponent*> Parts;
+	GetComponents(Parts);
+	for (USkeletalMeshComponent* Part : Parts)
+	{
+		if (Part != GetMesh() && Part->ComponentHasTag(TEXT("Head")))
+		{
+			Part->SetTickGroup(TG_PostPhysics);
+		}
+	}
 }
 
 void ABopisCharacterBase::UseRagdollCollision()

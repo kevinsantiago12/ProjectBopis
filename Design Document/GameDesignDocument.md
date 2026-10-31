@@ -221,8 +221,12 @@ or arena picks its shot, or leaves it to chance:
 - a reverse shot from behind the dying enemy, back at you as you shoot;
 - a still, high angle looking down on the fall.
 
-You can keep firing into the body as it goes down. A big hit, or a death,
-washes the screen red for a moment.
+You can keep firing into the body as it goes down. Every hit you take
+reddens the edges of the screen for a moment, and a big hit, or a death,
+washes the whole screen red. Badly hurt, the picture drains toward black and
+white inside a throbbing red border. Get out of the fight for a few seconds
+and you steady yourself back from the brink; anything more takes a first-aid
+kit.
 
 A single pistol is fired **one-handed**, the free hand hanging at the side;
 the two-handed grip is saved for the heavier, high-powered pistol. Every shot

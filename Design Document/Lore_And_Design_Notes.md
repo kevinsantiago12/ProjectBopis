@@ -903,6 +903,27 @@ under the hits while it's still on its feet). Tuning is open.
 short period." The user tunes the window and the colour ("black to full
 red").
 
+**Hit pulse — *stated 2026-10-31*.** "I need better feedback on when you are
+taking damage." Claude proposed three layers: every hit, a heavy hit, and low
+health. User: "do the hit pulse first".
+- **Every hit:** the screen's edges redden for a moment, more for a bigger
+  hit.
+- **Heavy hit:** now 15% of health lost within half a second (user: "do
+  all the way up to 3").
+- **Low health:** below **30%** health (user: first "make the low health
+  state at 20%", then "make the cap 30%" / "the low health status goes up as
+  well"), the edges stay red and the colour drains toward grey, worse as
+  health drops, with a throbbing red edge. There's no heartbeat sound (user:
+  "no heartbeat sound"). At death it's fully grey: a noir death frame.
+- **Recovery** (user, gameplay): "if you go below 20% health and you go out
+  of combat, recover health slowly up to 20% removing the low health
+  state".
+  - **Out of combat** is a number of seconds with none of your shots, no
+    damage taken and no near misses (user: "use your shots, damage taken,
+    and near misses instead").
+  - It never heals above 30%, the same line as the low-health look; above
+    that, first aid is the only cure.
+
 ## Walk-around sections — *stated 2026-10-27*
 The levels will have **"walk around" parts with civilians you can interact
 with** (user). Up to 12 NPCs on screen there; no fighting in them. What the

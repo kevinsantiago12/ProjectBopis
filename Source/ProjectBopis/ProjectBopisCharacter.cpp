@@ -30,6 +30,7 @@
 #include "EnhancedPlayerInput.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
 {
@@ -102,6 +103,16 @@ void AProjectBopisCharacter::BeginPlay()
 	CampAnchor = GetActorLocation();
 
 	DefaultFOV = FollowCamera->FieldOfView;
+
+	// The hit pulse rides on the camera's own post-process: FocusComponent finds the character's
+	// post-process component by class, so a second one would confuse it.
+	if (HitPulseMaterial)
+	{
+		HitPulseInstance = UMaterialInstanceDynamic::Create(HitPulseMaterial, this);
+		HitPulseInstance->SetScalarParameterValue(TEXT("Intensity"), 0.0f);
+		HitPulseInstance->SetVectorParameterValue(TEXT("PulseColor"), FLinearColor(DamageFlashRed, 0.0f, 0.0f));
+		FollowCamera->PostProcessSettings.AddBlendable(HitPulseInstance, 1.0f);
+	}
 
 	BoomBaseHeight = CameraBoom->GetRelativeLocation().Z;
 	DefaultCapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
@@ -341,6 +352,16 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	// Faded markers go, in real time: Focus doesn't make them linger.
 	const float RealNow = GetWorld()->GetRealTimeSeconds();
 	HitIndicators.RemoveAll([RealNow](const FHitIndicator& Marker) { return RealNow - Marker.StartTime >= Marker.Duration; });
+
+	// The hit pulse fades in real time, so slow motion doesn't hold it.
+	if (HitPulseInstance && HitPulse > 0.0f)
+	{
+		HitPulse = FMath::Max(0.0f, HitPulse - FApp::GetDeltaTime() / HitPulseFadeTime);
+		HitPulseInstance->SetScalarParameterValue(TEXT("Intensity"), HitPulse);
+	}
+
+	UpdateLowHealth(FApp::GetDeltaTime());
+	UpdateRecovery(DeltaSeconds);
 
 	// Dead: no stances, crouch or framing any more — just keep the body in view.
 	if (IsDead())
@@ -700,6 +721,7 @@ void AProjectBopisCharacter::DoFire()
 	if (FireResult == EFireResult::Fired)
 	{
 		PlayFireAnimation(EquippedWeapon);
+		NoteCombat();
 	}
 	else if (FireResult == EFireResult::Empty && EquippedWeapon->ShouldAutoReloadWhenEmpty())
 	{
@@ -789,6 +811,7 @@ float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const&
 	if (Result > 0.0f)
 	{
 		LastHitTakenTime = GetWorld()->GetTimeSeconds();
+		NoteCombat();
 
 		// Red marker toward whoever fired it (the shooter's body, else the round itself).
 		const APawn* Shooter = EventInstigator ? EventInstigator->GetPawn() : nullptr;
@@ -796,6 +819,8 @@ float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const&
 		{
 			AddHitIndicator(Shooter ? Shooter->GetActorLocation() : DamageCauser->GetActorLocation(), true);
 		}
+
+		PulseHit(Result);
 
 		// The killing blow has the death's own flash (in Die).
 		if (!IsDead())
@@ -1237,6 +1262,60 @@ void AProjectBopisCharacter::FlashDamage(float Alpha, float Duration)
 	// Duration real seconds.
 	const float Dilation = UGameplayStatics::GetGlobalTimeDilation(this);
 	PC->PlayerCameraManager->StartCameraFade(Alpha, 0.0f, Duration * Dilation, FLinearColor(DamageFlashRed, 0.0f, 0.0f));
+}
+
+void AProjectBopisCharacter::PulseHit(float Damage)
+{
+	// Every hit shows, a graze faintly; a bigger share of full health, stronger. A new hit never
+	// weakens a pulse still fading from a bigger one.
+	const UHealthComponent* HealthComp = GetHealthComponent();
+	const float Share = HealthComp && HealthComp->GetMaxHealth() > 0.0f ? Damage / HealthComp->GetMaxHealth() : 0.0f;
+	HitPulse = FMath::Max(HitPulse, FMath::Clamp(HitPulseMin + Share * HitPulsePerHealth, 0.0f, 1.0f));
+}
+
+void AProjectBopisCharacter::UpdateLowHealth(float RealDelta)
+{
+	const UHealthComponent* HealthComp = GetHealthComponent();
+	if (!HitPulseInstance || !HealthComp || HealthComp->GetMaxHealth() <= 0.0f)
+	{
+		return;
+	}
+
+	// 0 at the threshold, 1 with no health left; eased, so a heal fades it rather than snapping.
+	const float Share = HealthComp->GetHealth() / HealthComp->GetMaxHealth();
+	const float Target = LowHealthFraction > 0.0f ? FMath::Clamp(1.0f - Share / LowHealthFraction, 0.0f, 1.0f) : 0.0f;
+	LowHealthLevel = FMath::FInterpTo(LowHealthLevel, Target, RealDelta, LowHealthBlendSpeed);
+
+	// The red edge throbs with a heartbeat that quickens as health drops; dead, it holds still.
+	const float BeatRate = FMath::Lerp(LowHealthBeatRateMin, LowHealthBeatRateMax, LowHealthLevel);
+	LowHealthBeatPhase = FMath::Fmod(LowHealthBeatPhase + RealDelta * BeatRate, 1.0f);
+	const float Beat = IsDead() ? 1.0f
+		: 1.0f - LowHealthThrob * 0.5f * (1.0f - FMath::Cos(LowHealthBeatPhase * UE_TWO_PI));
+	HitPulseInstance->SetScalarParameterValue(TEXT("LowHealth"), LowHealthLevel);
+	HitPulseInstance->SetScalarParameterValue(TEXT("LowHealthBeat"), Beat);
+}
+
+void AProjectBopisCharacter::NoteCombat()
+{
+	LastCombatTime = GetWorld()->GetTimeSeconds();
+}
+
+void AProjectBopisCharacter::UpdateRecovery(float DeltaSeconds)
+{
+	// Below the low-health line and out of combat for OutOfCombatDelay (no shot fired, no hit
+	// taken, no near miss), health slowly comes back up to the line, and the low-health look
+	// fades with it. Never past it: that's the first-aid kits' job.
+	UHealthComponent* HealthComp = GetHealthComponent();
+	if (!bRecoverOutOfCombat || IsDead() || !HealthComp || HealthComp->GetMaxHealth() <= 0.0f)
+	{
+		return;
+	}
+	const float Line = LowHealthFraction * HealthComp->GetMaxHealth();
+	if (HealthComp->GetHealth() >= Line || GetWorld()->GetTimeSeconds() - LastCombatTime < OutOfCombatDelay)
+	{
+		return;
+	}
+	HealthComp->Heal(FMath::Min(RecoverRate * HealthComp->GetMaxHealth() * DeltaSeconds, Line - HealthComp->GetHealth()));
 }
 
 void AProjectBopisCharacter::UpdatePendingThrow(float DeltaSeconds)

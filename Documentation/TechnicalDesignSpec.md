@@ -57,6 +57,7 @@
 - [Level exit (2026-10-24)](#level-exit-2026-10-24)
 - [Kill cam (2026-10-30)](#kill-cam-2026-10-30)
 - [Damage flash (2026-10-30)](#damage-flash-2026-10-30)
+- [HUD: cinematic minimal (2026-10-31, art cut, not built yet)](#hud-cinematic-minimal-2026-10-31-art-cut-not-built-yet)
 - [NPC characters (CC2)](#npc-characters-cc2)
 - [Enemies](#enemies)
   - [Built so far (2026-10-09) — steps 1–3, user-confirmed in PIE](#built-so-far-2026-10-09--steps-13-user-confirmed-in-pie)
@@ -3938,6 +3939,215 @@ health in a short period"; "let me tweak the damage window and the Red color
   so it lingers in slow motion.
 - **Tested** by the user 2026-10-31.
 
+**Hit pulse (2026-10-31):** user: "I need better feedback on when you are
+taking damage". Claude proposed three layers: a pulse on every hit, the
+heavy flash sooner, and a low-health state. User: "do the hit pulse first".
+- **What it does:** every hit taken reddens the screen's edges for a moment.
+- **Material:** `/Game/UI/Effects/M_HitPulse`, built through the bridge.
+  - Material Domain Post Process, Blendable Location
+    `BL_SceneColorAfterTonemapping`.
+  - A Custom node (`HitPulse`, float3 out → Emissive) takes ViewportUV,
+    `PostProcessInput0` Color, `PulseColor` (vector, 0.6/0/0), `Inner`
+    0.45, `Outer` 1.15 and `Intensity` (0):
+
+    ```
+    float d = length((UV - 0.5) * 2.0);
+    float edge = smoothstep(Inner, Outer, d);
+    return lerp(Scene.rgb, Color.rgb, saturate(edge * Intensity));
+    ```
+
+  - `d` is 0 at the centre, 1 at the edge midpoints and 1.41 in the
+    corners, so the red follows the screen's shape.
+- **Driver** (`AProjectBopisCharacter`, *Health|Hit Pulse*):
+  - **Setup:** `BeginPlay` makes a dynamic instance of `HitPulseMaterial`
+    and sets `PulseColor` from `DamageFlashRed`.
+    - It's added with `FollowCamera->PostProcessSettings.AddBlendable(…,
+      1)`, on the camera rather than a second `UPostProcessComponent`:
+      `UFocusComponent` finds the character's post-process component with
+      `FindComponentByClass`, and a second one would confuse it.
+  - **Each hit:** `TakeDamage` calls `PulseHit` for every hit with damage,
+    the killing one included.
+    - It sets `HitPulse` to the larger of its current value and
+      `HitPulseMin` (0.35) + share of max health × `HitPulsePerHealth` (4),
+      clamped to 1.
+    - A 10% hit therefore gives 0.75; a new hit never weakens a stronger
+      pulse that's still fading.
+  - **Fade:** `Tick` fades it linearly over `HitPulseFadeTime` (0.3 s) of
+    real time (`FApp::GetDeltaTime`), so slow motion doesn't hold it, and
+    sets `Intensity`.
+  - **Assignment:** `HitPulseMaterial` is set on `BP_Player_CC` (bridge,
+    saved).
+- **Cost:** the pass runs every frame, even at `Intensity` 0. If it shows up
+  in a profile, the blendable's weight can drop to 0 between pulses.
+- **Status:** built and compiled clean, DLL 15:49. User test pending.
+
+**Heavy flash sooner (2026-10-31, layer 2):** user: "do all the way up to
+3". On `BP_Player_CC`, `HeavyDamageFraction` 0.25 → **0.15** and
+`HeavyDamageWindow` 1.0 → **0.5**, set through the bridge and saved. No code
+changed.
+
+**Low health (2026-10-31, layer 3):** the same request.
+- **Material:** `M_HitPulse` gained four scalars: `LowHealth` (0),
+  `LowHealthBeat` (1), `LowHealthEdge` (0.6) and `Desaturate` (0.85). The
+  Custom node is now:
+
+  ```
+  float d = length((UV - 0.5) * 2.0);
+  float edge = smoothstep(Inner, Outer, d);
+  float3 c = lerp(Scene.rgb, dot(Scene.rgb, float3(0.299, 0.587, 0.114)).xxx, saturate(LowHealth * Desaturate));
+  float a = saturate(edge * max(Intensity, LowHealth * LowHealthEdge * LowHealthBeat));
+  return lerp(c, Color.rgb, a);
+  ```
+
+  - The colour drains to Rec. 601 grey with `LowHealth`.
+  - The red edge is the stronger of the hit pulse and the low-health edge.
+- **Driver:** `AProjectBopisCharacter::UpdateLowHealth`, from `Tick` with
+  real delta (`FApp::GetDeltaTime`). Settings are under *Health|Low Health*.
+  - **Level:** `LowHealthLevel` eases (`FInterpTo`, `LowHealthBlendSpeed`
+    3) toward `1 − share ÷ LowHealthFraction` (0.3), clamped 0..1. It's 0 at
+    the threshold and 1 at no health, so a heal fades it out.
+  - **Beat:** the phase advances at a rate lerped `LowHealthBeatRateMin` 1
+    → `LowHealthBeatRateMax` 2 Hz by the level. `LowHealthBeat = 1 −
+    LowHealthThrob (0.4) × ½(1 − cos 2π·phase)`, held at 1 once dead.
+  - **No heartbeat sound** (user: "no heartbeat sound"): the optional
+    `LowHealthHeartbeat` and its audio code were removed. The visual throb
+    stays.
+  - **Threshold:** the C++ default for `LowHealthFraction` is 0.2 (user:
+    "make the low health state at 20%").
+    - Then the user said "make the cap 30%" and "the low health status goes
+      up as well". So `BP_Player_CC` sets it to **0.3**, through the bridge
+      and saved.
+    - Both the low-health look and recovery's cap (the same line) are at
+      30%.
+    - Claude's `RecoverUpTo` / separate-cap code was presented but not
+      wanted, and never applied.
+  - **Death:** health 0 means level 1, so the death frame is fully grey with
+    the deep red edge.
+- **Status:** applied on the user's say-so ("apply and run"); the material
+  was updated through the bridge and saved. Compiled clean, DLL 16:03.
+  User test pending.
+
+**Out-of-combat recovery (2026-10-31):** user: "if you go below 20% health
+and you go out of combat, recover health slowly up to 20% removing the low
+health state"; "need to be X amount of secons out of combat"; "use your
+shots, damage taken, and near misses instead" (instead of enemies being
+alerted).
+- **`NoteCombat()`** (public) stamps `LastCombatTime` (world time). It's
+  called from three places:
+  - `DoFire` on `EFireResult::Fired`, which covers kill-cam shots too;
+  - `TakeDamage` on any damage;
+  - `AProjectileBase`'s near-miss report, before the HUD marker's own
+    filters, so near misses the marker doesn't show still count.
+- **`UpdateRecovery(DeltaSeconds)`**, from `Tick` in world time:
+  - **When:** alive, `bRecoverOutOfCombat`, health below
+    `LowHealthFraction` × max, and `Now − LastCombatTime ≥
+    OutOfCombatDelay` (5 s).
+  - **What:** `Heal(RecoverRate` (0.02 of max per second) `× dt)`, capped at
+    the line.
+  - **Effect:** the low-health look's target reaches 0 at the line, so it
+    fades out. First aid is the only way above it.
+  - Settings are under *Health|Recovery*. Slow motion slows recovery too.
+- **Not counted:** enemies hunting the player without firing don't block
+  recovery (the user's choice).
+- **Rate:** `BP_Player_CC` sets `RecoverRate` to **0.01** (user: "double the
+  recovery time"; through the bridge, saved). From 0 to the 30% line takes
+  30 s; the C++ default is still 0.02.
+- **Tested and done** (user: "mark the task as done", 2026-10-31).
+- **Status:** applied on the user's say-so ("apply and run"), compiled clean
+  (DLL 16:17). `BP_Player_CC` inherits 0.2 / 5 s / 0.02 (read back through
+  the bridge). User test pending.
+
+
+## HUD: cinematic minimal (2026-10-31, art cut, not built yet)
+User: "I want the cinematic minimal UI from this image" (panel 1 of a six-way
+GPT mockup); the art itself is GPT's, cut up by Claude. Bottom left, one line:
+a white/gold accent (the flag nod), a red health bar over a shorter blue Focus
+bar, then weapon icon, ammo, first aid and grenades. This section covers the
+accent and the two bars; the rest of the strip is still to do.
+
+**Art** (`ArtSource/UI/HUD/`, made by `CutHUDSheet.py` from
+`Src_GPT_HUDSheet.webp`, GPT's sheet: composite | HEALTH | FOCUS | ACCENT | EMPTY):
+- `T_HUD_BarTile_Health` / `_Focus` (900×188) and `_Empty` (980×192): a
+  **seamless horizontal tile** cut from each bar's straight middle, ends left
+  out, the last 24 columns cross-faded over the first. Solid inside, so the
+  grunge specks stay black print rather than holes. Aspects 4.79 / 4.79 / 5.10.
+- `T_HUD_Accent` (448×504): keyed off the background, specks not attached to
+  the shape dropped.
+- All **4× Lanczos upscales** of the sheet (premultiplied, wrapped for the
+  tiles), so Unreal only shrinks them up to 4K. The sheet came through chat as
+  a 2000 px WebP; a full-size original dropped in the folder re-cuts the same.
+- Import: UI group, NoMipmaps, sRGB; tiles Wrap X / Clamp Y, accent Clamp.
+
+**`M_HUDBar`** (User Interface, Translucent; a Custom node, code in
+`ArtSource/UI/HUD/HUDBar_Custom.hlsl`):
+- **Any length without stretching.** The bar's shape is drawn in Slate px:
+  `px = UV.x * Length`, `py = UV.y * Height`; left end `xl = py * Slope`
+  (leans `\`), right end `xr = Length - py * Slope` (leans `/`), 0.5 px
+  anti-aliasing. The tiles are sampled at `px / (Height * Aspect)`, so they
+  repeat along a longer bar instead of stretching.
+- **Fill front** parallel to the right end: `Fill * Length - py * Slope`
+  (Fill 1 reaches the end, 0 shows nothing).
+- **Outline** on the slanted ends (`OutlineWidth`, ~1 px); the tiles carry the
+  top and bottom ones. The drained part shows the Empty tile at `TrackOpacity`.
+- **`Length` and `Height`** are set from the Image's size at runtime by
+  `UHUDBarWidget` (see *Hookup*); the instance values only drive the editor
+  preview.
+- **`Brightness`** (added 2026-10-31, user: "is it possible to let me adjust
+  the brightness of the UI element"): a scalar (default 1, slider 0–2)
+  multiplying the Custom node's RGB before Final Color, per instance. Past 1
+  it lifts mid-tones; colours already near white clip. Images (accent,
+  background) use their *Color and Opacity* tint instead; a Border around
+  `BarCluster`'s contents would give one control for the whole section.
+- `Slope` 1 (45°) for every bar: GPT's pieces measure 0.8–0.95 and the accent
+  ~1.16, and its standalone pieces lean `\` at both ends while the composite
+  is the trapezoid (`\` left, `/` right), which the material draws.
+
+| Instance | `FillTex` | `FillAspect` | `OutlineColor` | `Length` × `Height` |
+|---|---|---|---|---|
+| `MI_HUDBar_Health` | Health tile | 4.79 | (0.99, 0.51, 0.57) | 376 × 29 |
+| `MI_HUDBar_Focus` | Focus tile | 4.79 | (0.39, 0.75, 1.0) | 328 × 30 |
+
+Both: `TrackTex` Empty tile, `TrackAspect` 5.10, `TrackOutlineColor`
+(0.71, 0.72, 0.71), `TrackOpacity` ~0.85, `Slope` 1, `OutlineWidth` 1.
+
+**Layout** (1080p px, from the accent's top-left, measured off GPT's composite):
+accent (0, 0) 76×86 on top; health (37, 16); focus (45, 55). GPT's composite
+accent is ~15% bigger than its standalone piece.
+- **Built 2026-10-31 (user: "Looks right"):** `WBP_PlayerHUD` holds a Canvas
+  Panel `BarCluster` (anchored bottom left, alignment (0, 1), ~48 px in)
+  with `Accent` (Image), `HealthBar` (`WBP_Health`, 376×29) and `FocusBar`
+  (`WBP_Focus`, 328×30), fixed-size slots. Generated as paste-in UMG text by
+  `Tools/MakeHUDBarClusterTree.ps1` (`-Clipboard`), the weapon wheel's
+  method: the bridge can't edit widget trees. Blueprint widgets paste as
+  `Class=/Game/UI/WBP_X.WBP_X_C` with `Content="/Game/UI/WBP_X.WBP_X_C'Name'"`.
+- **Background layer (2026-10-31):** GPT's black-ink strip on real
+  transparency (`Src_GPT_HUDBackground.webp`), cropped to the ink by
+  `CutHUDBackground.py` → `T_HUD_Background` 1940×448, **not** upscaled (the
+  source is already wider than it ever shows; 4× would be ~55 MB) and
+  **BC7**, UI group, no mips, Clamp. In `BarCluster` as `Background`, lowest
+  layer, at (−30, −22) 563×130, running on to the right under where the
+  weapon/ammo/items will go. Its brush is **`MI_HUD_Background`**, on
+  **`M_HUDImage`** (UI, Translucent: `Texture` RGB × `Brightness` (0–2) →
+  Final Color, A × `Opacity` (0–1) → Opacity), reusable for any HUD image
+  that wants the same controls (e.g. the accent).
+
+**Hookup (built 2026-10-31, user-tested):** `UHUDBarWidget`
+(`UI/HUDBarWidget.h/.cpp`, on `UPlayerHUDElementWidget`) binds an optional
+Image named `Bar` (`BindWidgetOptional`), turns its brush into a dynamic
+material in `NativeConstruct`, and each `NativeTick` sets `Fill` from the
+virtual `GetBarFill()` plus `Length` / `Height` from the Image's cached local
+size, so **the instances' `Length` / `Height` are only editor-preview
+values**: resize the Image and the bar follows. `UHealthWidget` and
+`UFocusWidget` derive from it (`GetHealthFraction` / `GetMeterFraction`). In
+`WBP_Health` / `WBP_Focus` the ProgressBar is now the `Bar` Image. A
+ProgressBar couldn't do this: it clips its fill to a square edge.
+
+**Tried and dropped the same day:** a flag-triangle cap and a procedural grunge
+texture (`MakeFlagCap.py`, `MakeGrunge.py` and their PNGs, still in the folder,
+superseded by GPT's art); Blender silhouette and line-art weapon icons (deleted;
+the Handcrafted pack's icons stay); textured weapon renders through the editor
+viewport (deleted; the booth actors were removed each time, the level not saved).
+
 
 ## NPC characters (CC2)
 
@@ -3993,6 +4203,19 @@ hit bones, physics and weapon attachment all run on it.
   else `Preset.DefaultOptions`. The head ticks after the body
   (`AddTickPrerequisiteComponent`) so its copied pose doesn't lag a frame (the
   neck seam in motion).
+  - **And after physics** (2026-10-31): `ABopisCharacterBase::BeginPlay` sets
+    every skeletal mesh tagged `Head` (other than the body) to
+    `TG_PostPhysics`.
+    - **Why:** when any body bone simulates (the free arm, hit reactions,
+      staggers, riddled), the body's pose is only finalized in its
+      end-physics tick. A head in `TG_PrePhysics` then copied the previous
+      frame's pose.
+    - **What the user saw:** in the bladed run (the free arm on physics),
+      "his neck is extending up and down".
+    - **Confirmed:** unticking `bFreeArmPhysics` stopped it.
+    - **Tried first and dropped:** `_13` blend depth 0 (now back to 3), a
+      neck/head freeze layer, and a spine stride follow. None was the cause.
+    - **Tested** by the user: "that looks fine now".
 - **Random rules** (`RandomizeLook`): CC's `RandomizeAll` (face sliders
   N(0,0.2), freckles, skin tint, lips), then all `shp_head_*` cleared → one
   `shp_head_asian_0[1-3]` at 1−m plus one `shp_head_mixed_0[1-3]` at m (m ≤
@@ -5687,6 +5910,55 @@ strafing.
     so the torso fades in over `spine_01`/`02`/`03`; `TwoWayBlend_0` picks
     between `_0` (A) and `_13` (B) by `StrafeBladeAlpha` and feeds
     `RotationOffsetBlendSpace_0`. Other stances are untouched.
+  - **Blend depth 0, tried (2026-10-31)** against the bladed-run head bob
+    (user: "when running bladed raised, the head is bobbing up and down but
+    the body is still"; "The bob is only for bladed stance"):
+    - **The idea:** at depth 3, `spine_01`/`02` keep about ⅔ and ⅓ of the
+      mirrored run's sway.
+    - **What was done:** `_13`'s `spine_01` filter was set to depth **0**
+      through the bridge, and the user saved it ("waist looks fine").
+    - **Result:** user: "bob is actually still there". So that wasn't the
+      cause. Back to **3** (user: "put it back to 3"): set through the
+      bridge, compiled and saved, 2026-10-31.
+  - **Neck and head frozen on the chest** (2026-10-31, user: "just stop any
+    animation related movement above the clavicle level … only on bladed
+    stance"):
+    - **What was added:** `LayeredBoneBlend_17`, between
+      `RotationOffsetBlendSpace_2` and `LocalToComponentSpace_1`.
+      - Branch `neck_01`, depth 0, **local space**.
+      - Blend ← `SequenceEvaluator_1` (`MM_Pistol_Idle_Hipfire` at explicit
+        time 0: a still frame).
+      - Weight ← `StrafeBladeAlpha` (`K2Node_VariableGet_58`).
+    - **Effect:** in the blade, `neck_01`/`neck_02`/`head` keep one fixed
+      pose relative to `spine_05`, so they only move with the chest.
+    - **What still applies:** the blade's head counter-turn (`ModifyBone_30`
+      /`31`) comes after it.
+    - **What's dropped:** the aim offsets' neck and head share of looking up
+      and down. The spine's share stays.
+    - **Result** (user: "that did not work either, rollback that"): the
+      three nodes were deleted and `RotationOffsetBlendSpace_2` was
+      reconnected to `LocalToComponentSpace_1` through the bridge. Never
+      saved.
+  - **Stride follow** (2026-10-31, user: "try making the bladed stance
+    follow the walking movement somehow"):
+    - **The idea:** the bladed upper body is the still aim pose over the
+      running legs. It bobbed with the hips but never rocked, which read as
+      a dance.
+    - **How:** `UpdateLean` now reads the pelvis's mesh-space rotation each
+      frame (`GetBoneQuaternion`, `ComponentSpace`) and keeps a slerped
+      average (`BladeStrideAverageSpeed` 2/s).
+      - The difference, `Pelvis × Average⁻¹`, is turned into a rotator with
+        yaw zeroed, so the spine rocks with the hips but doesn't turn.
+      - It's added to `LeanSpineRotation`, times `BladeStrideFollow` (0.6) ×
+        `StrafeBladeAlpha` ÷ 3.
+      - It reuses the lean's Modify Bones (`ModifyBone_36`–`38`,
+        `spine_01`–`03`, component-space additive). The lean itself is off
+        while raised, so they're free in the blade.
+    - **Reset:** the average restarts each time the blade eases in.
+    - **Result:** the user tested it: "still bobbing … keep the stride
+      follow, look better". Then: "his waist it twisting now, so roll that
+      back". The source was restored from git (never committed) and
+      rebuilt (user: "run the script"; DLL 14:53).
   - **`LayeredBoneBlend_10` goes through a Save Cached Pose `BladeLegs`**
     (2026-10-23), read by one Use Cached Pose each for `_0` and `_13`. Wired
     straight into both, its mirrored strafe player was updated twice a frame
@@ -5709,6 +5981,19 @@ strafing.
     taken back out, as for the dive. They're Transform (Modify) Bone nodes on
     the standing branch (add, component space) after `LocalToComponentSpace_1`
     and before the spine recoil.
+  - **Stiff shooting shoulder, open** (2026-10-31, user: "when shooting
+    pistols, I am not getting any motion on the shooting shoulder, it looks
+    stiff"):
+    - **Tried and rolled back the same day:**
+      - The corrections were held still while the recoil spring was up
+        (they re-aim the kicked pose at the crosshair each frame).
+      - A `BladeShoulderKick` turned `upperarm_r` up.
+      - User: "The arm movement increased but I dont see the kick in the
+        shoulder", then "roll back". The files were restored from git
+        (never committed).
+    - **What the user wants:** the shoulder itself to move (the clavicle,
+      the shoulder pushed back and up), not the arm swinging from it.
+      Deferred ("dont fix the kick now").
 - **Tried and dropped:**
   - the arm turned from the shoulder to aim the *muzzle*: the hand stayed at
     the chest and the body hid the arm;
@@ -7463,6 +7748,7 @@ Newest first, as they were recorded.
 
 ## Changelog
 
+- 2026-10-31 — New *HUD: cinematic minimal*: GPT's bar art cut into seamless tiles + accent (4× upscaled), `M_HUDBar` designed as a length-independent Custom node, instance values and layout recorded. Not in Unreal yet.
 - 2026-10-25 (3) — Home test pass: weapon wheel (camera lock, death, cycling), female and male clothing layers, enemy search with the gun down, scripted events stage 2, background music, level exit, room cleared + waves all user-tested. Gunfire audio is to be refactored.
 - 2026-10-25 (2) — Dual reload holds the pelvis, `spine_01`–`03` and the off-hand collarbone (`DualReloadHoldAlpha`, two Layered Blend per Bone holds with negative-depth filters); user-tested. The 10-05 accepted quirk is closed.
 - 2026-10-25 — CC skin: the clothing push on skin is a WPO along the camera ray instead of Pixel Depth Offset (PDO had made bare skin shadow itself — seams, orange); `CC_SkelMesh` Self Shadow Only off. Gotchas: PDO and lighting, CC's coarse apparel masks.
