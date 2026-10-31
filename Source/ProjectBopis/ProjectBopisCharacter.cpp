@@ -5,6 +5,7 @@
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Gameplay/RollComponent.h"
 #include "Gameplay/GamepadAimComponent.h"
+#include "Gameplay/KillCamComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Camera/CameraComponent.h"
@@ -38,6 +39,7 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	Shootdodge = CreateDefaultSubobject<UShootdodgeComponent>(TEXT("Shootdodge"));
 	Roll = CreateDefaultSubobject<URollComponent>(TEXT("Roll"));
 	GamepadAim = CreateDefaultSubobject<UGamepadAimComponent>(TEXT("GamepadAim"));
+	KillCam = CreateDefaultSubobject<UKillCamComponent>(TEXT("KillCam"));
 
 	// The player never staggers: being rooted mid-fight (or mid-dive) is no fun. Hits stay
 	// light reactions.
@@ -239,6 +241,12 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 	// get the Vector2D look axis
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
+	// The kill cam aims for the player.
+	if (IsInKillCam())
+	{
+		return;
+	}
+
 	// While the wheel is up the camera holds still — its slow motion isn't for lining up
 	// shots. The held (pad) wheel takes the look input to point round it instead.
 	if (IsWeaponWheelOpen())
@@ -257,6 +265,11 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 
 void AProjectBopisCharacter::StickLookInput(const FInputActionValue& Value)
 {
+	if (IsInKillCam())
+	{
+		return;
+	}
+
 	// A stick reports a direction, not movement: the held wheel takes it as where to point.
 	if (IsWeaponWheelOpen())
 	{
@@ -282,7 +295,8 @@ void AProjectBopisCharacter::DoAim(float Yaw, float Pitch)
 
 void AProjectBopisCharacter::DoMove(float Right, float Forward)
 {
-	if (!GetController())
+	// The kill cam's view is somewhere else: no walking off blind.
+	if (!GetController() || IsInKillCam())
 	{
 		return;
 	}
@@ -611,7 +625,7 @@ void AProjectBopisCharacter::UpdateMovementStance()
 void AProjectBopisCharacter::DoJumpStart()
 {
 	// Winding up for a dive is a commitment: no hopping out of it. Nor out of a roll.
-	if (IsWeaponWheelOpen() || (Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
+	if (IsWeaponWheelOpen() || IsInKillCam() || (Shootdodge && Shootdodge->IsWindingUp()) || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -697,7 +711,7 @@ void AProjectBopisCharacter::DoFire()
 
 void AProjectBopisCharacter::DoShootdodge()
 {
-	if (IsWeaponWheelOpen() || (Roll && Roll->IsRolling()) || !Shootdodge)
+	if (IsWeaponWheelOpen() || IsInKillCam() || (Roll && Roll->IsRolling()) || !Shootdodge)
 	{
 		return;
 	}
@@ -713,7 +727,7 @@ void AProjectBopisCharacter::DoShootdodge()
 
 void AProjectBopisCharacter::DoRoll()
 {
-	if (!Roll || IsWeaponWheelOpen())
+	if (!Roll || IsWeaponWheelOpen() || IsInKillCam())
 	{
 		return;
 	}
@@ -782,6 +796,12 @@ float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const&
 		{
 			AddHitIndicator(Shooter ? Shooter->GetActorLocation() : DamageCauser->GetActorLocation(), true);
 		}
+
+		// The killing blow has the death's own flash (in Die).
+		if (!IsDead())
+		{
+			UpdateHeavyDamageFlash(Result);
+		}
 	}
 
 	// The killing blow ragdolled a diving body (in Super): it keeps flying the way it was going.
@@ -796,6 +816,12 @@ float AProjectBopisCharacter::TakeDamage(float DamageAmount, FDamageEvent const&
 
 void AProjectBopisCharacter::Die(AController* Killer, const FVector& ShotDirection)
 {
+	// First, so its hold on the world's speed is gone before the death's slow motion is set.
+	if (KillCam)
+	{
+		KillCam->Stop();
+	}
+
 	// Read before Super stops the movement: the dive's state and its speed.
 	bDiedMidDive = Shootdodge && Shootdodge->IsBodyDown();
 	DiveDeathVelocity = bDiedMidDive ? GetVelocity() : FVector::ZeroVector;
@@ -824,6 +850,8 @@ void AProjectBopisCharacter::Die(AController* Killer, const FVector& ShotDirecti
 			bDeathSlowMo = true;
 		}
 	}
+	// After the death's slow motion is set, so the flash's length is judged in it.
+	FlashDamage(DeathFlashAlpha, DeathFlashDuration);
 	bIsAiming = false;
 
 	Super::Die(Killer, ShotDirection);
@@ -922,7 +950,8 @@ void AProjectBopisCharacter::SetAnimationDrivenRotation(bool bAnimationDriven)
 
 void AProjectBopisCharacter::DoToggleFocus()
 {
-	if (IsWeaponWheelOpen())
+	// The kill cam holds the world's speed itself.
+	if (IsWeaponWheelOpen() || IsInKillCam())
 	{
 		return;
 	}
@@ -942,7 +971,7 @@ void AProjectBopisCharacter::DoToggleFocus()
 void AProjectBopisCharacter::DoSelectWeaponSlot(int32 Slot)
 {
 	// The held (pointer) wheel owns the keys while it's up.
-	if (IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode())
+	if ((IsWeaponWheelOpen() && !WeaponWheel->IsKeyMode()) || IsInKillCam())
 	{
 		return;
 	}
@@ -971,7 +1000,7 @@ void AProjectBopisCharacter::DoSelectWeapon(AWeaponBase* Weapon)
 
 void AProjectBopisCharacter::OpenWeaponWheel(bool bKeyMode)
 {
-	if (IsDead() || IsWeaponWheelOpen())
+	if (IsDead() || IsWeaponWheelOpen() || IsInKillCam())
 	{
 		return;
 	}
@@ -1045,6 +1074,11 @@ bool AProjectBopisCharacter::IsWeaponWheelOpen() const
 	return WeaponWheel && WeaponWheel->IsOpen();
 }
 
+bool AProjectBopisCharacter::IsInKillCam() const
+{
+	return KillCam && KillCam->IsPlaying();
+}
+
 void AProjectBopisCharacter::HoldReloadForRoll()
 {
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
@@ -1091,7 +1125,7 @@ void AProjectBopisCharacter::DoReload()
 
 void AProjectBopisCharacter::DoThrowGrenade()
 {
-	if (IsDead() || !GrenadeClass || IsWeaponWheelOpen() || (Roll && Roll->IsRolling()))
+	if (IsDead() || !GrenadeClass || IsWeaponWheelOpen() || IsInKillCam() || (Roll && Roll->IsRolling()))
 	{
 		return;
 	}
@@ -1138,7 +1172,7 @@ void AProjectBopisCharacter::DoHeal()
 {
 	UHealthComponent* HealthComp = GetHealthComponent();
 	UWeaponHolderComponent* Holder = GetWeaponHolder();
-	if (IsDead() || !HealthComp || !Holder || IsWeaponWheelOpen())
+	if (IsDead() || !HealthComp || !Holder || IsWeaponWheelOpen() || IsInKillCam())
 	{
 		return;
 	}
@@ -1166,6 +1200,43 @@ void AProjectBopisCharacter::DoHeal()
 	{
 		PC->PlayerCameraManager->StartCameraFade(FirstAidFlashAlpha, 0.0f, FirstAidFlashDuration, FLinearColor::White);
 	}
+}
+
+void AProjectBopisCharacter::UpdateHeavyDamageFlash(float Damage)
+{
+	const UHealthComponent* HealthComp = GetHealthComponent();
+	if (!HealthComp || HealthComp->GetMaxHealth() <= 0.0f)
+	{
+		return;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	RecentDamage.RemoveAll([this, Now](const TPair<float, float>& Hit) { return Now - Hit.Key > HeavyDamageWindow; });
+	RecentDamage.Emplace(Now, Damage);
+
+	float Total = 0.0f;
+	for (const TPair<float, float>& Hit : RecentDamage)
+	{
+		Total += Hit.Value;
+	}
+	if (Total >= HeavyDamageFraction * HealthComp->GetMaxHealth())
+	{
+		FlashDamage(HeavyDamageFlashAlpha, HeavyDamageFlashDuration);
+		RecentDamage.Reset();
+	}
+}
+
+void AProjectBopisCharacter::FlashDamage(float Alpha, float Duration)
+{
+	const APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !PC->PlayerCameraManager || Alpha <= 0.0f)
+	{
+		return;
+	}
+	// The fade counts world time, so it's shortened by the slow motion running now to clear in
+	// Duration real seconds.
+	const float Dilation = UGameplayStatics::GetGlobalTimeDilation(this);
+	PC->PlayerCameraManager->StartCameraFade(Alpha, 0.0f, Duration * Dilation, FLinearColor(DamageFlashRed, 0.0f, 0.0f));
 }
 
 void AProjectBopisCharacter::UpdatePendingThrow(float DeltaSeconds)
@@ -1296,7 +1367,7 @@ void AProjectBopisCharacter::UpdateReloadSpeed()
 
 void AProjectBopisCharacter::DoCrouchStart()
 {
-	if (IsWeaponWheelOpen())
+	if (IsWeaponWheelOpen() || IsInKillCam())
 	{
 		return;
 	}

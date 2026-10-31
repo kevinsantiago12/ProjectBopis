@@ -329,6 +329,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float InstantRagdollOverkill = 50.0f;
 
+	/** Dying (the death animation, or riddled), the animation knows no walls, slopes or ledges.
+	    When none of the hips and feet has ground within this (cm) below it, the body's off a
+	    ledge or down a slope, and drops into a ragdoll; going into a wall does the same. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float DyingGroundReach = 35.0f;
+
 	/** World-time seconds after the kill during which hits still count as the killing burst
 	    (pellets of one blast). */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
@@ -519,6 +525,15 @@ private:
 	bool bFreeArmSimulating = false;
 
 	void UpdateWeaponBlocked();
+
+	/** The dying body has left the world it's animated in: it's going into a wall, or it's off
+	    the ground. Physics should have it. */
+	bool IsDyingBodyAdrift();
+
+	/** Something solid (walls, floors, props: not people, not trigger boxes) lies between From
+	    and To. */
+	bool IsWorldBetween(const FVector& From, const FVector& To) const;
+
 	bool bWeaponBlocked = false;
 	float FreeArmWeight = 0.0f;
 

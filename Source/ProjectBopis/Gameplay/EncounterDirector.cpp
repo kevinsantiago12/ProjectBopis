@@ -66,6 +66,18 @@ void AEncounterDirector::Tick(float DeltaSeconds)
 	}
 }
 
+bool AEncounterDirector::IsFightDone() const
+{
+	if (TotalEnemies <= 0 || SpawnedCount < TotalEnemies)
+	{
+		return false;
+	}
+	return !Alive.ContainsByPredicate([](const TWeakObjectPtr<AEnemyBase>& Enemy)
+	{
+		return Enemy.IsValid() && !Enemy->IsDead();
+	});
+}
+
 AActor* AEncounterDirector::PickSpawnPoint() const
 {
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);

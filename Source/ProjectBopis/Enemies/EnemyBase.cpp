@@ -20,6 +20,7 @@
 #include "Weapons/WeaponHolderComponent.h"
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/FocusComponent.h"
+#include "Gameplay/KillCamComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Gameplay/LevelStartSubsystem.h"
 #include "Weapons/WeaponBase.h"
@@ -571,13 +572,18 @@ void AEnemyBase::Die(AController* Killer, const FVector& ShotDirection)
 		GameMode->RegisterCorpse(this);
 	}
 
-	// A kill by the player tops up their Focus meter.
+	// A kill by the player tops up their Focus meter, and the one that ends a fight plays the
+	// kill cam.
 	const APawn* KillerPawn = Killer ? Killer->GetPawn() : nullptr;
 	if (const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(KillerPawn))
 	{
 		if (UFocusComponent* Focus = Player->GetFocus())
 		{
 			Focus->AddMeter(Focus->KillRefill);
+		}
+		if (UKillCamComponent* KillCam = Player->GetKillCam())
+		{
+			KillCam->NotifyKill(this);
 		}
 	}
 }

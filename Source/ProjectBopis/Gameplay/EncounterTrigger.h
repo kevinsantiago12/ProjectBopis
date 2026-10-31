@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/KillCamComponent.h"
 #include "EncounterTrigger.generated.h"
 
 class UBoxComponent;
@@ -147,6 +148,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Encounter")
 	int32 GetAliveCount() const;
 
+	/** The room counts as cleared right now: no one standing, nothing left to come. IsCleared
+	    follows at the next poll; this is for the moment of the last kill (the kill cam). */
+	bool IsRoomDone() const;
+
+	/** Enemy is one of this room's. */
+	bool HasEnemy(const AEnemyBase* Enemy) const
+	{
+		return Enemies.ContainsByPredicate([Enemy](const TObjectPtr<AEnemyBase>& Each) { return Each.Get() == Enemy; });
+	}
+
+	bool PlaysKillCam() const { return bKillCamOnClear; }
+
+	/** This room's kill cam shot if it picks one, else Default (the player's). */
+	EKillCamStyle GetKillCamStyle(EKillCamStyle Default) const { return bOverrideKillCamStyle ? KillCamStyle : Default; }
+
 	/** Goes off once, when the room's cleared: for a level script (music, a door). */
 	UPROPERTY(BlueprintAssignable, Category = "Encounter")
 	FEncounterClearedSignature OnCleared;
@@ -215,6 +231,19 @@ protected:
 	/** Triggers it sets off once the room's cleared (the next room's ambush, say). */
 	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared")
 	TArray<TObjectPtr<AEncounterTrigger>> TriggersOnCleared;
+
+	/** The player's kill that clears this room plays the kill cam (if no one else is still
+	    fighting). Off for a room that runs straight into the next fight. */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared")
+	bool bKillCamOnClear = true;
+
+	/** Ticked: this room picks its own kill cam shot. Off: the player's (their KillCam's Style). */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared", meta = (InlineEditConditionToggle))
+	bool bOverrideKillCamStyle = false;
+
+	/** This room's kill cam shot, instead of the player's. */
+	UPROPERTY(EditInstanceOnly, Category = "Encounter|Cleared", meta = (EditCondition = "bOverrideKillCamStyle"))
+	EKillCamStyle KillCamStyle = EKillCamStyle::Orbit;
 
 	/** Editor only: lines to everything it's linked to (enemies orange, spawn points red — a
 	    wave's pink — ambush points yellow, patrol routes green, the trigger a spawn waits for

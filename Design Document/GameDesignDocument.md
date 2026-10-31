@@ -214,6 +214,16 @@ while your aim stays quick, so you can place shots a normal-speed fight would
 never allow. It runs on a meter that drains while it's on and refills as you
 kill.
 
+The kill that ends a fight gets a **kill cam**, after Max Payne 2: the world
+sinks into deep slow motion and the camera finds the falling enemy. Each room
+or arena picks its shot, or leaves it to chance:
+- swinging round the body;
+- a reverse shot from behind the dying enemy, back at you as you shoot;
+- a still, high angle looking down on the fall.
+
+You can keep firing into the body as it goes down. A big hit, or a death,
+washes the screen red for a moment.
+
 A single pistol is fired **one-handed**, the free hand hanging at the side;
 the two-handed grip is saved for the heavier, high-powered pistol. Every shot
 kicks visibly through the arm and shoulders, and rapid fire stacks the kick
@@ -561,4 +571,9 @@ a shooting range.
   rifle is planned: an AK-74u that fires fast and hits hard but sprays, beside
   the accurate, slower-firing M4. The MAC-11 is gone from the project. The
   AKS-74U is now in, stockless, with its own ammunition, and every gun has
-  its in-game name (see Weapons).
+  its in-game name (see Weapons). The fight's last kill gets a slow-motion
+  kill cam, and big hits flash the screen red.
+- 2026-10-31 — The kill cam gets three shots: the swing round the body, a
+  reverse shot from behind the enemy back at you, and a still high angle.
+  Each room picks one, or a random one plays. The camera now stops and
+  lingers rather than pass through walls or into the body.

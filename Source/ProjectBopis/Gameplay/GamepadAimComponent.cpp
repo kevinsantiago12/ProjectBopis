@@ -25,7 +25,7 @@ bool UGamepadAimComponent::CanAssist() const
 	const AProjectBopisCharacter* Character = Cast<AProjectBopisCharacter>(GetOwner());
 	const UWeaponHolderComponent* Holder = Character ? Character->GetWeaponHolder() : nullptr;
 	return bSoftLock && bUsingGamepad && Character && !Character->IsDead() && !Character->IsWeaponWheelOpen()
-		&& Holder && Holder->GetEquippedWeapon() && GetPlayerController();
+		&& !Character->IsInKillCam() && Holder && Holder->GetEquippedWeapon() && GetPlayerController();
 }
 
 void UGamepadAimComponent::ApplyStick(const FVector2D& Stick, bool bAiming)

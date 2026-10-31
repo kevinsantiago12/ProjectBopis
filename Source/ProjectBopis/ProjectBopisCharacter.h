@@ -18,6 +18,7 @@ class UFocusComponent;
 class UShootdodgeComponent;
 class URollComponent;
 class UGamepadAimComponent;
+class UKillCamComponent;
 class UPostProcessComponent;
 class AGrenade;
 struct FInputActionValue;
@@ -79,6 +80,10 @@ class AProjectBopisCharacter : public ABopisCharacterBase
 	/** The controller's aim: stick turning and soft lock. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGamepadAimComponent> GamepadAim;
+
+	/** The slow-motion swing round the body of the kill that ends a fight. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UKillCamComponent> KillCam;
 
 	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
@@ -294,6 +299,9 @@ public:
 	/** The weapon wheel is up (HUD elements hide under it — the crosshair). */
 	bool IsWeaponWheelOpen() const;
 
+	/** The kill cam has the view: no moving, looking or anything but shooting and reloading. */
+	bool IsInKillCam() const;
+
 protected:
 
 	/** Called from Input Actions for movement input */
@@ -444,6 +452,32 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Health|First Aid", meta = (ClampMin = "0.0"))
 	float FirstAidFlashDuration = 0.3f;
+
+	/** The damage flash's colour: 0 black, 1 full red. */
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DamageFlashRed = 0.6f;
+
+	/** A flash when this much of full health (0..1) is lost within HeavyDamageWindow. */
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HeavyDamageFraction = 0.25f;
+
+	/** World seconds the damage is added up over. */
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0"))
+	float HeavyDamageWindow = 1.0f;
+
+	/** The heavy-damage flash: how strong it starts (0..1) and how long it takes to clear (real seconds). */
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HeavyDamageFlashAlpha = 0.4f;
+
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0"))
+	float HeavyDamageFlashDuration = 0.4f;
+
+	/** The death flash, the same way. */
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DeathFlashAlpha = 0.7f;
+
+	UPROPERTY(EditAnywhere, Category = "Health|Damage Flash", meta = (ClampMin = "0.0"))
+	float DeathFlashDuration = 0.8f;
 
 	/** Camping: staying within this distance (cm) of one spot counts as staying put. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Camping", meta = (ClampMin = "0.0"))
@@ -607,6 +641,8 @@ public:
 
 	UFocusComponent* GetFocus() const { return Focus; }
 
+	UKillCamComponent* GetKillCam() const { return KillCam; }
+
 	/** Turning to throw or mid-toss: the free arm stays off physics and the blade's turns ease out. */
 	bool IsThrowingGrenade() const;
 
@@ -732,6 +768,16 @@ private:
 
 	/** World time of the last hit taken; well in the past until the first. */
 	float LastHitTakenTime = -1000.0f;
+
+	/** Adds a hit to RecentDamage and flashes red once HeavyDamageFraction of full health has
+	    gone within HeavyDamageWindow (then starts the count again). */
+	void UpdateHeavyDamageFlash(float Damage);
+
+	/** A red flash over the screen, clearing over Duration real seconds (slow motion included). */
+	void FlashDamage(float Alpha, float Duration);
+
+	/** Hits within the last HeavyDamageWindow: world time and damage. */
+	TArray<TPair<float, float>> RecentDamage;
 
 	/** Mid-dive (the flight) or mid-roll, this very moment — IsEvading adds the linger. */
 	bool IsEvadingNow() const;

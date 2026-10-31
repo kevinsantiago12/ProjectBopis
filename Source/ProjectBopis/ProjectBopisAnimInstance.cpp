@@ -5,6 +5,8 @@
 #include "ProjectBopisCharacter.h"
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Gameplay/RollComponent.h"
+#include "Gameplay/KillCamComponent.h"
+#include "Camera/CameraComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -265,6 +267,25 @@ namespace
 	}
 }
 
+void UProjectBopisAnimInstance::GetCrosshairView(const ABopisCharacterBase& Character,
+	const APlayerController& PlayerController, FVector& OutLocation, FRotator& OutRotation) const
+{
+	PlayerController.GetPlayerViewPoint(OutLocation, OutRotation);
+
+	// The kill cam has the view (a reverse shot even looks back at the player), and the shots all
+	// go into the body: the aim locks onto it, from the player's own camera.
+	const AProjectBopisCharacter* Player = Cast<AProjectBopisCharacter>(&Character);
+	const UKillCamComponent* KillCam = Player ? Player->GetKillCam() : nullptr;
+	if (KillCam && KillCam->IsPlaying())
+	{
+		if (const UCameraComponent* Camera = Player->GetFollowCamera())
+		{
+			OutLocation = Camera->GetComponentLocation();
+		}
+		OutRotation = (KillCam->GetAimPoint() - OutLocation).Rotation();
+	}
+}
+
 void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
 {
 	// The dive and prone clips aim wherever they were authored; the shots go to the crosshair.
@@ -306,7 +327,7 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 		// Where the crosshair is looking: the camera's view, out to whatever it hits.
 		FVector ViewLocation;
 		FRotator ViewRotation;
-		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		GetCrosshairView(Character, *PlayerController, ViewLocation, ViewRotation);
 		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
 
 		FCollisionQueryParams Params(SCENE_QUERY_STAT(ShootdodgeAim), false, &Character);
@@ -443,7 +464,7 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	{
 		FVector ViewLocation;
 		FRotator ViewRotation;
-		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		GetCrosshairView(Character, *PlayerController, ViewLocation, ViewRotation);
 		const FVector CameraUp = Mesh->GetComponentTransform().InverseTransformVectorNoScale(
 			ViewRotation.Quaternion().GetUpVector());
 		const float Spread = FMath::DegreesToRadians(DualDiveSpreadAngle) * ShootdodgeDualAlpha;
@@ -1083,7 +1104,7 @@ void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character
 	{
 		FVector ViewLocation;
 		FRotator ViewRotation;
-		PlayerController->GetPlayerViewPoint(ViewLocation, ViewRotation);
+		GetCrosshairView(Character, *PlayerController, ViewLocation, ViewRotation);
 		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
 
 		FCollisionQueryParams Params(SCENE_QUERY_STAT(BladeAim), false, &Character);

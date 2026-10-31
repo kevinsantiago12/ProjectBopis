@@ -64,6 +64,17 @@ public:
 	/** Ends a free Focus from BeginFreeFocus. Leaves the player's own Focus alone. */
 	void EndFreeFocus();
 
+	/** Holds the world at Dilation whatever Focus does meanwhile (the kill cam), until cleared.
+	    The meter neither drains nor refills while held; the Focus look and pitch are on. Call
+	    again to change it. */
+	void SetTimeDilationOverride(float Dilation);
+
+	/** Lets go: the world goes back to the speed Focus itself wants. */
+	void ClearTimeDilationOverride();
+
+	/** The world speed Focus itself wants: WorldTimeDilation while on, else 1. */
+	float GetBaseTimeDilation() const { return bActive ? WorldTimeDilation : 1.0f; }
+
 	/** 0..1, for the HUD. */
 	UFUNCTION(BlueprintPure, Category = "Focus")
 	float GetMeterFraction() const { return MaxMeter > 0.0f ? Meter / MaxMeter : 0.0f; }
@@ -161,4 +172,7 @@ private:
 
 	/** An empty meter doesn't end Focus while this is set (a dive in flight). */
 	bool bHoldOnEmpty = false;
+
+	/** The world speed someone's holding (SetTimeDilationOverride); 0 when no one is. */
+	float TimeDilationOverride = 0.0f;
 };

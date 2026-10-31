@@ -55,6 +55,8 @@
 - [Encounter triggers, ambushes and spawning (2026-10-19)](#encounter-triggers-ambushes-and-spawning-2026-10-19)
 - [Background music (2026-10-24)](#background-music-2026-10-24)
 - [Level exit (2026-10-24)](#level-exit-2026-10-24)
+- [Kill cam (2026-10-30)](#kill-cam-2026-10-30)
+- [Damage flash (2026-10-30)](#damage-flash-2026-10-30)
 - [NPC characters (CC2)](#npc-characters-cc2)
 - [Enemies](#enemies)
   - [Built so far (2026-10-09) — steps 1–3, user-confirmed in PIE](#built-so-far-2026-10-09--steps-13-user-confirmed-in-pie)
@@ -1542,9 +1544,9 @@ in `/Game/ThirdPerson/Blueprints/`:
   - `Lvl_Linear` and one `Lvl_Sandbox` external actor (the bridge can't save
     those) still point at the old names through **redirectors**, left for
     `BP_Pistol`, `BP_DualPistols`, `BP_Pistol_EnemyOnly`, `BP_Uzi` and
-    `BP_CloseRangeRifle`. They work as they are. To clear them, run *Fix Up
-    Redirectors* on the Blueprints folder in the editor, which resaves those
-    levels.
+    `BP_CloseRangeRifle`. They worked as they were. *Fix Up
+    Redirectors* on the Blueprints folder (which resaves those levels) was run
+    by the user on 2026-10-30.
 - **In-game names (`DisplayName`, 2026-10-30).** The user gave a table of
   "Real-world inspiration → In-game name" (canon in the lore notes, *Weapons
   and carrying*). Set on the CDOs by the bridge, compiled and saved. The
@@ -1634,9 +1636,13 @@ other unused assets in Sniper Pack."
     using it as paths in bash. The first delete loop matched nothing.
   - A bridge script that deletes many assets can leave the loaded ones;
     plan on an editor-closed pass.
-- **Found, not touched:** `Content/__ExternalActors__/Demo/` and
-  `__ExternalObjects__/Demo/` (17 small files) belong to a
-  `/Game/Demo/ThirdPerson` map that no longer exists.
+- **Orphaned Demo folders, deleted 2026-10-31:**
+  `Content/__ExternalActors__/Demo/` and `__ExternalObjects__/Demo/` (17
+  git-tracked files) belonged to `/Game/Demo/ThirdPerson/Maps/ShowcaseMap`,
+  which no longer exists. They were removed on disk.
+  - The pack demo maps that do exist (`ShotgunLocomotionPack/Demo`,
+    `Kamz_Pack/Demo`) keep their own external-actor folders, which are
+    untouched.
 
 ### Adding a weapon — intake checklist (2026-10-25)
 For the final weapon assets (plan item 33) and any gun after. Every system is
@@ -3719,6 +3725,220 @@ exit trigger. Dont drop it on the map, thats a test for later." Code:
 - *User-tested 2026-10-25.*
 
 
+## Kill cam (2026-10-30)
+User: "something similar to the kill cam in Max Payne 2. Where it goes into
+slomo into the enemy, if they are riddled state, you can keep shooting";
+"slomo and flourish cam". Built on the user's say-so ("I give you permission
+to do the kill cam all the way to completion"), so Claude wrote and built it.
+
+**When it plays:** the player's kill (`AEnemyBase::Die`, killer is the
+player) that leaves the victim's room done, with no one else still fighting.
+- **Room done:** `AEncounterTrigger::IsRoomDone()`. This is the cleared
+  test, now one function that `UpdateRoom` uses too: no one standing,
+  nothing left to spawn, no wave still to come. It's checked at the moment of
+  the kill, not at the 0.25 s poll.
+  - The last kill of a wave that's followed by another wave doesn't play it.
+- **No one fighting:** no other living enemy `IsAlerted()`.
+- **Per room:** `bKillCamOnClear` (default on, under *Encounter|Cleared*).
+  Turn it off for a room that runs straight into the next fight.
+  - **Its shot:** `KillCamStyle`, with the inline tick
+    `bOverrideKillCamStyle`. Unticked, the player's `Style` plays.
+  - `GetKillCamStyle(Default)` gives `NotifyKill` the shot for the room.
+- **Director fights** (2026-10-31, user: "add it, with its own style
+  pick"): an `AEncounterDirector` with `TotalEnemies` > 0 plays it on the
+  last kill. `IsFightDone()` means everyone has come in (`SpawnedCount >=
+  TotalEnemies`; failed spawns don't count) and no one on `Alive` is
+  standing.
+  - **Membership:** `HasEnemy` checks `Alive`. The victim is still on it at
+    `NotifyKill`, because the dead are only pruned at the director's next
+    tick.
+  - **Settings:** the same *Encounter|Cleared* set as a trigger.
+    `bKillCamOnClear` is greyed out unless `TotalEnemies > 0`; the ticked
+    `KillCamStyle` comes through `GetKillCamStyle(Default)`.
+  - **Endless directors** never have a last kill, so never play it.
+  - **The check:** `NotifyKill` checks `IsAnyoneFighting` first, then the
+    victim's trigger, then its director. The first one the victim belongs
+    to decides.
+- **Not:** loose enemies (in no room and no set director fight), the player
+  dead, the weapon wheel open, a cam already playing.
+
+**What it does (`UKillCamComponent` on the player, `KillCam`):**
+- **Slow motion:** `TimeDilation` 0.15, held through
+  `UFocusComponent::SetTimeDilationOverride`.
+  - While it's held, nothing Focus does (a dive ending, a kill's slow motion
+    running out) changes the world's speed.
+  - The meter neither drains nor refills, and the Focus look and pitch are
+    on.
+  - On the way out it eases back to whatever Focus itself wants
+    (`GetBaseTimeDilation`: 0.3 if the player's Focus is on, else 1).
+- **Times (real seconds):**
+  - `MinDuration` 2.0. Each shot holds it `ExtendPerShot` 0.6 longer, up
+    to `MaxDuration` 5.0.
+  - `BlendInTime` 0.25, `BlendOutTime` 0.4. The world's speed comes back
+    over the blend out.
+- **The camera** (`AProjectBopisCameraManager::UpdateViewTarget` blends
+  `BlendView` over the player's view by the cam's weight):
+  - It looks at `TargetBone` (`spine_03`; else the mesh bounds' centre),
+    smoothed by `FollowSpeed` 8 so a ragdoll doesn't shake it.
+  - It starts on the player's side, from where their camera was. Its
+    distance is clamped to `EndDistance`…`StartDistance` (170…280 cm) and
+    pushes in to 170 over `MinDuration`.
+  - Its height sinks from `StartHeight` 40 to `EndHeight` 0, ending at a low
+    angle.
+  - It swings round at `OrbitSpeed` 45°/s, eased in over `OrbitEaseTime`
+    0.5.
+  - `FieldOfView` 70. Optional `StartSound` (2D).
+- **Shot styles** (2026-10-31): `EKillCamStyle`.
+  - **Where it's chosen:** the component's `Style` is the default; a room
+    can pick its own. Orbit's settings are in *Kill Cam|Orbit Cam*, the
+    shared ones (`TargetBone`, `FollowSpeed`, `FieldOfView`, `ProbeRadius`,
+    `BodyClearance`) in *Kill Cam|Camera*.
+  - **How a style is placed:** `Start(Victim, Shot)` settles Random (one of
+    the three, `FMath::RandRange`), then calls that style's `Place…`. Each
+    sets `CameraLocation` from the guardrail test.
+    - If the chosen style has no clear spot, it plays as Orbit (`Playing`).
+    - If Orbit has none either, there's no cam.
+  - **Orbit Cam:** the swing described above (`PlaceOrbit`).
+  - **Reverse Shot Cam** (`PlaceReverseShot`): a still camera.
+    - **Where:** `ReverseDistance` 160 behind the body on the line from the
+      player through it, `ReverseSide` 70 to one side, `ReverseHeight` 20
+      above `TargetBone`.
+    - **Fallbacks, in order:** the other side, half as far to the side, then
+      all of those at 60% of the distance.
+    - **Needs:** the guardrail test, plus `CanSee` to the player's
+      `TargetBone`.
+    - **Aim:** `Lerp(player point, body point, ReverseFraming 0.3)`, both
+      smoothed by `FollowSpeed`.
+  - **Steady Cam** (`PlaceSteady`): a still camera.
+    - **Where:** `SteadyHeight` 220 above `TargetBone`, `SteadyDistance`
+      300 out, `SteadyAngle` 35° round from the player's side, either way.
+    - **Fallbacks, in order:** further round in 20° steps, then 60% of the
+      distance, then half the height (a low ceiling).
+    - **Aim:** at the body, nothing else.
+  - **Still shots:** they share the stopped-swing rule (*Guardrails →
+    Standing still*). If the body is out of sight for longer than
+    `HiddenTolerance`, they blend out early.
+- **Arm aim during the cam** (bug fixed 2026-10-31, user: "when
+  shootdodging on the kill, the aim get steered to where the crosshair
+  would have been … making the player look behind him"):
+  - **Cause:** the anim's aim corrections traced from
+    `GetPlayerViewPoint`, which is the camera manager's view and so the kill
+    cam's. The corrections are the dive's aim correction, the duals'
+    dive-arm spread, and the one-handed pistol blade. A reverse shot looks
+    back at the player, so the arms turned to aim behind.
+  - **Fix:** `UProjectBopisAnimInstance::GetCrosshairView`.
+    - Normally it's the camera's view, as before.
+    - While the kill cam plays, it's from the player's `FollowCamera`
+      toward `KillCam->GetAimPoint()` (the body's `TargetBone`,
+      unscattered).
+    - So the arms lock onto the body whatever the cam shows.
+  - **Unchanged:** the base aim follows the control rotation, which
+    `UpdatePlayerAim` already turns onto the body. The shots go to
+    `TakeShotPoint`.
+- **Guardrails** (2026-10-31, user: "he penetrates through walls and
+  sometimes goes into the enemy model … might aswell stop the spin and
+  linger on the angle"):
+  - **The test:** `IsClearView(Location)` passes when all three hold:
+    - **Room:** a `ProbeRadius` (12 cm) sphere at the spot overlaps nothing
+      blocking `ECC_Camera`, with the player and the body ignored.
+    - **Not the player:** the sphere doesn't overlap the player's capsule
+      either (`OverlapComponent`).
+    - **Sight:** a line trace from the spot reaches the body, stopping
+      `BodyClearance` (25 cm) short of `TargetBone`. So a body slumped
+      against a wall still counts as seen, and a spot nearer than that
+      fails as inside the body.
+  - **The swing** (`UpdateSwing`): each frame the next spot
+    (`GetSwingLocation(Elapsed, OrbitSign)`) must pass `HasRoom` and
+    `SeesBody`. The first that doesn't sets `bSpinHeld`.
+    - The camera stays at its last clear spot and keeps turning to watch
+      the body. Shots still lengthen it.
+  - **Standing still** (`UpdateStill`; a stopped swing, or a still shot):
+    `HiddenTime` counts real seconds with the body out of sight. Up to
+    `HiddenTolerance` (0.3 s, *Kill Cam|Camera*) nothing happens. Past it
+    (2026-10-31, user: "instead of ending abruptly, try swinging the cam
+    back the other way"):
+    - **A stopped orbit that hasn't turned yet:** `SwingBack()`. It reads
+      the camera's yaw, flat distance and height round the current
+      `LookPoint` into `StartYaw`, `BackRadius` and `BackHeight`, sets
+      `SwingStartedAt = Elapsed`, flips `OrbitSign`, and sets `bSwungBack`.
+      `GetSwingLocation` then keeps that distance and height (no more
+      push-in) and eases the yaw from 0 with `GetOrbitAngle(Time -
+      SwingStartedAt)`. It starts exactly where the camera is, so there's
+      no jump.
+    - **Swinging back:** a spot still needs `HasRoom`. It may fail
+      `SeesBody` for up to `SwingBackGrace` (1.0 s, *Kill Cam|Orbit Cam*)
+      while it comes round. Past that, it stops, and since it's already
+      turned, it blends out.
+    - **Anything else** (a still shot, or an orbit that's already turned):
+      it blends out.
+  - **Kept as it was** (user: "keep 1"): any enemy becoming alerted during
+    the cam still ends it early. That includes listeners within a gun's
+    `NoiseRange` (30 m) alerted by the kill shot or the shots fired during
+    the cam. This is what usually cuts it short in `Lvl_Linear`: the
+    patroller, and the talkers whose trigger doesn't make them wait.
+  - **The start:** the player's side at their camera's distance, if that
+    passes. If not, it steps 20° round each way, at that distance and then
+    at `EndDistance`, and the first spot that passes is used. Nothing passes
+    all the way round: no kill cam.
+  - **Direction:** toward the side with more clear steps (8 samples along
+    each side's swing to `MinDuration`). Ties go +.
+  - **Replaced (the bugs):** the old sphere sweep went outward from the
+    body, and it ignored hits that started inside geometry
+    (`bStartPenetrating`). A body against a wall therefore sent the camera
+    through it. A blocked sweep put the camera at the hit point, which could
+    be inside the body.
+- **The player during it** (`AProjectBopisCharacter::IsInKillCam`):
+  - **Blocked:** move, look (mouse and stick), jump, dive, roll, crouch,
+    Focus, the wheel and slot keys, grenade, first aid. The gamepad soft
+    lock is off, and the crosshair is hidden.
+  - **Fire and reload still work.** The aim (control rotation) turns onto
+    the body from the follow camera (`AimFollowSpeed` 10), so the character
+    points at it and the crosshair is on it when the view comes back.
+  - **Shots:** `UWeaponHolderComponent::FireEquippedWeapon` replaces the
+    crosshair's aim point with `TakeShotPoint()`: `TargetBone` scattered by
+    `ShotScatter` 12 cm, so the bullets land on different bones. They fly
+    from the muzzle as usual.
+  - A dying body hit enough goes riddled (the hit-dance), and a ragdoll
+    gets launched, as anywhere else (*Taking bullets and dying*).
+- **Ends early:** any living enemy becomes alerted (straight to the blend
+  out). If the player dies, `Die` stops it at once, before the death's own
+  slow motion is set.
+- **Gotcha:** `UActorComponent` already has `IsActive()` (the component's
+  on/off), and UHT refuses a `UFUNCTION` of that name. The cam's is
+  `IsPlaying()`.
+- **Setup gotcha (found 2026-10-31):** a trigger that hasn't gone off
+  counts any Spawns entry as someone still to come. That includes a blank
+  one with no class and no point. So its room is never done: no kill cam
+  and no clear.
+  - This is what stopped it in `Lvl_Linear`'s final talk room
+    (`DoorTrigger2`).
+  - It matters most for a room an event sets off. If the player breaks up
+    the talk, the trigger doesn't go off until they walk into its box.
+- **Open design question:** should a broken-up event set off the encounter
+  its remaining Set Off Encounter steps name? Then the fight it was leading
+  to starts at once, reinforcements and all. Not decided; nothing built.
+- **Tested** by the user 2026-10-31 ("tested, works"): the guardrails, all three styles plus Random, the per-room and per-director picks, the reverse-shot aim fix and the swing-back.
+
+## Damage flash (2026-10-30)
+User: "red screen flash on death and on damage that does more than 25%
+health in a short period"; "let me tweak the damage window and the Red color
+(black to full red)". On `AProjectBopisCharacter`, *Health|Damage Flash*:
+- **Heavy damage:** each hit taken (not the killing one) goes into
+  `RecentDamage` (world time, damage). Once the hits within
+  `HeavyDamageWindow` (1.0 s, world time) add up to `HeavyDamageFraction`
+  (0.25) of max health, it flashes (`HeavyDamageFlashAlpha` 0.4, clearing
+  over `HeavyDamageFlashDuration` 0.4 s) and the count starts again.
+- **Death:** `Die` flashes `DeathFlashAlpha` 0.7 over `DeathFlashDuration`
+  0.8 s, after the death's slow motion is set.
+- **Colour:** `DamageFlashRed` 0..1, black to full red (0.6).
+- **How:** `PlayerCameraManager->StartCameraFade`, as the first-aid flash.
+  The fade counts world time (the camera updates with the world's dilated
+  delta), so `FlashDamage` multiplies the duration by the current global
+  dilation to clear in real seconds. The first-aid flash doesn't do that,
+  so it lingers in slow motion.
+- **Tested** by the user 2026-10-31.
+
+
 ## NPC characters (CC2)
 
 *(2026-10-21, branch `feature/CC2_Integration`.)* NPC looks come from
@@ -4081,7 +4301,40 @@ Blueprints**, so the BP values are the live ones.
 | Alive | — | Damage × bone multiplier. Health 0 → `Die`. |
 | **Dying** | health hits 0 | `Die`: AI detached (`AEnemyBase` override), movement off, capsule `NoCollision`, directional death animation. Hits add to `PostDeathDamage`; ≥ `RagdollDamageThreshold` (30) → riddled. |
 | **Riddled** | dying + threshold | The upper body (`RiddledRootBone` `spine_01` and below it in the hierarchy) simulates on `UPhysicalAnimationComponent` motors (world-space, strength `RiddledHoldStrength` 800, damping ×0.1). Legs stay animated; the death montage slows to `RiddledAnimRate` 0.2 and pauses short of its end. Each hit `KickBone`s the struck bone (×`RiddledKickScale` 1.5) and adds to `RiddledDamage`. After `RiddledDuration` (1 s, world time) → ragdoll launched with all of `RiddledDamage`. **Break:** damage within `OverkillWindow` (0.1 s; the triggering bullet opens the first window) ≥ `RiddledBreakDamage` (30) → ragdoll at once (a rifle round, a headshot, a blast; pistol 25 can't). |
-| **Ragdoll** | riddled timeout; death anim ends; overkill | Motors cleared, full `SetSimulatePhysics`. Every hit `LaunchBody`s it. |
+| **Ragdoll** | riddled timeout; death anim ends; overkill; the dying body adrift | Motors cleared, full `SetSimulatePhysics`. Every hit `LaunchBody`s it. |
+
+**Dying bodies adrift** (2026-10-31; user: "during that [riddled] state,
+enemies goes thru walls, and also on a slope or if he gets thrown by the
+death anim off a platform, enemy would float in the air"):
+- **Cause:**
+  - The `MM_Death_*` animations have `bEnableRootMotion` False (checked in
+    all six assets' registry tags).
+  - `Die` sets the movement to `MOVE_None` and the capsule to
+    `NoCollision`. (With `MOVE_None`, CharacterMovement would consume and
+    discard root motion anyway.)
+  - So the animation carries the hips and legs (kinematic) off the actor's
+    spot. They pass through walls, at the height of the floor where the
+    enemy died.
+  - Riddled slows it to 0.2 and pulls the upper body after it with
+    world-space motors, so it shows longer.
+- **Fix:** `ABopisCharacterBase::IsDyingBodyAdrift()`, checked each tick
+  while `bIsDead && !bIsRagdoll` (death animation or riddled). If it's
+  true, `StartRagdoll` with no launch.
+  - **Into a wall:** `IsWorldBetween` on the lines hips → `spine_05` →
+    `head`, and hips → each foot, the leg lines ending 20 cm above the foot
+    so a foot sunk into a stair or slope doesn't count.
+  - **Off the ground:** none of the hips and feet has floor within
+    `DyingGroundReach` (35 cm, *Health|Death*) below it. Each is looked for
+    from 50 cm above.
+- **`IsWorldBetween`:** a multi line trace by object type over WorldStatic
+  and WorldDynamic, ignoring self and the equipped gun. A hit only counts if
+  its component blocks `ECC_Visibility` (the `UpdateWeaponBlocked` rule:
+  not trigger boxes or casings). Pawns aren't queried.
+- **Not done:** turning root motion on in the death animations and keeping
+  the capsule walking. That would make the animation respect walls and
+  slopes, but needs asset changes, and a falling upper body could still
+  clip.
+- **Tested** by the user 2026-10-31 ("tested, works").
 
 - **Death animation:** `DeathAnimations` (`FDirectionalAnimSet`: Front / Back /
   Left / Right arrays, random per side, Front as fallback).

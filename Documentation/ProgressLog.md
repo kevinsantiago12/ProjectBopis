@@ -1304,10 +1304,140 @@
   - **Correction to what Claude first said:** most of it wasn't
     recoverable from git. The 199 the bridge deleted were never committed,
     so only Fab can bring them back.
+- **Redirectors:** the user ran *Fix Up Redirectors* ("I did the redirection
+  update already").
+- **Kill cam** (user: "something similar to the kill cam in Max Payne 2 …
+  if they are riddled state, you can keep shooting"; "slomo and flourish
+  cam"; Claude given permission to build it "all the way to completion"):
+  - `UKillCamComponent` on the player, compiled clean.
+  - **When:** the player's kill that leaves its room done, with no one else
+    alerted.
+  - **What:** 0.15 slow motion while the camera swings round the body and
+    pushes in. You can keep shooting: the shots go into the body and hold
+    the cam.
+  - **Spec:** *Kill cam*. Not yet tested.
+  - **Build gotcha:** `IsActive()` clashes with `UActorComponent`'s, so it's
+    `IsPlaying()`.
+- **Damage flash** (user: "red screen flash on death and on damage that does
+  more than 25% health in a short period"; "let me tweak the damage window
+  and the Red color"):
+  - Built with the kill cam, on the player under *Health|Damage Flash*.
+  - Everything is editable, the colour as a black → red slider.
+  - **Spec:** *Damage flash*. Not yet tested.
 - **To do: MP5** (user: "Add MP5 SMG. A fast laser accuracy low damage
   SMG"). It's plan item 40, the Submachine Gun of the ammo split. Not built:
   there's no MP5 model in the project, so the user supplies one. Recorded in
   the lore notes, the GDD and the spec (*MP5 (planned)*).
+
+## 2026-10-31
+- **Kill cam and damage flash tested** (user: "tested, only issue is on the
+  final event, where 2 enemies talk"). Plan items 41 and 42 are done.
+- **The final talk's room never played the kill cam,** whether the talk was
+  broken up or allowed to finish:
+  - **Setup in `Lvl_Linear`:**
+    - `EncounterTrigger4` spawns Goon1 and Goon2 as patrollers and hands
+      them to `DoorTrigger2`.
+    - `DoorTrigger` starts the talk.
+    - The talk's last step sets off `DoorTrigger2`.
+  - **Cause:** `DoorTrigger2` had a blank Spawns entry, with no class and no
+    point. An unfired trigger with any Spawns never counts as done, and a
+    broken-up talk never fires it.
+  - **Fix:** the user removed the entry ("its doing it now"). No code
+    changed. The diagnostic log Claude offered isn't wanted.
+  - **How it was found:** read straight from the saved `.umap` with a
+    throwaway Node parser, without the bridge.
+  - **Also noticed:** the talk's 5th step is an empty Say Line with no
+    speaker and no subtitle, so it's skipped. Left to the user.
+- **Open design question, not decided:** a broken-up talk doesn't set off
+  the fight it was leading to (spec *Kill cam*).
+- **Kill cam camera guardrails** (user: "he penetrates through walls and
+  sometimes goes into the enemy model … stop the spin and linger on the
+  angle"):
+  - Applied by Claude on the user's say-so ("apply it and run the script").
+  - **Build:** compiled clean. The DLL (01:41:04) is newer than the source
+    (01:39:23), the bridge answered, and the editor log is clean.
+  - **The swing:** every frame the next spot must have room (12 cm clear of
+    walls and the player) and a clear line to the body. The first blocked
+    spot stops the swing for good, and the camera holds its last clear spot,
+    still watching the body.
+  - **The start:** it searches round the body for a clear spot. If there
+    isn't one anywhere, there's no cam.
+  - **Spec:** *Kill cam → Guardrails*.
+- **Kill cam shot styles** (user: the current one "under 'Orbit Cam'",
+  plus a "Reverse Shot Cam … from the Enemy Angle" and a "Steady Cam where
+  you go to a higher angle, follow the enemy but no cam movement"; "add
+  random option as well"; "pick on the cleared section of the trigger"):
+  - Applied by Claude on the user's say-so ("go do it").
+  - **Build:** compiled clean. The DLL (02:00:56) is newer than the source,
+    the generated code has the enum and the trigger's settings, the bridge
+    answered, and the log is clean.
+  - **What's in:**
+    - `EKillCamStyle`: Orbit / Reverse Shot / Steady / Random.
+    - The player's `Style` is the default.
+    - Each trigger has a ticked `KillCamStyle` under *Encounter|Cleared*.
+    - A style with no clear spot plays as Orbit.
+  - **Interpretation, open to change:** Claude built the Steady Cam as a
+    still camera that only turns to follow the body.
+  - **Docs:** recorded in the lore notes (*Kill cam*). The GDD (md + html)
+    has the three shots and a changelog line. Spec: *Kill cam → Shot
+    styles*.
+- **Bug: diving into a reverse shot aimed the arms behind the player**
+  (user: "the aim get steered to where the crosshair would have been
+  instead of locking on to the enemy"):
+  - **Cause:** the anim's aim corrections followed the camera's view, which
+    is the kill cam's. That covers the dive, the duals' dive spread and the
+    one-handed pistol.
+  - **Fix:** while the cam plays, they aim from the player's own camera at
+    the body (`GetCrosshairView`).
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (02:09:21) is newer than the source, the bridge answered, and the log
+    is clean.
+  - **Added beyond what was shown:** a forward declaration
+    `class APlayerController;` in `ProjectBopisAnimInstance.h`, for the new
+    reference parameter.
+- **"The orbit cam cuts off sometimes."** Two of Claude's rules end it
+  early:
+  1. **Anyone alerted.** Gunfire alerts listeners within 30 m, including
+     the kill shot and the shots fired during the cam. The user said "keep
+     1", so it's unchanged.
+  2. **A stopped swing that loses sight of the body.** Changed (user:
+     "apply the suggested rule for 2, but instead of ending abruptly, try
+     swinging the cam back the other way"):
+     - It now waits 0.3 s, then swings back the other way once, from where
+       it stopped.
+     - Swinging back, it may be blind for up to 1 s.
+     - Still shots get the same 0.3 s before ending.
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (02:32:59) is newer than the source, the bridge answered, and the
+    log is clean.
+  - **Spec:** *Kill cam → Guardrails*.
+- **Kill cam for encounter directors** (user: "dos the encountermanager
+  get a kill cam?" → "yes add it, with its own style pick"):
+  - **When:** a director with `TotalEnemies` > 0 plays it on the last kill,
+    once all its enemies have come in and are down and no one else is
+    alerted. Endless directors never do.
+  - **Settings:** the director has the same *Encounter|Cleared* settings as
+    a trigger: `bKillCamOnClear`, and a ticked `KillCamStyle`.
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (02:41:09) is newer than the source, the generated code has the
+    director's settings, the bridge answered, and the log is clean.
+- **Kill cam tested** (user: "tested, works. put that in the docs"). That
+  covers the guardrails, the three styles plus Random, the per-room and
+  per-director picks, the reverse-shot aim fix and the orbit swing-back.
+  Plan item 41 is done.
+- **Dying bodies through walls and floating** (user: riddled enemies
+  "goes thru walls", and "on a slope or if he gets thrown by the death anim
+  off a platform, enemy would float in the air"):
+  - **Cause:** the death animations have root motion off, and a dead body's
+    capsule has neither collision nor movement.
+  - **Fix:** `IsDyingBodyAdrift()` turns a dying body that crosses a wall,
+    or is off the ground, into a ragdoll.
+  - **Build:** applied by Claude on the user's say-so, compiled clean. The
+    DLL (03:00:57) is newer than the source, the bridge answered, and the
+    log is clean.
+  - **Spec:** *Taking bullets and dying → Dying bodies adrift*.
+  - **Tested** (user: "tested, works. put that in the docs"). Plan item 43
+    is done.
 
 ### ▶ RESUME HERE
 **A. Next up**
@@ -1378,9 +1508,8 @@
      the last round and close on reload. (`DisplayName` is now "Sniper
      Rifle".) The sniper pack is deleted (pack cleanup).
    - **Renames (2026-10-30):** weapon Blueprints are named by role (spec
-     *Weapon Blueprint names*). **User:** run *Fix Up Redirectors* on
-     `ThirdPerson/Blueprints` sometime. (The `SMG11` leftovers went in the
-     pack cleanup.)
+     *Weapon Blueprint names*). *Fix Up Redirectors* done by the user
+     (2026-10-30). (The `SMG11` leftovers went in the pack cleanup.)
    - **Pack cleanup done (2026-10-30, spec *Pack cleanup*):**
      - `SniperRiflePack` is gone and `FPS_Weapon_Bundle` is down to its 41
        used assets.
@@ -1388,8 +1517,11 @@
        load.
      - Commit when ready. The 199 bridge-deleted assets were never in git;
        the 33 tracked deletions show as `D`.
-     - **Optional:** the orphaned `__ExternalActors__/Demo` and
-       `__ExternalObjects__/Demo` folders (a map that no longer exists).
+     - **Done 2026-10-31** (user: "delete the orphanated demo"): the
+       orphaned `__ExternalActors__/Demo` and `__ExternalObjects__/Demo`
+       folders (17 git-tracked files; their map
+       `/Game/Demo/ThirdPerson/Maps/ShowcaseMap` no longer exists) are
+       deleted on disk. They show as `D` in git. Plan item 33.
    - **AK-74u built, stockless** (`BP_AssaultCarbine` on
      `SK_KA74U_Stockless`, spec *AK-74u*), in `BP_Player_CC`'s test
      loadout. Tested. **Fire animation** `A_AK74U_Fire` made, notified and

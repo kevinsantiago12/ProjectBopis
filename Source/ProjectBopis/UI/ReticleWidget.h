@@ -9,7 +9,7 @@
 
 /**
  * Crosshair: a static dot, drawn entirely by WBP_Reticle. The code only hides it while the
- * weapon wheel is up.
+ * weapon wheel is up and while the kill cam plays.
  */
 UCLASS()
 class PROJECTBOPIS_API UReticleWidget : public UPlayerHUDElementWidget

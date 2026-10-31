@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/KillCamComponent.h"
 #include "EncounterDirector.generated.h"
 
 class AEnemyBase;
@@ -24,6 +25,22 @@ public:
 	AEncounterDirector();
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	/** Enemy is one of this fight's. (The fallen stay on the list until the next tick, so a
+	    kill can still ask.) */
+	bool HasEnemy(const AEnemyBase* Enemy) const
+	{
+		return Alive.ContainsByPredicate([Enemy](const TWeakObjectPtr<AEnemyBase>& Each) { return Each.Get() == Enemy; });
+	}
+
+	/** A set fight (TotalEnemies) is over right now: everyone's come in and is down. An endless
+	    one never is. For the moment of the last kill (the kill cam). */
+	bool IsFightDone() const;
+
+	bool PlaysKillCam() const { return bKillCamOnClear; }
+
+	/** This fight's kill cam shot if it picks one, else Default (the player's). */
+	EKillCamStyle GetKillCamStyle(EKillCamStyle Default) const { return bOverrideKillCamStyle ? KillCamStyle : Default; }
 
 protected:
 
@@ -73,6 +90,19 @@ protected:
 	    rest of TotalEnemies, or this many for an endless fight (then built as needed). */
 	UPROPERTY(EditAnywhere, Category = "Encounter", meta = (ClampMin = "0"))
 	int32 MaxReserves = 20;
+
+	/** The player's kill that ends a set fight plays the kill cam (if no one else is still
+	    fighting). An endless fight never ends, so never plays it. */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (EditCondition = "TotalEnemies > 0"))
+	bool bKillCamOnClear = true;
+
+	/** Ticked: this fight picks its own kill cam shot. Off: the player's (their KillCam's Style). */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (InlineEditConditionToggle))
+	bool bOverrideKillCamStyle = false;
+
+	/** This fight's kill cam shot, instead of the player's. */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (EditCondition = "bOverrideKillCamStyle"))
+	EKillCamStyle KillCamStyle = EKillCamStyle::Orbit;
 
 private:
 

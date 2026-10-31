@@ -100,6 +100,14 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 		}
 	}
 
+	// A dying body is the animation's, and the animation knows no walls, slopes or ledges. Once
+	// it goes into a wall or off the ground, physics takes it: the ragdoll stops at the wall and
+	// falls to the floor.
+	if (bIsDead && !bIsRagdoll && IsDyingBodyAdrift())
+	{
+		StartRagdoll(FHitResult(), FVector::ZeroVector, 0.0f);
+	}
+
 	if (bIsRiddled)
 	{
 		// Hold the stagger short of its end, so it never blends back out into the living pose.
@@ -485,6 +493,61 @@ void ABopisCharacterBase::UpdateWeaponBlocked()
 		const UPrimitiveComponent* Component = Hit.GetComponent();
 		return Component && Component->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block
 			&& Hit.ImpactNormal.Z < 0.7f;
+	});
+}
+
+bool ABopisCharacterBase::IsDyingBodyAdrift()
+{
+	// The bones are written by the worker-thread animation evaluation: wait for it before reading.
+	WaitForAnimEvaluation();
+	const USkeletalMeshComponent* Body = GetMesh();
+	if (!Body || Body->GetComponentSpaceTransforms().Num() == 0)
+	{
+		return false;
+	}
+	const FVector Hips = Body->GetSocketLocation(TEXT("pelvis"));
+	const FVector Chest = Body->GetSocketLocation(TEXT("spine_05"));
+	const FVector Head = Body->GetSocketLocation(TEXT("head"));
+	const FVector FootL = Body->GetSocketLocation(LeftFootBone);
+	const FVector FootR = Body->GetSocketLocation(RightFootBone);
+
+	// Into a wall: a line through the body crosses something solid. The leg lines stop short of
+	// the feet, so a foot sunk a little into a rising slope or a stair doesn't count.
+	constexpr float FootSink = 20.0f;
+	const FVector Up(0.0f, 0.0f, 1.0f);
+	if (IsWorldBetween(Hips, Chest) || IsWorldBetween(Chest, Head)
+		|| IsWorldBetween(Hips, FootL + Up * FootSink) || IsWorldBetween(Hips, FootR + Up * FootSink))
+	{
+		return true;
+	}
+
+	// Off the ground: none of the hips and feet has floor within DyingGroundReach below it
+	// (looked for from a little above, so a foot sunk into a slope still finds it).
+	const auto HasGround = [this, &Up](const FVector& Point)
+	{
+		return IsWorldBetween(Point + Up * 50.0f, Point - Up * DyingGroundReach);
+	};
+	return !HasGround(Hips) && !HasGround(FootL) && !HasGround(FootR);
+}
+
+bool ABopisCharacterBase::IsWorldBetween(const FVector& From, const FVector& To) const
+{
+	// Walls, floors and props: kept only if solid to bullets and sight (not a trigger box, not a
+	// casing), as UpdateWeaponBlocked judges a wall. People aren't asked about at all.
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(DyingBody), false, this);
+	if (const AWeaponBase* Weapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr)
+	{
+		Params.AddIgnoredActor(Weapon);
+	}
+	TArray<FHitResult> Hits;
+	GetWorld()->LineTraceMultiByObjectType(Hits, From, To, Objects, Params);
+	return Hits.ContainsByPredicate([](const FHitResult& Hit)
+	{
+		const UPrimitiveComponent* Component = Hit.GetComponent();
+		return Component && Component->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block;
 	});
 }
 

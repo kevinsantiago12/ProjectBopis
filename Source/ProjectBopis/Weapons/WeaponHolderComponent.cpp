@@ -4,6 +4,7 @@
 #include "Weapons/WeaponHolderComponent.h"
 #include "Weapons/WeaponBase.h"
 #include "ProjectBopisCharacter.h"
+#include "Gameplay/KillCamComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
@@ -334,7 +335,14 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 	// Taken along the ray rather than from ImpactPoint, so it can be clamped.
 	const float HitDistance = bAimHit ? AimHit.Distance : AimRange;
 	const float ConvergeDistance = FMath::Max(HitDistance, MinConvergenceDistance);
-	const FVector AimPoint = CameraLocation + (CameraDirection * ConvergeDistance);
+	FVector AimPoint = CameraLocation + (CameraDirection * ConvergeDistance);
+
+	// The kill cam has the view, so the crosshair is looking from somewhere else: the shots go
+	// into the body it's showing.
+	if (UKillCamComponent* KillCam = OwningCharacter->GetKillCam(); KillCam && KillCam->IsPlaying())
+	{
+		AimPoint = KillCam->TakeShotPoint();
+	}
 
 	// Stage 2 — the muzzle decides WHERE the shot comes from.
 	const FVector MuzzleLocation = EquippedWeapon->GetMuzzleLocation();

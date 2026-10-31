@@ -393,6 +393,23 @@ int32 AEncounterTrigger::GetAliveCount() const
 	return Alive;
 }
 
+bool AEncounterTrigger::IsRoomDone() const
+{
+	if (bCleared)
+	{
+		return true;
+	}
+	// A wave still to come (they come once it's fired).
+	if (bTriggered && Waves.IsValidIndex(NextWave))
+	{
+		return false;
+	}
+	// Not while it still has spawns or waves to bring in, nor before it's had anyone to clear.
+	const bool bAllIn = bTriggered || (Spawns.Num() == 0 && Waves.Num() == 0);
+	const bool bHadAnyone = bTriggered || Enemies.Num() > 0;
+	return bAllIn && bHadAnyone && GetAliveCount() == 0;
+}
+
 void AEncounterTrigger::UpdateRoom()
 {
 	if (bCleared)
@@ -427,11 +444,7 @@ void AEncounterTrigger::UpdateRoom()
 		return;
 	}
 
-	// Cleared: not while it still has spawns or waves to bring in (they come once it fires), nor
-	// before it's had anyone to clear.
-	const bool bAllIn = bTriggered || (Spawns.Num() == 0 && Waves.Num() == 0);
-	const bool bHadAnyone = bTriggered || Enemies.Num() > 0;
-	if (!bAllIn || !bHadAnyone || GetAliveCount() > 0)
+	if (!IsRoomDone())
 	{
 		return;
 	}

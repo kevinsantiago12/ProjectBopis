@@ -10,6 +10,7 @@
 #include "ProjectBopisAnimInstance.generated.h"
 
 class ABopisCharacterBase;
+class APlayerController;
 class UAnimMontage;
 
 /**
@@ -689,6 +690,11 @@ protected:
 	float AimCorrectionSpeed = 12.0f;
 
 private:
+
+	/** Where the crosshair looks from, and which way: the camera's view. In the kill cam the
+	    camera's elsewhere, so it's from the player's own camera at the body. */
+	void GetCrosshairView(const ABopisCharacterBase& Character, const APlayerController& PlayerController,
+		FVector& OutLocation, FRotator& OutRotation) const;
 
 	void UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
 

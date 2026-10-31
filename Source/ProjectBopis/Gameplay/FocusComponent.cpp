@@ -26,8 +26,9 @@ void UFocusComponent::BeginPlay()
 void UFocusComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// Never leave the world slowed behind us (death, level change, end of PIE).
-	if (bActive)
+	if (bActive || TimeDilationOverride > 0.0f)
 	{
+		TimeDilationOverride = 0.0f;
 		ApplyTimeDilation(1.0f);
 		UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, 0.0f);
 	}
@@ -55,7 +56,11 @@ void UFocusComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 		}
 	}
 
-	if (bActive)
+	if (TimeDilationOverride > 0.0f)
+	{
+		// Someone's holding the world's speed (the kill cam): the meter waits.
+	}
+	else if (bActive)
 	{
 		// The player's own Focus drains at DrainPerSecond; a free one at whatever its owner
 		// asked for (often nothing).
@@ -135,7 +140,11 @@ void UFocusComponent::StopFocus()
 	KillSlowMotionLeft = 0.0f;
 	ApplyTimeDilation(1.0f);
 
-	UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
+	// Held slow (the kill cam): the pitch stays down with it.
+	if (TimeDilationOverride <= 0.0f)
+	{
+		UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
+	}
 	if (ExitSound)
 	{
 		UGameplayStatics::PlaySound2D(this, ExitSound);
@@ -187,11 +196,36 @@ void UFocusComponent::PlayKillSlowMotion(float RealDuration)
 	}
 }
 
+void UFocusComponent::SetTimeDilationOverride(float Dilation)
+{
+	const bool bWasHeld = TimeDilationOverride > 0.0f;
+	TimeDilationOverride = FMath::Max(Dilation, 0.01f);
+	UGameplayStatics::SetGlobalTimeDilation(this, TimeDilationOverride);
+	if (!bWasHeld && !bActive)
+	{
+		UGameplayStatics::SetGlobalPitchModulation(this, FocusPitch, FeedbackFadeTime);
+	}
+}
+
+void UFocusComponent::ClearTimeDilationOverride()
+{
+	if (TimeDilationOverride <= 0.0f)
+	{
+		return;
+	}
+	TimeDilationOverride = 0.0f;
+	UGameplayStatics::SetGlobalTimeDilation(this, GetBaseTimeDilation());
+	if (!bActive)
+	{
+		UGameplayStatics::SetGlobalPitchModulation(this, 1.0f, FeedbackFadeTime);
+	}
+}
+
 void UFocusComponent::UpdateFeedback(float RealDelta)
 {
 	// Fades in real time, so it takes the same quarter-second whether the world is
-	// slowed or not.
-	const float Target = bActive ? 1.0f : 0.0f;
+	// slowed or not. On for a held slow motion (the kill cam) too.
+	const float Target = bActive || TimeDilationOverride > 0.0f ? 1.0f : 0.0f;
 	const float Step = FeedbackFadeTime > 0.0f ? RealDelta / FeedbackFadeTime : 1.0f;
 	FeedbackAlpha = FMath::Clamp(FeedbackAlpha + (Target > FeedbackAlpha ? Step : -Step), 0.0f, 1.0f);
 
@@ -209,6 +243,7 @@ void UFocusComponent::AddMeter(float Amount)
 void UFocusComponent::ApplyTimeDilation(float Dilation)
 {
 	// Global: everything slows, the player too (by design). Aim stays responsive
-	// because look input is applied per input event, not per second.
-	UGameplayStatics::SetGlobalTimeDilation(this, Dilation);
+	// because look input is applied per input event, not per second. A held speed (the kill
+	// cam) wins until it's let go.
+	UGameplayStatics::SetGlobalTimeDilation(this, TimeDilationOverride > 0.0f ? TimeDilationOverride : Dilation);
 }

@@ -868,6 +868,41 @@ the moment. Also turning and aiming feels stiff."
 - **Still open:** where kits come from (placed in levels, enemy drops) and
   how many the player starts with.
 
+## Kill cam — *stated 2026-10-30*
+"Something similar to the kill cam in Max Payne 2. Where it goes into slomo
+into the enemy, if they are riddled state, you can keep shooting." Then:
+"slomo and flourish cam." Built off the existing room-cleared moment: the kill
+that ends a room's fight drops into slow motion and the camera swings round
+the falling enemy; the player can keep firing into the body (which jerks
+under the hits while it's still on its feet). Tuning is open.
+
+**Shot styles — *stated 2026-10-31*.**
+- **Orbit Cam:** the swing above. The user asked for it to be gated under
+  this name.
+- **Reverse Shot Cam:** "you see both the enemy and the player but the camera
+  is from the Enemy Angle". Built as a still camera behind the dying enemy,
+  over their shoulder, back at the player shooting into them.
+- **Steady Cam:** "you go to a higher angle, follow the enemy but no cam
+  movement". Built as a still camera up high that only turns to follow the
+  body.
+- **Random:** picks one of the three on each kill ("add random option as
+  well").
+- **Per room:** "I want to be able to pick on the cleared section of the
+  trigger, which killcam I'm gonna get". Each room can pick its shot, or
+  leave it to the player-wide default.
+- **Arena fights too** (user, same day: "yes add it, with its own style
+  pick"). An arena fight with a set number of enemies plays the kill cam on
+  its last kill, with its own shot pick. An endless arena never ends, so it
+  has no last kill.
+- **Guardrails** (same day, user): the camera must never go through walls or
+  into the enemy. When something's in the way, "stop the spin and linger on
+  the angle".
+
+## Damage flash — *stated 2026-10-30*
+"Red screen flash on death and on damage that does more than 25% health in a
+short period." The user tunes the window and the colour ("black to full
+red").
+
 ## Walk-around sections — *stated 2026-10-27*
 The levels will have **"walk around" parts with civilians you can interact
 with** (user). Up to 12 NPCs on screen there; no fighting in them. What the
