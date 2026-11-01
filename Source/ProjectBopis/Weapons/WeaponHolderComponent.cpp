@@ -292,7 +292,7 @@ bool UWeaponHolderComponent::ReloadEquippedWeapon(float Speed)
 	return EquippedWeapon ? EquippedWeapon->Reload(Speed) : false;
 }
 
-EFireResult UWeaponHolderComponent::FireEquippedWeapon()
+EFireResult UWeaponHolderComponent::FireEquippedWeapon(bool bFreshPull)
 {
 	if (!EquippedWeapon)
 	{
@@ -381,7 +381,7 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon()
 		FireDirection = CameraDirection;
 	}
 
-	return EquippedWeapon->Fire(MuzzleLocation, FireDirection);
+	return EquippedWeapon->Fire(MuzzleLocation, FireDirection, false, bFreshPull);
 }
 
 int32 UWeaponHolderComponent::GetReserveAmmo(EAmmoType Type) const

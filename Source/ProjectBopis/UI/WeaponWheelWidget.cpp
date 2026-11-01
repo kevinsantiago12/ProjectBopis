@@ -11,7 +11,7 @@
 namespace
 {
 	/** Width over height. */
-	float IconAspect(const UTexture2D* Icon)
+	float WheelIconAspect(const UTexture2D* Icon)
 	{
 		return FMath::Max(1, Icon->GetSizeX()) / static_cast<float>(FMath::Max(1, Icon->GetSizeY()));
 	}
@@ -281,7 +281,7 @@ void UWeaponWheelWidget::RefreshWidgets()
 		{
 			if (const UTexture2D* Icon = Carried.IsValid() ? Carried->GetIcon() : nullptr)
 			{
-				Fitted = FMath::Min(Fitted, FitIconHeight(HandgunIndex, IconAspect(Icon)));
+				Fitted = FMath::Min(Fitted, FitIconHeight(HandgunIndex, WheelIconAspect(Icon)));
 			}
 		}
 		if (Fitted < TNumericLimits<float>::Max())
@@ -310,7 +310,7 @@ void UWeaponWheelWidget::RefreshWidgets()
 			: Weapon ? Weapon->GetIcon() : nullptr;
 		UImage* DualImage = IconDualImages.IsValidIndex(Index) ? IconDualImages[Index].Get() : nullptr;
 		const bool bDual = Icon && DualImage && Weapon && Weapon->IsDualWield();
-		const FVector2D IconSize = Icon ? FVector2D(SharedIconHeight * IconAspect(Icon), SharedIconHeight) : FVector2D::ZeroVector;
+		const FVector2D IconSize = Icon ? FVector2D(SharedIconHeight * WheelIconAspect(Icon), SharedIconHeight) : FVector2D::ZeroVector;
 		const FVector2D DualOffset = DualIconSpread * IconSize;
 		if (UImage* IconImage = IconImages.IsValidIndex(Index) ? IconImages[Index].Get() : nullptr)
 		{
@@ -384,7 +384,7 @@ void UWeaponWheelWidget::ShowIcon(UImage* Image, UTexture2D* Icon, float Height)
 		{
 			Brush.SetResourceObject(Icon);
 		}
-		Brush.ImageSize = FVector2D(Height * IconAspect(Icon), Height);
+		Brush.ImageSize = FVector2D(Height * WheelIconAspect(Icon), Height);
 		Image->SetBrush(Brush);   // does nothing when the brush is unchanged
 	}
 	Image->SetVisibility(Icon ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);

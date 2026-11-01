@@ -58,9 +58,13 @@ AWeaponBase::AWeaponBase()
 
 }
 
-bool AWeaponBase::CanFire() const
+bool AWeaponBase::CanFire(bool bFreshPull) const
 {
-	return TimeSinceLastShot >= TimeBetweenShots;
+	// A fresh pull on a semi-auto may beat the held rate, never the other way round.
+	const float Interval = bFreshPull && TapTimeBetweenShots > 0.0f
+		? FMath::Min(TapTimeBetweenShots, TimeBetweenShots)
+		: TimeBetweenShots;
+	return TimeSinceLastShot >= Interval;
 }
 
 float AWeaponBase::GetDamageAtDistance(float Distance) const
@@ -265,9 +269,9 @@ float AWeaponBase::GetProjectileSpeed() const
 	return Round ? Round->GetInitialSpeed() : 0.0f;
 }
 
-EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact)
+EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact, bool bFreshPull)
 {
-	if (!CanFire())
+	if (!CanFire(bFreshPull))
 	{
 		return EFireResult::RateLimited;
 	}

@@ -116,7 +116,7 @@ void AProjectBopisCharacter::BeginPlay()
 		HitPulseInstance = UMaterialInstanceDynamic::Create(HitPulseMaterial, this);
 		HitPulseInstance->SetScalarParameterValue(TEXT("Intensity"), 0.0f);
 		HitPulseInstance->SetVectorParameterValue(TEXT("PulseColor"), FLinearColor(DamageFlashRed, 0.0f, 0.0f));
-		FollowCamera->PostProcessSettings.AddBlendable(HitPulseInstance, 1.0f);
+		FollowCamera->PostProcessSettings.AddBlendable(HitPulseInstance, 0.0f);
 	}
 
 	BoomBaseHeight = CameraBoom->GetRelativeLocation().Z;
@@ -369,6 +369,16 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	}
 
 	UpdateLowHealth(FApp::GetDeltaTime());
+
+	// On the camera only while there's something to show: at zero it would still cost a
+	// full-screen pass every frame. AddBlendable on an existing entry just sets its weight.
+	const bool bShowHitPulse = HitPulse > 0.0f || LowHealthLevel > 0.0f;
+	if (HitPulseInstance && bShowHitPulse != bHitPulseBlended)
+	{
+		bHitPulseBlended = bShowHitPulse;
+		FollowCamera->PostProcessSettings.AddBlendable(HitPulseInstance, bShowHitPulse ? 1.0f : 0.0f);
+	}
+
 	UpdateRecovery(DeltaSeconds);
 
 	// Dead: no stances, crouch or framing any more — just keep the body in view.
@@ -672,6 +682,11 @@ void AProjectBopisCharacter::DoJumpEnd()
 
 void AProjectBopisCharacter::DoFire()
 {
+	PullTrigger(true);
+}
+
+void AProjectBopisCharacter::PullTrigger(bool bFreshPull)
+{
 	// Wheel up from the keyboard: the click is the pick, not a shot.
 	if (IsWeaponWheelOpen())
 	{
@@ -730,7 +745,7 @@ void AProjectBopisCharacter::DoFire()
 
 	// Only a real shot animates. RateLimited and Reloading must stay silent, and
 	// Empty is handled by the weapon's own dry-fire sound.
-	const EFireResult FireResult = Holder->FireEquippedWeapon();
+	const EFireResult FireResult = Holder->FireEquippedWeapon(bFreshPull);
 
 	AWeaponBase* EquippedWeapon = Holder->GetEquippedWeapon();
 	if (!EquippedWeapon)
@@ -1531,6 +1546,11 @@ void AProjectBopisCharacter::UpdateLowHealth(float RealDelta)
 	const float Share = HealthComp->GetHealth() / HealthComp->GetMaxHealth();
 	const float Target = LowHealthFraction > 0.0f ? FMath::Clamp(1.0f - Share / LowHealthFraction, 0.0f, 1.0f) : 0.0f;
 	LowHealthLevel = FMath::FInterpTo(LowHealthLevel, Target, RealDelta, LowHealthBlendSpeed);
+	if (LowHealthLevel < 0.001f)
+	{
+		// The ease never quite reaches 0; snap it, so the pass can switch off.
+		LowHealthLevel = 0.0f;
+	}
 
 	// The red edge throbs with a heartbeat that quickens as health drops; dead, it holds still.
 	const float BeatRate = FMath::Lerp(LowHealthBeatRateMin, LowHealthBeatRateMax, LowHealthLevel);
@@ -1790,7 +1810,7 @@ void AProjectBopisCharacter::DoFireHeld()
 
 	// Every weapon keeps firing while the trigger's held (Max Payne): Triggered comes every
 	// frame, and the weapon's TimeBetweenShots paces it.
-	DoFire();
+	PullTrigger(false);
 }
 
 void AProjectBopisCharacter::DoFireReleased()

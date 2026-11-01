@@ -257,15 +257,17 @@ public:
 	    holder's AnimInstance from the Pump curve on its animations. */
 	void SetPumpAmount(float Amount) { PumpAmount = Amount; }
 
-	/** Whether enough time has passed since the last shot for this weapon to fire again. */
+	/** Whether enough time has passed since the last shot for this weapon to fire again.
+	    bFreshPull: this shot is a new trigger pull, so TapTimeBetweenShots applies. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	bool CanFire() const;
+	bool CanFire(bool bFreshPull = false) const;
 
 	/** Fires the weapon. See EFireResult for why a shot may not have happened.
 	    bExact: the round flies exactly down TraceDirection — no bloom scatter. For shooters
-	    that place their own shots (enemies); pellets still fan out. */
+	    that place their own shots (enemies); pellets still fan out.
+	    bFreshPull: a new trigger pull (see CanFire). */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	EFireResult Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact = false);
+	EFireResult Fire(const FVector& TraceStart, const FVector& TraceDirection, bool bExact = false, bool bFreshPull = false);
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	int32 GetAmmoInMagazine() const { return CurrentAmmoInMagazine; }
@@ -415,10 +417,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<AWeaponBase> SingleWieldClass;
 
-	/** Seconds between shots: the weapon's rate of fire. Holding the trigger fires at exactly
-	    this pace, and pulling it faster gets no more out of it (Max Payne). 0: no limit. */
+	/** Seconds between shots: the weapon's rate of fire while the trigger is held. A fresh pull
+	    can go faster on weapons with a TapTimeBetweenShots. 0: no limit. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
 	float TimeBetweenShots = 0.125f;
+
+	/** Seconds between shots when each is its own trigger pull: a semi-auto fires this fast for a
+	    player tapping quickly, while a held trigger keeps TimeBetweenShots. 0: no difference. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
+	float TapTimeBetweenShots = 0.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	float BaseDamage = 10.0f;

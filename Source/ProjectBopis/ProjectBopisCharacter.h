@@ -891,6 +891,10 @@ public:
 
 private:
 
+	/** One trigger pull's worth of firing: DoFire's work. bFreshPull: a new press (DoFire), not
+	    the held trigger (DoFireHeld), so semi-autos may beat their held rate. */
+	void PullTrigger(bool bFreshPull);
+
 	/** The toss's release point: the grenade leaves the hand for the crosshair. */
 	void ReleaseGrenade();
 
@@ -982,6 +986,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> HitPulseInstance;
 	float HitPulse = 0.0f;
+
+	/** The hit pulse is on the camera at full weight. Off (weight 0) the renderer skips it. */
+	bool bHitPulseBlended = false;
 
 	/** Low health: eases the effect toward the health now and beats the edge. */
 	void UpdateLowHealth(float RealDelta);

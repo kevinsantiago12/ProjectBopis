@@ -48,9 +48,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
 	AWeaponBase* GiveWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 RoundsInMagazine);
 
-	/** Fires the equipped weapon. See EFireResult for why a shot may not have happened. */
+	/** Fires the equipped weapon. See EFireResult for why a shot may not have happened.
+	    bFreshPull: a new trigger pull, not a held one (see AWeaponBase::CanFire). */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")
-	EFireResult FireEquippedWeapon();
+	EFireResult FireEquippedWeapon(bool bFreshPull = false);
 
 	/** Reloads the equipped weapon. Returns false if it couldn't start. */
 	UFUNCTION(BlueprintCallable, Category = "WeaponHolder")

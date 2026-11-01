@@ -1574,6 +1574,17 @@
       that copy too (bridge, saved). User: "Works now".
     - Dual pistol pair on the HUD checked (user: "dual pistols are fine in
       the HUD").
+    - **Build break, from this session's edit:** `AmmoWidget.cpp` got its own
+      file-local `IconAspect` (copied from `WeaponWheelWidget.cpp`'s). Once
+      the user's commit put both files in the same unity-build file, the two
+      same-named helpers collided (C2084), and the "Current Coding Work"
+      session's rebuild failed with the editor closed. That session is
+      proposing to rename the wheel's copy; this session agreed and held off
+      rebuilding. Fixed by that session: the wheel's copy is now
+      `WheelIconAspect` (`WeaponWheelWidget.cpp` only); built 00:36, the
+      editor back up. Lesson: helpers in an
+      anonymous namespace still clash across `.cpp` files that unity builds
+      merge, so give them unique names or share one.
     - The GPT background is too short for the strip; it needs a longer one
       or stretching.
   - **Tried and dropped:**
@@ -1765,8 +1776,108 @@
     - **Build:** all three peer sessions said safe; DLL 23:05:17. The AnimBP
       compiled with a clean log and was saved.
 
+- **2026-11-01: plan items 46 and 47 tested** (user: "46 and 47 are good").
+- **2026-11-01: tap fire for the semi-autos (plan item 48).** User: "Let
+  these weapons fire quicker than the firerate if the player pulls the
+  trigger repeatedly faster than if you were holding the trigger"; "duals are
+  included".
+  - **Code:** `TapTimeBetweenShots` and a `bFreshPull` flag through
+    `CanFire` / `Fire` / `FireEquippedWeapon`; `DoFire` → `PullTrigger(true)`,
+    held → `PullTrigger(false)`.
+  - **Values:** the user chose 0.6× the hold rate (.45 0.13, .45 duals 0.11,
+    9mm 0.11, 9mm duals 0.09, revolver 0.27, Benelli 0.21) over a flat 0.06 s
+    or an unlimited tap. Holds are unchanged (the user had read my first table
+    as a change to them).
+  - **Build:** the first rebuild **failed** and left the editor closed: a
+    combined-file clash of two `IconAspect` helpers (`AmmoWidget.cpp`'s copy,
+    from the HUD session, and the wheel's). With the user's OK, the wheel's
+    copy was renamed `WheelIconAspect`; rebuilt clean (DLL 00:36:35), values
+    set and saved. Both peers were warned while the editor was down and told
+    when it was back. New gotcha in the spec.
+  - **Tested** (user: "48 is good").
+- **2026-11-01: Deck build, `Lvl_Sandbox`, no trace** (user: "make a
+  steamdeck build, sandbox no trace").
+  - **Packaging:** same as the fifth build. Both peers said safe, the editor
+    was closed (`RebuildEditor.ps1 -NoLaunch`), then `BuildCookRun`
+    (Development, pak + IoStore, compressed), archived to
+    `ProjectBopis_Builds/DeckTest/`.
+  - **Result:** BUILD SUCCESSFUL in 2 min 4 s; 3,877 packages cooked,
+    0 errors, 20 warnings (old resave notices; new only `KnifeA_Swing_Cue`'s
+    NodeGuid). The editor was reopened.
+  - **Start command:** `ProjectBopis/Binaries/Win64/ProjectBopis.exe
+    Lvl_Sandbox -ExecCmds="stat fps,stat unit"`.
+  - **Perf suspects** added since the last Deck build: listed in the chat
+    reply, with the hit-pulse post-process always on as the first candidate.
+  - **User: "the sandbox drops to 42 fps"** (no `stat unit` numbers yet).
+    First fix ("do the hit pulse fix"): the hit pulse is off the camera
+    (weight 0) while idle. Applied on "apply and run", both peers said
+    safe, compiled clean (DLL 01:14:46).
+  - **Still to check:** Frame / Game / Draw / GPU at the drop, to tell GPU
+    from game thread. Other suspects: the HUD icon outline (24 taps), the
+    heads now updating after physics on every CC character, 4K gun
+    textures, dying-body traces.
+
+- **2026-11-01: Deck performance** (spec *Fourth*, *Fifth* and *Sixth Deck
+  trace*, *Stationary lighting setup*).
+  - **The question:** user: "the sandbox drops to 42 fps"; traced on the Deck.
+  - **Finding:** GPU-bound. The drops are fight translucency (+5 ms), on top
+    of a constant ~3.3 ms.
+  - **The constant 3.3 ms:** found with `ProfileGPU` + material draw
+    events. It was the player's sunglasses (creator `Sunglasses_01`; first
+    mistaken for the aviators), whose translucent, refractive lenses ran a
+    full-screen rough-refraction chain. Fixed in the creator's apparel
+    tables with `MI_Glass_Dark_Opaque`: **−2.2 ms**, confirmed.
+  - **Stationary lighting:** set up on both levels; `Lvl_Sandbox` baked
+    with GPU Lightmass and clean. Ray and path tracing support are on for
+    the editor only; `r.RayTracing.Enable=0` in the game, checked inside
+    the shipped `.pak`.
+  - **Its side effect:** the Stationary sun's per-object shadows cost about
+    +2.5 ms, so the sixth trace isn't faster overall.
+  - **Per shot (found):** muzzle flashes carry two smoke emitters and a
+    light, and aren't pooled. Particle lights cost 1.3 ms average on fight
+    frames, up to ~7 ms.
+  - **Mistakes and gotchas:**
+    - an engine mesh was edited and saved, then reverted;
+    - Insights left open made the packaging run and editor record 1.4 GB
+      (the store was wiped with `ClearTraces.ps1`);
+    - in a one-file-per-actor level, bridge property edits don't mark the
+      actor's file as changed.
+  - **Deck packages:** five today, all 0 errors.
+  - **60 fps:** Claude's view is that 60 is realistic calm, with a 40 fps
+    Deck mode as the fallback. The user is testing dynamic resolution, 80%,
+    and the particle-lighting and particle-light settings through the start
+    command.
+
 ### ▶ RESUME HERE
 **A. Next up**
+0000. **Deck performance on `Lvl_Sandbox`, next steps in order.** Spec:
+    *Sixth Deck trace*. Now GPU p50 17.6 ms (budget 16.6), GPU-bound.
+    1. **Muzzle flash** (user: "lets do that tomorrow"). Each shot spawns a
+       fresh, unpooled Cascade system (`WeaponBase.cpp:335`) with a flash,
+       glow, streaks, **two smoke emitters and a light**.
+       - Pool it (`EPSCPoolMethod::AutoRelease`).
+       - **Split flash from smoke:** light-free, smoke-free flash copies
+         every shot, plus smoke spawned at most every ~0.3 s per gun. The
+         user edits the copies in Cascade; Claude writes the code.
+       - Smaller, shorter smoke; smaller flash lights, or enemy flash
+         lights capped.
+       - Present the code first.
+    2. **Sun shadows:** turn off per-object (inset) shadows for movable
+       objects on Sandbox's Stationary sun. Shadow renders went from 1 to
+       2.83 per frame (≈ +2.5 ms).
+    3. **The user's command-line tests:** `r.TranslucencyLightingVolume 0`
+       (or `.Dim 32` + `.MarkVoxels 1`), `r.ParticleLightQuality 0`,
+       `r.ScreenPercentage 80`. Make the ones he likes permanent for the
+       Deck.
+    4. **Decal cap** (bullet holes, 1.7 ms); bloom 5 → 3; SSAO lower now
+       that the lighting is baked.
+    5. **Re-trace.** Start the editor *before* opening Insights, then close
+       Insights right after the run (spec gotcha).
+    - **Later:**
+      - bake `Lvl_Linear` (check its floor for a lightmap override first);
+      - decide 60 vs a 40 fps Deck mode after the first real level;
+      - **Verify the engine install** in the Epic launcher
+        (`SM_Template_Map_Floor` was re-saved; see the spec).
 000. *(Done 2026-11-01, user: "46 and 47 are good": the pickup switch and
     melee are tested.)* **Optional melee follow-ups:**
     - real blunt-hit sounds;

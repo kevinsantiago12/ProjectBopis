@@ -200,7 +200,39 @@ playtested.
 
 - **Every weapon fires while the trigger is held**, at its
   **`TimeBetweenShots`** (the gun's rate of fire; 0 = no limit). Pulling
-  faster gains nothing: `CanFire()` enforces it for taps and holds alike.
+  faster gains nothing: `CanFire()` enforces it for taps and holds alike —
+  **except the semi-autos since 2026-11-01** (below).
+- **Tap faster than the hold (2026-11-01).** User: "Let these weapons fire
+  quicker than the firerate if the player pulls the trigger repeatedly faster
+  than if you were holding the trigger"; duals included.
+  - **Setting:** `AWeaponBase::TapTimeBetweenShots` (0 = no tap bonus) is the
+    shortest gap for a **fresh pull**. `CanFire(bFreshPull)` uses
+    `min(Tap, TimeBetweenShots)` for a fresh pull and `TimeBetweenShots`
+    otherwise.
+  - **Plumbing:** `Fire(…, bExact, bFreshPull)` and
+    `UWeaponHolderComponent::FireEquippedWeapon(bFreshPull)` pass it through.
+    The character's `DoFire` is now `PullTrigger(true)`, `DoFireHeld` calls
+    `PullTrigger(false)`, and `PullTrigger` holds what was `DoFire`'s body.
+  - **Enemies:** they call `CanFire()` / `Fire(…, true)` with no fresh pull,
+    so they're unchanged.
+  - **Values:** the user picked 0.6× the hold rate over a flat 0.06 s. A
+    truly unlimited tap was discussed and not chosen (macros, a fire bound to
+    the mouse wheel, animation and sound smear).
+
+    | Gun | Hold `TimeBetweenShots` | Tap `TapTimeBetweenShots` |
+    |---|---|---|
+    | `BP_Pistol45` | 0.22 | 0.13 |
+    | `BP_DualPistol45` | 0.18 | 0.11 |
+    | `BP_Pistol9mm` | 0.19 | 0.11 |
+    | `BP_DualPistol9mm` | 0.15 | 0.09 |
+    | `BP_Revolver` | 0.45 | 0.27 |
+    | `BP_AutoShotgun` | 0.35 | 0.21 |
+
+  - **Tested (user, 2026-11-01): "48 is good".**
+  - **Burst and kick:** taps inside `TimeBetweenShots` count as one burst
+    (`BurstTime`), so the burst spread wander still builds. The fire
+    montage's play rate and kick still scale by `TimeBetweenShots`, and a
+    faster tap just restarts them.
 - **Removed:** `EWeaponFireMode` (Semi/Auto), `FireMode`,
   `IntendedTimeBetweenShots` and the over-cadence bloom penalty.
 - **Input:** `FireAction` `Started` → `DoFire`, `Triggered` → `DoFireHeld`,
@@ -817,6 +849,249 @@ and the fire delay. Exports are in the scratchpad (`trace3/`).
   it.
 - **GPU:** `SceneRender` 11.0 ms average (9.6 last time; different play).
 - **GC:** small periodic slices, with 62–85 ms inside the loads.
+
+### Fourth Deck trace (2026-11-01, `Lvl_Sandbox`)
+User: "the sandbox drops to 42 fps", then "make another steamdeck build,
+sandbox trace it this time and tell me whats the overhead".
+
+**The trace.**
+- **File:** `20261101_012237.utrace` (524 MB), 200 s on **`Lvl_Sandbox`**,
+  with 5 death restarts.
+- **Build:** includes the hit pulse off when idle.
+- **Settings:** forced to Deck config with `-ResX=1280 -ResY=800
+  -fullscreen` and `-ExecCmds="scalability 2,t.MaxFPS 60,…"`, since the
+  first-run detection only applies once.
+- **Exports:** in the scratchpad (`trace4/`).
+- **Shell gotcha:** `-threads=RenderThread 0` splits on the space; use
+  `RenderThread*`.
+
+**Findings.**
+- **GPU-bound.** Frames p50 17.7 / p90 21.1 / p99 24.9 ms. In the 43–50 fps
+  stretches the GPU frame is 20–23 ms alongside the game frame, against
+  16.7 at 60. The game thread isn't the limit.
+- **The drops follow translucency.** `RenderTranslucency` (particles, blood,
+  smoke) is 2.4–2.8 ms per frame at 60 fps and 7.4–8.2 ms in the
+  44–47 fps seconds: +5 ms, the whole gap.
+- **A constant ~3.3 ms that `Lvl_Linear` (third trace) didn't have**, on
+  98.6% of frames from level start:
+  - **`Distortion` 2.2 ms:** refraction, including the `Rough` refraction
+    blur chain (`SceneColorMip*`) and a `TAA` pass with the same event count.
+  - **`TranslucencyLightingVolume` ~0.95 ms** (0.09 on Linear).
+  - **Source:** a refractive translucent material that's almost always on
+    screen. Since the pass runs wherever the camera points, it's probably
+    on or attached to the player (the gun in hand or the character), not a
+    placed prop. Not yet identified.
+- **Not a settings difference.** Both levels have one sun, height fog, sky
+  light and sky atmosphere, and no post-process volume. Their changed
+  settings match: the sun's light-shaft occlusion, distance-field shadows,
+  shadow distance and intensity, and the fog density. Only Linear's sky
+  light adds lower-hemisphere-black. Sandbox's placed content is greybox
+  (`LevelPrototyping` meshes, `MI_Colorway` / `MI_PrototypeGrid_Gray`)
+  plus `ThirdPerson` Blueprints.
+- **Other per-frame GPU (ms):** `FXSystemPreRender` 3.9 (2.3 on Linear),
+  base pass 1.9, post 1.8 (FXAA 0.4), decals 1.6, lights 1.6, AO and
+  reflections ~1.0, shadows ~0.6, light shafts 0.2 (Sandbox's sun comes into
+  view).
+- **The HUD is cheap.** The whole UI pass (`SlateUI`), including the new HUD
+  and the icon outline, is **0.12 ms** per frame (0.06 on 10-28). UI
+  materials can't refract, so the HUD isn't the `Distortion` source (user
+  asked: "the weapon hud icon maybe?").
+- **Freezes:** the 5 death restarts, ~960 ms each (~480 ms
+  `FlushAsyncLoading`, ~100 ms GC, construction scripts); the same reload
+  cost as before.
+
+**Next.**
+1. **Find the refraction source — found and fixed (2026-11-01).**
+   - **How:** PIE on the PC, then in the console `r.EmitMeshDrawEvents 1`,
+     `r.ShowMaterialDrawEvents 1` and `ProfileGPU` (typed by the user; the
+     bridge can't run console commands). The log's `Distortion` →
+     `Distortion::Accumulate` held one draw: **`MID_MI_Glass_Dark_0
+     Glasses`**, the protagonist's **aviator lenses** (user: "aviator
+     glasses").
+   - **Why it costs so much:** the lens material,
+     `CharacterCustomizer/Base_Materials/M_Base_Material_Glass_Reflective`
+     via `MI_Glass_Dark`, has `BlendMode` Translucent, `RefractionMethod`
+     PixelNormalOffset, `TranslucencyLightingMode` Surface (the
+     translucency lighting volume) and translucent SSR on. The refraction
+     alone switches on the full-screen rough-refraction chain (scene-color
+     copy, an 18-level mip chain, H and V blurs, TAA), on every frame the
+     glasses are in view.
+   - **`MI_Opaque_Glass` doesn't fix it:** it doesn't override the blend
+     mode, so it's still translucent and refractive.
+   - **New material (bridge, saved):**
+     `Base_Materials/Material_Instances/MI_Glass_Dark_Opaque` (parent
+     `MI_Glass_Dark`, `BasePropertyOverrides` blend mode → **Opaque**). It
+     cooks its own opaque shaders.
+   - **First attempt, wrong item:** the male `Glasses_Aviator` mesh's
+     `M_Glass` slot was pointed at it. The fifth trace (below) still showed
+     the `Distortion` chain at 2.20 ms, unchanged, for two reasons:
+     - **The creator ignores the mesh's slots.** Its apparel tables
+       (`DT_Apparel_M_Headwear` and ApparelPack_01's
+       `DT_Apparel_M_Headwear+`) give each row's colours a `Material
+       Override` per slot.
+     - **The player doesn't wear the aviators.** `BP_Player_CC` uses the
+       **`Sunglasses_01`** row: the `Glasses_01/Glasses` mesh, which is the
+       "Glasses" in the dump (draw events read material + mesh), with
+       `MI_Glass_Dark` lenses. The user had called them "aviator glasses".
+     - The aviator slot change is harmless and kept. The `Aviator_Glasses`
+       row overrides its lens with `MI_Opaque_Glass`, which despite the name
+       is still translucent and refractive, and a child of `MI_Glass_Dark`.
+   - **The fix (bridge, saved):** in both male headwear tables, the
+     `Sunglasses_01` row's two colours (Black, Tortoise) now override the
+     lens with `MI_Glass_Dark_Opaque` (was `MI_Glass_Dark`). Every wearer
+     gets it, enemies included.
+   - **Revert:** set those two overrides back to `MI_Glass_Dark`.
+   - **Not changed:** `Aviator_Glasses` (`MI_Opaque_Glass`), the female
+     tables, clear-lens glasses (`MI_Glass_Light`).
+   - **Expected on the Deck:** about −2.2 ms (refraction) plus some
+     translucent-SSR and lighting-volume time.
+   - **Lesson:** for character-creator apparel, change the apparel table
+     row, not the mesh.
+2. **Cut fight translucency:** overdraw and lit translucency on the impact,
+   blood and smoke effects (cheaper lighting mode, fewer and smaller
+   particles, particle cutouts). `ProfileGPU` showed `M_Smoke1`
+   (`NS_ImpactConcrete`) in the translucency passes.
+
+### Stationary lighting setup (2026-11-01)
+User: "I have movable sun, which I dont want"; Claude recommended Stationary
+over Static, so characters keep sun shadows; "do steps 1-3 on both levels";
+then "im gonna use GPU lightmass". The Max Payne 3 recipe: a baked world with
+dynamic characters.
+- **Both levels** (`Lvl_Sandbox`, `Lvl_Linear`):
+  - **Sun** (`DirectionalLight_0.LightComponent0`): **Stationary**,
+    `DynamicShadowDistanceStationaryLight` **3000** (0 by default, which
+    leaves moving objects with per-object shadows only). The movable sun had
+    `DynamicShadowDistanceMovableLight` 20000 with 4 cascades.
+  - **Sky light:** **Stationary**.
+  - **`LightmassImportanceVolume_Play`** over the play area plus margin:
+    - Sandbox: the nav-mesh bounds ±5 m;
+    - Linear: the greybox bounds, without the sky sphere, ±3 m.
+  - **Sphere reflection captures:** Sandbox has one in the middle (2900).
+    Linear has three along the corridor at x −100 / 3600 / 7300 (3000 each).
+  - **`SM_SkySphere`** (`StaticMeshActor_0`, scaled ×400, a 32 km sphere):
+    **Movable, Cast Shadow off**. As a Static shadow caster it made Lightmass
+    treat the scene as 32 km across, and a CPU bake went to **22 GB of
+    RAM**.
+  - **Sandbox's World Settings had `bForceNoPrecomputedLighting` on**; the
+    log said "Skipping Lighting Build!". Now off; Linear's was already off.
+- **GPU Lightmass:**
+  - **Plugin:** on in the `.uproject` (user).
+  - **Ray tracing:** it needs Support Hardware Ray Tracing
+    (`r.RayTracing=True`, user, then a restart and a big shader compile).
+    Skin cache shaders and DX12 were already on.
+  - **No runtime cost:** so the packaged game doesn't build ray-tracing
+    structures (the Deck supports ray tracing), `DefaultEngine.ini` sets
+    `r.RayTracing.Enable=0` in `[SystemSettings]` and `=1` in a new
+    `[SystemSettingsEditor]` section, applied in the editor only. UE 5.8 has
+    no `EnableInGame` CVar; `r.RayTracing.EnableOnDemand` is 1.
+- **Bridge gotchas:**
+  - In a one-file-per-actor level, `ObjectTools.set_properties` doesn't mark
+    the actor's file as changed, so Ctrl+S skips it. Unsaved changes are also
+    dropped silently by `SceneTools.load_level`. Re-setting the actor's
+    transform (`set_actor_transform`, same value) marks it changed.
+  - `World Settings` lives in the main map file, so `save_assets` saves it
+    even for `Lvl_Sandbox`.
+  - `find_actors` needs `name`, `tag` and `collision_channels`.
+- **First GPU bake: blocky checkerboard lightmaps** (user: "some artifacts
+  on the ground", screenshot of the quarter-cylinder pit).
+  - **Not resolution:** the prototype meshes are 512, which gives 1–8 cm
+    texels at their sizes.
+  - **The cause:** `SM_Cube`, `SM_QuarterCylinder`, `SM_Ramp` and
+    `SM_Cylinder` (`Content/LevelPrototyping/Meshes`) had
+    **`LightMapCoordinateIndex` 0**, so they baked into the overlapping,
+    tiled texture UVs.
+  - **Fix (bridge, saved):** `LightMapCoordinateIndex` → **1** (the meshes
+    have a second UV set). If channel 1 isn't a clean unwrap, turn on
+    *Generate Lightmap UVs* (0 → 1) in each mesh's Build Settings. The
+    bridge can't read or write `SourceModels`.
+  - **The floor:** `SM_Template_Map_Floor` is an **engine** asset
+    (`/Engine/MapTemplates`). Claude briefly set its `LightMapResolution`
+    to 512 and **saved it into the engine install** (02:43), then put it back
+    to 128 and saved again. Verify the install in the Epic launcher for a
+    byte-identical file.
+  - **The floor's real fix:** a per-actor override on Sandbox's `Floor_0`
+    (`bOverrideLightMapRes`, `OverriddenLightMapRes` 512; was 128, ~31 cm
+    texels over 40 m).
+  - **Rule:** check a mesh's package path before editing it; anything under
+    `/Engine/` gets a per-actor override, never an asset edit.
+- **Sandbox baked (2026-11-01, user: "saved and rebaked. Let only do
+  sandbox for now"):**
+  - **GPU Lightmass needs both settings:** ray tracing **and path tracing**
+    support (`r.PathTracing=True`); the plugin says "path tracing is
+    required" otherwise.
+  - **Results only reach disk after a commit:** "Bake What You See" holds
+    them in memory until *Save and Stop Building*, then Save All.
+  - **Output:** `Lvl_Sandbox_BuiltData` went from 1.6 to 13.6 MB (02:47:16).
+  - **Checked with a viewport capture** from the same angle as the
+    artifact: the quarter-cylinder pit and the curved sides are clean, and
+    the sun shadows are crisp.
+- **Still to do:**
+  - `Lvl_Linear` (later, user's call); it uses the same fixed meshes and
+    may need the floor override too;
+  - check the lightmap UV warnings in the build log;
+  - measure on the Deck;
+  - capsule shadows;
+  - re-bake whenever the greybox changes.
+
+### Sixth Deck trace (2026-11-01, `Lvl_Sandbox`, baked + opaque sunglasses)
+- **The trace:** `20261101_031933.utrace`, 127 s.
+- **The build:** Stationary sun, GPU Lightmass bake, `Sunglasses_01` lenses
+  opaque, `r.RayTracing.Enable=0` (only an empty `RayTracingGeometry`
+  marker in the trace; nothing ray traced).
+- **Overall:** GPU p50 17.6 / p90 23.4 ms. 32% of seconds at ≥58 fps, 56%
+  under 55. Not better than before, because:
+  - **Gone:** the glasses' `Distortion` chain (−2.2 ms). Translucency
+    4.10 → 2.11 ms, now just particles.
+  - **New cost: the Stationary sun's shadows.** Shadow-depth renders
+    (`Atlas` / `RenderDepthForLight`) went from **1.00 to 2.83 per frame**.
+    Shadow projection 0.38 → **1.63**, shadow depths 0.26 → 0.71, the sun's
+    `UnbatchedLights` 1.09 → **2.29**: about +2.5 ms in all.
+  - **Why:** a Stationary light gives moving objects per-object (inset)
+    shadows on top of the 30 m dynamic cascade, so each character, gun or
+    prop pays its own shadow.
+- **Remaining costs (ms per frame):**
+  - sun lighting and shadows ~5.8;
+  - base pass 2.5;
+  - translucency 2.1, plus the translucency lighting volume ~1.5
+    (`TranslucencyLightingVolume` 0.98 + inject 0.44 + filter 0.53 by
+    sub-pass);
+  - post 1.9 (bloom quality 5, FXAA 0.4);
+  - decals 1.7;
+  - SSAO 1.3;
+  - reflection environment 1.1;
+  - fog 0.4;
+  - velocities 0.36;
+  - light shafts 0.25;
+  - effects pre-render 0.5 (3.9 in the fourth trace; different play).
+- **The muzzle flash's share, for the next session's work:**
+  - **Particle translucency:** 0.16 ms in the calmest 20% of seconds, **4.73
+    ms in the busiest 20%** (those average 50 fps; worst second 8.67 ms).
+  - **Particle lights** (`BatchedLights`, every muzzle flash plus metal
+    impacts): **1.34 ms** on the 26% of frames that have any, up to 6.86
+    ms.
+  - **Spawning cost on the game thread:** ~0.06 ms per frame, so pooling is
+    a tidiness win, not a speed one.
+  - **Estimated saving** from the muzzle-flash work (smoke rate-limited and
+    smaller, lights smaller or capped): **~2.5–4 ms in fights**, more on
+    peak frames, nothing in calm play.
+  - The split of fight smoke between muzzle and impact isn't measured. A
+    `ProfileGPU` with material draw events during a PIE fight would settle
+    it.
+
+### Fifth Deck trace (2026-11-01, `Lvl_Sandbox`, after the aviator change)
+- **The trace:** `20261101_015541.utrace`, 95 s. The trace store had been
+  wiped (`ClearTraces.ps1`) after a stray recording: with Insights open, the
+  packaging run and the relaunched editor auto-recorded 1.4 GB.
+- **Distortion unchanged:** 2.20 ms, with `Rough` 2.05 and `TAA` 1.18 on
+  98% of frames. So the aviator-mesh change did nothing, since the player
+  wears `Sunglasses_01` (see above).
+- **Otherwise a lighter run:** GPU p50 16.7 / p90 21.8 (17.1 / 22.9 before).
+  Under 55 fps for 26 of 94 s, under 50 for 10 (before: 90 and 30 of 199).
+  The less busy fighting shows as translucency 3.6 vs 4.1 ms.
+- **Next:** repackage with the `Sunglasses_01` table fix and measure again.
+- **Gotcha:** don't leave Unreal Insights open between runs. Everything that
+  starts meanwhile (packaging, the editor) records into the store. Close
+  Insights before reopening the editor or packaging.
 
 ### Level-start black screen (2026-10-27)
 **Revised 2026-10-28 (no pause; waits for the outfits).** User on the Deck:
@@ -4140,10 +4415,25 @@ heavy flash sooner, and a low-health state. User: "do the hit pulse first".
 - **Driver** (`AProjectBopisCharacter`, *Health|Hit Pulse*):
   - **Setup:** `BeginPlay` makes a dynamic instance of `HitPulseMaterial`
     and sets `PulseColor` from `DamageFlashRed`.
-    - It's added with `FollowCamera->PostProcessSettings.AddBlendable(…,
-      1)`, on the camera rather than a second `UPostProcessComponent`:
+    - It's added with `FollowCamera->PostProcessSettings.AddBlendable(…)`,
+      on the camera rather than a second `UPostProcessComponent`:
       `UFocusComponent` finds the character's post-process component with
       `FindComponentByClass`, and a second one would confuse it.
+    - **Off when idle (2026-11-01, Deck perf).** User: "the sandbox drops to
+      42 fps" → "do the hit pulse fix".
+      - **Before:** the blendable sat at weight 1 from `BeginPlay`, so its
+        full-screen pass ran every frame even at intensity 0.
+      - **Now:** it's added at weight 0. Each `Tick`, after
+        `UpdateLowHealth`, it's set to 1 only while `HitPulse > 0` or
+        `LowHealthLevel > 0`. `bHitPulseBlended` tracks the state, and
+        `AddBlendable` on an existing entry only updates its weight.
+      - **Why weight 0 helps:** `FSceneView::OverridePostProcessSettings`
+        skips blendables at weight 0, so no pass runs.
+      - **Snap:** `LowHealthLevel` snaps to 0 below 0.001, since the
+        `FInterpTo` ease would otherwise never reach 0 and the pass would
+        stay on.
+      - **Result:** nothing visible changes. Compiled clean (DLL 01:14:46);
+        not yet measured on the Deck.
   - **Each hit:** `TakeDamage` calls `PulseHit` for every hit with damage,
     the killing one included.
     - It sets `HitPulse` to the larger of its current value and
@@ -4466,6 +4756,14 @@ the reserve grey, thin white dividers.
     (0–2), A × `Opacity` (0–1), like `M_HUDImage`. `StrokeColor` is wired
     from the Vector Parameter's **RGBA** output (the default output is RGB,
     and `.a` on it fails to compile).
+    **Cost** (raised by the "Current Coding Work" session, 2026-11-01): 25
+    texture reads per pixel (the icon + 12 directions × 2 rings), but only
+    over the icon's own quad: the HUD weapon icon (~62 px tall, a dual pair
+    or a shotgun ~10–20k px) every frame, plus the wheel's icons while it's
+    open. Roughly 0.5 M reads a frame at most, small next to the scene. To
+    confirm on the next Deck run. If it shows up, the fallback is baking the
+    stroke into per-icon textures (losing the screen-px width at every
+    size) or 8 taps × 2 rings.
   - `MI_HUD_WeaponIcon` is both Images' brush. `UAmmoWidget::ShowIcon` takes
     each Image's dynamic material (`GetDynamicMaterial`) and sets `Texture`
     to the weapon's icon; with a plain texture brush it sets the brush
@@ -8108,6 +8406,18 @@ follows below (moved here from ProjectPlan.md on 2026-10-24 — add new ones the
 
 Newest first, as they were recorded.
 
+- **Same-named file-local helpers break the build once committed
+  (2026-11-01).**
+  - **What happened:** the adaptive build compiles files with uncommitted
+    changes on their own. Committed files are merged into one combined file
+    (`Module.ProjectBopis.cpp`). So two `.cpp` files that each define, say,
+    `namespace { float IconAspect(...) }` build fine while either is
+    modified, then fail with C2084 once both are committed.
+  - **The case:** `AmmoWidget.cpp`'s copy of the wheel's `IconAspect` broke a
+    rebuild and left the editor closed. Fixed by renaming the wheel's copy to
+    `WheelIconAspect`.
+  - **Rule:** give file-local helpers file-specific names, or share one
+    helper.
 - **Pixel Depth Offset moves where a pixel is lit, not only its depth test
   (2026-10-24).** Deferred lighting rebuilds each pixel's position from the
   depth buffer, so PDO on visible skin made it shadow itself (and subsurface
