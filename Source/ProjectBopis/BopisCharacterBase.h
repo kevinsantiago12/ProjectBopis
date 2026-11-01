@@ -316,6 +316,11 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	/** CC makes a skeletal mesh component per apparel/hair slot; the empty ones still tick.
+	    Stops those. Parts with a mesh keep ticking: a follower keeps its LOD in step with the
+	    body from its own tick. */
+	void StopEmptyPartTicks();
+
 	/** Switches the body to the Ragdoll collision profile, keeping it solid to bullets
 	    (the profile as shipped ignores Visibility, so traces would pass straight through). */
 	void UseRagdollCollision();

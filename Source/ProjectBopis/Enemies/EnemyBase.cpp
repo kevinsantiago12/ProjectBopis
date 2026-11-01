@@ -54,11 +54,21 @@ AEnemyBase::AEnemyBase()
 
 	// Enemies may crouch (holding a spot crouched, see bCrouchWhileHolding).
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	// Far and off-screen enemies animate at a lower rate, interpolated in between, so their
+	// bones (and the bodies bullets hit) still move every frame. The player keeps full rate.
+	GetMesh()->bEnableUpdateRateOptimizations = true;
 }
 
 void AEnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// URO only while fully animated. With any body simulating (hit reactions, staggers,
+	// riddled, the ragdoll), interpolated frames and physics disagree, and the head, which
+	// copies the body's pose, comes off and snaps back.
+	USkeletalMeshComponent* Body = GetMesh();
+	Body->bEnableUpdateRateOptimizations = !Body->IsAnySimulatingPhysics();
 
 	if (IsDead())
 	{

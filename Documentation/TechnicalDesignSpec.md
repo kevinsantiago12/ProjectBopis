@@ -584,6 +584,24 @@ resolution: performance has to come from real cuts. Post effects:
   weak GPUs). It's a possible later experiment, not a toggle.
   `r.AntiAliasingMethod` 1, `r.ReflectionMethod` 0, and the High SSR
   override was removed from `DefaultScalability.ini`.
+- **Reverted to deferred + FXAA (2026-11-01, user: "switch it back to
+  deferred. I saw a bunch of graphical issues I didnt like").** Forward was
+  traced first (see *Forward + MSAA Deck trace*). The record below is kept
+  for reference. `r.ForwardShading` False and `r.AntiAliasingMethod` 1 are
+  back as committed.
+- *(Rejected)* **Forward renderer + MSAA (2026-11-01, user: "lets switch to
+  forward renderring now"):** `r.ForwardShading` True,
+  `r.AntiAliasingMethod` 3 (MSAA), `r.MSAACount` 4. Needs an editor restart and
+  a full shader recompile.
+  - **Expected losses:** subsurface skin shades without the screen-space blur;
+    screen-space AO is reduced; capsule and contact shadows are limited.
+  - **Unchanged:** translucency, which Unreal draws forward in both renderers.
+  - **To check after the restart:** the log for Substrate and forward warnings;
+    CC skin, eyes, hair cards (MSAA alpha-to-coverage) and DBuffer decals;
+    then a Deck trace against trace 8.
+  - **Revert:** set those two lines back (`False`, `1`).
+  - Reasoning and expected costs:
+    [CC_Character_Performance.md](CC_Character_Performance.md).
 
 **CPU:** game thread ≤ ~14 ms on the Deck (its 4-core CPU is likely the real
 limit at 60); ≤ 8 ms on the 1660 Super's class for 120. Enemy count,
@@ -1222,7 +1240,266 @@ scratchpad's `t8/`.
 - **`NS_ImpactConcrete` scale 1 → 0.25** (user, editor, 2026-11-01). Its
   smoke was the "abnormal huge puffs". Concrete is the greybox's main
   surface, so it's most hits. Only the smoke emitter (`ConcreteSmoke`) was
-  scaled; the sparks and chips are unchanged.
+  scaled (Scale Sprite Size › Uniform Curve Scale); the sparks and chips
+  are unchanged.
+- **Big-particle audit (read-only, 2026-11-01).** Found by decoding the
+  `.uasset` files.
+  - Smoke at or above `ConcreteSmoke`'s old 75 cm:
+    - Glass, Grass, Metal, Rock and Wood smoke: **125**;
+    - Dirt/Sand `DirtSmoke`: 100;
+    - Asphalt, Brick (×2) and Tile smoke: 75.
+  - Short splashes and debris: Metal 150–200, Sand `DirtDebris` 200, Rock
+    130, Dirt 100. Water `WaterSplash` reads 600×200; check that in the
+    editor.
+  - **User: leave them for now.** Revisit when real level art brings
+    those surfaces in. The fix is Uniform Curve Scale 0.25 on the smoke
+    emitters.
+  - Data: the bridge session's scratchpad `audit3.txt`.
+
+### Forward + MSAA Deck trace (2026-11-01, 20:48)
+**The trace.** `20261101_204849.utrace`, 323 MB, `Lvl_Sandbox`, same start
+command as traces 7–8. 110 s analysed (first 15 s skipped).
+- **Build:** forward shading, 4× MSAA (`Tools/BuildDeck.ps1`), plus
+  everything built since trace 8 (bullet-hole cap, the smoke changes).
+- **Exports:** this session's scratchpad (`t10/`). Trace 8 was re-exported
+  with the same commands (`t8/`) for the comparison.
+- **Load:** about the same as trace 8 (8.9 vs 8.4 characters moving per
+  frame), with more effects (Niagara components 19.6 vs 8.5 per frame).
+
+| | Trace 8 (deferred, FXAA) | Forward + 4× MSAA |
+|---|---|---|
+| Scene render, all / busiest 20% / calm | 15.05 / 16.81 / 14.10 ms | **14.74 / 16.62 / 13.86** |
+| GPU frame p50 / p90 / p99 | 16.5 / 23.4 / 32.1 ms | 16.5 / 24.3 / 35.2 |
+| Busiest 20% of seconds | 48 fps | 50 fps |
+| `UWorld_Tick`, busiest 20% | 15.6 ms | 16.2 ms |
+
+- **Net GPU: a wash** (scene −0.3 ms).
+- **Gone with deferred, about −5.8 ms (whole-trace averages):**
+  - sun lighting 1.32;
+  - reflection environment 1.19;
+  - translucency lighting volume 1.05;
+  - velocities 0.55;
+  - FXAA 0.44;
+  - height fog 0.42 (now per vertex in the base pass);
+  - subsurface scattering 0.40;
+  - light shafts 0.24;
+  - stochastic lighting 0.17.
+- **Added by forward and MSAA, about +4.5 ms:**
+  - translucency **+1.8** (1.15 → 2.95: it now blends into the 4× MSAA
+    target and lights per pixel);
+  - base pass **+1.45** (2.9 → 4.4: the sun and reflections are shaded here
+    now, on 4× depth samples);
+  - full depth prepass +0.46;
+  - screen-space AO +0.36;
+  - scene-colour copy +0.2.
+- **Not every saving shows in the scene time.** Decals (≈1.8 ms, before the
+  base pass in both) and shadow depths are unchanged.
+- **Fights are now game-thread-bound.** In the busiest seconds both the GPU
+  frame and the game frame are ≈20 ms, with `UWorld_Tick` ≈16 ms. The CC
+  game-thread fixes (URO, empty-slot ticks, the head AnimBP;
+  [CC_Character_Performance.md](CC_Character_Performance.md)) matter as much
+  as the GPU now.
+- **Next tests (cvars in `-ExecCmds`, no rebuild):**
+  - `r.MSAACount 2`: MSAA is most of the translucency and base-pass increase.
+  - `r.SeparateTranslucencyScreenPercentage 50`: halved deferred fight
+    translucency in trace 9. It's untested with MSAA and may not apply.
+
+**2× MSAA + half-res translucency trace (`20261101_205559`, 126 s
+analysed).** Same build, with `r.MSAACount 2,r.SeparateTranslucencyScreenPercentage 50`
+added to `-ExecCmds`. Similar load: 8.4 characters moving per frame, Niagara
+components 16.4 per frame. Exports in `t11/`.
+
+| | Deferred, FXAA (trace 8) | Forward, 4× MSAA | **Forward, 2× MSAA + 50% translucency** |
+|---|---|---|---|
+| Scene, all / busiest 20% / calm | 15.05 / 16.81 / 14.10 | 14.74 / 16.62 / 13.86 | **13.33 / 15.18 / 12.17** |
+| Translucency, all / busy | 1.18 / 1.79 | 3.05 / 3.87 | **1.33 / 1.95** |
+| Base pass, all | 2.94 | 4.36 | 4.35 |
+| GPU frame p50 / p90 / p99 | 16.5 / 23.4 / 32.1 | 16.5 / 24.3 / 35.2 | **15.9 / 23.0 / 32.4** |
+| Seconds ≥58 fps / under 50 | 44% / 8% | 38% / 8% | **61% / 2%** |
+| Busiest 20% of seconds | 48 fps | 50 fps | **53 fps** |
+| `UWorld_Tick`, busiest / calm | 15.6 / 10.8 | 16.2 / 10.9 | 14.8 / 9.0 |
+
+- **Best result so far:** −1.7 ms of scene time against deferred, −1.9 ms in
+  calm play. Calm scene time is 12.2 ms, under the 13 ms Deck target.
+- **Half-res translucency works with MSAA:** translucency fell from 2.95 to
+  1.27 ms.
+- **2× instead of 4× didn't change the base pass** (4.35): its cost is the
+  forward lighting, not the samples.
+- **Fights are game-thread-bound:** `UWorld_Tick` ≈15 ms and the game frame
+  ≈19 ms in the busiest seconds, against 15.2 ms of scene time.
+- **Not yet in the config:** both values are only in `-ExecCmds` so far.
+- **Outcome: forward rejected (user, same evening):** "I saw a bunch of
+  graphical issues I didnt like". The config is back to deferred + FXAA.
+  What carries over to deferred:
+  - half-res translucency (`r.SeparateTranslucencyScreenPercentage 50`,
+    trace 9);
+  - the CC game-thread fixes, since fights are game-thread-bound either way.
+
+### Deferred optimization pass (2026-11-01, user: "do all of these optmization to the end")
+The list is in [CC_Character_Performance.md](CC_Character_Performance.md)
+and the Max Payne 3 comparison. None of it is traced yet; the next deferred
+Deck build measures it all together.
+- **`DefaultScalability.ini`:**
+  - `[EffectsQuality@0/2]`: `r.SubsurfaceScattering 0`,
+    `r.SeparateTranslucencyScreenPercentage 50`,
+    `r.SeparateTranslucencyUpsampleMode 1`;
+  - `[ViewDistanceQuality@2]`: `r.SkeletalMeshLODBias 1` (check the player's
+    close-up silhouette).
+- **`DefaultEngine.ini`: `r.Substrate` False** (legacy G-buffer).
+  - A search of all `Content` found no `MaterialExpressionSubstrate*`
+    nodes, so every material is legacy and converts back unchanged.
+  - Needs an editor restart and a full shader recompile.
+  - Replaces the 2026-10-27 "kept" decision; the trace decides.
+- **C++ (applied by Claude at the user's request, each approved; compiled
+  clean in the Deck build 21:47):**
+  - **URO on enemy bodies:** `AEnemyBase` constructor,
+    `bEnableUpdateRateOptimizations` true;
+  - **`ABopisCharacterBase::StopEmptyPartTicks()`:** called at the end of
+    `BeginPlay`. It turns off tick on every skeletal mesh component other
+    than the body that has no mesh asset (CC's empty slots).
+- **Deck build 21:47:** deferred, Substrate off, the scalability changes,
+  both C++ changes. 3,879 packages, no errors.
+- **Trace (`20261101_220312`, 104 s analysed, exports `t12/`) vs trace 8:**
+  - **Scene:** all 15.05 → **14.28**, busiest 20% 16.81 → **15.71**, calm
+    14.10 → 13.57 ms.
+  - **Seconds ≥58 fps:** 44% → **65%**; under 50 fps: 8% → 3%.
+  - **Busiest 20% of seconds:** 48 → 50 fps.
+  - **GPU moves (ms/frame):** SSS −0.40, translucency −0.32 (busy 1.79 →
+    1.28), base pass −0.15, reflections −0.15, AO −0.15, velocities −0.14,
+    skin cache −0.12.
+  - **Substrate off on its own:** about −0.3 to −0.4 across base pass,
+    reflections and AO. Small.
+  - **Game thread:** `UWorld_Tick` in the busiest seconds 15.6 → 14.3 ms.
+    Body anim 1.89 → 1.58 incl (URO). The head AnimBP's game-thread time
+    0.17 → 0.07 (now multithreaded).
+  - **The empty-slot pass did nothing:** `CC_SkelMesh_C` still ticks ≈22
+    times per character. CC most likely creates its slot components after
+    `BeginPlay` (it applies outfits about a second later), so the pass finds
+    none.
+- **BUG (user, same trace): a ragdolled enemy's head detaches from the
+  body.**
+  - **Prime suspect: `r.SkeletalMeshLODBias 1`.** The body is now never at
+    LOD0, and `CC_Body_LODSettings` removes bones from LOD1 up. The bone
+    filter likely includes the neck helper bones (`neck_01_wt` /
+    `neck_02_wt`) that the head mesh's neck is skinned to.
+    - The body stops updating removed bones, and the head copies its pose
+      from the body. In a ragdoll, the neck then stays behind while the head
+      bone falls with the body.
+    - The same would have happened before at body LOD1+ (beyond ≈4 m),
+      where it's harder to see.
+  - **Bisect in PIE at High:** `r.SkeletalMeshLODBias 0` vs `1`; then
+    `a.URO.Enable 0`, in case it's URO instead.
+  - **Result (user): it's URO.** URO interpolation on the ragdolling body
+    left the head, which copies its pose from the body, out of step.
+  - **Fix (applied by Claude, "go apply it"; compiled with Live Coding,
+    user-tested: "head fixed"):**
+    `StartRagdoll` sets `Body->bEnableUpdateRateOptimizations = false`
+    before the physics takes over. Living enemies keep URO.
+  - **Then (user): "it detaches and snaps back sometimes"** on living
+    enemies, in the partly physical states.
+  - **Fix 2 (applied by Claude, "apply yourself"; compiled with Live
+    Coding, user-tested: "head fixed"):**
+    `AEnemyBase::Tick`, before the `IsDead()` check, sets
+    `Body->bEnableUpdateRateOptimizations = !Body->IsAnySimulatingPhysics()`.
+    URO only while fully animated. The `StartRagdoll` line stays for the
+    ragdoll's first frame.
+  - If a flicker remains at the moment of impact, set the flag where hit
+    reactions start.
+- **Deck build 22:23 (both head fixes) traced: `20261101_222821`, 208 s
+  analysed, exports `t13/`.**
+
+  | | Trace 8 | 22:03 run | **22:28 run** |
+  |---|---|---|---|
+  | Scene, all / busiest 20% / calm | 15.05 / 16.81 / 14.10 | 14.28 / 15.71 / 13.57 | **14.41 / 16.14 / 13.52** |
+  | GPU frame p50 / p90 / p99 | 16.5 / 23.4 / 32.1 | 16.1 / 23.1 / 31.7 | 16.3 / 23.0 / 31.7 |
+  | Seconds ≥58 fps / under 50 | 44% / 8% | 65% / 3% | **60% / 4%** |
+  | Busiest 20% of seconds | 48 fps | 50 fps | 49 fps |
+  | `UWorld_Tick`, busiest / calm | 15.6 / 10.8 | 14.3 / 10.0 | 15.3 / 9.4 |
+  | Body anim / parallel anim wait (GT) | 1.89 / 1.07 | 1.58 / 0.98 | 1.60 / 0.88 |
+
+  - **The gains hold:** −0.6 ms scene against trace 8; 60% of seconds at
+    58+ fps instead of 44%.
+  - **Fights gained less on the game thread than in the 22:03 run.**
+    Enemies being shot are partly physical, and URO is now off then (the
+    head fix), so URO mostly helps calm stretches (calm `UWorld_Tick` 10.8 →
+    9.4).
+  - **Busy GPU frames:** scene 16.1 ms. Fights are bound by both the GPU and
+    the game thread (≈15 ms world tick + ≈6 ms of the rest of the frame).
+- **Medium test (engine-stock scalability 1, 100% res;
+  `20261101_224237`, 150 s, exports `t14/`) vs the 22:28 High run:**
+  - **Scene:** all 14.41 → 14.45, busiest 16.14 → 15.56, calm 13.52 →
+    13.99 ms.
+  - **Seconds ≥58 fps:** 60% → 68%. Busiest seconds 49 → 51 fps. This run
+    had half the effects (Niagara 9.0 vs 18.9 per frame), so it flatters
+    Medium.
+  - **Medium is cheaper on:**
+    - translucency lighting volume **−1.0** (1.15 → 0.14; the engine's
+      Medium uses a smaller volume, `r.TranslucencyLightingVolumeDim`);
+    - shadow depths −0.3;
+    - light shafts −0.25 (off);
+    - FXAA −0.13.
+  - **Medium is dearer on:**
+    - ambient occlusion **+1.5** (our High's AO overrides are cheaper than
+      the engine's Medium);
+    - subsurface scattering +0.39 (back on);
+    - full-resolution translucency +0.37.
+  - **Conclusion:** stock Medium isn't a better tier. Its one big win (the
+    smaller lighting volume) can go into High on its own: keeps particles
+    lit, about −1 ms.
+  - **Applied to High (user: "Both"), `DefaultScalability.ini`:**
+    - `[EffectsQuality@2]`: `r.TranslucencyLightingVolume.Dim 32` (engine
+      High 48) and `r.TranslucencyLightingVolume.Blur 0`;
+    - `[PostProcessQuality@2]`: ~~`r.LightShaftQuality 0`~~. User: "can
+      you just have lower quality lightshaft?" Instead, shafts stay on with
+      `r.LightShaftDownSampleFactor 4` (engine 2),
+      `r.LightShaftBlurPasses 2` (3) and `r.LightShaftNumSamples 8` (12).
+    - Expected about −1.1 to −1.2 ms.
+  - **Traced (`20261101_225746`, 191 s, exports `t15/`), vs the 22:28 run:**
+    - **Scene:** all 14.41 → **13.90**, busiest 16.14 → **15.08**, calm
+      13.52 → 13.42 ms.
+    - **Seconds ≥58 fps:** 60% → **72%** (trace 8: 44%); under 50 fps: 3%.
+    - **Busiest 20% of seconds:** 49 → **52 fps**.
+    - **Translucency lighting volume:** 1.15 → 0.15 (blur pass 0.66 → 0,
+      inject 0.49 → 0.15). As predicted.
+    - **Light shafts didn't get cheaper** (0.25 → 0.29): the downsample,
+      blur-pass and sample settings bought nothing. **User: "Back to
+      defaults".** The three lines were removed from
+      `[PostProcessQuality@2]`; shafts are at the engine's High (≈0.25 ms).
+    - **Weapon meshes** still tick ≈72 times per frame (≈1.05 ms of game
+      thread). That's the next target.
+  - **Next levers for fights:**
+    - the CC part ticks (`CC_SkelMesh_C`, still ≈166 per frame);
+    - decals (1.9 ms, a fixed cost);
+    - post (2.1);
+    - the lighting volume (1.15, kept: particles stay lit).
+- **Bridge batch (approved, run 2026-11-01):**
+  - **Vertex counts:** done. They're in
+    [CC_Character_Performance.md](CC_Character_Performance.md).
+  - **Head AnimBP and head sections:** not reachable. The bridge resolves an
+    AnimBP to its class defaults; *Use Multi Threaded Animation Update* is
+    on the Blueprint asset, and per-LOD section flags are in render data.
+    These are editor clicks for the user.
+- **Lit volumetric translucency** (the reason the translucency lighting
+  volume runs), read from the files:
+  - 15 impact materials: `M_Smoke1`, `M_SmokeRing`, `M_Fleks1`–`4`,
+    `M_Sand`, Dirt ×4, Water ×4 + `M_MeshEmitWater_MASTER`;
+  - CC's `M_Simple_Translucent` (eyelashes) and `MI_Eye_Water_Master`.
+
+  `r.TranslucentLightingVolume 0` needs all of them made unlit (colour
+  through emissive) or surface-lit first.
+  **User: "keep them lit".** The volume stays (≈1 ms).
+- **Editor changes (user, 2026-11-01, saved 21:26–21:37):**
+  - **`CCMH_Head_AnimBP`:** multithreaded update on. The `False` override is
+    gone from the saved file. No `LODThreshold` was saved for the pose-blend
+    nodes.
+  - **`CCMH_Head_Male/Female`:** sections and shadow flags, as listed in the
+    review:
+    - Cast Shadow off on eyes and teeth (the translucent eye water, eye AO
+      and lashes don't cast anyway);
+    - eye water and eye AO disabled at LOD1+, lashes at LOD2+.
+  - **`Beard_01`–`04`:** re-saved (LOD1 reduction); counts not re-checked.
+- **Waiting on the user's look decisions:** sky swap, reflection captures,
+  bullet holes as meshes instead of DBuffer decals.
 
 ### Bullet holes, bloom, SSAO (2026-11-01, built; not traced)
 - **Bullet-hole cap:** `UBulletHoleSubsystem` (a world subsystem in
@@ -5345,6 +5622,8 @@ hit bones, physics and weapon attachment all run on it.
 - **Cost:** dressed character ≈ 30k verts LOD0 (body 7.3k, head 4.9k, items
   2.5–5.3k), 4–5 LODs per part, ~12 draw calls (head has 6 sections), 35 head
   shape targets; skin textures 4K (cap to 1–2K for the Deck).
+  **Full review (2026-11-01):** [CC_Character_Performance.md](CC_Character_Performance.md):
+  measured costs, 11 prioritized fixes, and what still needs a bridge count.
 
 ## Enemies
 

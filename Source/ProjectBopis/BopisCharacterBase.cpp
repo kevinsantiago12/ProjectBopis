@@ -754,6 +754,21 @@ void ABopisCharacterBase::BeginPlay()
 			Part->SetTickGroup(TG_PostPhysics);
 		}
 	}
+
+	StopEmptyPartTicks();
+}
+
+void ABopisCharacterBase::StopEmptyPartTicks()
+{
+	TArray<USkeletalMeshComponent*> Parts;
+	GetComponents(Parts);
+	for (USkeletalMeshComponent* Part : Parts)
+	{
+		if (Part != GetMesh() && !Part->GetSkeletalMeshAsset())
+		{
+			Part->SetComponentTickEnabled(false);
+		}
+	}
 }
 
 void ABopisCharacterBase::UseRagdollCollision()
@@ -849,6 +864,11 @@ void ABopisCharacterBase::StartRagdoll(const FHitResult& Hit, const FVector& Sho
 	// CC bodies: CC's constraints) goes in first, so the bodies are built from it; after the
 	// motors above, which belonged to the old asset's bodies.
 	USkeletalMeshComponent* Body = GetMesh();
+
+	// A corpse is all physics, so skipped animation frames save nothing, and URO's
+	// interpolation leaves the copied head behind: it comes off as the body falls.
+	Body->bEnableUpdateRateOptimizations = false;
+
 	if (RagdollPhysicsAsset && Body->GetPhysicsAsset() != RagdollPhysicsAsset)
 	{
 		Body->SetPhysicsAsset(RagdollPhysicsAsset, true);
