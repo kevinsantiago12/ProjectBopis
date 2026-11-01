@@ -31,6 +31,8 @@ AWeaponDrop::AWeaponDrop()
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(Body);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// A dropped gun is small; the sun's cascade shadow isn't worth it.
+	MeshComponent->SetCastShadow(false);
 }
 
 void AWeaponDrop::Launch(TSubclassOf<AWeaponBase> InWeaponClass, TSubclassOf<AWeaponPickup> InPickupClass,

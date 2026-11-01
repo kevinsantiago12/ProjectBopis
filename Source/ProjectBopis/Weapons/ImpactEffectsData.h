@@ -5,8 +5,10 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Chaos/ChaosEngineInterface.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "ImpactEffectsData.generated.h"
 
+class UDecalComponent;
 class UNiagaraSystem;
 class UMaterialInterface;
 class USoundBase;
@@ -86,6 +88,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact", meta = (ClampMin = "0.01"))
 	float EffectScale = 1.0f;
 
+	/** After a puff, the next hit's smoke waits a random time in this range (game seconds), so an
+	    emptied magazine spreads its puffs across the whole burst instead of the first few shots. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Smoke", meta = (ClampMin = "0.0"))
+	float SmokeIntervalMin = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Smoke", meta = (ClampMin = "0.0"))
+	float SmokeIntervalMax = 0.5f;
+
+	/** Hard ceiling on puffs alive at once, whatever the intervals allow. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Smoke", meta = (ClampMin = "0"))
+	int32 MaxSmokePuffs = 8;
+
+	/** How long a puff counts as alive (game seconds): about the smoke's life. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Smoke", meta = (ClampMin = "0.0"))
+	float SmokePuffLifetime = 2.0f;
+
 	/** A hit on a character's head plays one of these instead of its surface's sound. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound")
 	TArray<TObjectPtr<USoundBase>> HeadshotSounds;
@@ -121,4 +139,26 @@ private:
 
 	/** When the last near miss played (platform seconds), across every weapon using this asset. */
 	mutable double LastNearMissTime = 0.0;
+
+	/** When each puff still alive went off (world seconds), oldest first. */
+	mutable TArray<double> SmokePuffTimes;
+
+	/** The earliest the next puff may go off while smoke is still in the air (world seconds). */
+	mutable double NextSmokeTime = 0.0;
+};
+
+/** Keeps the number of bullet holes in the world down: past MaxBulletHoles, the oldest goes. */
+UCLASS()
+class PROJECTBOPIS_API UBulletHoleSubsystem : public UWorldSubsystem
+{
+	GENERATED_BODY()
+
+public:
+	static constexpr int32 MaxBulletHoles = 48;
+
+	void Register(UDecalComponent* Decal);
+
+private:
+	/** Oldest first. Weak, so holes that run out their life span simply drop out. */
+	TArray<TWeakObjectPtr<UDecalComponent>> Holes;
 };

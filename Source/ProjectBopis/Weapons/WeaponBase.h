@@ -8,6 +8,7 @@
 
 class USoundBase;
 class UParticleSystem;
+class UPointLightComponent;
 class UMaterialInterface;
 class UAnimSequence;
 class AProjectileBase;
@@ -508,13 +509,39 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
 	TObjectPtr<USoundBase> EquipSound;
 
-	/** Spawned at MuzzleSocketName on every shot — every gun's flash comes from here, not
-	    from its animation. */
+	/** Spawned at MuzzleSocketName on every shot, from a pool: every gun's flash comes from here,
+	    not from its animation. Its smoke emitters (MuzzleSmokeEmitterMatch) only run when a puff
+	    is due; its own particle lights are switched off in the assets, since MuzzleLight lights
+	    the shot. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UParticleSystem> MuzzleFlash;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	FName MuzzleSocketName = TEXT("Muzzle");
+
+	/** The flash's emitters with this in their name are its smoke. They run at most once every
+	    MuzzleSmokeInterval, so rapid fire and strafing leave a puff now and then, not a trail. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	FString MuzzleSmokeEmitterMatch = TEXT("Smoke");
+
+	/** Least seconds between muzzle smoke puffs. 0: smoke every shot. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback", meta = (ClampMin = "0.0"))
+	float MuzzleSmokeInterval = 0.35f;
+
+	/** The shot's flash of light (Max Payne 3: a split second, no shadow): one small light per
+	    gun, re-lit by each shot rather than stacked. Radius, colour and brightness are set on the
+	    component in each Blueprint. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UPointLightComponent> MuzzleLight;
+
+	/** Seconds the muzzle light stays on after a shot. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback", meta = (ClampMin = "0.0"))
+	float MuzzleLightDuration = 0.05f;
+
+	/** Enemies' shots light the scene only within this distance of the camera (cm); 0: never.
+	    The player's always do. In a fight, most flashes are theirs. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback", meta = (ClampMin = "0.0"))
+	float EnemyMuzzleLightDistance = 1500.0f;
 
 	/** Played on the weapon's own mesh every shot: it moves the gun's parts, and its Weapon
 	    Sound notifies make the sounds — the shot is a Fire notify on it. None: no animation,
@@ -765,6 +792,15 @@ protected:
 	/** Seconds of unbroken fire so far: how long the current burst has run. */
 	float BurstTime = 0.0f;
 	float TimeSinceLastShot = 0.0f;
+
+	/** The flash effect for this shot, from the pool, with its smoke on only if a puff is due. */
+	void PlayMuzzleFlash(USkeletalMeshComponent* FiringMesh);
+
+	/** Lights MuzzleLight at the firing muzzle for MuzzleLightDuration. */
+	void FlashMuzzleLight(USkeletalMeshComponent* FiringMesh);
+
+	float LastMuzzleSmokeTime = -1000.0f;
+	float MuzzleLightTimeLeft = 0.0f;
 
 
 public:	

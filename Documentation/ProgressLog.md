@@ -1847,30 +1847,109 @@
     Deck mode as the fallback. The user is testing dynamic resolution, 80%,
     and the particle-lighting and particle-light settings through the start
     command.
+- **2026-11-01: muzzle flash** (spec *Muzzle flash*). Built by the
+  "Current Coding Work" session; compiled at 13:08 and read back here. Not
+  playtested yet.
+  - Pooled spawn.
+  - Smoke emitters at most every 0.35 s.
+  - The five asset particle lights set to `spawnFraction` 0.
+  - One code `MuzzleLight` per gun: 0.05 s, no shadows, no translucency.
+  - Optimization handed over to this session.
+- **2026-11-01: sun inset shadows off** in `Lvl_Sandbox`. A bridge session
+  applied it and the user saved. Shell casings and all three pickup classes
+  no longer cast shadows (Live Coding, compiled). Not traced yet.
+- **2026-11-01: bridge across sessions** (spec, bridge gotchas):
+  - several sessions can share the bridge;
+  - a shell `cd` out of the project root unloads it for that session;
+  - the proxy no longer treats the `server/discover` probe's 400 as a dead
+    session.
+- **2026-11-01: bullet-hole cap, bloom, SSAO** (spec, same name).
+  - `UBulletHoleSubsystem` keeps the newest 48 holes.
+  - High tier: bloom quality 3, SSAO max quality 50.
+  - Rebuilt clean with `RebuildEditor` (seven sessions said safe; no reply
+    from `projectbopis-f0`). Not traced yet.
+- **2026-11-01: seventh Deck trace, glass refraction** (spec *Seventh Deck
+  trace*).
+  - **The trace:** user: "better fps, but some slowdown with multiple
+    enemies on screen". 56% of seconds at ≥58 fps (was 29%); GPU p50
+    16.7 ms. On fight frames: translucency 4.5 ms, and a refraction chain on
+    16% of frames at 2.2 ms each.
+  - **Wrong first guess:** the impact smoke and flecks. A bridge check found
+    them already at refraction None, so nothing changed there.
+  - **Cause:** the creator glass `M_Base_Material_Glass_Reflective`. The
+    sunglasses fix only reached the male headwear tables; female enemies'
+    glasses and one male pack row still refracted.
+  - **Fix:** `RefractionMethod` None on that base material (bridge, saved
+    16:28, `bUsesDistortion` gone from the file). Not yet traced.
+- **2026-11-01: impact size and smoke interval** (spec *Seventh Deck
+  trace*).
+  - `EffectScale` 1.5 → 1.0 in `DA_ImpactEffects` (bridge, saved 16:43).
+  - Smoke puffs: always one when none is alive, otherwise a random
+    0.25–0.5 s apart, at most 8. User: "evenly distributed accross the whole
+    burst".
+  - Applied by Claude ("Apply it yourself"). Rebuilt clean with
+    `RebuildEditor`; all peers were idle. Not yet playtested.
+- **2026-11-01: `EFT_Impacts`** (spec *Seventh Deck trace*).
+  - The systems already had the pack's `NFX_Impact`. My trace note said
+    they had no effect type; it's corrected.
+  - `EFT_Impacts` is a copy of it with tighter values: 40 m, 32 total, 16
+    per system, off-screen cull at spawn.
+  - On the 23 `DA_ImpactEffects` systems (bridge, saved 17:14). The pack
+    asset is unchanged. Not yet traced.
+  - Stray editor traces (16:28, 16:52) are in the Recycle Bin, so the
+    store keeps 03:19 and trace 7 (15:04).
+- **2026-11-01: eighth Deck trace** (spec *Eighth Deck trace*).
+  - Fight translucency 4.5 → 1.75 ms, and the refraction chain is gone:
+    −3.7 ms GPU.
+  - The fight was heavier (+30% character work), so overall fps didn't
+    rise: 48 fps in the slowest seconds, against 50.
+  - New: fights are also game-thread-bound. World tick is ≈15 ms in the
+    slowest seconds of both traces, from CC skinned meshes (167
+    ticks/frame) and animation.
+  - User's next idea: lower-resolution smoke and blood
+    (`r.SeparateTranslucencyScreenPercentage`).
+- **2026-11-01: ninth Deck trace, half-resolution translucency**
+  (`20261101_174800`, 149 s; `r.SeparateTranslucencyScreenPercentage 50`
+  in `-ExecCmds`, not in the ini).
+  - Fight translucency 1.75 → 0.91 ms. Scene render in fights is about the
+    same (18.98 → 18.95). The slowest 20% of seconds were 51 fps (48 in
+    trace 8).
+  - User saw "abnormal huge puffs of smoke". **Cause: `NS_ImpactConcrete`**
+    (the greybox floors and walls are concrete). The user set its uniform
+    scale from 1 to **0.25** in the editor (saved 18:01). It isn't in the
+    Deck build yet; repackage to see it there.
+  - Below 50%, translucency loses its nearest-depth upscale and falls back
+    to bilinear halos, so 50 stays the floor.
 
 ### ▶ RESUME HERE
 **A. Next up**
 0000. **Deck performance on `Lvl_Sandbox`, next steps in order.** Spec:
     *Sixth Deck trace*. Now GPU p50 17.6 ms (budget 16.6), GPU-bound.
-    1. **Muzzle flash** (user: "lets do that tomorrow"). Each shot spawns a
-       fresh, unpooled Cascade system (`WeaponBase.cpp:335`) with a flash,
-       glow, streaks, **two smoke emitters and a light**.
-       - Pool it (`EPSCPoolMethod::AutoRelease`).
-       - **Split flash from smoke:** light-free, smoke-free flash copies
-         every shot, plus smoke spawned at most every ~0.3 s per gun. The
-         user edits the copies in Cascade; Claude writes the code.
-       - Smaller, shorter smoke; smaller flash lights, or enemy flash
-         lights capped.
-       - Present the code first.
-    2. **Sun shadows:** turn off per-object (inset) shadows for movable
-       objects on Sandbox's Stationary sun. Shadow renders went from 1 to
-       2.83 per frame (≈ +2.5 ms).
+    1. **Muzzle flash: built (2026-11-01), PIE test it.** Check:
+       - strafing fire leaves at most one puff per 0.35 s;
+       - each shot gives a brief, shadowless flash;
+       - duals light the hand that fired;
+       - rapid fire never stacks lights.
+
+       If smoke still shows every shot, see the spec's *Muzzle flash* risk
+       note. Then the content side: smoke size and lifetime, the shotgun's
+       embers.
+    2. **Sun shadows: done 2026-11-01** (inset shadows off; casings and
+       pickups shadowless). Left: the same change on `Lvl_Linear`'s sun when
+       it's baked.
     3. **The user's command-line tests:** `r.TranslucencyLightingVolume 0`
        (or `.Dim 32` + `.MarkVoxels 1`), `r.ParticleLightQuality 0`,
-       `r.ScreenPercentage 80`. Make the ones he likes permanent for the
-       Deck.
-    4. **Decal cap** (bullet holes, 1.7 ms); bloom 5 → 3; SSAO lower now
-       that the lighting is baked.
+       `r.ScreenPercentage 80`. Make the ones the user likes permanent for
+       the Deck.
+    4. **Decal cap, bloom, SSAO: done 2026-11-01** (cap 48, bloom 3, SSAO
+       max quality 50). Check in the re-trace whether decals drop below
+       ~1.7 ms.
+    4b. **Impact effects (trace 7, user: "impact particles first"):** glass
+       refraction, `EffectScale` 1.0 and the smoke interval done 2026-11-01.
+       **PIE test the smoke:** empty an SMG into a wall; expect one puff on
+       the first hit, then puffs spread through the burst. `EFT_Impacts`
+       done too. Then re-trace; after it, shorter or unlit smoke if still
+       needed. After that, CC characters.
     5. **Re-trace.** Start the editor *before* opening Insights, then close
        Insights right after the run (spec gotcha).
     - **Later:**

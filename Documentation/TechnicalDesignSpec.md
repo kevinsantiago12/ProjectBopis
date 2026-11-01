@@ -991,6 +991,20 @@ dynamic characters.
     transform (`set_actor_transform`, same value) marks it changed.
   - `World Settings` lives in the main map file, so `save_assets` saves it
     even for `Lvl_Sandbox`.
+  - **Several sessions at once are fine** (2026-11-01). The plugin keeps a
+    list of sessions, and only a DELETE removes one. Each Claude session runs
+    its own `.claude/unreal-mcp-proxy.mjs` with its own editor session, and
+    the proxy survives editor rebuilds.
+  - **What does drop a session's bridge:** a shell `cd` out of the project
+    root. It moves the session's working directory, and Claude Code unloads
+    the root `.mcp.json` servers ("Closing MCP server stdin" in
+    `%LOCALAPPDATA%/claude-cli-nodejs/Cache/<project>/mcp-logs-unreal-mcp/`).
+    Only a new session gets it back, so use absolute paths.
+  - **Proxy fix (2026-11-01):** the client's `server/discover` probe gets a
+    400 MethodNotFound from the editor. The proxy took every 400/404 for a
+    dead session, opened two fresh editor sessions per connect and then
+    errored. Now only replies that mention a session count as expired;
+    other errors pass straight through. Tested against a fake upstream.
   - `find_actors` needs `name`, `tag` and `collision_channels`.
 - **First GPU bake: blocky checkerboard lightmaps** (user: "some artifacts
   on the ground", screenshot of the quarter-cylinder pit).
@@ -1033,6 +1047,203 @@ dynamic characters.
   - capsule shadows;
   - re-bake whenever the greybox changes.
 
+### Muzzle flash (2026-11-01, compiled; not playtested)
+The Sixth Deck trace's per-shot costs, removed in `AWeaponBase`.
+- **Pooled:** `PlayMuzzleFlash` spawns `MuzzleFlash` with
+  `EPSCPoolMethod::AutoRelease`.
+- **Smoke, rate-limited:** emitters whose name contains
+  `MuzzleSmokeEmitterMatch` ("Smoke") are enabled only when
+  `MuzzleSmokeInterval` (0.35 s) has passed since the last puff. They're set
+  on every shot, since a pooled system keeps its last user's switches. The
+  clock is per weapon, so a dual pair shares one. Emitter names:
+  - pistol and rifle: "FlashCore Smoke", "Smoke Residual";
+  - sniper: "FlashCoreSmoke", "Smoke Residual";
+  - shotgun: "Smoke".
+- **One light per gun:** a `MuzzleLight` point-light component, re-lit by
+  each shot (never stacked) at the muzzle that fired, for
+  `MuzzleLightDuration` 0.05 s:
+  - no shadows, `bAffectTranslucentLighting` off;
+  - 60 cd, 250 cm, colour 255/184/107 (set on the component per
+    Blueprint);
+  - enemies light the scene only within `EnemyMuzzleLightDistance` (1500 cm)
+    of the camera.
+- **Asset lights off:** `spawnFraction` 0 on the `ParticleModuleLight`s of
+  `P_Pistol_MuzzleFlash_01`, `P_AssaultRifle_MuzzleFlash` (_0 and _1),
+  `P_Shotgun_MuzzleFlash_01` and `P_SniperRifle_MuzzleFlash_01`
+  (`/Game/MilitaryWeapSilver/FX`). `P_Grenade_MuzzleFlash_01` has no light.
+  Every gun's shot light now comes from `MuzzleLight`.
+- **Risk:** `SetEmitterEnable` runs after the spawn has activated. If Cascade
+  emits its first burst during activation, smoke still shows every shot. The
+  fix would be to spawn with auto-activate off, set the emitters, then
+  `Activate`.
+- **Open (content):**
+  - smoke is still world space at its original size and lifetime
+    (shorter, or local space, is a taste call);
+  - the shotgun's "sparks", "Embers" and "EmbersAltColor" aren't
+    rate-limited;
+  - impact effects (smoke plus a decal per hit, lights on `NS_ImpactMetal`
+    and `NS_ImpactElectronics`) are the rest of the fight translucency.
+
+### Seventh Deck trace (2026-11-01, `Lvl_Sandbox`, after step-4 work)
+- **The trace:** `20261101_150419.utrace`, 250 s of play. It's compared to
+  the sixth with the same method: GPU `Frame` events ≥ 1 ms, the first
+  15 s skipped, seconds ranked by GPU time.
+- **Overall:** GPU p50 17.7 → **16.7**, p90 23.7 → **21.5**, p99 32.8 →
+  30.1 ms. Seconds at ≥58 fps: 29% → **56%**; under 50: 30% → **6%**.
+  The busiest 20% of seconds: 44 → **51 fps** (GPU 26.2 → 19.7 ms). Calm
+  play is unchanged at 16.5 ms.
+- **What moved (ms/frame, all / busy):**
+  - sun lighting (`DirectLighting`) 2.84 / 3.45 → **1.20 / 1.22**, the
+    inset shadows gone;
+  - `ShadowDepths` 0.73 / 0.93 → 0.56 / 0.58;
+  - decals ~1.7 → ~1.44 (roughly flat, so mostly a fixed DBuffer cost;
+    the cap only trims it);
+  - post 1.80 → 1.66 (bloom now 0.07).
+- **Still left in fights (the user: "some slowdown with multiple enemies"):**
+  - **Translucency 4.46 ms busy** (0.56 calm): impact and muzzle particles.
+  - **A refraction chain:** `Distortion` runs on 16% of frames, **2.16 ms
+    each time** (`Rough` 0.84 + `TAA` 0.48 busy).
+    - **Not the impact particles.** A first guess blamed `M_Smoke1` and
+      `M_Fleks1`–`4`, but a bridge check found all of them already at
+      `RefractionMethod` None. A "Refraction" string in a `.uasset` is
+      only the input's name; the real marker is **`bUsesDistortion`**.
+    - Only six materials in the project have `bUsesDistortion`: the water
+      materials (`NS_ImpactWater`), the knife ribbon trail, the explosion
+      shockwave, and **`M_Base_Material_Glass_Reflective`**, the creator's
+      glass. `MI_Glass_Dark` and `MI_Glass_Light` are children of it, used
+      by most glasses, goggles and the female wristwatch.
+    - **Likely cause: enemies' glasses.** `DT_Outfits_PH_M` / `_F` give
+      enemies `Aviator_Glasses`, `Glasses_01`, `Glasses_Agent`,
+      `Sunglasses_01` and `Glasses_Cat_Eyes`. Only the player's
+      `Sunglasses_01` row was made opaque. That fits "slowdown with
+      multiple enemies": the chain runs whenever a bespectacled enemy is on
+      screen.
+      (Checked 2026-11-01: the sunglasses fix only reached the male headwear
+      tables. `DT_Apparel_F_Headwear`/`+` still used `MI_Glass_Dark`/`Light`,
+      `DT_Apparel_M_Headwear+` had one `MI_Glass_Light` row, and some glasses
+      meshes default to the glass MIs.)
+    - **Fix (done 2026-11-01, bridge, saved 16:28):** `RefractionMethod`
+      `RM_PixelNormalOffset` → `RM_None` on
+      `M_Base_Material_Glass_Reflective`. It's still translucent and
+      `bUsesDistortion` is gone from the saved file. Neither MI overrides it.
+      Every lens and watch face stays see-through but no longer refracts.
+      Not yet traced on the Deck.
+  - The impact materials are almost all **lit translucent**
+    (`MSM_DefaultLit`, `TLM_VolumetricNonDirectional`). They're why the
+    translucency lighting volume (0.98 ms) runs every frame.
+  - ~~None of the impact systems has a Niagara Effect Type~~ (wrong:
+    they all used the pack's `NFX_Impact`: spawn-only, 50 m, 40 instances,
+    no per-system cap, no off-screen cull).
+  - **`EFT_Impacts` (done 2026-11-01, bridge, saved 17:14; not yet
+    traced):**
+    - `/Game/ThirdPerson/FX/EFT_Impacts`, duplicated from `NFX_Impact`
+      (the bridge can't create a `UNiagaraEffectType` from scratch).
+    - Spawn-only, deactivate immediate, all quality levels.
+    - **40 m** distance cull, **32** instances in total, **16** per
+      system, off-screen cull at spawn (`MaxTimeOutsideViewFrustum` 0).
+    - Assigned to the 23 systems `DA_ImpactEffects` uses. `NFX_Impact`
+      and the unused `NS_ImpactLeaves1`–`3` are left as they were.
+  - CC characters: GPU skin cache 0.3 ms busy, base pass +0.2. Small next
+    to the particles. Worth its own look after.
+- **Impact size and smoke (done 2026-11-01, rebuilt clean; not yet traced
+  or playtested):**
+  - `EffectScale` 1.5 → **1.0** in `DA_ImpactEffects` (bridge, saved).
+    Translucent cost grows with area, so 1.5× was about 2.25× the pixels.
+  - **Smoke interval** (`UImpactEffectsData::SpawnImpact`). The user
+    didn't want a plain count cap: "an smg burst will render smoke on the
+    first 8 shots".
+    - With no puff alive, a hit always puffs.
+    - Otherwise the next puff waits a random `SmokeIntervalMin`–`Max`
+      (0.25–0.5 s) after the last one, so a full magazine spreads its smoke
+      across the burst.
+    - `MaxSmokePuffs` 8 is a hard ceiling; `SmokePuffLifetime` 2 s is how
+      long a puff counts as alive.
+    - Uses world time, so Focus slow-mo stretches it too. One clock for
+      every weapon (`mutable` on the shared data asset, like
+      `LastNearMissTime`).
+  - Mechanism: bursts spawn inactive. Every emitter handle whose name
+    contains "Smoke" (`ConcreteSmoke`, `BrickSmoke001`, …) gets
+    `SetEmitterEnable(false)` when no puff is allowed, then `Activate(true)`.
+    The pool clears emitter overrides in `OnPooledReuse`. The pack's assets
+    are untouched. `NS_ImpactWater`'s `WaterMist` isn't matched.
+- **Impact-particle plan (proposed):** 1) ~~refraction off in `M_Smoke1`
+  and `M_Fleks1`–`4`~~ (already off; the refraction was the glass above,
+  now fixed); 2) an `EFT_Impacts` effect type on the impact systems
+  (instance cap, distance cull); 3) then smaller or shorter impact smoke,
+  or unlit, as a taste call.
+
+### Eighth Deck trace (2026-11-01)
+**The trace.** `Store/001/20261101_173022.utrace`: 876 MB, 310 s, same
+start command as trace 7. Changes since trace 7: glass refraction off,
+`EffectScale` 1.0, smoke on intervals, `EFT_Impacts`. Exports are in the
+scratchpad's `t8/`.
+
+| | Trace 7 | Trace 8 |
+|---|---|---|
+| GPU p50 / p90 / p99 | 16.7 / 21.5 / 30.1 ms | 16.5 / 23.4 / 32.1 ms |
+| Seconds ≥58 fps | 56% | 44% |
+| Slowest 20% of seconds | 50 fps | 48 fps |
+| Translucency, busy frames | 4.50 ms | **1.75 ms** |
+| Distortion chain, busy | 0.92 ms | **0** |
+| BasePass, busy | 2.73 ms | 3.21 ms |
+| ParallelDraw (lighting), busy | 3.10 ms | 3.74 ms |
+| Velocities / shadow depths, busy | 0.54 / 0.59 | 0.74 / 0.72 |
+
+- **The fixes worked:** about **−3.7 ms of GPU** on fight frames
+  (translucency −2.75, distortion −0.92).
+- **The fight was heavier.** Character-scaled passes rose: base pass,
+  lighting draws, velocities, shadows. On the game thread, whole-trace
+  character work rose about 30% (`CharMoveComp`, `CharacterMesh0`,
+  `WeaponMesh`, `SK_P1911` 2×). So the totals don't compare one for one.
+- **New finding: fights are game-thread-bound too.**
+  - In the slowest 20% of seconds of *both* traces, `UWorld_Tick` takes
+    about **15 ms of a 20 ms frame** (6.5–9 ms in calm seconds).
+  - Most of that is `ProcessUntilTasksComplete`, ≈13 ms: the parallel
+    ticks.
+  - It averages **167 skinned-mesh ticks** and **47 parallel anim
+    evaluations per frame**. Every CC part (body, head, apparel) is its
+    own skinned mesh. This is the CC-characters item, now measured.
+  - The GPU is also over budget in fights (scene render ≈19 ms), so both
+    need to come down.
+- **Next options:**
+  - **CC characters:** leader-pose followers with no tick of their own;
+    anim update rate optimisation (URO) by distance; merge apparel
+    meshes; turn off tick on parts that don't animate.
+  - **Low-resolution translucency:** `r.SeparateTranslucencyScreenPercentage`
+    (`ECVF_Scalability`, renders after-DOF translucency at a fraction of
+    the resolution, then upsamples). It's global, not per material.
+- **Ninth trace (`20261101_174800`, 149 s):** the same build, plus
+  `r.SeparateTranslucencyScreenPercentage 50` in `-ExecCmds`.
+  - Fight translucency 1.75 → 0.91 ms; scene render about the same.
+  - **Floor is 50:** `r.SeparateTranslucencyUpsampleMode 1`
+    (nearest-depth) only works at exactly 50. Anything else falls back to
+    bilinear, with halos past edges.
+  - Not in the ini yet.
+- **`NS_ImpactConcrete` scale 1 → 0.25** (user, editor, 2026-11-01). Its
+  smoke was the "abnormal huge puffs". Concrete is the greybox's main
+  surface, so it's most hits. Only the smoke emitter (`ConcreteSmoke`) was
+  scaled; the sparks and chips are unchanged.
+
+### Bullet holes, bloom, SSAO (2026-11-01, built; not traced)
+- **Bullet-hole cap:** `UBulletHoleSubsystem` (a world subsystem in
+  `ImpactEffectsData.h`, modelled on `UShellCasingSubsystem`). Every decal
+  from `UImpactEffectsData::SpawnImpact` registers with it. Past
+  `MaxBulletHoles` (48) the oldest is destroyed; `DecalLifeSpan` 10 s still
+  applies. The `HitDecalMaterial` fallbacks in `AWeaponBase` and
+  `AProjectileBase` aren't capped, since every gun uses `ImpactEffects`.
+- **Why a cap, not shorter decals:** the traces show decals at a steady
+  ~1.6–1.7 ms, and it isn't known how much of that grows with the count
+  versus the fixed DBuffer cost. The cap bounds the worst case either way.
+  The re-trace tells which.
+- **DBuffer stays on:** with baked lighting, GBuffer decals can't darken
+  lightmapped surfaces (static light is added in the base pass, before
+  them).
+- **High tier** (`DefaultScalability.ini`, `[PostProcessQuality@2]`):
+  - `r.BloomQuality` 5 → 3 (≈ 0.3 ms);
+  - `r.AmbientOcclusionMaxQuality` 100 → 50, with
+    `r.AmbientOcclusionLevels` 1 kept. The bake now carries most of the
+    occlusion.
+
 ### Sixth Deck trace (2026-11-01, `Lvl_Sandbox`, baked + opaque sunglasses)
 - **The trace:** `20261101_031933.utrace`, 127 s.
 - **The build:** Stationary sun, GPU Lightmass bake, `Sunglasses_01` lenses
@@ -1049,6 +1260,15 @@ dynamic characters.
   - **Why:** a Stationary light gives moving objects per-object (inset)
     shadows on top of the 30 m dynamic cascade, so each character, gun or
     prop pays its own shadow.
+  - **Fix (done 2026-11-01, not yet traced):**
+    - `bUseInsetShadowsForMovableObjects = false` on Sandbox's
+      `DirectionalLight_0` → `LightComponent0`, so movables get only the
+      cascade (`DynamicShadowDistanceStationaryLight` 3000).
+    - `SetCastShadow(false)` on the meshes of `AShellCasing`,
+      `AAmmoPickup`, `AWeaponPickup` and `AWeaponDrop` (user: "All three").
+      The saving is small now that the inset shadows are gone. The price:
+      guns on the floor have no shadow to ground them.
+    - `Lvl_Linear`'s sun still needs the same change when it's baked.
 - **Remaining costs (ms per frame):**
   - sun lighting and shadows ~5.8;
   - base pass 2.5;
@@ -1479,7 +1699,8 @@ John Woo-scale hits.
   allocation per hit.
 
 **Data:**
-- `EffectScale` **1.5**.
+- `EffectScale` **1.5**, cut to **1.0** on 2026-11-01 for Deck performance
+  (see *Seventh Deck trace*).
 - `DecalVariants` cover every `UWC_Bullet_Holes` variant in each folder: 10
   for Wood, Concrete, Ceramics and Bricks, 5 elsewhere.
 - Per-surface `Scale` is 1, `ExtraSystems` is empty, and there are no sounds.

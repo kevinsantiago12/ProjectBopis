@@ -12,6 +12,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleEmitter.h"
+#include "Components/PointLightComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
 #include "Gameplay/ShootdodgeComponent.h"
@@ -52,6 +56,19 @@ AWeaponBase::AWeaponBase()
 	// assigned it renders nothing and costs next to nothing.
 	OffhandMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("OffhandMesh"));
 	OffhandMesh->SetupAttachment(WeaponMesh);
+
+	// One small, brief, shadowless light per gun for the shot's flash (FlashMuzzleLight). It doesn't
+	// light translucency, so smoke and blood never pay for it.
+	MuzzleLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("MuzzleLight"));
+	MuzzleLight->SetupAttachment(WeaponMesh);
+	MuzzleLight->SetMobility(EComponentMobility::Movable);
+	MuzzleLight->SetVisibility(false);
+	MuzzleLight->CastShadows = false;
+	MuzzleLight->bAffectTranslucentLighting = false;
+	MuzzleLight->AttenuationRadius = 250.0f;
+	MuzzleLight->IntensityUnits = ELightUnits::Candelas;
+	MuzzleLight->Intensity = 60.0f;
+	MuzzleLight->LightColor = FColor(255, 184, 107);
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -332,8 +349,9 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	}
 	if (MuzzleFlash)
 	{
-		UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName);
+		PlayMuzzleFlash(FiringMesh);
 	}
+	FlashMuzzleLight(FiringMesh);
 
 	// A burst runs while shots follow at the weapon's rate; a longer gap starts a new one.
 	BurstTime = TimeSinceLastShot <= TimeBetweenShots + BurstBreakTime ? BurstTime + TimeSinceLastShot : 0.0f;
@@ -559,6 +577,67 @@ void AWeaponBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	TimeSinceLastShot += DeltaTime;
+
+	// The muzzle light goes out a moment after the shot.
+	if (MuzzleLightTimeLeft > 0.0f)
+	{
+		MuzzleLightTimeLeft -= DeltaTime;
+		if (MuzzleLightTimeLeft <= 0.0f && MuzzleLight)
+		{
+			MuzzleLight->SetVisibility(false);
+		}
+	}
+}
+
+void AWeaponBase::PlayMuzzleFlash(USkeletalMeshComponent* FiringMesh)
+{
+	UParticleSystemComponent* Flash = UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName,
+		FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true, EPSCPoolMethod::AutoRelease);
+	if (!Flash)
+	{
+		return;
+	}
+
+	// Smoke at most every MuzzleSmokeInterval: a puff per burst, not one per shot. Set on every
+	// shot, since a pooled effect keeps whatever its last user left switched.
+	const float Now = GetWorld()->GetTimeSeconds();
+	const bool bSmoke = Now - LastMuzzleSmokeTime >= MuzzleSmokeInterval;
+	if (bSmoke)
+	{
+		LastMuzzleSmokeTime = Now;
+	}
+	for (const UParticleEmitter* Emitter : MuzzleFlash->Emitters)
+	{
+		if (Emitter && Emitter->EmitterName.ToString().Contains(MuzzleSmokeEmitterMatch))
+		{
+			Flash->SetEmitterEnable(Emitter->EmitterName, bSmoke);
+		}
+	}
+}
+
+void AWeaponBase::FlashMuzzleLight(USkeletalMeshComponent* FiringMesh)
+{
+	if (!MuzzleLight || !FiringMesh || MuzzleLightDuration <= 0.0f)
+	{
+		return;
+	}
+
+	// An enemy's shot lights the scene only near the camera.
+	const APawn* Shooter = GetInstigator();
+	if (Shooter && !Shooter->IsPlayerControlled())
+	{
+		const APlayerCameraManager* Camera = UGameplayStatics::GetPlayerCameraManager(this, 0);
+		if (EnemyMuzzleLightDistance <= 0.0f || !Camera
+			|| FVector::DistSquared(Camera->GetCameraLocation(), GetActorLocation()) > FMath::Square(EnemyMuzzleLightDistance))
+		{
+			return;
+		}
+	}
+
+	// At the muzzle that fired (duals alternate hands); re-lit, never a second light.
+	MuzzleLight->SetWorldLocation(FiringMesh->GetSocketLocation(MuzzleSocketName));
+	MuzzleLight->SetVisibility(true);
+	MuzzleLightTimeLeft = MuzzleLightDuration;
 }
 
 

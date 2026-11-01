@@ -43,6 +43,13 @@ hands-on practice.
   (the rebuild script, a restart), message each peer session that works in the
   editor (`SendMessage`), ask whether it's safe, and wait for their answer.
   If a peer is mid-edit or has unsaved work, hold off and tell the user.
+- **Check silently (2026-11-01):** "do it silently so that the other threads
+  dont show any notification unless theres a conflict." Messages make every
+  peer show a notification. So check with `ListAgents` instead: an **idle**
+  peer isn't mid-edit, so count it as safe without messaging it. Message
+  only a peer that's **busy** (working right now), since that's a possible
+  conflict, and wait for its answer. The rebuild script never force-closes:
+  a save prompt makes it stop, which covers the user's own unsaved work.
 
 ## 2. Explaining things
 

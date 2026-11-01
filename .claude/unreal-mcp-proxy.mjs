@@ -50,10 +50,14 @@ async function post(body, withSession = true) {
 	}
 
 	// The editor answers an unknown/stale session with 404 (and a missing one
-	// with 400) plus "client should reinitialize".
+	// with 400) plus "client should reinitialize". Other 400s are ordinary
+	// JSON-RPC errors -- e.g. a method it doesn't know, like the client's
+	// server/discover probe -- and go back to the caller as they are, rather
+	// than burning fresh upstream sessions on retries.
 	if (withSession && (res.status === 404 || res.status === 400)) {
-		await res.text().catch(() => {});
-		throw new SessionExpired(`HTTP ${res.status}`);
+		const text = await res.text().catch(() => "");
+		if (/session/i.test(text)) throw new SessionExpired(`HTTP ${res.status}`);
+		return new Response(text, { status: res.status, headers: res.headers });
 	}
 	return res;
 }

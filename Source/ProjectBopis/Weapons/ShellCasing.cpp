@@ -30,6 +30,8 @@ AShellCasing::AShellCasing()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(Body);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// A casing is too small and short-lived to be worth a shadow of its own.
+	MeshComponent->SetCastShadow(false);
 }
 
 void AShellCasing::BeginPlay()

@@ -31,6 +31,8 @@ AWeaponPickup::AWeaponPickup()
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(TriggerComponent);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Small and still: the sun's cascade shadow isn't worth it for a pickup.
+	MeshComponent->SetCastShadow(false);
 }
 
 void AWeaponPickup::OnConstruction(const FTransform& Transform)

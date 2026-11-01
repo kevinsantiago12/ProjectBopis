@@ -2,6 +2,8 @@
 
 #include "Weapons/ImpactEffectsData.h"
 #include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/DecalComponent.h"
 #include "GameFramework/Character.h"
@@ -19,21 +21,58 @@ void UImpactEffectsData::SpawnImpact(const UObject* WorldContext, const FHitResu
 	const FRotator SurfaceRotation = Hit.ImpactNormal.Rotation();
 	const FVector BurstScale(Effect.Scale * EffectScale);
 
+	// Smoke is the expensive part of a hit: big, overlapping, translucent. With none in the air a
+	// hit always gets a puff; otherwise it waits out a random interval since the last, so a full
+	// magazine spreads its smoke evenly across the burst. Other hits keep their sparks and chips.
+	const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	// A puff older than its life is gone; a time ahead of Now is from an earlier world (PIE).
+	SmokePuffTimes.RemoveAll([&](double Time) { return Now - Time > SmokePuffLifetime || Time > Now; });
+	const bool bSmokeAllowed = SmokePuffTimes.IsEmpty()
+		|| (Now >= NextSmokeTime && SmokePuffTimes.Num() < MaxSmokePuffs);
+	bool bMadeSmoke = false;
+
 	// The main burst and every layer go off at the same point and scale.
 	// Pooled: full-auto fire reuses components instead of creating one per hit.
+	// Spawned inactive so the smoke can be switched off before the first frame.
 	auto SpawnBurst = [&](UNiagaraSystem* System)
 	{
-		if (System)
+		if (!System)
 		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, System, Hit.ImpactPoint,
-				SurfaceRotation, BurstScale, true, true, ENCPoolMethod::AutoRelease);
+			return;
 		}
+		UNiagaraComponent* Burst = UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, System,
+			Hit.ImpactPoint, SurfaceRotation, BurstScale, true, false, ENCPoolMethod::AutoRelease);
+		if (!Burst)
+		{
+			return;
+		}
+		for (const FNiagaraEmitterHandle& Handle : System->GetEmitterHandles())
+		{
+			if (Handle.GetName().ToString().Contains(TEXT("Smoke")))
+			{
+				if (bSmokeAllowed)
+				{
+					bMadeSmoke = true;
+				}
+				else
+				{
+					Burst->SetEmitterEnable(Handle.GetName(), false);
+				}
+			}
+		}
+		Burst->Activate(true);
 	};
 
 	SpawnBurst(Effect.System);
 	for (UNiagaraSystem* Extra : Effect.ExtraSystems)
 	{
 		SpawnBurst(Extra);
+	}
+	if (bMadeSmoke)
+	{
+		SmokePuffTimes.Add(Now);
+		NextSmokeTime = Now + FMath::FRandRange(SmokeIntervalMin, SmokeIntervalMax);
 	}
 
 	const bool bOnCharacter = Hit.GetActor() && Hit.GetActor()->IsA<ACharacter>();
@@ -82,6 +121,10 @@ void UImpactEffectsData::SpawnImpact(const UObject* WorldContext, const FHitResu
 			Effect.DecalSize, Hit.ImpactPoint, DecalRotation, DecalLifeSpan))
 		{
 			SpawnedDecal->SetFadeScreenSize(0.0f);
+			if (UBulletHoleSubsystem* Holes = SpawnedDecal->GetWorld()->GetSubsystem<UBulletHoleSubsystem>())
+			{
+				Holes->Register(SpawnedDecal);
+			}
 		}
 	}
 }
@@ -141,4 +184,19 @@ USoundBase* UImpactEffectsData::PickSound(USoundBase* First, const TArray<TObjec
 		}
 	}
 	return Pool.IsEmpty() ? nullptr : Pool[FMath::RandRange(0, Pool.Num() - 1)];
+}
+
+void UBulletHoleSubsystem::Register(UDecalComponent* Decal)
+{
+	Holes.RemoveAll([](const TWeakObjectPtr<UDecalComponent>& Entry) { return !Entry.IsValid(); });
+	Holes.Add(Decal);
+
+	while (Holes.Num() > MaxBulletHoles)
+	{
+		if (UDecalComponent* Oldest = Holes[0].Get())
+		{
+			Oldest->DestroyComponent();
+		}
+		Holes.RemoveAt(0);
+	}
 }

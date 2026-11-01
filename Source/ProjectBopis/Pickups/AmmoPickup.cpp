@@ -20,6 +20,8 @@ AAmmoPickup::AAmmoPickup()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(TriggerComponent);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Small and still: the sun's cascade shadow isn't worth it for a pickup.
+	MeshComponent->SetCastShadow(false);
 }
 
 void AAmmoPickup::BeginPlay()
