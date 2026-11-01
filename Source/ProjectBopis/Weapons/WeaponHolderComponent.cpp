@@ -95,7 +95,7 @@ bool UWeaponHolderComponent::AddWeapon(AWeaponBase* NewWeapon, bool bAddStarting
 		return false;
 	}
 
-	CarriedWeapons.Add(NewWeapon);
+	InsertCarried(NewWeapon);
 
 	// The weapon reloads from our pool. A weapon from the start loadout brings its
 	// starting reserve; a picked-up one brings only the rounds in its magazine.
@@ -106,8 +106,7 @@ bool UWeaponHolderComponent::AddWeapon(AWeaponBase* NewWeapon, bool bAddStarting
 	}
 
 	// Duals imply the single (Max Payne style): carrying the pair always includes one.
-	// Inserted ahead of the duals, so the slot key cycles single → dual; loaded from the
-	// shared pool, so no rounds appear from nowhere.
+	// Loaded from the shared pool, so no rounds appear from nowhere.
 	const TSubclassOf<AWeaponBase> SingleClass = NewWeapon->GetSingleWieldClass();
 	if (SingleClass && !FindCarriedWeapon(SingleClass))
 	{
@@ -116,7 +115,7 @@ bool UWeaponHolderComponent::AddWeapon(AWeaponBase* NewWeapon, bool bAddStarting
 			Single->SetActorHiddenInGame(true);
 			Single->SetReserveSource(this);
 			Single->SetAmmoInMagazine(TakeAmmo(Single->GetAmmoType(), Single->GetMagazineSize()));
-			CarriedWeapons.Insert(Single, CarriedWeapons.Find(NewWeapon));
+			InsertCarried(Single);
 		}
 	}
 
@@ -229,12 +228,23 @@ AWeaponBase* UWeaponHolderComponent::GiveWeapon(TSubclassOf<AWeaponBase> WeaponC
 
 	AddWeapon(NewWeapon, false);
 
-	if (bAutoEquipOnPickup && EquippedWeapon != NewWeapon)
+	// AddWeapon already equipped it if the hands were empty. Otherwise only an upgrade is
+	// switched to: the .45 in hand switches to a 9mm or an Uzi, never the other way round.
+	if (bAutoEquipOnPickup && EquippedWeapon && EquippedWeapon != NewWeapon && NewWeapon->RanksAbove(*EquippedWeapon))
 	{
 		EquipWeapon(NewWeapon);
 	}
 
 	return NewWeapon;
+}
+
+void UWeaponHolderComponent::InsertCarried(AWeaponBase* Weapon)
+{
+	const int32 Index = CarriedWeapons.IndexOfByPredicate([Weapon](const TObjectPtr<AWeaponBase>& Carried)
+	{
+		return Carried && Carried->RanksAbove(*Weapon);
+	});
+	CarriedWeapons.Insert(Weapon, Index == INDEX_NONE ? CarriedWeapons.Num() : Index);
 }
 
 void UWeaponHolderComponent::AttachWeaponToHand()

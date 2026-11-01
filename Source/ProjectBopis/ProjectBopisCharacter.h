@@ -23,6 +23,8 @@ class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class UPostProcessComponent;
 class AGrenade;
+class UCameraShakeBase;
+class USoundBase;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -48,6 +50,31 @@ enum class EMovementStance : uint8
 	Aiming,
 	/** Rotation authority handed to the animation (prone turn-in-place). Not yet reachable. */
 	AnimationDriven
+};
+
+/** What the G key does, picked on the weapon wheel's slot 1. */
+UENUM(BlueprintType)
+enum class EQuickAction : uint8
+{
+	Grenade,
+	Melee
+};
+
+/** One melee strike: the blow, the swing's whoosh and the thud when it connects. */
+USTRUCT(BlueprintType)
+struct FMeleeStrike
+{
+	GENERATED_BODY()
+
+	/** Additive, played on MeleeSlotName over whatever the body is doing. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Melee")
+	TObjectPtr<UAnimSequenceBase> Animation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Melee")
+	TObjectPtr<USoundBase> SwingSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Melee")
+	TObjectPtr<USoundBase> HitSound;
 };
 
 /**
@@ -145,7 +172,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* RollAction;
 
-	/** Grenade throw Input Action **/
+	/** The G key: a grenade or a melee strike, whichever QuickAction is (see DoQuickAction). **/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* GrenadeAction;
 
@@ -339,6 +366,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoFireHeld();
 
+	/** The trigger let go: a click that picked from the wheel can fire again. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoFireReleased();
+
 	/** Handles reload inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoReload();
@@ -366,6 +397,9 @@ protected:
 	/** The wheel's slow motion is a free Focus it started (ended when it closes). */
 	bool bWheelOwnsFocus = false;
 
+	/** The fire click that picked from the key-mode wheel is still held down: it never fires. */
+	bool bWheelPickHeld = false;
+
 	/** Toggles Focus from input. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoToggleFocus();
@@ -378,9 +412,18 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoRoll();
 
+	/** The G key: throws a grenade or strikes, by QuickAction. Out of grenades it does nothing
+	    (no fallback to melee). */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoQuickAction();
+
 	/** Throws a grenade from input. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoThrowGrenade();
+
+	/** Strikes with the gun in hand: the enemy in reach nearest the aim is hit and staggered. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoMelee();
 
 	/** Uses a first-aid kit from input. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -655,6 +698,68 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Grenade", meta = (ClampMin = "0"))
 	int32 StartingGrenades = 3;
 
+	/** What the G key does. Picked on the weapon wheel's slot 1; this is the starting choice. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	EQuickAction QuickAction = EQuickAction::Grenade;
+
+	/** The strike for each way of holding a gun: a pistol whip, a rifle or shotgun butt. Grips
+	    with no entry use DefaultMeleeStrike. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee")
+	TMap<EWeaponAnimType, FMeleeStrike> MeleeStrikes;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee")
+	FMeleeStrike DefaultMeleeStrike;
+
+	/** The AnimBP slot the strike plays on; additive, like the grenade toss. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee")
+	FName MeleeSlotName = TEXT("Additive");
+
+	/** How fast the strike's animation plays. Lyra's clips run 1.2–1.5 s, mostly recovery; a
+	    trigger pull after the blow lands cuts that short anyway. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.1"))
+	float MeleePlayRate = 1.5f;
+
+	/** Seconds into the strike that the blow lands; the trigger is locked until then. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeHitTime = 0.2f;
+
+	/** Seconds from one strike until the next is allowed. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeCooldown = 0.8f;
+
+	/** How far the blow reaches, from the character's centre to the enemy's body. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeRange = 150.0f;
+
+	/** How far off the aim (degrees, either side) an enemy can be and still be struck. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0", ClampMax = "180.0"))
+	float MeleeConeAngle = 45.0f;
+
+	/** Damage of a blow, ignoring where it lands. It always staggers; a gunman has 100 health,
+	    so three blows kill. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeDamage = 35.0f;
+
+	/** The bone the blow lands on, which the stagger knocks back. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee")
+	FName MeleeHitBone = TEXT("spine_03");
+
+	/** Through the strike the body turns toward the enemy being hit, this fast (degrees a second). */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeTurnRate = 900.0f;
+
+	/** When a blow connects, both bodies all but freeze for this long (seconds) so it lands. 0: off. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0"))
+	float MeleeHitStopTime = 0.06f;
+
+	/** How fast the two bodies run during the hit-stop. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float MeleeHitStopDilation = 0.05f;
+
+	/** Played on the player's camera when a blow connects. Empty: none. */
+	UPROPERTY(EditAnywhere, Category = "Combat|Melee")
+	TSubclassOf<UCameraShakeBase> MeleeHitShake;
+
 	/** Switching weapons mid-dive (the flight): the equip montage plays this many times as
 	    fast, and the gun can fire as soon as it ends. */
 	UPROPERTY(EditAnywhere, Category = "Combat|Reload", meta = (ClampMin = "1.0"))
@@ -699,6 +804,13 @@ public:
 
 	/** Turning to throw or mid-toss: the free arm stays off physics and the blade's turns ease out. */
 	bool IsThrowingGrenade() const;
+
+	/** From the press until the strike's animation ends. The anim instance treats it like a toss. */
+	bool IsMeleeing() const;
+
+	/** What the G key does (for the HUD). */
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	EQuickAction GetQuickAction() const { return QuickAction; }
 
 	UShootdodgeComponent* GetShootdodge() const { return Shootdodge; }
 
@@ -793,6 +905,32 @@ private:
 
 	FTimerHandle GrenadeReleaseTimer;
 	float LastGrenadeThrowTime = -1000.0f;
+
+	/** The blow lands: the enemy it turned to if still in reach, else whoever is. */
+	void LandMelee();
+
+	/** The enemy in reach nearest the aim, within MeleeConeAngle of it; null if none. */
+	ABopisCharacterBase* FindMeleeTarget() const;
+
+	/** Alive, within MeleeRange of its body, and nothing solid in between. */
+	bool CanStrike(const ABopisCharacterBase* Target) const;
+
+	/** Through the strike, turns the body toward MeleeTarget; after it, back to the camera. */
+	void UpdateMeleeTurn(float DeltaSeconds);
+
+	/** Hit-stop over: both bodies back to full speed. */
+	void EndHitStop();
+
+	/** The strike's dynamic montage, so IsMeleeing can tell when it's over. */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveMeleeMontage;
+
+	TWeakObjectPtr<ABopisCharacterBase> MeleeTarget;
+	TWeakObjectPtr<ABopisCharacterBase> HitStopTarget;
+	bool bMeleeTurning = false;
+	FTimerHandle MeleeHitTimer;
+	FTimerHandle HitStopTimer;
+	float LastMeleeTime = -1000.0f;
 
 	FText CurrentSubtitle;
 	float SubtitleTimeLeft = 0.0f;

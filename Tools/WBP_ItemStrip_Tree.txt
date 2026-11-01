@@ -1,0 +1,82 @@
+Begin Object Class=/Script/UMG.ScaleBox Name="Fit"
+   Begin Object Class=/Script/UMG.ScaleBoxSlot Name="Slot_Strip"
+   End Object
+   Begin Object Name="Slot_Strip"
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.ScaleBox'Fit'"
+      Content="/Script/UMG.CanvasPanel'Strip'"
+   End Object
+   Stretch=ScaleToFit
+   Slots(0)="/Script/UMG.ScaleBoxSlot'Slot_Strip'"
+End Object
+Begin Object Class=/Script/UMG.CanvasPanel Name="Strip"
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_WeaponIcon"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Ammo"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Divider_0"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_FirstAid"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Divider_1"
+   End Object
+   Begin Object Class=/Script/UMG.CanvasPanelSlot Name="Slot_Grenades"
+   End Object
+   Begin Object Name="Slot_WeaponIcon"
+      LayoutData=(Offsets=(Left=0.000000,Top=12.000000,Right=110.000000,Bottom=62.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Game/UI/WBP_WeaponIcon.WBP_WeaponIcon_C'WeaponIcon'"
+   End Object
+   Begin Object Name="Slot_Ammo"
+      LayoutData=(Offsets=(Left=128.000000,Top=8.000000,Right=170.000000,Bottom=75.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Game/UI/WBP_Ammo.WBP_Ammo_C'Ammo'"
+   End Object
+   Begin Object Name="Slot_Divider_0"
+      LayoutData=(Offsets=(Left=300.000000,Top=0.000000,Right=3.000000,Bottom=87.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Script/UMG.Image'Divider_0'"
+   End Object
+   Begin Object Name="Slot_FirstAid"
+      LayoutData=(Offsets=(Left=332.000000,Top=4.000000,Right=125.000000,Bottom=83.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Game/UI/WBP_FirstAid.WBP_FirstAid_C'FirstAid'"
+   End Object
+   Begin Object Name="Slot_Divider_1"
+      LayoutData=(Offsets=(Left=480.000000,Top=0.000000,Right=3.000000,Bottom=87.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Script/UMG.Image'Divider_1'"
+   End Object
+   Begin Object Name="Slot_Grenades"
+      LayoutData=(Offsets=(Left=508.000000,Top=4.000000,Right=110.000000,Bottom=83.000000),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))
+      bAutoSize=False
+      Parent="/Script/UMG.CanvasPanel'Strip'"
+      Content="/Game/UI/WBP_Grenades.WBP_Grenades_C'Grenades'"
+   End Object
+   Slots(0)="/Script/UMG.CanvasPanelSlot'Slot_WeaponIcon'"
+   Slots(1)="/Script/UMG.CanvasPanelSlot'Slot_Ammo'"
+   Slots(2)="/Script/UMG.CanvasPanelSlot'Slot_Divider_0'"
+   Slots(3)="/Script/UMG.CanvasPanelSlot'Slot_FirstAid'"
+   Slots(4)="/Script/UMG.CanvasPanelSlot'Slot_Divider_1'"
+   Slots(5)="/Script/UMG.CanvasPanelSlot'Slot_Grenades'"
+End Object
+Begin Object Class=/Game/UI/WBP_WeaponIcon.WBP_WeaponIcon_C Name="WeaponIcon"
+End Object
+Begin Object Class=/Game/UI/WBP_Ammo.WBP_Ammo_C Name="Ammo"
+End Object
+Begin Object Class=/Script/UMG.Image Name="Divider_0"
+   Brush=(ImageSize=(X=3.000000,Y=87.000000))
+End Object
+Begin Object Class=/Game/UI/WBP_FirstAid.WBP_FirstAid_C Name="FirstAid"
+End Object
+Begin Object Class=/Script/UMG.Image Name="Divider_1"
+   Brush=(ImageSize=(X=3.000000,Y=87.000000))
+End Object
+Begin Object Class=/Game/UI/WBP_Grenades.WBP_Grenades_C Name="Grenades"
+End Object

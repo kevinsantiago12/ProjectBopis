@@ -797,7 +797,27 @@ archetype-composition idea, not extended from the old classes.
   - [x] C++ (applied by Claude on the user's say-so, "apply and run script", compiled clean 2026-10-31): `UHUDBarWidget` (`UI/HUDBarWidget.h/.cpp`) drives `Fill`, `Length` and `Height` on an optional Image named `Bar`; `UHealthWidget` / `UFocusWidget` derive from it.
   - [x] User: `WBP_Health` / `WBP_Focus` — ProgressBar → Image named `Bar` (brush `MI_HUDBar_Health` / `_Focus`). The bridge can't edit widget trees. Tested in PIE 2026-10-31 (user: "Done, it works").
   - [x] Lay out the accent and bars bottom left in `WBP_PlayerHUD` (2026-10-31: `BarCluster` pasted from `Tools/MakeHUDBarClusterTree.ps1`; user: "Looks right").
-  - [ ] The rest of the strip: weapon icon (+ getter), ammo, first aid, grenades, condensed font.
+  - [x] Background layer: GPT's ink strip → `T_HUD_Background` under `BarCluster`, on `M_HUDImage` / `MI_HUD_Background` (Brightness, Opacity) (bridge, 2026-10-31).
+  - [x] Condensed font, first pass (user: "I have an antonio font added to the project, can you try it on all the UI elements?"): all 23 Text Blocks in `WBP_Ammo`, `WBP_FirstAid`, `WBP_GameMessages`, `WBP_Subtitle`, `WBP_WeaponWheel` moved from Roboto to Antonio, same weight and size (bridge, compiled, saved 2026-10-31). User checked in PIE: "Looks good"; sizes kept.
+  - [ ] The rest of the strip (user, 2026-10-31: "here is the next thing we do", with GPT's mockup `ArtSource/UI/HUD/Src_GPT_HUDItems.webp`): weapon icon + "15 / 90" | first-aid icon + count | grenade icon + count.
+    - [x] Art cut (Claude): `CutHUDItems.py` → `T_HUD_Icon_FirstAid` (176×164) and `T_HUD_Icon_Grenade` (148×196), white on alpha; every piece's box measured for the layout. The pistol isn't cut: the HUD shows the equipped weapon's own icon.
+    - [x] Import the two icons (bridge, 2026-10-31, saved in `/Game/UI/HUD`: UI group, no mips, `TC_EditorIcon`, sRGB, Clamp).
+    - [x] C++ 1: `UAmmoWidget` drives optional `WeaponIcon`, `MagazineText`, `ReserveText` each tick (applied by Claude on "apply and run", compiled clean 2026-10-31).
+    - [x] C++ 2: `UHUDCountWidget` (optional `Count` Text Block, virtual `GetCount`), `UFirstAidWidget` on it, new `UGrenadeWidget` (applied by Claude on "apply and run", compiled clean 2026-10-31).
+    - [x] `WBP_Grenades` created on `UGrenadeWidget` (bridge, compiled, saved 2026-10-31).
+    - [x] ~~Paste-in trees with one `ItemStrip` box inside `BarCluster`~~ — replaced (user: "just make separate widgets", "Each on its own piece. Also make the BarCluster a separate Widget that can be uniformly resized").
+    - [x] Separate pieces (2026-10-31): `WBP_WeaponIcon` (on `UAmmoWidget`) and `WBP_BarCluster` created (bridge, saved); every piece's root is a Scale Box so its box in `WBP_PlayerHUD` sets its size. Paste-in text: `Tools/MakeHUDItemTrees.ps1` (weapon icon, ammo, first aid, grenades) and `Tools/MakeHUDBarClusterTree.ps1` (`WBP_BarCluster`).
+    - [x] User: paste the five widget trees; place the pieces and two divider Images in `WBP_PlayerHUD` by hand (user: "Ill drag it by hand"). Done; later grouped into `WBP_ItemStrip`.
+    - [x] Weapon icon: dual-wield pair + stroke (user: "indicate in the weapon icon that you are using dual pistols", "add a stroke to the icon"). C++ applied by Claude on "apply and run", compiled clean 2026-10-31 (`WeaponIconDual`, `DualIconSpread`; `IconMaxWidth` dropped); `M_HUDIcon` + `MI_HUD_WeaponIcon` (bridge, saved); `WBP_WeaponIcon` tree regenerated (Overlay of the two Images).
+    - [x] Stroke artifacts / no anti-aliasing (user, first PIE look): mipmaps on the 9 weapon icons + a faint-alpha threshold in `M_HUDIcon` (bridge, saved 2026-10-31); then Wrap → Clamp on the same 9 (user: "the black artifacts are still there"; then "that looks much better").
+    - [x] Weapon icon at one standard scale (user: "let the long guns scale, pick a standard scale instead of resizing, just make sure it aligns"): `WBP_WeaponIcon`'s Scale Box `Stretch` → None (bridge, compiled, saved 2026-10-31; generator matches).
+    - [x] `WBP_ItemStrip` (user: "I need to scale that entire section uniformly", "go do it via bridge"): the six item pieces as one widget with a Scale Box root, at the user's layout (read via bridge). Created by Claude; saved and pasted by the user ("I did a save. Copied and pasted").
+    - [x] Pump shotgun icon swapped by the user to `modern_shotgun__3_`: mipmaps + Clamp on it, the old `ww1_shotgun__2_` rolled back to `NoMipmaps` / `Wrap` (bridge, saved 2026-10-31). AK74u (`BP_AssaultCarbine`) swapped by the user to `modern_rifle__3_`: mipmaps + Clamp (bridge, saved); the old `modern_rifle__12_` kept (still the assault rifle's). Swapped again to the user's own `T_Icon_AK74u`: mipmaps + Clamp, and `modern_rifle__3_` rolled back (bridge, saved).
+    - [x] Weapon wheel: mipmaps + stroke on every icon it can show (user: "Try to apply the mipmap and stroke to all the current possible icons on the weapon wheel"). `Fist` (melee icon) got mipmaps + Clamp; `UWeaponWheelWidget::ShowIcon` material path (applied on "apply and run", compiled clean 2026-10-31); `MI_HUD_WheelIcon` on the wheel's 12 icon Images (bridge, saved); wheel generator updated. User checked in PIE: "Looks right".
+    - [x] Quick-action slot (user: "time to wire the selected item in 1 to reflect the item strip"): `UGrenadeWidget` shows the grenade icon + count or a melee icon with no count, from `GetQuickAction()` (applied by Claude on "apply and run", compiled clean 2026-11-01); `T_HUD_Icon_Melee` cut from the user's fist (`CutHUDIcon.py`) and imported; `WBP_Grenades` defaults set (bridge, saved). HUD grenade / first-aid / melee icons got mipmaps, no stroke (user: "mipmap the grenade and first aid images too", "but dont stroke"). First PIE check: the icon didn't switch (user: "did not change the icon"): `WBP_ItemStrip`'s `Grenades` copy kept empty icons; set on it too (bridge, saved). User: "Works now".
+    - [x] User: check a dual pistol pair on the HUD in PIE (the stroke itself is checked: "that looks much better"; the wheel: "Looks right"). User, 2026-11-01: "dual pistols are fine in the HUD".
+    - [ ] Test in PIE; then drop `UAmmoWidget::GetGrenadeCount` and `WBP_Ammo`'s old binding functions.
+    - [ ] Background long enough for the strip (a longer GPT strip, or stretched).
 - [ ] **45. Pistol kick and bladed-run head bob** (user, 2026-10-31: "when shooting pistols, I am not getting any motion on the shooting shoulder, it looks stiff"; "when running bladed raised, the head is bobbing up and down but the body is still"). Spec: *One-handed pistol → Bladed stance*.
   - [x] *(Applied by Claude 2026-10-31, compiled clean; **rolled back** the same day, user: "The arm movement increased but I dont see the kick in the shoulder" / "roll back". Files restored from git.)* Corrections held during the recoil spring + `BladeShoulderKick` on `upperarm_r`.
   - [ ] Shoulder kick, deferred (user: "dont fix the kick now"): the user wants the shoulder itself (clavicle) to move, not the arm.
@@ -805,6 +825,19 @@ archetype-composition idea, not extended from the old classes.
   - [x] User test (2026-10-31, "that looks fine now"); `_13` blend depth back to 3 (user: "put it back to 3"; bridge, compiled, saved).
   - [x] Neck/head freeze in the blade (`LayeredBoneBlend_17`), tried 2026-10-31; user: "that did not work either, rollback that". Removed through the bridge, never saved.
   - [x] Bladed stride follow, tried 2026-10-31 (spine rocks with the hips): user "still bobbing … look better", then "his waist it twisting now, so roll that back". Source restored from git.
+- [x] **46. Pickup auto-switch by selection order** (user, 2026-10-31: "Only change the weapon when picking them up if they are better than the current weapon you are holding"). Spec: *Pickups and the backpack → Selection order and pickup auto-switch*.
+  - [x] `SlotOrder` + `RanksAbove` on the weapon; the holder keeps `CarriedWeapons` sorted and `GiveWeapon` switches only to a higher rank. *(Applied by Claude on "apply and run", compiled clean.)*
+  - [x] `SlotOrder` set on the 13 weapon Blueprints (bridge, saved).
+  - [x] User test (2026-11-01: "46 and 47 are good").
+- [x] **47. Melee and the slot 1 G-key switcher** (user, 2026-10-31: "the 1 in the weapon wheel … will just be a switcher from melee and grenade"; "Propose a melee system"; "go with your picks, try to do it to completion, put a placeholder icon for now"; out of grenades: "stay on grenade and do nothing"). Spec: *Melee and the G key*.
+  - [x] Slot 1 on the wheel picks Grenade / Melee (`EQuickAction`); G (`GrenadeAction`) → `DoQuickAction`.
+  - [x] The strike: Lyra's additive melee clips by grip on the `Additive` slot, the hit sweep, damage 35 + a forced stagger (`UMeleeDamageType`), whoosh/thud, cooldown.
+  - [x] Feel: turn toward the target, hit-stop, the trigger cuts the recovery after the blow lands.
+  - [x] Assets (bridge, saved): strikes on `BP_PlayerCharacter` + `BP_Player_CC`; wheel icons on `WBP_WeaponWheel` (grenade + the user's `/Game/UI/HUD/Fist` for melee).
+  - [x] First test fixes (user: "Needs sounds"; "I press 1 a couple of times then when I click, it shoots"): knife swing + body-flesh hit, played 2D (the first cues were bullet sounds); the click that picks from the wheel no longer fires. *(Applied on "apply and run", compiled clean.)*
+  - [x] Upper body only when moving (user: "can you make it just do the upper body attack when moving?"): `MeleeUpperBodyAlpha` + an upper/lower split after `ABP_Player`'s `Additive` slot. *(Applied on "apply and run", compiled clean; AnimBP wired, compiled and saved through the bridge.)*
+  - [x] User test (2026-11-01: "46 and 47 are good"); tuning left at the defaults.
+  - *Optional follow-ups, not part of this item:* real blunt-hit sounds (none in the project); a camera shake asset for `MeleeHitShake` (none exists yet); a red 0 on the grenade choice when out (user: "we might").
 
 ## Phase 6 — First playable slice
 > **2026-10-16:** the game is **linear, with room encounters** (user; lore PART 4
@@ -855,6 +888,7 @@ Moved to [TechnicalDesignSpec.md](TechnicalDesignSpec.md) → *Engineering gotch
 ## Changelog
 
 - 2026-10-31 — Item 44 (HUD: cinematic minimal) added; its art step ticked.
+- 2026-10-31 — Item 44: build steps, background layer and the Antonio font pass ticked; the rest of the strip stays open.
 - 2026-10-25 (3) — Home test pass: items 10, 20, 28, 29 ticked; item 25's lock/death/cycling, item 22's clothing layers and item 27's test ticked (27 keeps the `SC_Music` asset open). Item 31 (gunfire audio refactor) added.
 - 2026-10-25 (2) — Item 30 (dual reload holds the torso and off-hand shoulder) added, built and ticked (user-tested).
 - 2026-10-25 — Item 22: bare-skin seams fixed (skin push moved to WPO) and CC parts shadow each other (Self Shadow Only off); both ticked. Items 27–29 (music, level exit, room cleared + waves) added on 2026-10-24, compiled, not yet tested.

@@ -208,6 +208,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetWeaponSlot() const { return WeaponSlot; }
 
+	int32 GetSlotOrder() const { return SlotOrder; }
+
+	/** Further along the weapon selection than Other: a higher slot, or later in the same one. */
+	bool RanksAbove(const AWeaponBase& Other) const
+	{
+		return WeaponSlot != Other.WeaponSlot ? WeaponSlot > Other.WeaponSlot : SlotOrder > Other.SlotOrder;
+	}
+
 	/** For the HUD and the weapon wheel. */
 	UFUNCTION(BlueprintPure, Category = "Weapon|UI")
 	const FText& GetDisplayName() const { return DisplayName; }
@@ -368,11 +376,17 @@ protected:
 	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
 
 	/** Number key that selects this weapon (Max Payne style categories). Weapons that share
-	    a slot are cycled by pressing the key again, in pickup order. 2 pistols, 3 shotguns,
+	    a slot are cycled by pressing the key again, in SlotOrder. 2 pistols, 3 shotguns,
 	    4 SMGs, 5 rifles, 6 snipers (and the launcher, out of the game for now); 1 is kept
 	    free for melee. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "1", ClampMax = "9"))
 	int32 WeaponSlot = 2;
+
+	/** Place within the slot, lowest first: the wheel and the slot key run through the carried
+	    weapons in this order, and a picked-up weapon is only switched to if it ranks above the
+	    one in hand. Weapons with the same number stay in pickup order. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = "0"))
+	int32 SlotOrder = 0;
 
 	/** Name shown on the HUD and in the weapon wheel. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|UI")

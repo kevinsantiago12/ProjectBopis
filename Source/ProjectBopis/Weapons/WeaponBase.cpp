@@ -17,6 +17,7 @@
 #include "Gameplay/ShootdodgeComponent.h"
 #include "Weapons/ShellCasing.h"
 #include "Weapons/AnimNotify_WeaponSound.h"
+#include "Weapons/WeaponAudioSettings.h"
 #include "Enemies/EnemyBase.h"
 #include "EngineUtils.h"
 
@@ -700,7 +701,16 @@ void AWeaponBase::PlayWeaponSound(EWeaponSound Sound, bool bOffhand)
 
 	// Shots and clicks come from the muzzle; handling sounds from the gun itself.
 	const bool bAtMuzzle = Sound == EWeaponSound::Fire || Sound == EWeaponSound::DryFire;
-	UGameplayStatics::SpawnSoundAttached(Cue, Mesh, bAtMuzzle ? MuzzleSocketName : NAME_None);
+	// Gunshots take the player's or the enemies' loudness from Project Settings > Weapon Audio.
+	float Volume = 1.0f;
+	if (Sound == EWeaponSound::Fire)
+	{
+		const UWeaponAudioSettings* Settings = GetDefault<UWeaponAudioSettings>();
+		const APawn* Holder = Cast<APawn>(GetOwner());
+		Volume = Holder && Holder->IsPlayerControlled() ? Settings->PlayerShotVolume : Settings->EnemyShotVolume;
+	}
+	UGameplayStatics::SpawnSoundAttached(Cue, Mesh, bAtMuzzle ? MuzzleSocketName : NAME_None,
+		FVector::ZeroVector, EAttachLocation::KeepRelativeOffset, false, Volume);
 }
 
 USoundBase* AWeaponBase::GetSound(EWeaponSound Sound) const

@@ -44,7 +44,7 @@ public:
 	AWeaponBase* FindCarriedWeapon(TSubclassOf<AWeaponBase> WeaponClass) const;
 
 	/** Spawns a weapon of this class with RoundsInMagazine loaded, adds it to the backpack,
-	    and equips it if bAutoEquipOnPickup is on. Returns the new weapon. */
+	    and equips it if bAutoEquipOnPickup is on and it ranks above the weapon in hand. Returns the new weapon. */
 	UFUNCTION(BlueprintCallable, Category = "Weapon Holder")
 	AWeaponBase* GiveWeapon(TSubclassOf<AWeaponBase> WeaponClass, int32 RoundsInMagazine);
 
@@ -72,7 +72,7 @@ public:
 	/** Return the currently equipped weapon, if any. */
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon;  }
 
-	/** Everything carried, in pickup order. */
+	/** Everything carried, by slot, then SlotOrder. */
 	const TArray<TObjectPtr<AWeaponBase>>& GetCarriedWeapons() const { return CarriedWeapons; }
 
 protected:
@@ -83,6 +83,10 @@ protected:
 
 	/** Attaches the equipped weapon to the owner's hand socket and applies its grip offsets. */
 	void AttachWeaponToHand();
+
+	/** Adds Weapon to CarriedWeapons ahead of the first weapon that ranks above it, so the
+	    list stays in selection order and ties keep pickup order. */
+	void InsertCarried(AWeaponBase* Weapon);
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Holder")
@@ -112,7 +116,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder|Ammo")
 	bool bStartWithFullAmmo = false;
 
-	/** Switch to a weapon as soon as it's picked up. A player option; on by default. */
+	/** Switch to a picked-up weapon if it ranks above the one in hand (a higher slot, or later
+	    in the same one). A player option; on by default. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Holder")
 	bool bAutoEquipOnPickup = true;
 

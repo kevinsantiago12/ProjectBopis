@@ -357,140 +357,140 @@ Begin Object Class=/Script/UMG.Image Name="Segment_5"
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_0"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_0"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_1"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_1"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_2"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_2"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_3"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_3"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_4"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_4"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="Icon_5"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.Image Name="IconDual_5"
-   Brush=(ResourceObject="/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'",ImageSize=(X=110.000000,Y=45.000000))
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'",ImageSize=(X=110.000000,Y=45.000000))
    Visibility=Hidden
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_0"
    Text=INVTEXT("1")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_1"
    Text=INVTEXT("2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_2"
    Text=INVTEXT("3")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_3"
    Text=INVTEXT("4")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_4"
    Text=INVTEXT("5")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Key_5"
    Text=INVTEXT("6")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_0"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_1"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_2"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_3"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_4"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="Count_5"
    Text=INVTEXT("1/2")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=14.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=14.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="NameText"
    Text=INVTEXT("Weapon")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Bold",Size=22.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=22.000000)
    Justification=Center
    bIsVariable=True
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="AmmoText"
    Text=INVTEXT("12 / 36")
-   Font=(FontObject="/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'",TypefaceFontName="Regular",Size=16.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Regular_Font.Antonio-Regular_Font'",TypefaceFontName="Default",Size=16.000000)
    Justification=Center
    bIsVariable=True
 End Object

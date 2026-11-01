@@ -1,0 +1,42 @@
+Begin Object Class=/Script/UMG.ScaleBox Name="Fit"
+   Begin Object Class=/Script/UMG.ScaleBoxSlot Name="Slot_Row"
+   End Object
+   Begin Object Name="Slot_Row"
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.ScaleBox'Fit'"
+      Content="/Script/UMG.HorizontalBox'Row'"
+   End Object
+   Stretch=ScaleToFitY
+   Slots(0)="/Script/UMG.ScaleBoxSlot'Slot_Row'"
+End Object
+Begin Object Class=/Script/UMG.HorizontalBox Name="Row"
+   Begin Object Class=/Script/UMG.HorizontalBoxSlot Name="Slot_MagazineText"
+   End Object
+   Begin Object Class=/Script/UMG.HorizontalBoxSlot Name="Slot_ReserveText"
+   End Object
+   Begin Object Name="Slot_MagazineText"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=0.000000)
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.HorizontalBox'Row'"
+      Content="/Script/UMG.TextBlock'MagazineText'"
+   End Object
+   Begin Object Name="Slot_ReserveText"
+      Padding=(Left=12.000000,Top=0.000000,Right=0.000000,Bottom=0.000000)
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.HorizontalBox'Row'"
+      Content="/Script/UMG.TextBlock'ReserveText'"
+   End Object
+   Slots(0)="/Script/UMG.HorizontalBoxSlot'Slot_MagazineText'"
+   Slots(1)="/Script/UMG.HorizontalBoxSlot'Slot_ReserveText'"
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="MagazineText"
+   Text=INVTEXT("15")
+   ColorAndOpacity=(SpecifiedColor=(R=1.000000,G=1.000000,B=1.000000,A=1.000000))
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=39.000000)
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="ReserveText"
+   Text=INVTEXT("/ 90")
+   ColorAndOpacity=(SpecifiedColor=(R=0.380000,G=0.380000,B=0.380000,A=1.000000))
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=36.000000)
+End Object

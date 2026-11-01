@@ -38,6 +38,11 @@ hands-on practice.
   it. Run it only when the user asks ("run the script") — it closes their
   editor. After it, the usual post-rebuild check (§3) applies: wait for the
   bridge port, one `list_toolsets`, DLL timestamp. *(2026-10-06)*
+- **Coordinate before closing the editor (2026-10-31):** other Claude sessions
+  share this editor (`ListAgents` shows them). Before anything that closes it
+  (the rebuild script, a restart), message each peer session that works in the
+  editor (`SendMessage`), ask whether it's safe, and wait for their answer.
+  If a peer is mid-edit or has unsaved work, hold off and tell the user.
 
 ## 2. Explaining things
 

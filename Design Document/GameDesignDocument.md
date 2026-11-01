@@ -465,6 +465,8 @@ character. Working today:
 - The body leans into turns when running or walking; slow motion can be cut
   short mid-dive
 - A weapon wheel for picking guns, with the world slowed while it's open
+- A melee strike with the gun in hand that staggers the enemy for the follow-up
+  shot; the wheel's first slot sets whether the grenade key throws or strikes
 - People built from a character creator — varied Filipino faces, skin tones,
   hair and clothing, men and women — plus a creator for authoring the look
   of named characters. Women are planned as civilians and one story character
@@ -580,4 +582,9 @@ a shooting range.
 - 2026-10-31 — The kill cam gets three shots: the swing round the body, a
   reverse shot from behind the enemy back at you, and a still high angle.
   Each room picks one, or a random one plays. The camera now stops and
-  lingers rather than pass through walls or into the body.
+  lingers rather than pass through walls or into the body. Hits land harder
+  on screen, and badly hurt, the world drains of colour until you get out of
+  the fight and catch your breath. Picking up a gun only switches to it if
+  it's a step up. Melee arrives: a strike with the butt of whatever gun you
+  hold, which staggers the man in front of you and sets up the shot. The
+  weapon wheel's first slot picks whether the grenade key throws or strikes.

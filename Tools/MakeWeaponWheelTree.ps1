@@ -11,9 +11,11 @@ $inv = [Globalization.CultureInfo]::InvariantCulture
 function F([double]$v) { return $v.ToString("F6", $inv) }
 
 $segmentTexture = "/Script/Engine.Texture2D'/Game/UI/T_WheelSegment.T_WheelSegment'"
-# Designer preview only; the class sets each icon at runtime.
-$previewIcon = "/Script/Engine.Texture2D'/Game/Handcrafted_Weapon_Icons/White_Icon_Set/Modern/Pistols/modern_pistol__1_.modern_pistol__1_'"
-$font = "/Script/Engine.Font'/Engine/EngineFonts/Roboto.Roboto'"
+# M_HUDIcon (the stroke), the wheel's own instance; its default Texture is the Designer preview.
+# The class puts each icon into its "Texture" parameter at runtime.
+$iconMaterial = "/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WheelIcon.MI_HUD_WheelIcon'"
+# Antonio: one imported Font per weight (Light / Regular / Bold), each with a single "Default" typeface.
+function FontFor([string]$weight) { return "/Script/Engine.Font'/Game/antonio/Antonio-$weight`_Font.Antonio-$weight`_Font'" }
 
 $Segments = 6
 $Radius = 230.0        # middle of the ring: icons sit here
@@ -35,10 +37,10 @@ function AddWidget([string]$block, [string]$name, [string]$class, $x, $y, $w, $h
   $slots.Add(@{ n = "Slot_$name"; c = "/Script/UMG.$class'$name'"; x = $x; y = $y; w = $w; h = $h; auto = $auto; z = $z })
 }
 
-function AddText([string]$name, [string]$text, [string]$face, $size, $x, $y) {
+function AddText([string]$name, [string]$text, [string]$weight, $size, $x, $y) {
   $block = "Begin Object Class=/Script/UMG.TextBlock Name=`"$name`"`r`n" +
     "   Text=INVTEXT(`"$text`")`r`n" +
-    "   Font=(FontObject=`"$font`",TypefaceFontName=`"$face`",Size=$(F $size))`r`n" +
+    "   Font=(FontObject=`"$(FontFor $weight)`",TypefaceFontName=`"Default`",Size=$(F $size))`r`n" +
     "   Justification=Center`r`n" +
     "   bIsVariable=True`r`n" +
     "End Object"
@@ -47,7 +49,7 @@ function AddText([string]$name, [string]$text, [string]$face, $size, $x, $y) {
 
 function AddIcon([string]$name, $x, $y, [int]$z, [bool]$hidden) {
   $block = "Begin Object Class=/Script/UMG.Image Name=`"$name`"`r`n" +
-    "   Brush=(ResourceObject=`"$previewIcon`",ImageSize=(X=110.000000,Y=45.000000))`r`n" +
+    "   Brush=(ResourceObject=`"$iconMaterial`",ImageSize=(X=110.000000,Y=45.000000))`r`n" +
     $(if ($hidden) { "   Visibility=Hidden`r`n" } else { "" }) +
     "   bIsVariable=True`r`n" +
     "End Object"

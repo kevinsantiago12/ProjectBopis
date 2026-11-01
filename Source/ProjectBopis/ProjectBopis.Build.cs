@@ -21,7 +21,8 @@ public class ProjectBopis : ModuleRules
 			"UMG",
 			"Slate",
 			"Niagara",
-			"PhysicsCore"
+			"PhysicsCore",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

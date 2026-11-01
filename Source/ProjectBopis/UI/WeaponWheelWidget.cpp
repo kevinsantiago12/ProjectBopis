@@ -6,6 +6,7 @@
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "HAL/PlatformTime.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 namespace
 {
@@ -63,6 +64,12 @@ void UWeaponWheelWidget::Open(bool bInKeyMode)
 			}
 		}
 	}
+
+	// The quick-action segment shows what G does now.
+	if (const AProjectBopisCharacter* Player = GetPlayerCharacter(); Player && Selected.IsValidIndex(QuickActionSlot - 1))
+	{
+		Selected[QuickActionSlot - 1] = static_cast<int32>(Player->GetQuickAction());
+	}
 	RefreshWidgets();
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
@@ -103,7 +110,7 @@ void UWeaponWheelWidget::SelectType(int32 Index)
 	// the gun in hand, since that one's already showing. Any other type is just highlighted.
 	const bool bRepeat = KeyHighlight == Index;
 	KeyHighlight = Index;
-	const int32 Num = Segments[Index].Num();
+	const int32 Num = GetEntryCount(Index);
 	if (Num > 1 && (bRepeat || GetSegmentWeapon(Index) == GetEquippedWeapon()))
 	{
 		Selected[Index] = (Selected[Index] + 1) % Num;
@@ -115,12 +122,12 @@ void UWeaponWheelWidget::CycleHovered(int32 Direction)
 {
 	const int32 Index = GetHoveredIndex();
 	const double Now = FPlatformTime::Seconds();
-	if (Index == INDEX_NONE || Direction == 0 || Segments[Index].Num() < 2 || Now - LastCycleTime < CycleRepeatDelay)
+	if (Index == INDEX_NONE || Direction == 0 || GetEntryCount(Index) < 2 || Now - LastCycleTime < CycleRepeatDelay)
 	{
 		return;
 	}
 	LastCycleTime = Now;
-	const int32 Num = Segments[Index].Num();
+	const int32 Num = GetEntryCount(Index);
 	Selected[Index] = (Selected[Index] + (Direction > 0 ? 1 : Num - 1)) % Num;
 	RefreshWidgets();
 }
@@ -128,6 +135,32 @@ void UWeaponWheelWidget::CycleHovered(int32 Direction)
 AWeaponBase* UWeaponWheelWidget::GetHoveredWeapon() const
 {
 	return GetSegmentWeapon(GetHoveredIndex());
+}
+
+bool UWeaponWheelWidget::GetHoveredQuickAction(EQuickAction& OutAction) const
+{
+	const int32 Index = GetHoveredIndex();
+	if (!IsQuickActionSegment(Index) || !Selected.IsValidIndex(Index))
+	{
+		return false;
+	}
+	OutAction = static_cast<EQuickAction>(Selected[Index]);
+	return true;
+}
+
+int32 UWeaponWheelWidget::GetEntryCount(int32 Index) const
+{
+	if (IsQuickActionSegment(Index))
+	{
+		// Every value of the enum, less the _MAX entry UHT adds.
+		return StaticEnum<EQuickAction>()->NumEnums() - 1;
+	}
+	return Segments.IsValidIndex(Index) ? Segments[Index].Num() : 0;
+}
+
+UTexture2D* UWeaponWheelWidget::GetQuickActionIcon(int32 Choice) const
+{
+	return static_cast<EQuickAction>(Choice) == EQuickAction::Melee ? MeleeIcon.Get() : GrenadeIcon.Get();
 }
 
 AWeaponBase* UWeaponWheelWidget::GetSegmentWeapon(int32 Index) const
@@ -148,6 +181,10 @@ EWheelSegmentState UWeaponWheelWidget::GetSegmentState(int32 Index) const
 	if (Index == GetHoveredIndex())
 	{
 		return EWheelSegmentState::Hovered;
+	}
+	if (IsQuickActionSegment(Index))
+	{
+		return EWheelSegmentState::Carried;
 	}
 	const AWeaponBase* Weapon = GetSegmentWeapon(Index);
 	if (!Weapon)
@@ -199,7 +236,7 @@ void UWeaponWheelWidget::RebuildSegments()
 
 	for (int32 Index = 0; Index < NumSegments; ++Index)
 	{
-		Selected[Index] = FMath::Clamp(Selected[Index], 0, FMath::Max(0, Segments[Index].Num() - 1));
+		Selected[Index] = FMath::Clamp(Selected[Index], 0, FMath::Max(0, GetEntryCount(Index) - 1));
 	}
 }
 
@@ -269,9 +306,10 @@ void UWeaponWheelWidget::RefreshWidgets()
 		}
 
 		// A dual-wield weapon shows its icon twice, the pair either side of the single icon's spot.
-		UTexture2D* Icon = Weapon ? Weapon->GetIcon() : nullptr;
+		UTexture2D* Icon = IsQuickActionSegment(Index) ? GetQuickActionIcon(Selected[Index])
+			: Weapon ? Weapon->GetIcon() : nullptr;
 		UImage* DualImage = IconDualImages.IsValidIndex(Index) ? IconDualImages[Index].Get() : nullptr;
-		const bool bDual = Icon && DualImage && Weapon->IsDualWield();
+		const bool bDual = Icon && DualImage && Weapon && Weapon->IsDualWield();
 		const FVector2D IconSize = Icon ? FVector2D(SharedIconHeight * IconAspect(Icon), SharedIconHeight) : FVector2D::ZeroVector;
 		const FVector2D DualOffset = DualIconSpread * IconSize;
 		if (UImage* IconImage = IconImages.IsValidIndex(Index) ? IconImages[Index].Get() : nullptr)
@@ -287,21 +325,40 @@ void UWeaponWheelWidget::RefreshWidgets()
 
 		if (UTextBlock* Count = CountTexts.IsValidIndex(Index) ? CountTexts[Index].Get() : nullptr)
 		{
-			const int32 Num = Segments[Index].Num();
+			const int32 Num = GetEntryCount(Index);
 			Count->SetText(FText::Format(NSLOCTEXT("WeaponWheel", "Count", "{0}/{1}"), Selected[Index] + 1, Num));
 			Count->SetVisibility(Num > 1 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 		}
 	}
 
-	// The centre: the hovered type's weapon, else the one in hand.
-	const AWeaponBase* Shown = Hovered != INDEX_NONE ? GetSegmentWeapon(Hovered) : Equipped;
-	if (NameTextBlock)
+	// The centre: the hovered type's weapon, else the one in hand. The quick-action segment
+	// shows its choice instead, with how many grenades are left.
+	if (IsQuickActionSegment(Hovered))
 	{
-		NameTextBlock->SetText(Shown ? Shown->GetDisplayName() : FText::GetEmpty());
+		const EQuickAction Action = static_cast<EQuickAction>(Selected[Hovered]);
+		const AProjectBopisCharacter* Player = GetPlayerCharacter();
+		const UWeaponHolderComponent* Holder = Player ? Player->GetWeaponHolder() : nullptr;
+		if (NameTextBlock)
+		{
+			NameTextBlock->SetText(UEnum::GetDisplayValueAsText(Action));
+		}
+		if (AmmoTextBlock)
+		{
+			AmmoTextBlock->SetText(Action == EQuickAction::Grenade && Holder
+				? FText::AsNumber(Holder->GetReserveAmmo(EAmmoType::Grenade)) : FText::GetEmpty());
+		}
 	}
-	if (AmmoTextBlock)
+	else
 	{
-		AmmoTextBlock->SetText(Shown ? FText::Format(NSLOCTEXT("WeaponWheel", "Ammo", "{0} / {1}"), Shown->GetAmmoInMagazine(), Shown->GetReserveAmmo()) : FText::GetEmpty());
+		const AWeaponBase* Shown = Hovered != INDEX_NONE ? GetSegmentWeapon(Hovered) : Equipped;
+		if (NameTextBlock)
+		{
+			NameTextBlock->SetText(Shown ? Shown->GetDisplayName() : FText::GetEmpty());
+		}
+		if (AmmoTextBlock)
+		{
+			AmmoTextBlock->SetText(Shown ? FText::Format(NSLOCTEXT("WeaponWheel", "Ammo", "{0} / {1}"), Shown->GetAmmoInMagazine(), Shown->GetReserveAmmo()) : FText::GetEmpty());
+		}
 	}
 
 	if (Hovered != LastHovered)
@@ -315,8 +372,18 @@ void UWeaponWheelWidget::ShowIcon(UImage* Image, UTexture2D* Icon, float Height)
 {
 	if (Icon)
 	{
+		// An M_HUDIcon brush (the stroke) takes the icon as its "Texture" parameter; a plain
+		// brush takes it directly. Called every frame, so the parameter is only set on a change.
+		UMaterialInstanceDynamic* Material = Image->GetDynamicMaterial();
+		if (Material && Material->K2_GetTextureParameterValue(TEXT("Texture")) != Icon)
+		{
+			Material->SetTextureParameterValue(TEXT("Texture"), Icon);
+		}
 		FSlateBrush Brush = Image->GetBrush();
-		Brush.SetResourceObject(Icon);
+		if (!Material)
+		{
+			Brush.SetResourceObject(Icon);
+		}
 		Brush.ImageSize = FVector2D(Height * IconAspect(Icon), Height);
 		Image->SetBrush(Brush);   // does nothing when the brush is unchanged
 	}

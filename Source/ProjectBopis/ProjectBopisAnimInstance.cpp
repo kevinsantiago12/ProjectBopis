@@ -124,10 +124,16 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		&& bIsWeaponRaised && !bIsCrouched && !bShootdodging;
 	StrafeBladeAlpha = FMath::FInterpTo(StrafeBladeAlpha, bBlade ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
-	// A grenade toss takes the upper body: the blade's turns ease out under it; the legs stay.
-	bThrowingGrenade = Hero && Hero->IsThrowingGrenade();
+	// A grenade toss or a melee strike takes the upper body: the blade's turns ease out under
+	// it; the legs stay.
+	bThrowingGrenade = Hero && (Hero->IsThrowingGrenade() || Hero->IsMeleeing());
 	ThrowAlpha = FMath::FInterpConstantTo(ThrowAlpha, bThrowingGrenade ? 1.0f : 0.0f,
 		DeltaSeconds, ThrowBladeBlendSpeed);
+
+	// Moving at any point in a melee strike keeps it off the legs until it ends, so the stride
+	// carries on under it; standing still, it takes the whole body.
+	const bool bMeleeing = Hero && Hero->IsMeleeing();
+	MeleeUpperBodyAlpha = (bMeleeing && (MeleeUpperBodyAlpha > 0.0f || Speed > StationarySpeed)) ? 1.0f : 0.0f;
 
 	// Two-handed holds at the hip (pistol, rifles, shotguns, the launcher): their poses don't
 	// point the barrel at the crosshair, so the hand is turned to it as the blade does. Aimed

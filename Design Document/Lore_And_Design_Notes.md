@@ -570,8 +570,31 @@ gives what fits and leaves the rest. Pickups don't respawn.
 - **Weapon selection is by number key, grouped by category:** pressing a key
   again cycles within the category. 2 pistols, 3 shotguns, 4 SMGs and rifles,
   5 sniper; 1 kept for melee. Number keys only, to start.
+  *(Later: 4 SMGs, 5 rifles, 6 snipers, and the weapon wheel.)*
 - **Switching to a newly picked-up weapon** is an option the player can turn
   off; it's on by default.
+- **Pickups only switch to a better gun (user, 2026-10-31):** "Only change the
+  weapon when picking them up if they are better than the current weapon you
+  are holding." Better means a higher selection number, or further along the
+  same category. Order within each category, from the user:
+  - 2: .45 pistol, dual .45s, 9mm pistol, dual 9mms, revolver;
+  - 3: pump-action, auto-shotgun;
+  - 4: machine pistol, dual machine pistols, MP5;
+  - 5: AK-74u, M4;
+  - 6: Dragunov.
+- **Slot 1 picks what the grenade key does (user, 2026-10-31):** "the 1 in the
+  weapon wheel … will just be a switcher from melee and grenade." The G key
+  throws a grenade or strikes, whichever is picked. Picking it never changes
+  the gun in hand. With Grenade picked and none left, G does nothing: "stay on
+  grenade and do nothing, we might put a red 0 on the nade section".
+- **Melee (Claude's proposal, accepted 2026-10-31 — "go with your picks"):**
+  - A single gun-butt strike with whatever gun is in hand (pistol whip, rifle
+    or shotgun butt), not a fistfighting system: guns stay the star.
+  - It answers an enemy in your face and sets up a point-blank shot. A blow
+    always staggers, and about three kill a healthy gunman.
+  - On your feet only. A short cooldown. Shooting right after the blow cuts the
+    strike short.
+  - Placeholder melee icon for now.
 - **Drawing a weapon** plays an equip animation, and you **can't fire until it
   finishes**. Picking up a weapon plays it too. For now the new gun appears in
   the hand at once.

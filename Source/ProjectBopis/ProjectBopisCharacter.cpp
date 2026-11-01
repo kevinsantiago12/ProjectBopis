@@ -22,7 +22,9 @@
 #include "Weapons/WeaponBase.h"
 #include "Weapons/Grenade.h"
 #include "Gameplay/HealthComponent.h"
+#include "Gameplay/MeleeDamageType.h"
 #include "Engine/DamageEvents.h"
+#include "Engine/OverlapResult.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
@@ -30,6 +32,9 @@
 #include "EnhancedPlayerInput.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Camera/CameraShakeBase.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 AProjectBopisCharacter::AProjectBopisCharacter()
@@ -158,6 +163,9 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this,
 			&AProjectBopisCharacter::DoFireHeld);
 
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this,
+			&AProjectBopisCharacter::DoFireReleased);
+
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AProjectBopisCharacter::MoveInput);
 
@@ -202,7 +210,7 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		if (GrenadeAction)
 		{
 			EnhancedInputComponent->BindAction(GrenadeAction, ETriggerEvent::Started, this,
-				&AProjectBopisCharacter::DoThrowGrenade);
+				&AProjectBopisCharacter::DoQuickAction);
 		}
 
 		if (HealAction)
@@ -402,6 +410,7 @@ void AProjectBopisCharacter::Tick(float DeltaSeconds)
 	UpdateAutoReload(DeltaSeconds);
 	UpdateReloadSpeed();
 	UpdatePendingThrow(DeltaSeconds);
+	UpdateMeleeTurn(DeltaSeconds);
 	UpdateCrouch();
 
 	// Crouched in the combat stance, the gun comes up and stays up: facing the camera, ready
@@ -669,6 +678,7 @@ void AProjectBopisCharacter::DoFire()
 		if (WeaponWheel->IsKeyMode())
 		{
 			CloseWeaponWheel(true);
+			bWheelPickHeld = true;
 		}
 		return;
 	}
@@ -680,10 +690,20 @@ void AProjectBopisCharacter::DoFire()
 	}
 
 	// Mid-equip the gun isn't up yet; the trigger waits for the animation (or the silent swap's
-	// same time, face-down).
-	if (IsEquipAnimating() || IsSilentEquipping())
+	// same time, face-down). Until a strike's blow lands, the gun is being swung, not aimed.
+	if (IsEquipAnimating() || IsSilentEquipping() || GetWorldTimerManager().IsTimerActive(MeleeHitTimer))
 	{
 		return;
+	}
+
+	// Once it has landed, a trigger pull cuts the strike's recovery short: the follow-up shot.
+	if (ActiveMeleeMontage)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			AnimInstance->Montage_Stop(0.1f, ActiveMeleeMontage);
+		}
+		ActiveMeleeMontage = nullptr;
 	}
 
 	// Getting up from a dive leaves you open: the gun stays quiet until you're on your feet.
@@ -1059,6 +1079,14 @@ void AProjectBopisCharacter::CloseWeaponWheel(bool bEquip)
 	}
 
 	AWeaponBase* Pick = bEquip ? WeaponWheel->GetHoveredWeapon() : nullptr;
+
+	// Slot 1 picks what G does; the gun in hand stays.
+	EQuickAction QuickPick = QuickAction;
+	if (bEquip && WeaponWheel->GetHoveredQuickAction(QuickPick))
+	{
+		QuickAction = QuickPick;
+	}
+
 	WeaponWheel->Close();
 	if (bWheelOwnsFocus && Focus)
 	{
@@ -1123,7 +1151,7 @@ void AProjectBopisCharacter::HoldReloadForRoll()
 
 void AProjectBopisCharacter::DoReload()
 {
-	if (IsWeaponWheelOpen() || (Roll && Roll->IsRolling()))
+	if (IsWeaponWheelOpen() || (Roll && Roll->IsRolling()) || IsMeleeing())
 	{
 		return;
 	}
@@ -1148,9 +1176,21 @@ void AProjectBopisCharacter::DoReload()
 	PlayReloadAnimation(Holder->GetEquippedWeapon(), Speed);
 }
 
+void AProjectBopisCharacter::DoQuickAction()
+{
+	if (QuickAction == EQuickAction::Melee)
+	{
+		DoMelee();
+	}
+	else
+	{
+		DoThrowGrenade();
+	}
+}
+
 void AProjectBopisCharacter::DoThrowGrenade()
 {
-	if (IsDead() || !GrenadeClass || IsWeaponWheelOpen() || IsInKillCam() || (Roll && Roll->IsRolling()))
+	if (IsDead() || !GrenadeClass || IsWeaponWheelOpen() || IsInKillCam() || (Roll && Roll->IsRolling()) || IsMeleeing())
 	{
 		return;
 	}
@@ -1191,6 +1231,212 @@ void AProjectBopisCharacter::DoThrowGrenade()
 	bThrowPending = true;
 	ThrowPendingTime = 0.0f;
 	UpdatePendingThrow(0.0f);
+}
+
+void AProjectBopisCharacter::DoMelee()
+{
+	if (IsDead() || IsWeaponWheelOpen() || IsInKillCam() || (Roll && Roll->IsRolling()))
+	{
+		return;
+	}
+
+	// On your feet only: not anywhere in a dive, not in the air.
+	if ((Shootdodge && Shootdodge->IsDodging()) || GetCharacterMovement()->IsFalling())
+	{
+		return;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastMeleeTime < MeleeCooldown || IsMeleeing() || IsThrowingGrenade())
+	{
+		return;
+	}
+
+	// The gun is what's swung, so not while it's being drawn or reloaded.
+	const UWeaponHolderComponent* Holder = GetWeaponHolder();
+	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!Weapon || !AnimInstance || IsEquipAnimating() || IsSilentEquipping() || Weapon->IsReloading())
+	{
+		return;
+	}
+
+	LastMeleeTime = Now;
+	NoteCombat();
+
+	// The blow that suits the grip.
+	const FMeleeStrike* Found = MeleeStrikes.Find(Weapon->GetAnimType());
+	const FMeleeStrike& Strike = Found ? *Found : DefaultMeleeStrike;
+	ActiveMeleeMontage = Strike.Animation
+		? AnimInstance->PlaySlotAnimationAsDynamicMontage(Strike.Animation, MeleeSlotName, 0.1f, 0.15f, MeleePlayRate)
+		: nullptr;
+	// Your own swing, heard flat like the first-aid sound.
+	if (Strike.SwingSound)
+	{
+		UGameplayStatics::PlaySound2D(this, Strike.SwingSound);
+	}
+
+	// The gun comes up and stays up through the strike, so the body squares to the camera...
+	const float StrikeLength = ActiveMeleeMontage ? ActiveMeleeMontage->GetPlayLength() / MeleePlayRate : MeleeHitTime;
+	TimeUntilWeaponLowered = FMath::Max3(TimeUntilWeaponLowered, LowerWeaponDelay, StrikeLength);
+	UpdateMovementStance();
+
+	// ...or, with someone in reach, turns to them instead (UpdateMeleeTurn).
+	MeleeTarget = FindMeleeTarget();
+	if (MeleeTarget.IsValid() && CurrentStance == EMovementStance::Aiming)
+	{
+		bTurningToAim = false;
+		bUseControllerRotationYaw = false;
+		bMeleeTurning = true;
+	}
+
+	GetWorldTimerManager().SetTimer(MeleeHitTimer, this, &AProjectBopisCharacter::LandMelee,
+		FMath::Max(MeleeHitTime, 0.01f), false);
+}
+
+bool AProjectBopisCharacter::IsMeleeing() const
+{
+	const UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	return GetWorldTimerManager().IsTimerActive(MeleeHitTimer)
+		|| (ActiveMeleeMontage && AnimInstance && AnimInstance->Montage_IsPlaying(ActiveMeleeMontage));
+}
+
+void AProjectBopisCharacter::LandMelee()
+{
+	if (IsDead())
+	{
+		return;
+	}
+
+	ABopisCharacterBase* Target = MeleeTarget.Get();
+	if (!CanStrike(Target))
+	{
+		Target = FindMeleeTarget();
+	}
+	if (!Target)
+	{
+		return;
+	}
+
+	// Point damage on MeleeHitBone, so the stagger knocks the chest back, away from us.
+	USkeletalMeshComponent* Body = Target->GetMesh();
+	const FVector Point = Body->DoesSocketExist(MeleeHitBone) ? Body->GetSocketLocation(MeleeHitBone) : Target->GetActorLocation();
+	const FVector Direction = (Point - GetActorLocation()).GetSafeNormal2D();
+	FHitResult Hit(Target, Body, Point, -Direction);
+	Hit.BoneName = MeleeHitBone;
+	UGameplayStatics::ApplyPointDamage(Target, MeleeDamage, Direction, Hit, GetController(), this,
+		UMeleeDamageType::StaticClass());
+
+	const UWeaponHolderComponent* Holder = GetWeaponHolder();
+	const AWeaponBase* Weapon = Holder ? Holder->GetEquippedWeapon() : nullptr;
+	const FMeleeStrike* Found = Weapon ? MeleeStrikes.Find(Weapon->GetAnimType()) : nullptr;
+	const FMeleeStrike& Strike = Found ? *Found : DefaultMeleeStrike;
+	if (Strike.HitSound)
+	{
+		UGameplayStatics::PlaySound2D(this, Strike.HitSound);
+	}
+
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()); PC && PC->PlayerCameraManager && MeleeHitShake)
+	{
+		PC->PlayerCameraManager->StartCameraShake(MeleeHitShake);
+	}
+
+	// Hit-stop: both bodies all but freeze for a moment, so the blow reads. Per actor, so it
+	// doesn't fight Focus's global slow motion.
+	if (MeleeHitStopTime > 0.0f)
+	{
+		CustomTimeDilation = MeleeHitStopDilation;
+		Target->CustomTimeDilation = MeleeHitStopDilation;
+		HitStopTarget = Target;
+		GetWorldTimerManager().SetTimer(HitStopTimer, this, &AProjectBopisCharacter::EndHitStop, MeleeHitStopTime, false);
+	}
+}
+
+ABopisCharacterBase* AProjectBopisCharacter::FindMeleeTarget() const
+{
+	TArray<FOverlapResult> Overlaps;
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(MeleeTargets), false, this);
+	GetWorld()->OverlapMultiByObjectType(Overlaps, GetActorLocation(), FQuat::Identity,
+		FCollisionObjectQueryParams(ECC_Pawn), FCollisionShape::MakeSphere(MeleeRange), Params);
+
+	// The one nearest the aim, flat, so an enemy on a step still counts.
+	const FVector Aim = GetControlRotation().Vector().GetSafeNormal2D();
+	ABopisCharacterBase* Best = nullptr;
+	float BestDot = FMath::Cos(FMath::DegreesToRadians(MeleeConeAngle));
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		ABopisCharacterBase* Candidate = Cast<ABopisCharacterBase>(Overlap.GetActor());
+		if (!CanStrike(Candidate))
+		{
+			continue;
+		}
+
+		const float Dot = FVector::DotProduct(Aim, (Candidate->GetActorLocation() - GetActorLocation()).GetSafeNormal2D());
+		if (Dot >= BestDot)
+		{
+			Best = Candidate;
+			BestDot = Dot;
+		}
+	}
+	return Best;
+}
+
+bool AProjectBopisCharacter::CanStrike(const ABopisCharacterBase* Target) const
+{
+	if (!Target || Target == this || Target->IsDead())
+	{
+		return false;
+	}
+
+	const float Reach = MeleeRange + Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+	if (FVector::DistSquared(GetActorLocation(), Target->GetActorLocation()) > FMath::Square(Reach))
+	{
+		return false;
+	}
+
+	// Nothing solid in between. Both guns are left out of it: they'd always be in the way.
+	TArray<AActor*> Attached;
+	GetAttachedActors(Attached);
+	Target->GetAttachedActors(Attached, false);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(MeleeSight), false, this);
+	Params.AddIgnoredActor(Target);
+	Params.AddIgnoredActors(Attached);
+	return !GetWorld()->LineTraceTestByChannel(GetActorLocation(), Target->GetActorLocation(), ECC_Visibility, Params);
+}
+
+void AProjectBopisCharacter::UpdateMeleeTurn(float DeltaSeconds)
+{
+	if (!bMeleeTurning)
+	{
+		return;
+	}
+
+	// The strike's over (or the target's gone): back round to the camera, as after any turn.
+	const ABopisCharacterBase* Target = MeleeTarget.Get();
+	if (!IsMeleeing() || !Target || CurrentStance != EMovementStance::Aiming)
+	{
+		bMeleeTurning = false;
+		if (CurrentStance == EMovementStance::Aiming)
+		{
+			bTurningToAim = AimTurnRate > 0.0f;
+			bUseControllerRotationYaw = !bTurningToAim;
+		}
+		return;
+	}
+
+	const float TargetYaw = (Target->GetActorLocation() - GetActorLocation()).Rotation().Yaw;
+	const float NewYaw = FMath::FixedTurn(GetActorRotation().Yaw, TargetYaw, MeleeTurnRate * DeltaSeconds);
+	SetActorRotation(FRotator(0.0f, NewYaw, 0.0f));
+}
+
+void AProjectBopisCharacter::EndHitStop()
+{
+	CustomTimeDilation = 1.0f;
+	if (ABopisCharacterBase* Target = HitStopTarget.Get())
+	{
+		Target->CustomTimeDilation = 1.0f;
+	}
+	HitStopTarget = nullptr;
 }
 
 void AProjectBopisCharacter::DoHeal()
@@ -1402,7 +1648,8 @@ void AProjectBopisCharacter::UpdateAutoReload(float DeltaSeconds)
 	const bool bInAir = Shootdodge && Shootdodge->IsAirborne();
 	const bool bInDive = Shootdodge && Shootdodge->IsDodging() && !Shootdodge->IsProne()
 		&& !(bInAir && bAirAutoReload);
-	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating() && !IsSilentEquipping();
+	const bool bFreeToReload = !bInDive && !(Roll && Roll->IsRolling()) && !IsEquipAnimating() && !IsSilentEquipping()
+		&& !IsMeleeing();
 	if (!bAutoReload || !Weapon || !bFreeToReload || Weapon->GetAmmoInMagazine() > 0 || !Weapon->CanReload())
 	{
 		EmptyGunTime = 0.0f;
@@ -1522,7 +1769,7 @@ void AProjectBopisCharacter::UpdateCrouch()
 
 void AProjectBopisCharacter::DoFireHeld()
 {
-	if (IsWeaponWheelOpen())
+	if (IsWeaponWheelOpen() || bWheelPickHeld)
 	{
 		return;
 	}
@@ -1544,6 +1791,11 @@ void AProjectBopisCharacter::DoFireHeld()
 	// Every weapon keeps firing while the trigger's held (Max Payne): Triggered comes every
 	// frame, and the weapon's TimeBetweenShots paces it.
 	DoFire();
+}
+
+void AProjectBopisCharacter::DoFireReleased()
+{
+	bWheelPickHeld = false;
 }
 
 void AProjectBopisCharacter::DoAimStart()
@@ -1569,7 +1821,8 @@ bool AProjectBopisCharacter::WantsFreeArmPhysics() const
 	return Super::WantsFreeArmPhysics()
 		&& !(Shootdodge && Shootdodge->IsDodging())
 		&& !(Roll && Roll->IsRolling())
-		&& !IsThrowingGrenade();
+		&& !IsThrowingGrenade()
+		&& !IsMeleeing();
 }
 
 bool AProjectBopisCharacter::ShouldSkipEquipAnimation() const

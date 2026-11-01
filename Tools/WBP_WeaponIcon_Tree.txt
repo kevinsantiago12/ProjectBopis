@@ -1,0 +1,39 @@
+Begin Object Class=/Script/UMG.ScaleBox Name="Fit"
+   Begin Object Class=/Script/UMG.ScaleBoxSlot Name="Slot_Icons"
+   End Object
+   Begin Object Name="Slot_Icons"
+      HorizontalAlignment=HAlign_Right
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.ScaleBox'Fit'"
+      Content="/Script/UMG.Overlay'Icons'"
+   End Object
+   Stretch=None
+   Slots(0)="/Script/UMG.ScaleBoxSlot'Slot_Icons'"
+End Object
+Begin Object Class=/Script/UMG.Overlay Name="Icons"
+   Begin Object Class=/Script/UMG.OverlaySlot Name="Slot_WeaponIconDual"
+   End Object
+   Begin Object Class=/Script/UMG.OverlaySlot Name="Slot_WeaponIcon"
+   End Object
+   Begin Object Name="Slot_WeaponIconDual"
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Top
+      Parent="/Script/UMG.Overlay'Icons'"
+      Content="/Script/UMG.Image'WeaponIconDual'"
+   End Object
+   Begin Object Name="Slot_WeaponIcon"
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Top
+      Parent="/Script/UMG.Overlay'Icons'"
+      Content="/Script/UMG.Image'WeaponIcon'"
+   End Object
+   Slots(0)="/Script/UMG.OverlaySlot'Slot_WeaponIconDual'"
+   Slots(1)="/Script/UMG.OverlaySlot'Slot_WeaponIcon'"
+End Object
+Begin Object Class=/Script/UMG.Image Name="WeaponIconDual"
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WeaponIcon.MI_HUD_WeaponIcon'",ImageSize=(X=90.000000,Y=62.000000))
+   Visibility=Collapsed
+End Object
+Begin Object Class=/Script/UMG.Image Name="WeaponIcon"
+   Brush=(ResourceObject="/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_WeaponIcon.MI_HUD_WeaponIcon'",ImageSize=(X=90.000000,Y=62.000000))
+End Object

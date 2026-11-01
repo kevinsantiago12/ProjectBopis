@@ -1454,8 +1454,128 @@
     the fill front in pixels and tiles the texture. The Custom node code is in
     `HUDBar_Custom.hlsl`. It was checked in a numpy preview at 180–480 px, and
     against GPT's composite.
-  - **Not in Unreal yet** (user: "lets do it tomorrow"). Spec: *HUD:
-    cinematic minimal* (instance values, layout, hookup).
+  - **Built later the same day** (user: "lets do this now"). Spec: *HUD:
+    cinematic minimal*.
+    - textures imported, `M_HUDBar` + both instances built (bridge);
+    - `UHUDBarWidget` C++, applied on "apply and run script", compiled
+      clean; `WBP_Health` / `WBP_Focus` swapped to the `Bar` Image by the
+      user (user: "Done, it works");
+    - `BarCluster` layout pasted into `WBP_PlayerHUD` from
+      `Tools/MakeHUDBarClusterTree.ps1` (user: "Looks right");
+    - `Brightness` on `M_HUDBar` (user: "is it possible to let me adjust the
+      brightness of the UI element");
+    - GPT's background layer cut to `T_HUD_Background` (BC7, not upscaled),
+      on the new `M_HUDImage` / `MI_HUD_Background` with Brightness and
+      Opacity (user: "can you do a brightness thing for the background as
+      well").
+  - **Antonio font** (user: "I have an antonio font added to the project, can
+    you try it on all the UI elements?"). The user imported it into
+    `/Game/antonio/` as one Font per weight. Through the bridge, all 23 Text
+    Blocks in the five text widgets (ammo, first aid, game messages,
+    subtitle, weapon wheel) went from Roboto to Antonio of the same weight
+    and size, compiled and saved. The wheel's paste script writes Antonio
+    now too. Same sizes, checked in PIE (user: "Looks good").
+  - **Item strip, started** (user: "here is the next thing we do", with
+    GPT's weapon / first aid / grenade mockup). Spec: *HUD: cinematic minimal
+    → Item strip*.
+    - `CutHUDItems.py` cut the first-aid and grenade icons and measured the
+      layout. The weapon icon is the equipped weapon's own.
+    - `UAmmoWidget` now drives optional `WeaponIcon`, `MagazineText` and
+      `ReserveText` itself (applied on "apply and run", compiled clean).
+    - New `UHUDCountWidget` base (optional `Count` Text Block, virtual
+      `GetCount`); `UFirstAidWidget` moved onto it and a new `UGrenadeWidget`
+      added (applied on "apply and run", compiled clean).
+    - Bridge: the two icons imported, `WBP_Grenades` created on
+      `UGrenadeWidget`, compiled, saved. Paste-in trees for the three widgets
+      (`Tools/MakeHUDItemTrees.ps1`) and `ItemStrip` in the cluster generator.
+    - **Changed to separate pieces** (user: "I cant scale down the health and
+      focus section uniformly?", "The weapon icon is the wrong size, I
+      resized it myseld", then "just make separate widgets", "Each on its own
+      piece. Also make the BarCluster a separate Widget that can be uniformly
+      resized"; the user removed the old item widgets from the HUD, "You go
+      and make them anew"). `WBP_WeaponIcon` (on `UAmmoWidget`) and
+      `WBP_BarCluster` created through the bridge. Every piece's root is now a
+      Scale Box, so its box in `WBP_PlayerHUD` sets its size. Both generators
+      rewritten for the five widget trees. A generated starting layout for
+      the HUD was offered and dropped (user: "Ill drag it by hand, forget
+      this"). No C++ change was needed.
+    - **Weapon icon: dual pistols + stroke** (user: "we need to indicate in
+      the weapon icon that you are using dual pistols. Also can you add a
+      stroke to the icon?"). A dual weapon shows its icon twice, the copy
+      behind like on the wheel (`WeaponIconDual`, `DualIconSpread`); new UI
+      material `M_HUDIcon` outlines any icon (`StrokeWidth` in screen px,
+      `StrokeColor`), used by `MI_HUD_WeaponIcon`. C++ applied on "apply and
+      run"; the first build failed (a parameter named `Padding` hid
+      `UUserWidget::Padding`, renamed `SlotPadding`), the second compiled
+      clean. The material's first compile failed too (`StrokeColor` wired
+      from the RGB output; rewired to RGBA). `WBP_WeaponIcon` tree
+      regenerated; the user re-pasted it.
+    - **Stroke artifacts fixed** (user: "the stroke causes black artifacts",
+      "no anti aliasing"). The Handcrafted weapon icons had no mipmaps and
+      are drawn at ~1/10 of their size, so the icon and stroke aliased and
+      faint specks became black dots. Mipmaps on for the 9 icons the
+      weapons use (bridge, saved; UE 5.8 mips non-power-of-two textures
+      without padding, so nothing else changes; the wheel benefits too), and
+      the stroke now ignores faint alpha (`M_HUDIcon` updated, compiles
+      clean). User: "it looks better with mip maps, but the black artifacts
+      are still there": the icons were also set to Wrap, so each edge
+      borrowed the gun from the opposite edge and the stroke outlined it.
+      All 9 set to Clamp (bridge, saved). User: "that looks much better".
+    - **One standard scale for the weapon icon** (user: "The long gun icon
+      is tiny", then "let the long guns scale, pick a standard scale instead
+      of resizing, just make sure it aligns, we will scale the whole UI so it
+      all fits"). The Scale Box was fitting each icon inside the widget's
+      box, so long guns shrank to its width. `WBP_WeaponIcon`'s Scale Box is
+      now `Stretch` None: every gun 62 tall (`IconHeight`) at its own
+      proportions, right-aligned and centred, long guns running left. No
+      code change; generator updated, and the field set through the bridge
+      (compiled, saved). Not yet checked in PIE.
+    - **`WBP_ItemStrip`** (user: "I need to scale that entire section
+      uniformly", "go do it via bridge"). Read the user's layout through the
+      bridge: the bars at the left (already scalable on their own) and the six
+      item pieces apart from them, further right. Those six became one widget
+      with a Scale Box root, at the user's exact relative positions
+      (generator: `MakeHUDItemTrees.ps1 -Clipboard ItemStrip`). The asset was
+      created while PIE was running, so the bridge couldn't save it; the user
+      saved it and pasted the tree.
+    - **Pump shotgun icon swapped** by the user to `modern_shotgun__3_`. It
+      got mipmaps + Clamp like the other weapon icons (the stroke needs
+      nothing), and the old `ww1_shotgun__2_` went back to the pack's
+      `NoMipmaps` / `Wrap` (user: "the old value rolled back"). Bridge, saved.
+    - **AK74u icon swapped** by the user (`BP_AssaultCarbine` →
+      `modern_rifle__3_`): mipmaps + Clamp (bridge, saved). The old
+      `modern_rifle__12_` keeps its settings, since the assault rifle still
+      uses it. Then swapped again to the user's own `T_Icon_AK74u` (RGBA,
+      white on transparent, from `ArtSource/UI/Weapons/`): mipmaps + Clamp,
+      and `modern_rifle__3_`, now unused, rolled back to `NoMipmaps` / `Wrap`
+      (bridge, saved).
+    - **Weapon wheel: mipmaps + stroke** (user: "Try to apply the mipmap and
+      stroke to all the current possible icons on the weapon wheel"). The
+      new melee icon `Fist` (the other session's quick-action segment) got
+      mipmaps + Clamp. `UWeaponWheelWidget::ShowIcon` now feeds an
+      `M_HUDIcon` brush through its `Texture` parameter, like the HUD's
+      (applied on "apply and run", compiled clean; the other session was
+      asked first and said it was done with the wheel files, and its changes
+      were kept). `MI_HUD_WheelIcon` set on the wheel's 12 icon Images
+      through the bridge, saved; `MakeWeaponWheelTree.ps1` matches. User
+      checked it in PIE: "Looks right".
+    - **Quick-action slot** (2026-11-01; user: "time to wire the selected
+      item in 1 to reflect the item strip"). The strip's grenade piece now
+      follows the wheel's slot-1 pick (`GetQuickAction()`, from the other
+      session): grenade icon + count, or a melee icon with the count hidden.
+      `UGrenadeWidget` C++ applied on "apply and run", compiled clean. New
+      `T_HUD_Icon_Melee`, cut from the user's fist PNG by `CutHUDIcon.py`,
+      imported; `WBP_Grenades`' `GrenadeIcon` / `MeleeIcon` set (bridge,
+      saved). Also mipmaps (no stroke) on the HUD grenade and first-aid icons
+      (user: "mipmap the grenade and first aid images too", "but dont
+      stroke"). First PIE check: the icon didn't switch (user: "did not
+      change the icon"); the copy of `WBP_Grenades` inside `WBP_ItemStrip`
+      had kept empty icons when the defaults were set and compiled. Set on
+      that copy too (bridge, saved). User: "Works now".
+    - Dual pistol pair on the HUD checked (user: "dual pistols are fine in
+      the HUD").
+    - The GPT background is too short for the strip; it needs a longer one
+      or stretching.
   - **Tried and dropped:**
     - a flag-triangle cap and a procedural grunge (files still in the folder,
       superseded);
@@ -1594,18 +1714,75 @@
   - Plan item 42b is done: hit pulse, heavy flash at 15%/0.5 s, low health at
     30%, out-of-combat recovery.
 
+- **Pickups switch only to a better gun (plan item 46)** (user: "Only change
+  the weapon when picking them up if they are better … determined by their
+  number in the weapon selection and order in that particular section", plus
+  the order per slot). `AWeaponBase::SlotOrder` + `RanksAbove`; the holder
+  keeps `CarriedWeapons` sorted (`InsertCarried`), so the wheel and the slot
+  keys follow the order too; `GiveWeapon` switches only to a higher rank.
+  - Built on "apply and run": compiled clean, DLL 21:04:22.
+  - `SlotOrder` on the 13 weapon Blueprints (bridge). The first save was
+    refused while the editor was in Play, and redone after.
+  - Not yet tested by the user.
+- **New standing rule** (user: "coordiante with the other session to check if
+  its safe to shut editor when you need to"): `Claude-Rules.md` §1. Before
+  closing the editor, message the peer sessions and wait for their answer.
+- **Melee and the slot 1 G-key switcher (plan item 47)** (user: "the 1 in the
+  weapon wheel … will just be a switcher from melee and grenade"; "Propose a
+  melee system"; "go with your picks, try to do it to completion, put a
+  placeholder icon for now"; out of grenades "stay on grenade and do
+  nothing").
+  - **Built:** `EQuickAction` + `DoQuickAction` on G; wheel slot 1 flips
+    Grenade/Melee; `DoMelee` plays Lyra's additive melee clips on the
+    `Additive` slot at 1.5×; damage 35 + forced stagger (`UMeleeDamageType`);
+    turn to the target; hit-stop; the trigger cuts the recovery after the
+    blow lands. Spec: *Melee and the G key*.
+  - **Build:** both peers said safe before the rebuild. Compiled clean on the
+    first try (28 s), DLL 21:57:56, bridge up, log clean.
+  - **Assets:** strikes on `BP_PlayerCharacter` + `BP_Player_CC`. The parent's
+    values didn't reach the child, the known gotcha, so they were set on both.
+    Wheel icons on `WBP_WeaponWheel`: the grenade, and a combat knife as the
+    melee placeholder. All saved.
+  - **First test** (user: "Needs sounds"; "I press 1 a couple of times then
+    when I click, it shoots"; "I have fist image in /Game/UI/HUD"):
+    - **Sounds:** the first cues were the pack's bullet whips and bullet
+      body-hits. Now the knife swing and `Body_Flesh_1_Cue`, both 2D (bridge
+      + code).
+    - **Fire bug:** the picking click ran `DoFire` (closes the wheel) and
+      `DoFireHeld` (fires) on the same frame. `bWheelPickHeld` +
+      `DoFireReleased` swallow that click.
+    - **Icon:** the melee icon is the user's `Fist`.
+    - **Build:** the pistol-sounds session said wait (the user might have
+      unsaved cue work), so the rebuild waited for the user's "saved, run the
+      script". Compiled clean, DLL 22:43:27.
+  - **Upper body only when moving** (user: "can you make it just do the upper
+    body attack when moving?").
+    - **C++:** `MeleeUpperBodyAlpha` on the anim instance, latched for the
+      strike once the player moves.
+    - **`ABP_Player`:** the `Additive` slot's input and output are cached, a
+      `spine_01` layered blend makes the upper-body-only version, and a
+      two-way blend by the alpha feeds the output.
+    - **Build:** all three peer sessions said safe; DLL 23:05:17. The AnimBP
+      compiled with a clean log and was saved.
+
 ### ▶ RESUME HERE
 **A. Next up**
-00. **HUD bars (plan item 44), next session** (user: "lets do it tomorrow").
-    Spec: *HUD: cinematic minimal*.
-    - **Ask first:** may Claude import the four `ArtSource/UI/HUD` textures
-      and build `M_HUDBar` + `MI_HUDBar_Health` / `_Focus` through the
-      bridge? Or does the user build them from the spec?
-    - **Then:**
-      - in `WBP_Health` / `WBP_Focus`, swap the ProgressBar for an Image;
-      - feed `Fill`, via Blueprint or C++ the user types;
-      - lay out the accent and bars in `WBP_PlayerHUD`;
-      - test the drain.
+000. *(Done 2026-11-01, user: "46 and 47 are good": the pickup switch and
+    melee are tested.)* **Optional melee follow-ups:**
+    - real blunt-hit sounds;
+    - a camera shake asset for `MeleeHitShake`;
+    - the red 0 on the grenade choice when out.
+00. **HUD strip (plan item 44).** Spec: *HUD: cinematic minimal*. Bars,
+    layout, background and the Antonio font are built.
+    - **User check:** the `Background` Image in `BarCluster` uses
+      `MI_HUD_Background` (the user sets the brush, or re-pastes the cluster).
+    - **Next:** the item strip in plan item 44, now separate pieces. C++,
+      icons, `WBP_Grenades` / `WBP_WeaponIcon` / `WBP_BarCluster` and the
+      paste-in text are done. The user pastes the five widget trees and
+      places the pieces in `WBP_PlayerHUD` by hand (spec *Item strip*;
+      `WBP_WeaponIcon` re-pasted for the dual pair + stroke), then PIE test
+      (a dual pistol pair too), cleanup (`UAmmoWidget::GetGrenadeCount`,
+      `WBP_Ammo`'s old binding functions), background.
     - **Optional:** a full-size GPT sheet in the folder re-cuts with real 4K
       detail.
     - **Optional:** delete the superseded flag-cap and grunge files.

@@ -7,6 +7,8 @@
 class AWeaponBase;
 class UImage;
 class UTextBlock;
+class UTexture2D;
+enum class EQuickAction : uint8;
 
 /** How a segment reads: nothing carried, carried, the gun in hand, or under the highlight. */
 UENUM(BlueprintType)
@@ -20,7 +22,8 @@ enum class EWheelSegmentState : uint8
 
 /**
  * The weapon wheel, GTA V style: a fixed ring of segments, one per weapon type (WeaponSlot 1..N,
- * counter-clockwise from the top), each showing the type's current weapon. Key mode (the number
+ * counter-clockwise from the top), each showing the type's current weapon; QuickActionSlot's
+ * segment instead picks what the G key does (grenade or melee). Key mode (the number
  * keys): a key highlights its type, the same key again steps through that type's weapons, a
  * click equips. Pointer mode (a held key, a pad): pointing hovers, cycling steps, releasing
  * equips. The look lives in the designer (WBP_WeaponWheel): this class finds its widgets by
@@ -66,6 +69,9 @@ public:
 	/** The hovered type's current weapon, or null (nothing hovered, or an empty type). */
 	AWeaponBase* GetHoveredWeapon() const;
 
+	/** True when the hovered segment is QuickActionSlot's; OutAction is its current choice. */
+	bool GetHoveredQuickAction(EQuickAction& OutAction) const;
+
 	/** The highlighted segment, or −1 for none. */
 	UFUNCTION(BlueprintPure, Category = "Weapon Wheel")
 	int32 GetHoveredIndex() const;
@@ -91,9 +97,17 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Weapon Wheel")
 	void OnHoverChanged(int32 Index);
 
-	/** Sorts the carried weapons into their type's segment (pickup order within a type);
+	/** Sorts the carried weapons into their type's segment (SlotOrder within a type);
 	    redone every frame while open. */
 	void RebuildSegments();
+
+	bool IsQuickActionSegment(int32 Index) const { return Index == QuickActionSlot - 1; }
+
+	/** How many choices segment Index steps through: its carried weapons, or the quick actions. */
+	int32 GetEntryCount(int32 Index) const;
+
+	/** GrenadeIcon or MeleeIcon, for a quick-action choice. */
+	UTexture2D* GetQuickActionIcon(int32 Choice) const;
 
 	/** Pushes the current state into the designer's widgets. */
 	void RefreshWidgets();
@@ -143,6 +157,17 @@ protected:
 	    handguns fill HandgunFill of their wedge; longer guns may run past theirs. */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "1", ClampMax = "9"))
 	int32 HandgunSlot = 2;
+
+	/** The segment that picks what the G key does (grenade or melee) instead of a weapon. Its
+	    pick sets the character's QuickAction; the gun in hand stays. */
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Quick Action", meta = (ClampMin = "1", ClampMax = "9"))
+	int32 QuickActionSlot = 1;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Quick Action")
+	TObjectPtr<UTexture2D> GrenadeIcon;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Quick Action")
+	TObjectPtr<UTexture2D> MeleeIcon;
 
 	/** How much of their wedge the handguns fill: 1 is edge to edge (less IconMargin). */
 	UPROPERTY(EditAnywhere, Category = "Weapon Wheel|Layout", meta = (ClampMin = "0.1", ClampMax = "1.0"))
@@ -205,10 +230,11 @@ private:
 	/** Where the pointer is, in pixels from the centre (pointer mode). */
 	FVector2D Pointer = FVector2D::ZeroVector;
 
-	/** Carried weapons per segment (type), pickup order. */
+	/** Carried weapons per segment (type), in SlotOrder. The quick-action segment's stays empty. */
 	TArray<TArray<TWeakObjectPtr<AWeaponBase>>> Segments;
 
-	/** Each type's current weapon (index into its segment); kept between openings. */
+	/** Each type's current weapon (index into its segment); kept between openings. For the
+	    quick-action segment, the choice (an EQuickAction). */
 	TArray<int32> Selected;
 
 	double LastCycleTime = 0.0;

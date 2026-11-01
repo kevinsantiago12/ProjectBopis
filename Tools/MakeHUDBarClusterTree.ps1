@@ -1,11 +1,13 @@
-# Writes the UMG clipboard text for the bottom-left HUD bar cluster to WBP_PlayerHUD_BarCluster.txt
-# (next to this script); -Clipboard also copies it. In WBP_PlayerHUD: delete the old WBP_Health and
-# WBP_Focus, select the root Canvas Panel in the Hierarchy, Ctrl+V, then anchor BarCluster bottom left.
+# Writes the UMG clipboard text for the inside of WBP_BarCluster (a plain UserWidget) to
+# WBP_BarCluster_Tree.txt (next to this script); -Clipboard also copies it. In the Widget
+# Blueprint: delete the old root (if any), click the empty Hierarchy, Ctrl+V, compile, save.
 #
-# BarCluster is a Canvas Panel holding the accent (on top) and the health and Focus widgets at the
-# layout measured off GPT's composite (spec *HUD: cinematic minimal*), in 1080p px from the accent's
-# top-left. WBP_Health / WBP_Focus are just their "Bar" Image, so each fills the size given here and
-# UHUDBarWidget feeds that size to M_HUDBar: change a width and the bar tiles, it doesn't stretch.
+# A Scale Box holding a Canvas Panel with GPT's background, the health and Focus bars and the
+# accent, so resizing the widget's box in WBP_PlayerHUD scales the whole section uniformly (it
+# keeps to the box's bottom-left corner). Its natural size is 563 x 130 (1080p px); the bars'
+# layout was measured off GPT's composite (spec *HUD: cinematic minimal*). WBP_Health / WBP_Focus
+# are just their "Bar" Image, so each fills the size given here and UHUDBarWidget feeds that size
+# to M_HUDBar: change a width and the bar tiles, it doesn't stretch.
 param([switch]$Clipboard)
 
 $inv = [Globalization.CultureInfo]::InvariantCulture
@@ -15,55 +17,62 @@ $accentTexture = "/Script/Engine.Texture2D'/Game/UI/HUD/T_HUD_Accent.T_HUD_Accen
 # Through M_HUDImage, for its Brightness and Opacity.
 $backgroundTexture = "/Script/Engine.MaterialInstanceConstant'/Game/UI/HUD/MI_HUD_Background.MI_HUD_Background'"
 
-$widgets = New-Object System.Collections.Generic.List[string]
-$slots = New-Object System.Collections.Generic.List[hashtable]
-
-function AddWidget([string]$block, [string]$name, [string]$classRef, $x, $y, $w, $h, [int]$z) {
-  $widgets.Add($block)
-  $slots.Add(@{ n = "Slot_$name"; c = "$classRef'$name'"; x = $x; y = $y; w = $w; h = $h; z = $z })
-}
-
-# GPT's ink background under everything: 130 tall at its own aspect (4.33), centred on the bars'
-# height and running on to the right, where the weapon/ammo/items part of the strip will sit.
-$block = "Begin Object Class=/Script/UMG.Image Name=`"Background`"`r`n" +
-  "   Brush=(ResourceObject=`"$backgroundTexture`",ImageSize=(X=563.000000,Y=130.000000))`r`n" +
-  "End Object"
-AddWidget $block "Background" "/Script/UMG.Image" -30 -22 563 130 -1
-
-# The bars next (under the accent), focus lowest.
-foreach ($bar in @(
-    @{ name = "FocusBar"; cls = "/Game/UI/WBP_Focus.WBP_Focus_C"; x = 45; y = 55; w = 328; h = 30; z = 0 },
-    @{ name = "HealthBar"; cls = "/Game/UI/WBP_Health.WBP_Health_C"; x = 37; y = 16; w = 376; h = 29; z = 1 })) {
-  $block = "Begin Object Class=$($bar.cls) Name=`"$($bar.name)`"`r`n" +
+function Image([string]$name, [string]$texture, $w, $h) {
+  return "Begin Object Class=/Script/UMG.Image Name=`"$name`"`r`n" +
+    "   Brush=(ResourceObject=`"$texture`",ImageSize=(X=$(F $w),Y=$(F $h)))`r`n" +
     "End Object"
-  AddWidget $block $bar.name $bar.cls $bar.x $bar.y $bar.w $bar.h $bar.z
 }
 
-$block = "Begin Object Class=/Script/UMG.Image Name=`"Accent`"`r`n" +
-  "   Brush=(ResourceObject=`"$accentTexture`",ImageSize=(X=76.000000,Y=86.000000))`r`n" +
-  "End Object"
-AddWidget $block "Accent" "/Script/UMG.Image" 0 0 76 86 2
-
-# The cluster canvas, in the editor's own copy format: slots declared, then filled in.
-$sb = New-Object System.Text.StringBuilder
-function L([string]$s) { [void]$sb.Append($s + "`r`n") }
-L "Begin Object Class=/Script/UMG.CanvasPanel Name=`"BarCluster`""
-foreach ($s in $slots) { L "   Begin Object Class=/Script/UMG.CanvasPanelSlot Name=`"$($s.n)`""; L "   End Object" }
-foreach ($s in $slots) {
-  L "   Begin Object Name=`"$($s.n)`""
-  L "      LayoutData=(Offsets=(Left=$(F $s.x),Top=$(F $s.y),Right=$(F $s.w),Bottom=$(F $s.h)),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))"
-  L "      bAutoSize=False"
-  L "      ZOrder=$($s.z)"
-  L "      Parent=`"/Script/UMG.CanvasPanel'BarCluster'`""
-  L "      Content=`"$($s.c)`""
-  L "   End Object"
+function UserWidget([string]$name, [string]$cls) {
+  return "Begin Object Class=$cls Name=`"$name`"`r`nEnd Object"
 }
-for ($k = 0; $k -lt $slots.Count; $k++) { L "   Slots($k)=`"/Script/UMG.CanvasPanelSlot'$($slots[$k].n)'`"" }
-L "End Object"
-foreach ($w in $widgets) { L $w }
 
-$text = $sb.ToString()
-$out = Join-Path $PSScriptRoot "WBP_PlayerHUD_BarCluster.txt"
-[IO.File]::WriteAllText($out, $text, (New-Object System.Text.UTF8Encoding $false))
-if ($Clipboard) { Set-Clipboard -Value $text }
-"Wrote $out ($($slots.Count) widgets + BarCluster)$(if ($Clipboard) { '; copied to the clipboard' })"
+# A Canvas Panel $root holding $items (@{ name; cls; block; x; y; w; h; z }), each in a fixed-size
+# slot anchored top-left, in the editor's own copy format: slots declared, then filled in.
+function Canvas([string]$root, $items) {
+  $sb = New-Object System.Text.StringBuilder
+  function L([string]$s) { [void]$sb.Append($s + "`r`n") }
+  L "Begin Object Class=/Script/UMG.CanvasPanel Name=`"$root`""
+  foreach ($i in $items) { L "   Begin Object Class=/Script/UMG.CanvasPanelSlot Name=`"Slot_$($i.name)`""; L "   End Object" }
+  foreach ($i in $items) {
+    L "   Begin Object Name=`"Slot_$($i.name)`""
+    L "      LayoutData=(Offsets=(Left=$(F $i.x),Top=$(F $i.y),Right=$(F $i.w),Bottom=$(F $i.h)),Anchors=(Minimum=(X=0.000000,Y=0.000000),Maximum=(X=0.000000,Y=0.000000)),Alignment=(X=0.000000,Y=0.000000))"
+    L "      bAutoSize=False"
+    L "      ZOrder=$($i.z)"
+    L "      Parent=`"/Script/UMG.CanvasPanel'$root'`""
+    L "      Content=`"$($i.cls)'$($i.name)'`""
+    L "   End Object"
+  }
+  for ($k = 0; $k -lt $items.Count; $k++) { L "   Slots($k)=`"/Script/UMG.CanvasPanelSlot'Slot_$($items[$k].name)'`"" }
+  L "End Object"
+  foreach ($i in $items) { L $i.block }
+  return $sb.ToString()
+}
+
+# WBP_BarCluster, from the background's top-left (the accent sits at (30, 22)). The canvas sizes
+# itself to its children, 563 x 130, which is what the Scale Box fits to the widget's box.
+$cluster = Canvas "Cluster" @(
+  # GPT's ink background under everything: 130 tall at its own aspect (4.33).
+  @{ name = "Background"; cls = "/Script/UMG.Image"; block = (Image "Background" $backgroundTexture 563 130); x = 0; y = 0; w = 563; h = 130; z = -1 },
+  # The bars next (under the accent), focus lowest.
+  @{ name = "FocusBar"; cls = "/Game/UI/WBP_Focus.WBP_Focus_C"; block = (UserWidget "FocusBar" "/Game/UI/WBP_Focus.WBP_Focus_C"); x = 75; y = 77; w = 328; h = 30; z = 0 },
+  @{ name = "HealthBar"; cls = "/Game/UI/WBP_Health.WBP_Health_C"; block = (UserWidget "HealthBar" "/Game/UI/WBP_Health.WBP_Health_C"); x = 67; y = 38; w = 376; h = 29; z = 1 },
+  @{ name = "Accent"; cls = "/Script/UMG.Image"; block = (Image "Accent" $accentTexture 76 86); x = 30; y = 22; w = 76; h = 86; z = 2 })
+$clusterText = "Begin Object Class=/Script/UMG.ScaleBox Name=`"Fit`"`r`n" +
+  "   Begin Object Class=/Script/UMG.ScaleBoxSlot Name=`"Slot_Cluster`"`r`n" +
+  "   End Object`r`n" +
+  "   Begin Object Name=`"Slot_Cluster`"`r`n" +
+  "      HorizontalAlignment=HAlign_Left`r`n" +
+  "      VerticalAlignment=VAlign_Bottom`r`n" +
+  "      Parent=`"/Script/UMG.ScaleBox'Fit'`"`r`n" +
+  "      Content=`"/Script/UMG.CanvasPanel'Cluster'`"`r`n" +
+  "   End Object`r`n" +
+  "   Stretch=ScaleToFit`r`n" +
+  "   Slots(0)=`"/Script/UMG.ScaleBoxSlot'Slot_Cluster'`"`r`n" +
+  "End Object`r`n" +
+  $cluster
+
+$out = Join-Path $PSScriptRoot "WBP_BarCluster_Tree.txt"
+[IO.File]::WriteAllText($out, $clusterText, (New-Object System.Text.UTF8Encoding $false))
+if ($Clipboard) { Set-Clipboard -Value $clusterText }
+"Wrote $out$(if ($Clipboard) { '; copied to the clipboard' })"

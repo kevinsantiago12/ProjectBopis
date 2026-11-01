@@ -63,6 +63,11 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
 	float ThrowAlpha = 0.0f;
 
+	/** 1 while a melee strike plays on the upper body only: moving at any point during it, the legs
+	    keep their stride until it ends. 0 standing still (it takes the whole body) and for a toss. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Melee")
+	float MeleeUpperBodyAlpha = 0.0f;
+
 	/** Weight of the hand turn that points a two-handed pistol at the crosshair from the hip
 	    (the blade's hand turn, without its chest and arm turns). Eased. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
@@ -812,7 +817,8 @@ private:
 	/** An equip montage is playing (the pull-out): the free arm eases out for it, as for a reload. */
 	bool bEquipAnimating = false;
 
-	/** The owner is turning to throw or mid-toss (see AProjectBopisCharacter::IsThrowingGrenade). */
+	/** The owner is turning to throw, mid-toss or mid-strike (IsThrowingGrenade, IsMeleeing):
+	    either one takes the upper body the same way. */
 	bool bThrowingGrenade = false;
 
 	/** Aim button held (ADS) — not hip-fire raises. The left-hand IK only runs while aiming. */

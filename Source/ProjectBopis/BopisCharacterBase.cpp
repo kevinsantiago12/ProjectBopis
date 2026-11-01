@@ -15,6 +15,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gameplay/HealthComponent.h"
 #include "Gameplay/FootstepEffectsData.h"
+#include "Gameplay/MeleeDamageType.h"
 #include "Engine/DamageEvents.h"
 #include "ProjectBopis.h"
 
@@ -153,8 +154,11 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		ShotDirection = PointEvent.ShotDirection;
 	}
 
+	// A melee blow lands the same wherever it hits, and always staggers (below).
+	const bool bMelee = DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass->IsChildOf(UMeleeDamageType::StaticClass());
+
 	float Damage = DamageAmount;
-	if (const float* Multiplier = BoneDamageMultipliers.Find(Hit.BoneName))
+	if (const float* Multiplier = bMelee ? nullptr : BoneDamageMultipliers.Find(Hit.BoneName))
 	{
 		Damage *= *Multiplier;
 	}
@@ -250,7 +254,7 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		}
 		StaggerWindowDamage += Damage;
 
-		if (StaggerDuration > 0.0f && StaggerWindowDamage >= StaggerDamage)
+		if (StaggerDuration > 0.0f && (bMelee || StaggerWindowDamage >= StaggerDamage))
 		{
 			// Each stagger needs a fresh StaggerDamage, so stun-locking takes sustained fire.
 			StaggerWindowDamage = 0.0f;
