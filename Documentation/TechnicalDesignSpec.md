@@ -1467,6 +1467,69 @@ Deck build measures it all together.
       `[PostProcessQuality@2]`; shafts are at the engine's High (≈0.25 ms).
     - **Weapon meshes** still tick ≈72 times per frame (≈1.05 ms of game
       thread). That's the next target.
+- **Unlit impact effects (2026-11-01, user: "ok try the unlin style
+  effects", Max Payne 3 alignment; bridge, saved 23:3x):**
+  - All 16 lit translucent materials in `ImpactsVFXVol1/Materials` are now
+    `MSM_Unlit`:
+    - `M_Smoke1`, `M_SmokeRing`;
+    - Dirt ×4;
+    - `M_Fleks1`–`4`, `M_Sand`;
+    - `M_MeshEmitWater_MASTER`, `M_WaterCloud`, `M_WaterRipple`,
+      `M_WaterSplash`, `M_Water_Test_01`.
+  - **Each graph gained:**
+    - a scalar parameter **`Unlit Brightness`** (group Unlit, default 1.0);
+    - a Multiply: what fed BaseColor × the scalar → EmissiveColor.
+    - `M_MeshEmitWater_MASTER` already had emissive: its old emissive + the
+      new term through an Add.
+    - BaseColor stays wired (ignored by Unlit).
+  - Compiled with no errors. Backup: git (all 16 tracked).
+  - **Look:** effects no longer darken in shade or brighten in sun. Tune
+    `Unlit Brightness` per material (or in an MI) if they read too dark or
+    too bright.
+  - **What still uses the lighting volume:** only CC's eyelashes
+    (`M_Simple_Translucent`) and eye water (`MI_Eye_Water_Master`). With LOD
+    bias 1, eye water is disabled at every LOD in use.
+    `r.TranslucentLightingVolume 0` would save the remaining ≈0.15 ms; the
+    lashes would lose volume lighting.
+  - **PIE check (user): "fleks are bright".** `Unlit Brightness` on
+    `M_Fleks1`–`4` lowered to **0.5** (bridge, saved 23:38). The others stay
+    at 1.0.
+  - Deck build started 23:39.
+  - **Traced (`20261101_234349`, 273 s, exports `t16/`) vs the 22:57 run:**
+    - **Translucency:** 0.64 → **0.48** ms average, busiest seconds 0.84 →
+      0.59; per-frame p90 1.05 → 0.68, p99 1.81 → 1.47.
+    - **Unlit saves ≈0.15–0.25 ms,** within the run-to-run noise of the
+      whole frame. Scene all 13.90 → 13.95, busiest 15.08 → 15.40, calm
+      13.42 → 13.27.
+    - **Seconds ≥58 fps:** 72% → 62%; busiest seconds 52 → 49 fps. The
+      run-to-run difference is as large as the change, so this isn't a
+      regression: this run was longer, with slightly more effects.
+    - **Light shafts at defaults:** 0.22 ms, the same as with the cheap
+      settings, which confirms those did nothing.
+    - **Fights are still bound by both the GPU and the game thread** (game
+      frame ≈21.7 ms, `UWorld_Tick` ≈14.7). The weapon meshes still tick
+      ≈72 times per frame (1.06 ms): the next target.
+- **`Lvl_Linear` trace (2026-11-02, `20261102_000532`, 278 s, exports
+  `t17/`; build 00:03 with the user's fresh `Lvl_Linear` light bake):**
+  - **Seconds ≥58 fps: 91%**, under 50: 1%.
+  - **Busiest 20% of seconds: 56 fps** (GPU frame 18.1, `UWorld_Tick`
+    10.9).
+  - **GPU frame** p50 / p90 / p99: 16.4 / 19.0 / 25.8 ms.
+  - **Scene** all / busy / calm: 13.61 / 14.61 / 13.18 ms.
+  - **Fewer characters than the Sandbox runs** (5.8 moving per frame vs
+    8.2), so the game thread is lighter.
+  - **Sun lighting 2.6 ms vs the Sandbox's 1.3: shadow projection 1.83 vs
+    0.48.** That's the inset (per-object) shadows Sandbox had removed on
+    2026-11-01. "`Lvl_Linear`'s sun still needs the same change" is still
+    open.
+    - **Fix:** `bUseInsetShadowsForMovableObjects = false` on
+      `Lvl_Linear`'s `DirectionalLight_0` → `LightComponent0`.
+    - **Expected:** about −1.3 ms.
+  - **Corpses (user, 2026-11-02): "for the deck, we set the max number of
+    corpse to 3".** `AProjectBopisGameMode::MaxCorpses` is 5 today on every
+    platform, with the user's rule ("everything after will be pending
+    removal till it goes out of vision") already built in (`TrimCorpses`).
+    A Deck-only limit of 3 was proposed as C++.
   - **Next levers for fights:**
     - the CC part ticks (`CC_SkelMesh_C`, still ≈166 per frame);
     - decals (1.9 ms, a fixed cost);

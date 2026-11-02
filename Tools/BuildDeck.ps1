@@ -99,7 +99,14 @@ else {
 # ---- 3. Reopen the editor ---------------------------------------------------------------
 
 if ($wasOpen -and -not $NoLaunch) {
-    Write-Step 'Opening the editor...'
-    Start-Process -FilePath $EditorExe -ArgumentList "`"$UProject`""
+    # Someone may have reopened it during the build; a second editor on the project risks
+    # overwriting each other's saves.
+    if (@(Get-ProjectEditors).Count -gt 0) {
+        Write-Step 'Editor already open again - not opening a second one.'
+    }
+    else {
+        Write-Step 'Opening the editor...'
+        Start-Process -FilePath $EditorExe -ArgumentList "`"$UProject`""
+    }
 }
 exit $exitCode
