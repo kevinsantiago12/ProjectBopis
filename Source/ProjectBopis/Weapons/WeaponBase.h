@@ -76,6 +76,19 @@ enum class EWeaponAnimType : uint8
 	Dual
 };
 
+/** How a long gun is charged, where that differs from its anim type's reload (the rifle reload
+    works an AK's side handle). The weapon states only which; each animator owns the clips. */
+UENUM(BlueprintType)
+enum class EChargingStyle : uint8
+{
+	/** Whatever the anim type's reload does. */
+	Standard,
+	/** A T-handle at the back of the receiver, pulled straight back (M4). */
+	RearHandle,
+	/** A cocking lever up front, locked back and slapped down (MP5). */
+	HKSlap
+};
+
 /** Pistol-style hold (one-handed, two-handed or dual, including dual SMGs), for code that
     means "pistol poses vs long-gun poses". */
 inline bool IsPistolAnimType(EWeaponAnimType Type)
@@ -205,6 +218,8 @@ public:
 	/** Which animation set the holder should use for this weapon. */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponAnimType GetAnimType() const { return AnimType; }
+
+	EChargingStyle GetChargingStyle() const { return ChargingStyle; }
 
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetWeaponSlot() const { return WeaponSlot; }
@@ -377,6 +392,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponAnimType AnimType = EWeaponAnimType::Pistol;
+
+	/** How the gun is charged, if not the way its anim type's reload does it: the holder plays a
+	    reload made for that (ChargingReloadMontages). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	EChargingStyle ChargingStyle = EChargingStyle::Standard;
 
 	/** Number key that selects this weapon (Max Payne style categories). Weapons that share
 	    a slot are cycled by pressing the key again, in SlotOrder. 2 pistols, 3 shotguns,
@@ -559,6 +579,11 @@ protected:
 	    notifies too (Fire, and Eject if it has one). None: the gun doesn't lock back. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UAnimSequence> LastShotAnimation;
+
+	/** Played on the weapon's own mesh as a reload starts, at the reload's speed: the parts the
+	    hands work (the M4's charging handle). Timed with the holder's reload. None: nothing on the gun moves. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UAnimSequence> ReloadAnimation;
 
 	/** Pump guns: the slide's bone. The mesh's post-process AnimBP moves it, and the holder's
 	    left hand follows it. None: no pump. */
@@ -801,6 +826,18 @@ protected:
 
 	float LastMuzzleSmokeTime = -1000.0f;
 	float MuzzleLightTimeLeft = 0.0f;
+
+	/** A gun's meshes only animate for a shot or a new rest pose. Between those they tick this
+	    often (seconds), just enough to keep their LOD current: a held or holstered gun otherwise
+	    re-evaluates the same frame every frame. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon|Performance", meta = (ClampMin = "0.0"))
+	float RestMeshTickInterval = 0.25f;
+
+	/** Puts the gun's meshes back to full-rate ticking, for a shot or a new rest pose. */
+	void WakeMeshes();
+
+	/** Full-rate frames left once the meshes stop playing, so a new rest pose gets evaluated. */
+	int32 MeshWakeFrames = 0;
 
 
 public:	

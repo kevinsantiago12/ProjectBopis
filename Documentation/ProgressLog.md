@@ -1921,6 +1921,141 @@
   - Below 50%, translucency loses its nearest-depth upscale and falls back
     to bilinear halos, so 50 stays the floor.
 
+- **2026-11-02: next-target batch** (user: "do all of them, I give you
+  permissions"; spec *Next-target batch*).
+  - `Lvl_Linear` sun inset shadows off (bridge, saved 09:48).
+  - `r.TranslucencyLightingVolume=0` in the High tier.
+  - Weapon meshes rest at a 0.25 s tick and wake for shots and rest poses;
+    empty offhand meshes don't tick.
+  - CC followers without cloth stop ticking (`StopIdlePartTicks`).
+  - Rebuilt clean with `RebuildEditor` 09:53; bridge answers after.
+    "Current Coding Work" was busy and said safe; it now owns the next
+    edits to `WeaponBase` / `BopisCharacterBase` (M4 reload).
+  - Bullet holes as meshes: **user: "Keep decals"**. Decals stay.
+  - **Half-res translucency is now Deck-only:** out of the High ini, into
+    `UBopisGameInstance::ApplyDeckOverrides` (`SteamDeck=1` or `-Deck`).
+    Applied by Claude ("Apply it yourself"). Rebuilt clean with
+    `RebuildEditor` (10:22; all peers idle; bridge answers). Not yet run on
+    the Deck: add `-Deck` to the start command.
+  - **Deck build 11:15** (`Tools/BuildDeck.ps1`, 2 min, exit 0). It holds
+    the whole batch above, the Deck-only half res, and Current Coding
+    Work's M4 reload (compiled 11:08). Not yet run on the Deck.
+  - **Trace 18** (`20261102_112048`, Sandbox):
+    - weapons −0.75 ms of game thread; lighting volume gone;
+    - the CC part ticks didn't drop (164 → 180), because they ran before
+      CC dressed the character;
+    - overall fps about the same as trace 16, in a fight with more
+      characters.
+  - **CC part fix:** `StopIdlePartTicks` now runs from `Tick` once the
+    character is dressed and shown. Rebuilt clean with `RebuildEditor`
+    (11:32; all peers idle; bridge answers). In the Deck build of 11:38
+    (`BuildDeck.ps1`, 2 min, exit 0).
+  - **On the Deck the clothes didn't follow the body:** stopping
+    leader-posed followers' ticks was wrong. They take the body's pose on
+    screen in their own tick. Reverted to empty slots only (still run once
+    dressed). Applied by Claude ("Apply it yourself"). **Code given, not
+    yet compiled.** The 11:38 Deck build is broken; rebuild and repackage.
+  - **Native 100% rescinded** (user: "go with what percentage the Deck
+    deems ok"): `r.ScreenPercentage=100` is out of `DefaultEngine.ini`.
+    The Deck's first run keeps the benchmark's resolution (71%) after
+    setting High, which would have made it 87% (`BopisGameInstance.cpp`).
+    On the Deck, delete `GameUserSettings.ini` once, and drop
+    `scalability 2` from `-ExecCmds`.
+  - **Rebuilt clean 11:52** (clothes revert + 71%; all peers idle; bridge
+    answers). **Deck build 11:55** (`BuildDeck.ps1`, exit 0).
+  - **Trace 19** (`20261102_120035`, Sandbox, 105 s, without
+    `scalability 2`). User: "its rendering at 100%".
+    - The trace shows Epic, not High: lighting volume 2.22 ms and SSS
+      1.13 ms, both off on High.
+    - So the first-run Deck code didn't apply. Either the saved
+      `GameUserSettings.ini` was kept, or `SteamDeck=1` doesn't arrive
+      (only `ApplyDeckOverrides` checks `-Deck`). The game used the engine
+      default: Epic at 100%.
+    - Even so: busiest 20% at 53 fps (48 in trace 18), 77% of seconds at
+      58+ fps.
+    - CC part ticks 180 → 145 (the empty-slot fix works once dressed);
+      busy world tick 15.4 → 13.7 ms, with fewer characters moving
+      (7.7 against 8.9).
+    - **Fix:** `ApplyDeckOverrides` now sets High + 71%, 1280×800, 60 fps
+      every start (`SteamDeck=1` or `-Deck`); the first-run Deck branch is
+      gone. Applied by Claude ("Yes, apply it"). Rebuilt clean 12:08 (all
+      peers idle; bridge answers); **Deck build 12:10** (exit 0).
+    - **Run 12:12** (`20261102_121226`): user: "still at 100%". The trace
+      is still Epic (lighting volume + SSS on), so `ApplyDeckOverrides`
+      didn't take. Suspects: `-Deck` missing from the Devkit command, or an
+      old upload.
+    - **Debug:** a green on-screen message plus a log line, "Deck settings
+      applied: effects quality N, screen N%", reading back
+      `sg.EffectsQuality` and `r.ScreenPercentage` (non-Shipping only).
+      Applied by Claude ("Yes, add it"). Rebuilt clean 12:16; **Deck build
+      12:18** (game exe 12:17, exit 0).
+    - **Deck run, user:** "effect quality 3, 100%". The code ran but didn't
+      take.
+    - **Cause:** `UGameUserSettings::ApplyNonResolutionSettings` only
+      applies quality levels `if (GEngine->IsInitialized())`. `Init()` runs
+      before that, so it was a silent no-op, and `SaveSettings` saved Epic
+      back.
+    - **Fix:** `ApplyDeckOverrides` now runs from `OnStart()`, after
+      engine init. Applied by Claude ("Apply it yourself"). Rebuilt clean
+      12:25; **Deck build 12:28** (game exe 12:26, exit 0).
+    - **Confirmed on the Deck (user): "Quality 2, 71%".** High at 71% now
+      applies every start.
+  - **Trace 21** (`20261102_122946`, Sandbox, 126 s, High at 71%). User:
+    "seems to have the same performance".
+    - GPU scene all 13.95 → **12.23 ms** (calm 13.18 → 11.12), so 71% saves
+      ≈1.7 ms of GPU.
+    - Fights didn't speed up (busiest 20%: 46 fps; trace 18: 48) because
+      they're **game-thread-bound**: busy `UWorld_Tick` 15.7 ms, frame tick
+      28.8 ms.
+    - Most of the world tick is the game thread waiting on parallel tick
+      and anim tasks (`ProcessUntilTasksComplete` 9.9 incl,
+      `WaitForTasks` 2.4).
+    - CC part ticks are back to ≈183/frame (trace 19: 145), with 9.2
+      characters moving.
+  - **User: "Back to 100%".** `DeckResolutionScale` 71 → 100 (the Deck
+    still forces High + the constant every start). Applied by Claude
+    ("Apply it yourself"). **Code given, not yet compiled.** Next lever
+    for fights: the game thread (characters).
+  - **To check:** PIE (clothes follow far and dying enemies; gun fire and
+    rest poses look right), then a Deck trace of both levels.
+- **2026-11-02: M4 reload with a rear charging-handle pull.** User: "make an
+  animation I can use for the M4 and MP5 (later on)"; "do the rear pull";
+  "go with B". Spec: *Charging styles: the M4 reload*.
+  - **Animation:** Lyra's rifle reload with its AK side pull (1.07–1.87 s)
+    re-made in Blender by script. The gun comes off the cheek; the left hand
+    goes over the top, hooks the T-handle and pulls it 7.5 cm back.
+    Unchanged frames match the original exactly.
+  - **New assets:** `MM_Rifle_Reload_M4`, `AM_Rifle_Reload_M4` (Chamber
+    notify at 1.40 s), `A_AR4_Reload` (the gun's handle).
+  - **Code** (applied by Claude, "apply and run"; rebuilt clean 10:38, all
+    peers idle; the bridge answers):
+    - `EChargingStyle` on the weapon;
+    - `ChargingReloadMontages` on the character;
+    - `AWeaponBase::ReloadAnimation` on the gun mesh.
+
+    The first pass put the montage on the weapon, which breaks the *animator
+    owns the clips* rule, so option B replaced it.
+  - **Data:** `BP_AssaultRifle` (`RearHandle`, `A_AR4_Reload`).
+    `BP_PlayerCharacter` / `BP_EnemyBase` map `RearHandle` →
+    `AM_Rifle_Reload_M4`; the CC children inherit it. Saved and checked on
+    disk.
+  - **Scripts:** `Tools/AnimAuthoring/M4Reload/`.
+  - **First PIE test failed:** the gun moved its handle, but the character
+    played the AK reload. Bridge-set defaults don't reach spawned actors
+    until the Blueprint compiles (spec gotcha). Compiling `BP_AssaultRifle`
+    and the four CC Blueprints fixed it. **Tested (user: "your charge handle
+    is in now").**
+- **2026-11-02: silent taps fixed** (user: "issue with the sounds when single
+  clicking some weapons over and over").
+  - Cause: today's weapon-mesh tick throttling. `WakeMeshes()` set the
+    interval with `SetComponentTickInterval`, which doesn't cut a running
+    0.25 s cooldown short, so the shot animation and its `Fire` notify
+    lagged and a quick second tap restarted it before the notify fired.
+  - Fix: a resting mesh's tick is switched off and on (spec: the tick
+    throttling notes).
+  - Applied by Claude ("apply and run"); rebuilt clean 11:08, all peers idle,
+    the bridge answers. **Not yet PIE-tested.**
+
 ### ▶ RESUME HERE
 **A. Next up**
 0000. **Deck performance on `Lvl_Sandbox`, next steps in order.** Spec:
@@ -1957,6 +2092,17 @@
       - decide 60 vs a 40 fps Deck mode after the first real level;
       - **Verify the engine install** in the Epic launcher
         (`SM_Template_Map_Floor` was re-saved; see the spec).
+000a. **M4 reload: tested 2026-11-02** (user: "your charge handle is in
+    now"). Left to check:
+    - a reload cut short by a dive leaves the handle forward;
+    - an enemy with an M4 reloads the same way.
+
+    Next for the MP5: `EChargingStyle::HKSlap` and its own ending, with the
+    same scripts, once its mesh is in.
+
+    **Tap sounds (2026-11-02): PIE test.** Single-click the 1911s, the 9mm,
+    the duals and the revolver quickly, after a pause too: every shot should
+    sound.
 000. *(Done 2026-11-01, user: "46 and 47 are good": the pickup switch and
     melee are tested.)* **Optional melee follow-ups:**
     - real blunt-hit sounds;

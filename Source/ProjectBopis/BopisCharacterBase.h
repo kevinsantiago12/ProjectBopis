@@ -98,6 +98,11 @@ class PROJECTBOPIS_API ABopisCharacterBase : public ACharacter
 	UPROPERTY(EditAnywhere, Category = "Animation")
 	TMap<EWeaponAnimType, TObjectPtr<UAnimMontage>> ReloadMontages;
 
+	/** Reloads for guns charged differently from their anim type's (the M4's rear handle), keyed by
+	    the weapon's charging style. Leave Standard out: a style with no entry uses ReloadMontages. */
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	TMap<EChargingStyle, TObjectPtr<UAnimMontage>> ChargingReloadMontages;
+
 public:
 
 	ABopisCharacterBase();
@@ -316,10 +321,10 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	/** CC makes a skeletal mesh component per apparel/hair slot; the empty ones still tick.
-	    Stops those. Parts with a mesh keep ticking: a follower keeps its LOD in step with the
-	    body from its own tick. */
-	void StopEmptyPartTicks();
+	/** CC makes a skeletal mesh component per apparel/hair slot, and each one ticks. Stops the
+	    empty ones, once the character is dressed. Parts with a mesh keep ticking: a follower
+	    only takes the body's pose on screen through its own tick. */
+	void StopIdlePartTicks();
 
 	/** Switches the body to the Ragdoll collision profile, keeping it solid to bullets
 	    (the profile as shipped ignores Visibility, so traces would pass straight through). */
@@ -541,6 +546,9 @@ private:
 
 	bool bWeaponBlocked = false;
 	float FreeArmWeight = 0.0f;
+
+	/** Set once StopIdlePartTicks has run on the dressed character. */
+	bool bIdlePartTicksStopped = false;
 
 	/** The legs are on physics (SimulateLegs), and the fade back out once it's begun. */
 	bool bLegsSimulating = false;

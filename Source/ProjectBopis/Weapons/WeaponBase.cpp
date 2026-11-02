@@ -136,6 +136,14 @@ bool AWeaponBase::Reload(float Speed)
 			&AWeaponBase::FinishReload, ReloadDuration / ReloadSpeed, false);
 	}
 
+	// The gun's own part (a charging handle's travel), in step with the holder's montage.
+	if (ReloadAnimation)
+	{
+		WakeMeshes();
+		WeaponMesh->PlayAnimation(ReloadAnimation, false);
+		WeaponMesh->SetPlayRate(ReloadSpeed);
+	}
+
 	return true;
 }
 
@@ -172,6 +180,13 @@ void AWeaponBase::FinishReload()
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
 
+	// Cut short (a quick reload in the air, a cancel), the handle goes home rather than stopping
+	// mid-pull. On a normal finish it's home already.
+	if (ReloadAnimation)
+	{
+		HoldFrame(WeaponMesh, ReloadAnimation, ReloadAnimation->GetPlayLength());
+	}
+
 	// The slide goes forward as the reload ends.
 	UpdateRestPoses();
 }
@@ -187,6 +202,13 @@ void AWeaponBase::CancelReload()
 	bIsReloading = false;
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
+
+	// Cut short (a quick reload in the air, a cancel), the handle goes home rather than stopping
+	// mid-pull. On a normal finish it's home already.
+	if (ReloadAnimation)
+	{
+		HoldFrame(WeaponMesh, ReloadAnimation, ReloadAnimation->GetPlayLength());
+	}
 
 	// A shell reload broken off with rounds in closes the bolt; an empty gun stays locked.
 	UpdateRestPoses();
@@ -213,6 +235,31 @@ void AWeaponBase::UpdateRestPoses()
 	{
 		Rest(OffhandMesh, CurrentAmmoInMagazine <= (bOffhandNext ? 0 : 1));
 	}
+	WakeMeshes();
+}
+
+void AWeaponBase::WakeMeshes()
+{
+	// An offhand slot with no gun in it never needs to tick (BeginPlay switched it off).
+	for (USkeletalMeshComponent* Mesh : { WeaponMesh.Get(), OffhandMesh.Get() })
+	{
+		if (Mesh && Mesh->GetSkeletalMeshAsset())
+		{
+			// Setting the interval alone leaves a resting mesh to sit out what's left of its
+			// cooldown (up to RestMeshTickInterval): the shot's animation and its Fire notify (the
+			// sound) lag, and a quick second tap restarts the animation before the first notify
+			// fires. Off and on again drops the cooldown and the time stored for it, so the mesh
+			// ticks next frame with that frame's delta instead of the whole rest at once.
+			const bool bResting = Mesh->IsComponentTickEnabled() && Mesh->GetComponentTickInterval() > 0.0f;
+			Mesh->SetComponentTickInterval(0.0f);
+			if (bResting)
+			{
+				Mesh->SetComponentTickEnabled(false);
+				Mesh->SetComponentTickEnabled(true);
+			}
+		}
+	}
+	MeshWakeFrames = 2;
 }
 
 float AWeaponBase::GetReloadProgress() const
@@ -243,6 +290,10 @@ void AWeaponBase::SetReloadSpeed(float Speed)
 	const float Remaining = FMath::Max(Timers.GetTimerRemaining(ReloadTimerHandle) * ReloadSpeed / Speed, 0.001f);
 	ReloadCycleStart = GetReloadProgress();
 	ReloadSpeed = Speed;
+	if (ReloadAnimation)
+	{
+		WeaponMesh->SetPlayRate(Speed);
+	}
 	if (ReloadStyle == EReloadStyle::PerRound)
 	{
 		Timers.SetTimer(ReloadTimerHandle, this, &AWeaponBase::LoadRound, Remaining, false);
@@ -341,6 +392,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	// The flash is always ours, at the muzzle socket.
 	if (ShotAnimation)
 	{
+		WakeMeshes();
 		FiringMesh->PlayAnimation(ShotAnimation, false);
 	}
 	else
@@ -530,6 +582,12 @@ void AWeaponBase::BeginPlay()
 	// Not in the constructor — MagazineSize is a per-Blueprint default and isn't
 	// applied yet at construction time.
 	CurrentAmmoInMagazine = MagazineSize;
+
+	// Most guns aren't duals: their offhand mesh is empty, yet would still tick every frame.
+	if (OffhandMesh && !OffhandMesh->GetSkeletalMeshAsset())
+	{
+		OffhandMesh->SetComponentTickEnabled(false);
+	}
 	UpdateRestPoses();
 
 	// A fire animation with an Eject notify times the casing itself.
@@ -585,6 +643,18 @@ void AWeaponBase::Tick(float DeltaTime)
 		if (MuzzleLightTimeLeft <= 0.0f && MuzzleLight)
 		{
 			MuzzleLight->SetVisibility(false);
+		}
+	}
+
+	// Once neither gun is playing and the rest pose has had its frames, drop to the rest rate.
+	if (MeshWakeFrames > 0)
+	{
+		const bool bPlaying = (WeaponMesh && WeaponMesh->IsPlaying())
+			|| (OffhandMesh && OffhandMesh->IsPlaying());
+		if (!bPlaying && --MeshWakeFrames == 0)
+		{
+			WeaponMesh->SetComponentTickInterval(RestMeshTickInterval);
+			OffhandMesh->SetComponentTickInterval(RestMeshTickInterval);
 		}
 	}
 }

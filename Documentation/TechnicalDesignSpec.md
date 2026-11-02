@@ -1354,7 +1354,9 @@ Deck build measures it all together.
   clean in the Deck build 21:47):**
   - **URO on enemy bodies:** `AEnemyBase` constructor,
     `bEnableUpdateRateOptimizations` true;
-  - **`ABopisCharacterBase::StopEmptyPartTicks()`:** called at the end of
+  - **`ABopisCharacterBase::StopEmptyPartTicks()`** (renamed
+    `StopIdlePartTicks` on 2026-11-02, which also stops leader-posed followers):
+    called at the end of
     `BeginPlay`. It turns off tick on every skeletal mesh component other
     than the body that has no mesh asset (CC's empty slots).
 - **Deck build 21:47:** deferred, Substrate off, the scalability changes,
@@ -1492,8 +1494,8 @@ Deck build measures it all together.
     `r.TranslucentLightingVolume 0` would save the remaining ≈0.15 ms; the
     lashes would lose volume lighting.
   - **PIE check (user): "fleks are bright".** `Unlit Brightness` on
-    `M_Fleks1`–`4` lowered to **0.5** (bridge, saved 23:38). The others stay
-    at 1.0.
+    `M_Fleks1`–`4` lowered to 0.5 (bridge, saved 23:38). Then **0.25**
+    (user, 2026-11-02, bridge). The others stay at 1.0.
   - Deck build started 23:39.
   - **Traced (`20261101_234349`, 273 s, exports `t16/`) vs the 22:57 run:**
     - **Translucency:** 0.64 → **0.48** ms average, busiest seconds 0.84 →
@@ -1529,7 +1531,168 @@ Deck build measures it all together.
     corpse to 3".** `AProjectBopisGameMode::MaxCorpses` is 5 today on every
     platform, with the user's rule ("everything after will be pending
     removal till it goes out of vision") already built in (`TrimCorpses`).
-    A Deck-only limit of 3 was proposed as C++.
+    A Deck-only limit of 3 was proposed as C++. **User: "leave it like that
+    actually"**, so `MaxCorpses` stays 5 everywhere; nothing changed.
+- **Next-target batch (2026-11-02, user: "do all of them, I give you
+  permissions"):**
+  - **`Lvl_Linear` sun:** `bUseInsetShadowsForMovableObjects` false on
+    `DirectionalLight_0.LightComponent0` (bridge; `Lvl_Linear.umap` saved
+    09:48:11, and the flag is now stored there). Expected about −1.3 ms of
+    shadow projection. Not yet traced.
+  - **Lighting volume off:** `r.TranslucencyLightingVolume=0` in
+    `[EffectsQuality@2]`. Only CC's eyelashes and eye water still read it
+    since the impacts went unlit; the lashes lose volume lighting. About
+    −0.15 ms.
+  - **Weapon mesh ticks** (`AWeaponBase`): ≈75 `WeaponMesh` + ≈52
+    `OffhandMesh` ticks per frame (trace 9, about 24 guns).
+    - An empty offhand mesh (not a dual) has its tick switched off in
+      `BeginPlay`.
+    - Otherwise the meshes tick at `RestMeshTickInterval` (0.25 s, enough
+      to keep LOD current) and wake to full rate in `WakeMeshes()`. That
+      happens for each shot animation and each new rest pose
+      (`UpdateRestPoses`).
+    - `Tick` drops them back once neither mesh `IsPlaying()`, plus 2
+      frames for a new rest pose to be evaluated.
+    - **Waking needs the tick switched off and on (fixed 2026-11-02).**
+      User: "the sound does not trigger correctly" when tapping semi-autos.
+      - Why: in UE 5.8 `SetComponentTickInterval` only stores the interval.
+        A resting mesh sat out the rest of its 0.25 s cooldown first, so the
+        shot animation and its `Fire` notify (the sound) lagged. A second tap
+        in that window restarted the animation before the notify fired, and
+        that shot was silent. The late tick's delta also covered the whole
+        rest, so the slide's motion was skipped.
+      - Fix: `WakeMeshes()` turns a resting mesh's tick off and on.
+        `SetTickFunctionEnable(false)` drops the cooldown and resets
+        `LastIntervalTickSeconds`, so the mesh ticks next frame with that
+        frame's delta.
+      - `SetComponentTickIntervalAndCooldown` reschedules, but keeps the
+        whole-rest delta.
+    - Socket and muzzle transforms read the cached bones, so aiming and
+      the flash are unaffected.
+  - **CC part ticks** (`StopEmptyPartTicks` → **`StopIdlePartTicks`**):
+    - The empty-slot version didn't cut the count (still ≈166/frame), so
+      most of those ticks are *filled* parts.
+    - The engine's `USkinnedMeshComponent::UpdateLODStatus_Internal`
+      returns early for a leader-posed follower. The leader updates its
+      followers' LOD itself, so a follower's own tick does nothing useful.
+      (The 2026-10-27 "busted clothes" came from LOD counts, not from
+      ticks.)
+    - ~~Now stops empty parts, and leader-posed parts without active
+      cloth.~~ **Wrong, reverted 2026-11-02.** On the Deck the clothes froze
+      and didn't follow the body (user: "its messed up on the deck").
+      - The leader does drive followers' LOD.
+      - Taking the body's pose on screen still happens in the follower's
+        own tick.
+      - **Gotcha: never turn off tick on a CC part that has a mesh.**
+    - Now: empty slots only, run once the character is dressed (see
+      trace 18 below).
+  - **Bullet holes as meshes:** not done; it's a look and content
+    decision. See *Bullet holes: decals vs meshes* below.
+  - Rebuild and Deck trace pending.
+
+### Bullet holes: decals vs meshes (proposal, 2026-11-02)
+- **Today:** the only decals in the game are bullet holes
+  (`UImpactEffectsData::SpawnImpact`, plus the `HitDecalMaterial` fallbacks).
+  The levels place none. The decal passes cost a fixed ≈1.9 ms on the Deck,
+  mostly the DBuffer setup, not the count.
+- **The saving only comes with `r.DBuffer=0`** (a project setting that needs
+  a restart). Mesh holes alone would leave the DBuffer passes running.
+  That also rules out DBuffer decals in future level art (grime, blood
+  pools); GBuffer decals can't darken baked lighting.
+- **Work:**
+  - a small quad mesh;
+  - a Surface-domain masked material (opacity from the hole texture,
+    pixel depth offset to avoid z-fighting), with an MI per hole texture
+    (5–10 per surface);
+  - spawn pooled static mesh components instead of decals, capped like
+    `UBulletHoleSubsystem`.
+- **Look:** holes no longer wrap around corners or edges, and can float on
+  curved surfaces. Max Payne 3 used decals.
+- **Trace 18 (`20261102_112048`, `Lvl_Sandbox`, 249 s, exports in this
+  session's scratchpad `t18/`), the batch above vs trace 16:**
+  - **Weapons worked:** `WeaponMesh` 1.06 → 0.51 ms/frame (72 → 28 ticks),
+    `OffhandMesh` 0.21 → 0.07, `SK_P1911` 0.46 → 0.13. About −0.75 ms of
+    game thread.
+  - **CC parts didn't:** `CC_SkelMesh_C` 164 → 180 ticks/frame,
+    0.66 → 0.71 ms.
+    - **Why:** at `BeginPlay` CC hasn't dressed the character yet (it fills
+      the meshes and shows the character once the outfit loads), so every
+      part is empty and gets switched off, then switched back on when
+      filled.
+    - **Fix (applied 2026-11-02, "Apply it yourself"; rebuilt clean 11:32,
+      not yet traced):**
+      `StopIdlePartTicks` moved from the end of `BeginPlay` to
+      `ABopisCharacterBase::Tick`. It runs once (`bIdlePartTicksStopped`),
+      the first frame the actor isn't hidden and the body has a mesh.
+      Sleepers are hidden, so they're handled after `Wake`.
+  - **Lighting volume:** 0.16 → 0 ms.
+  - **Overall:** about the same as trace 16. Busiest seconds 48 fps
+    (against 49), `UWorld_Tick` busy 15.4 (against 14.7), with about 8% more
+    characters moving (8.9 against 8.2 `CharMoveComp` per frame).
+    Translucency 0.49 (half res via `-Deck`, as trace 16 had from the ini).
+- **Native 100% rescinded (2026-11-02, user: "recind the 100% decision, go
+  with what percentage the Deck deems ok"):**
+  - `r.ScreenPercentage=100` is removed from `[SystemSettings]` in
+    `DefaultEngine.ini`. Resolution now follows `sg.ResolutionQuality`:
+    the benchmark's pick on first run (71% on the Deck, FXAA plus a spatial
+    upscale), then the saved settings.
+  - **Catch:** `SetOverallScalabilityLevel(2)` and the `scalability 2`
+    console command set ResolutionQuality to the High level's own **87%**
+    (`PerfIndexValues_ResolutionQuality` = 50 71 87 100 100). That replaces
+    the benchmark's 71. The Deck branch of `ApplyFirstRunGraphics` does
+    exactly that after the benchmark, and so does the trace start command.
+  - **Fix (applied 2026-11-02, "Apply it yourself"; not yet compiled):**
+    the Deck branch of `UBopisGameInstance::ApplyFirstRunGraphics` reads the
+    benchmark's scale (`GetResolutionScaleInformationEx`) before
+    `SetOverallScalabilityLevel(2)`, then restores it
+    (`SetResolutionScaleValueEx`).
+  - **Superseded by trace 19** (`20261102_120035`). Without
+    `scalability 2` the Deck ran **Epic at 100%**: lighting volume 2.22 ms
+    and SSS 1.13 ms, both off on High. The first-run Deck branch never
+    applied, either because the saved settings were kept or because
+    `SteamDeck=1` doesn't arrive through the Devkit launch.
+  - **Now (2026-11-02, user: "Yes, apply it"; not yet compiled):**
+    - The Deck branch moved out of `ApplyFirstRunGraphics`, which is now
+      the benchmark only, for PCs' first run.
+    - It lives in `UBopisGameInstance::ApplyDeckOverrides()`, which runs
+      every start when `SteamDeck=1` or `-Deck` (never in the editor).
+    - It sets `SetOverallScalabilityLevel(2)`, then
+      `SetResolutionScaleValueEx(DeckResolutionScale = 71)`, 1280×800
+      fullscreen, a 60 fps cap and vsync, then `ApplySettings` + save. The
+      half-res translucency follows.
+    - Saved settings and launch method no longer matter. **Trace start
+      command: keep `-Deck`; no `scalability 2`.**
+    - **Gotcha (fixed 2026-11-02):** called from `Init()`, it read back
+      "effects quality 3, screen 100%" on the Deck. That's because
+      `UGameUserSettings::ApplyNonResolutionSettings` skips
+      `Scalability::SetQualityLevels` until `GEngine->IsInitialized()`.
+      `Init()` runs inside `UGameEngine::Init`, before that flag is set.
+      Now called from `UBopisGameInstance::OnStart()`. A green on-screen
+      line ("Deck settings applied: effects quality N, screen N%",
+      non-Shipping) reads the result back. **Confirmed on the Deck
+      2026-11-02: "Quality 2, 71%".**
+    - **Back to 100% (user, 2026-11-02).** Trace 21 at 71% showed ≈1.7 ms
+      less GPU (scene 13.95 → 12.23), but fights are game-thread-bound
+      (busy `UWorld_Tick` ≈15.7 ms), so no fps gain. `DeckResolutionScale`
+      is 100. Drop it to 71 again when GPU-heavy level art arrives.
+- **Half-res translucency is Deck-only (2026-11-02, user: "can we make the half
+  res for the particles a deck only setting?"):**
+  - Removed from `[EffectsQuality@2]`, so PCs on High render full
+    resolution. `[EffectsQuality@0]` (Low) keeps it.
+  - `UBopisGameInstance::ApplyDeckOverrides()` runs every start (not only
+    the first). When `SteamDeck=1` is in the environment, or `-Deck` is on
+    the command line, it sets `r.SeparateTranslucencyScreenPercentage 50`
+    with `ECVF_SetByCode`. That outranks scalability, so a later change of
+    quality level can't undo it.
+  - The upsample mode stays at the engine default, 1 (nearest-depth).
+  - Not in the editor (`GIsEditor`).
+  - Add `-Deck` to the Deck start command until `SteamDeck=1` is confirmed
+    to arrive through the Devkit launch.
+  - Other High-tier lines that were Deck decisions could move there the
+    same way: SSS off, lighting volume.
+- **Decision (user, 2026-11-02): "Keep decals".** DBuffer decals stay,
+  capped at 48 by `UBulletHoleSubsystem`. The ≈1.9 ms is accepted as a
+  fixed cost.
   - **Next levers for fights:**
     - the CC part ticks (`CC_SkelMesh_C`, still ≈166 per frame);
     - decals (1.9 ms, a fixed cost);
@@ -4034,6 +4197,94 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
   one-handed pistol.
 - Settings: `BP_PlayerCharacter`, *Combat|Reload*.
 
+### Charging styles: the M4 reload (2026-11-02)
+
+User: "the reload animation for rifles is using the AK Reload in terms of
+charging handle pull. Are you able to make an animation I can use for the M4
+and MP5 (later on)"; "do the rear pull". **Tested in PIE (user: "your charge
+handle is in now").**
+
+- **Code:**
+  - `EChargingStyle` (`WeaponBase.h`): `Standard` (the anim type's own
+    reload; the rifle reload works an AK's side handle), `RearHandle` (M4),
+    `HKSlap` (MP5).
+  - The weapon states which (`ChargingStyle`, *Weapon*). The character maps
+    it in `ChargingReloadMontages`; `PlayReloadAnimation` looks there first,
+    then in `ReloadMontages[AnimType]`. Leave `Standard` out of the map.
+  - **First pass rejected:** a `ReloadMontage` property on the weapon broke
+    *Animation feedback data belongs to the animator*. The user chose the
+    enum ("go with B").
+- **The gun's part:** `AWeaponBase::ReloadAnimation` (gun skeleton, so it
+  lives on the weapon like `FireAnimation`).
+  - `Reload` calls `WakeMeshes()`, then plays it on `WeaponMesh` at the
+    reload speed, so the mesh isn't at the rest tick rate while it plays.
+  - `SetReloadSpeed` changes its play rate too.
+  - `FinishReload` and `CancelReload` hold its last frame, so a reload cut
+    short (quick reload in the air, a cancel) leaves the handle home.
+- **Data:**
+  - `BP_AssaultRifle`: `ChargingStyle` `RearHandle`, `ReloadAnimation`
+    `A_AR4_Reload`.
+  - `BP_PlayerCharacter` and `BP_EnemyBase`: `ChargingReloadMontages`
+    { `RearHandle` → `AM_Rifle_Reload_M4` }. The four CC Blueprints inherit it
+    (none of them overrides the reload maps any more).
+- **Assets:**
+  - `MM_Rifle_Reload_M4` + `AM_Rifle_Reload_M4` (Heroes/Mannequin/Animations/
+    Actions; `SK_Mannequin` skeleton): `MM_Rifle_Reload` with 1.07–1.87 s
+    re-made. Everything outside that matches the original exactly (checked bone
+    by bone in a headless editor).
+  - Montage: `DefaultSlot`, blends 0.25/0.25, notifies MagOut 0.366,
+    MagIn 0.984, **Chamber 1.40** (the pull starts; `AR_Cock_Pull_Cue`).
+  - `A_AR4_Reload` (`SK_AR4_Skeleton`): `b_gun_chargehandle` 7.5 cm back
+    1.37–1.47 s, held to 1.51 s, home by 1.56 s. Length 2.2 s, like the
+    montage and `ReloadDuration`.
+- **The motion (authored in gun space, so it follows the gun):**
+  - From 1.07 s the right arm eases the gun 12 cm forward and 4 cm down off
+    the cheek, canted 25° (top toward the left hand) with the muzzle dipped
+    8°, back on the cheek by 1.87 s. Without it the pull ran into the face.
+  - The left hand goes up the left side and over the receiver. The fingers
+    point across the top and hook the T-handle from the front (wrist 7 cm
+    left, 5 cm above, 2.5 cm in front), pull 7.5 cm straight back, let go
+    up and back, then return under the handguard.
+  - Its elbow flares out to the left. Both arms are two-bone IK, with half the
+    hand's roll put on the forearm. Fingers keep the original's keys.
+- **Pipeline** (`Tools/AnimAuthoring/M4Reload/`, Blender 4.0 + headless editor;
+  working files gitignored):
+  - `export_ue.py` (run with `UnrealEditor-Cmd … -run=pythonscript`) exports
+    the reload, Manny, the AR4 and the CC body as FBX, plus a JSON of
+    sockets, grip offsets and the montage's notifies.
+  - `bl_inspect.py` prints the hand path in gun space and renders the
+    original. `bl_author.py` authors and renders contact sheets.
+    `bl_export.py` writes the FBX.
+  - `import_ue.py` imports with the legacy FBX path, compares with the
+    original, and builds the montage.
+  - For the MP5: copy the folder, swap the gun, the handle position and the
+    path keys.
+- **Gotchas found:**
+  - Guns ride **`HandGrip_R`** (`BP_PlayerCharacter` / `BP_EnemyBase`
+    `WeaponAttachSocketName`), not the C++ default `hand_r`: (-7.0, 2.0, 0),
+    yaw 90 on `hand_r`, then `GripLocationOffset`.
+  - Blender's FBX import turns each file's root bone into the armature object
+    (`root`, `b_gun_Root`) and keys the root's track onto the object, 1/100
+    scale included. Export drops those object keys and names the objects
+    after the root bones, or Unreal gets a 0.01-scaled root.
+  - Headless export: an anim with *export preview mesh*, and any skeletal
+    mesh, needs rendering (`-AllowCommandletRendering`, not `-nullrhi`).
+  - Legacy FBX import from Python needs `Interchange.FeatureFlags.Import.FBX 0`.
+  - **A default set through the bridge doesn't reach spawned actors until the
+    Blueprint is compiled** (user: "The weapon is pulling the charging handle,
+    but the player is using the AK reload").
+    - Why: a Blueprint class copies onto new instances only the properties on
+      its post-construction list (those that differ from the C++ defaults),
+      and the list is built when the Blueprint compiles or loads.
+      `ChargingStyle`, set after the 10:38 editor start, wasn't on it, so
+      spawned M4s got `Standard`. `ReloadAnimation`, saved before the start,
+      was, so the handle moved.
+    - Fix: compile each Blueprint after setting its defaults (done for
+      `BP_AssaultRifle` and the four CC Blueprints), or restart the editor.
+    - A parent's new map default also doesn't reach child CDOs already in
+      memory, even after compiling the parent. On disk the children inherit
+      (they hold no override). Set them too, then compile them.
+
 ### Directional hit indicator (2026-10-16)
 
 The user: "red on hit, maybe near miss too as grey, but we dont want the
@@ -4220,8 +4471,9 @@ left-hand IK pinned the hand to `LeftHandGrip`, which sits on `Clip_Bone`
   additive and the reload is a full pose — a montage track can't mix
   additive types ("AAT" error). A pump-only copy
   (`AM_PumpShotgun_ShellReload`) was made and removed the same day. Note:
-  the four CC Blueprints each hold their own copy of `ReloadMontages`, so a
-  change on `BP_PlayerCharacter` / `BP_EnemyBase` doesn't reach them.
+  the four CC Blueprints held their own copy of `ReloadMontages` then. As of
+  2026-11-02 none of them overrides the reload maps: they inherit from
+  `BP_PlayerCharacter` / `BP_EnemyBase`.
 - **Deferred until the final shotgun model** (user: `Shotgun_A` "is a place
   holder"): the post-process AnimBP that moves the slide (one Transform
   (Modify) Bone on the pump bone, `PumpSlideOffset`, Parent Bone Space; the
@@ -8664,7 +8916,10 @@ skeleton-appropriate lookup.
 Applied as: `EWeaponAnimType` on the weapon; `FireMontages`,
 `OffhandFireMontages`, `AimFireMontages`, `AimOffhandFireMontages`,
 `ReloadMontages` and `OffhandReloadMontages` maps keyed by that enum on the
-character.
+character. A second identity followed on 2026-11-02: `EChargingStyle` (how a
+long gun is charged), with `ChargingReloadMontages` on the character (see
+*Charging styles: the M4 reload*). A weapon-side `ReloadMontage` was tried
+first and replaced for breaking this rule.
 
 **Exception that proves the rule:** `FireAnimation` (the weapon's *own* mesh
 animation — slide racking, bolt cycling) lives on the weapon, because it's
@@ -9019,6 +9274,7 @@ Newest first, as they were recorded.
 - **Reparenting a Blueprint onto a native class: variables merge only on an exact type match (2026-10-05).** Same-named bool/enum Blueprint variables merged into the C++ properties; `float` C++ vs Blueprint "Float" (which is double in UE5) did not — the editor renamed the Blueprint copies to `Speed_0` etc. and their getters kept reading them. Declare AnimGraph-facing reals as `double`. Rehearse a reparent on a duplicate first; the bridge has `set_parent`, and `ProgrammaticToolset.execute_tool_script` batches the cleanup (138 node deletions in one call).
 - **Montage sections don't blend (2026-10-06).** Jumping between sections inside one montage — including a looping section wrapping to its own start — is an instant playhead move. A loop whose first and last poses differ snaps. Fix used: re-play the montage from the loop's start a blend-time early with `Montage_PlayWithBlendIn(..., bStopAllMontages = true)`. *Not* inertialization from the character's Tick: the wrap happens inside the anim update, so a request from Tick lands a frame late and smooths nothing.
 - **A new `EWeaponAnimType` value needs wiring in three places (2026-10-06):** pins on every Blend Poses by Enum in the AnimGraph (otherwise the node falls back to its Default pose — the unarmed set), and entries in `FireMontages` / `ReloadMontages` on `BP_PlayerCharacter` (otherwise nothing plays, silently). Map keys serialize lower-camel-case through the bridge (`pumpShotgun`); write the whole map back.
+- **Bridge-set Blueprint defaults need a compile before PIE (2026-11-02):** `set_properties` on a CDO changes the default, but spawned actors only copy the properties on the class's post-construction list, which is built when the Blueprint compiles or loads. Until then new actors get the C++ default. After setting defaults, `compile_blueprint` each Blueprint (children too), or restart the editor. This may also explain the earlier "placed enemies keep their copy until a restart" case. See *Charging styles: the M4 reload*.
 - **Montage section data isn't visible to the bridge (2026-10-06):** `CompositeSections` can't be read or written — sections and their links are editor work. `Preview All Sections` ignores loop links; use the row's own Preview.
 - **A new Transform (Modify) Bone's optional pins override its settings (2026-10-07).** Created nodes show Translation/Rotation/Scale as pins at their defaults, and at compile the pin value wins — so writing `Node.rotation` through the bridge did nothing, the compile copied (0,0,0) back into `Node`, and the recoil looked "not working" for several rounds (a twist seen during one test was the aim offset, not the node). Hide the pins via `ShowPinForProperties` **first**, then write `Node`, then compile and read `Node` back. A constant-alpha test (break the alpha link, set 1, look for a permanent offset) isolates "is the node applied" from "is the driver working".
 - **A stock additive fire clip can drag a re-authored idle back to the original (2026-10-07).** Lyra's `MM_Pistol_Fire` is mesh-space additive with *Selected animation frame* but no base animation set (engine source: that mode needs one), so its delta was baked against some other pose. Layered over the spread dual idle, each shot pulled the arms back to the narrow grip until the montage ended. Moving the blend after the slot didn't help either, and cost a revert. Fix: a copy of the clip with base **Local Animation Frame, frame 0** — pure kick. Check a fire clip's base pose before layering it over a custom idle; change it in the editor (recompression), not through the bridge.

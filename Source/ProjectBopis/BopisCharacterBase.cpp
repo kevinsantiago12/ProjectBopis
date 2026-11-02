@@ -52,7 +52,15 @@ void ABopisCharacterBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	TimeUntilWeaponLowered = FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
+	// CC fills the parts and shows the character only once its outfit has loaded, after
+	// BeginPlay, so the idle parts are stopped the first frame it's dressed and shown.
+	if (!bIdlePartTicksStopped && !IsHidden() && GetMesh()->GetSkeletalMeshAsset())
+	{
+		StopIdlePartTicks();
+		bIdlePartTicksStopped = true;
+	}
+
+	TimeUntilWeaponLowered =FMath::Max(0.0f, TimeUntilWeaponLowered - DeltaSeconds);
 	SilentEquipTimeLeft = FMath::Max(0.0f, SilentEquipTimeLeft - DeltaSeconds);
 	UpdateWeaponBlocked();
 
@@ -754,16 +762,16 @@ void ABopisCharacterBase::BeginPlay()
 			Part->SetTickGroup(TG_PostPhysics);
 		}
 	}
-
-	StopEmptyPartTicks();
 }
 
-void ABopisCharacterBase::StopEmptyPartTicks()
+void ABopisCharacterBase::StopIdlePartTicks()
 {
 	TArray<USkeletalMeshComponent*> Parts;
 	GetComponents(Parts);
 	for (USkeletalMeshComponent* Part : Parts)
 	{
+		// Only empty slots: a part that follows the body still needs its own tick, or its
+		// skinning never takes the body's pose and the clothes freeze in place.
 		if (Part != GetMesh() && !Part->GetSkeletalMeshAsset())
 		{
 			Part->SetComponentTickEnabled(false);
@@ -972,10 +980,17 @@ void ABopisCharacterBase::PlayReloadAnimation(const AWeaponBase* Weapon, float P
 
 	const EWeaponAnimType AnimType = Weapon->GetAnimType();
 
-	if (TObjectPtr<UAnimMontage>* FoundMontage = ReloadMontages.Find(AnimType); FoundMontage && *FoundMontage)
+	// A gun charged its own way (the M4's rear handle) has its own reload; the rest share their
+	// anim type's.
+	const TObjectPtr<UAnimMontage>* Found = ChargingReloadMontages.Find(Weapon->GetChargingStyle());
+	if (!Found || !*Found)
 	{
-		AnimInstance->Montage_Play(*FoundMontage, PlayRate);
-		ActiveReloadMontage = *FoundMontage;
+		Found = ReloadMontages.Find(AnimType);
+	}
+	if (Found && *Found)
+	{
+		AnimInstance->Montage_Play(*Found, PlayRate);
+		ActiveReloadMontage = *Found;
 		ActiveReloadPlayRate = PlayRate;
 	}
 
