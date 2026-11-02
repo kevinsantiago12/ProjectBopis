@@ -27,4 +27,8 @@ protected:
 	/** The number's Text Block. Optional: without it nothing is driven. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Count;
+
+private:
+	/** The number on screen, so the text is only re-laid-out when it changes. */
+	int32 ShownCount = -1;
 };

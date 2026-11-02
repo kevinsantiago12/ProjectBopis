@@ -64,6 +64,13 @@ void UBopisGameInstance::ApplyDeckOverrides()
 		HalfRes->Set(50.0f, ECVF_SetByCode);
 	}
 
+	// Enemies' animation at a lower rate when far or off screen: the Deck's fights are
+	// game-thread-bound (trace 21). PCs keep full-rate animation.
+	if (IConsoleVariable* AnimRate = IConsoleManager::Get().FindConsoleVariable(TEXT("bopis.EnemyAnimRateOptimization")))
+	{
+		AnimRate->Set(true, ECVF_SetByCode);
+	}
+
 #if !UE_BUILD_SHIPPING
 	// Proof on the Deck that this ran, and what actually took: the values read back, not the ones asked for.
 	IConsoleManager& Console = IConsoleManager::Get();

@@ -27,6 +27,13 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 
+// Off: every enemy animates every frame (PCs). On: far and off-screen enemies animate at a
+// lower rate, interpolated in between (URO). The Steam Deck turns it on (UBopisGameInstance).
+static TAutoConsoleVariable<bool> CVarEnemyAnimRateOptimization(
+	TEXT("bopis.EnemyAnimRateOptimization"), false,
+	TEXT("Lower animation update rate for far and off-screen enemies (URO)."),
+	ECVF_Scalability);
+
 AEnemyBase::AEnemyBase()
 {
 	// Possessed whether placed in the level or spawned at runtime — without this an
@@ -55,20 +62,38 @@ AEnemyBase::AEnemyBase()
 	// Enemies may crouch (holding a spot crouched, see bCrouchWhileHolding).
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
-	// Far and off-screen enemies animate at a lower rate, interpolated in between, so their
-	// bones (and the bodies bullets hit) still move every frame. The player keeps full rate.
-	GetMesh()->bEnableUpdateRateOptimizations = true;
+	// Cheaper movement (fights are game-thread-bound on the Deck): enemies don't push physics
+	// objects (corpses, casings, pickups) as they walk, and only look for the floor when they move.
+	GetCharacterMovement()->bEnablePhysicsInteraction = false;
+	GetCharacterMovement()->bAlwaysCheckFloor = false;
+}
+
+void AEnemyBase::ConfigureAnimUpdateRate(FAnimUpdateRateParameters* Params)
+{
+	if (Params && AnimRateScreenSizes.Num() > 0)
+	{
+		Params->BaseVisibleDistanceFactorThesholds = AnimRateScreenSizes;
+	}
+}
+
+bool AEnemyBase::WantsFreeArmPhysics() const
+{
+	// With the anim rate optimization on (the Deck), the free arm stays animated: pistol enemies
+	// hold their guns up all fight, and a simulating arm would keep URO off for good (see Tick).
+	return !CVarEnemyAnimRateOptimization.GetValueOnGameThread() && Super::WantsFreeArmPhysics();
 }
 
 void AEnemyBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	// URO only while fully animated. With any body simulating (hit reactions, staggers,
-	// riddled, the ragdoll), interpolated frames and physics disagree, and the head, which
-	// copies the body's pose, comes off and snaps back.
+	// URO only when switched on (bopis.EnemyAnimRateOptimization), and only while fully
+	// animated. With any body simulating (hit reactions, staggers, riddled, the ragdoll),
+	// interpolated frames and physics disagree, and the head, which copies the body's pose,
+	// comes off and snaps back.
 	USkeletalMeshComponent* Body = GetMesh();
-	Body->bEnableUpdateRateOptimizations = !Body->IsAnySimulatingPhysics();
+	Body->bEnableUpdateRateOptimizations = CVarEnemyAnimRateOptimization.GetValueOnGameThread()
+		&& !Body->IsAnySimulatingPhysics();
 
 	if (IsDead())
 	{
@@ -114,6 +139,9 @@ void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 	RollVoicePitch();
+
+	// The engine creates the update-rate settings the first time URO runs; set ours then.
+	GetMesh()->OnAnimUpdateRateParamsCreated.BindUObject(this, &AEnemyBase::ConfigureAnimUpdateRate);
 
 	HomeLocation = GetActorLocation();
 

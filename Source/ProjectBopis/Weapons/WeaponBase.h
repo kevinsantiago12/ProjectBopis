@@ -76,8 +76,9 @@ enum class EWeaponAnimType : uint8
 	Dual
 };
 
-/** How a long gun is charged, where that differs from its anim type's reload (the rifle reload
-    works an AK's side handle). The weapon states only which; each animator owns the clips. */
+/** How a gun is charged or loaded, where that differs from its anim type's reload (the rifle
+    reload works an AK's side handle, the pistol reload swaps a magazine). The weapon states only
+    which; each animator owns the clips. */
 UENUM(BlueprintType)
 enum class EChargingStyle : uint8
 {
@@ -86,7 +87,9 @@ enum class EChargingStyle : uint8
 	/** A T-handle at the back of the receiver, pulled straight back (M4). */
 	RearHandle,
 	/** A cocking lever up front, locked back and slapped down (MP5). */
-	HKSlap
+	HKSlap,
+	/** A swing-out cylinder, flicked open, emptied and refilled from a speedloader (.357). */
+	SwingOutCylinder
 };
 
 /** Pistol-style hold (one-handed, two-handed or dual, including dual SMGs), for code that
@@ -168,7 +171,10 @@ enum class EWeaponSound : uint8
 	Equip,
 	/** No sound: throws the spent casing. On a gun's fire animation it times the casing to
 	    the action (and replaces the ejection from code — see bFireAnimationEjects). */
-	Eject
+	Eject,
+	/** No sound of its own: the gun plays RackAnimation, its pump worked by hand after a reload
+	    from empty (the clip carries its own Pump sound). */
+	Rack
 };
 
 UCLASS()
@@ -347,6 +353,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	bool IsReloading() const { return bIsReloading; }
+
+	/** Whether the reload just done needs the pump racked to chamber a shell (it began empty). */
+	bool NeedsRackAfterReload() const { return bRackAfterEmptyReload && bReloadStartedEmpty; }
 
 	UFUNCTION(BlueprintPure, Category = "Weapon|Ammo")
 	bool ShouldAutoReloadWhenEmpty() const { return bAutoReloadWhenEmpty; }
@@ -585,6 +594,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
 	TObjectPtr<UAnimSequence> ReloadAnimation;
 
+	/** Material slots the reload shows, by slot name, with the material each wears meanwhile (the
+	    revolver's speedloader, see-through the rest of the time). Put back to the mesh's own as the
+	    reload ends. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TMap<FName, TObjectPtr<UMaterialInterface>> ReloadMaterials;
+
+	/** The pump worked by hand rather than by a shot (racked after a reload from empty): played on
+	    the weapon's own mesh at the holder's Rack notify, at the reload's speed. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UAnimSequence> RackAnimation;
+
 	/** Pump guns: the slide's bone. The mesh's post-process AnimBP moves it, and the holder's
 	    left hand follows it. None: no pump. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Pump")
@@ -655,6 +675,16 @@ protected:
 	/** Played on a casing's first few bounces. Empty: silent. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
 	TObjectPtr<USoundBase> CasingImpactSound;
+
+	/** A revolver's empties: the reload's Eject notify drops one at each of ReloadCasingBones (its
+	    chambers) at once, lying along the barrel. Shots never throw these. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	TObjectPtr<UStaticMesh> ReloadCasingMesh;
+
+	/** Where ReloadCasingMesh drops from: the bones of the rounds in the cylinder, which the reload
+	    animation hides from the Eject notify on. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Casings")
+	TArray<FName> ReloadCasingBones;
 
 	/** Dropped at the reload's Mag Out from MagazineSocketName, and the bone that socket sits on
 	    (the gun's own magazine) is hidden until Mag In. None: nothing drops (tube-fed guns, the
@@ -755,12 +785,25 @@ protected:
 		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides, ClampMin = "1"))
 	int32 RoundsPerLoad = 1;
 
+	/** A pump action: loading the tube from empty leaves the chamber empty, so the holder's reload
+	    ends with a rack (its montage's End section). Off, or with a shell still chambered, the reload
+	    ends with the last shell. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo",
+		meta = (EditCondition = "ReloadStyle == EReloadStyle::PerRound", EditConditionHides))
+	bool bRackAfterEmptyReload = false;
+
 	/** Whether firing on an empty magazine should start a reload by itself. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Ammo")
 	bool bAutoReloadWhenEmpty = false;
 
 	/** Throws one spent casing from the ejection port of the main or off-hand gun. */
 	void EjectCasing(bool bOffhand);
+
+	/** Drops ReloadCasingMesh from every one of ReloadCasingBones at once (a cylinder emptied). */
+	void DropReloadCasings(bool bOffhand);
+
+	/** Swaps ReloadMaterials onto the gun's mesh, or puts its own back. */
+	void ShowReloadMaterials(bool bShow);
 
 	void DropMagazine(bool bOffhand);
 	/** Shows or hides a mesh's own magazine: the bone MagazineSocketName sits on (never the root),
@@ -780,6 +823,9 @@ protected:
 	/** The fire animation carries an Eject notify, so the casing comes from it, not from Fire().
 	    Found once at BeginPlay. */
 	bool bFireAnimationEjects = false;
+
+	/** The magazine was empty when the current or last reload began. */
+	bool bReloadStartedEmpty = false;
 
 	void FinishReload();
 

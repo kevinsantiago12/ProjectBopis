@@ -1675,6 +1675,92 @@ Deck build measures it all together.
       less GPU (scene 13.95 → 12.23), but fights are game-thread-bound
       (busy `UWorld_Tick` ≈15.7 ms), so no fps gain. `DeckResolutionScale`
       is 100. Drop it to 71 again when GPU-heavy level art arrives.
+
+### Game-thread targets (trace 21, 2026-11-02)
+The Deck runs **2 foreground task workers**. In fights the game thread
+waits ≈10 ms on parallel tick and anim tasks (`ProcessUntilTasksComplete`
+9.9 incl, `WaitForTasks` 2.4); busy `UWorld_Tick` is ≈15.7 ms.
+
+| # | Target | Cost per frame | Fix |
+|---|---|---|---|
+| 1 | Enemy body anim (`CharacterMesh0`, `ABP_Player`) | ≈4–5 ms workers + 1.8 game thread | Tighter URO thresholds, **Deck only** |
+| 2 | HUD (Slate tick + draw + prepass) | ≈2.2 ms game thread | Event-driven widgets instead of per-frame bindings; Invalidation Boxes |
+| 3 | Impact Niagara on CPU (mostly concrete) | ≈1.4 ms workers | GPU sim, or fewer particles |
+| 4 | Character movement | 1.3 ms for 9 characters | Cheaper enemy movement settings |
+| 5 | `PhysicalAnimation` ticking on every enemy | 0.25 ms | Tick only during a reaction |
+
+Not ours: `UpdateTimeAndHandleMaxTickRate` (≈2 ms) is frame-cap waiting,
+and `Slate::TickPlatform` (0.45 ms) is message pumping under Proton.
+
+**URO is switchable (2026-11-02):** `bopis.EnemyAnimRateOptimization`,
+default off (PCs animate every enemy every frame), set on by
+`ApplyDeckOverrides`. `AEnemyBase::Tick` reads it every frame, so it can
+be toggled live from the console.
+
+**#1, tighter URO (2026-11-02; applied by Claude, not yet compiled):**
+- `AEnemyBase::AnimRateScreenSizes` = **{0.5, 0.25}** (engine default
+  0.24, 0.12), `EditDefaultsOnly` under *Enemy|Performance*.
+- Applied through `OnAnimUpdateRateParamsCreated` (bound in `BeginPlay`)
+  to `FAnimUpdateRateParameters::BaseVisibleDistanceFactorThesholds`.
+- Screen size above 0.5: every frame. 0.25–0.5: every 2nd frame. Below
+  0.25: every 3rd. Interpolated in between. Off screen: every 4th (engine
+  `BaseNonRenderedUpdateRate`).
+- Only matters where URO is on, i.e. the Deck. Expected ≈ −2 ms of worker
+  anim time in fights. If mid-range enemies look steppy, lower the values
+  in `BP_EnemyBase`.
+
+**#2–#5 (2026-11-02, user: "go finish up to #5 all the way"; applied by
+Claude):**
+- **#2 HUD:** no Blueprint bindings or BP ticks; the HUD is C++
+  `NativeTick`.
+  - Each frame it called `SetText` with a new `FText`, so Slate re-laid
+    out the text every frame.
+  - Now set only on a change: `UAmmoWidget` (`ShownMagazine` /
+    `ShownReserve`), `UHUDCountWidget` (`ShownCount`), `UHUDBarWidget`
+    (material `Fill` / `Length` / `Height` only on change),
+    `UGameMessageWidget` (`IdenticalTo`).
+  - Not done: Slate global invalidation (`Slate.EnableGlobalInvalidation 1`),
+    worth an `-ExecCmds` A/B on the Deck.
+- **#3 impacts:** **`EFT_Impacts`' scalability entry had
+  `qualityLevelMask` -5, which leaves out High (bit 2).** On the Deck none of
+  its culls applied (≈37 concrete systems alive against a cap of 32).
+  - Now -1 (all levels), plus `bAllowPreCullingByViewFrustum` (bridge,
+    saved 12:54).
+  - Not reachable by bridge: `ConcreteSmoke` to GPU sim (an editor click:
+    emitter Sim Target GPU, fixed bounds), ≈0.4 ms of workers.
+- **#4 movement** (`AEnemyBase` constructor): `bEnablePhysicsInteraction`
+  false (enemies no longer shove corpses, casings or pickups), and
+  `bAlwaysCheckFloor` false (no floor sweep when standing still).
+- ~~**#5 physical animation**: tick only while any body simulates.~~
+  **Reverted 2026-11-02.** The player spazzed when hit: the reaction
+  simulates and applies motors in the same frame, while the component's
+  tick was still off, so the limbs ran unpowered for a frame or more.
+  **Gotcha: keep `UPhysicalAnimationComponent` ticking.**
+- **Trace 22 finding:** #1 did nothing (anim evaluations 13.0 → 12.8 per
+  frame). Under #5, `PhysicalAnimation` still ticked about 9 times per
+  frame, so enemies seem to always have a simulating body. Then
+  `AEnemyBase::Tick`'s `!IsAnySimulatingPhysics()` keeps URO off for good.
+  **Found (2026-11-02): free-arm physics.** A raised one-handed pistol puts
+  the left arm on physics (`UpdateFreeArmPhysics` / `WantsFreeArmPhysics`).
+  Pistol enemies hold their guns up all fight, so their arm is nearly
+  always simulating. The body physics asset (`PA_CCMH_Bopis`) and the
+  enemy Blueprints have no always-simulated bodies.
+  - **Enemy animation options (estimates from trace 23; paused by the user
+    2026-11-02):** body anim ≈4.9 ms all threads (≈11.7 body evaluations
+    at ≈0.4 ms, plus ≈10 cheaper head evaluations). The frame gains about
+    half to two-thirds of a worker saving.
+    1. LOD Threshold 1 on Leg IK / Stride / Orientation Warping: ≈0.5–0.8
+       ms all threads, ≈0.3–0.5 frame.
+    2. Animation Budget Allocator (Deck, ~2.5 ms cap): up to ≈2 ms in the
+       heaviest fights, ≈1–1.3 frame.
+    3. URO 0.7/0.35: ≈1.0–1.2 all threads, ≈0.6–0.8 frame.
+    4. Head as a leader-pose follower: ≈0.8, ≈0.4–0.5 frame.
+    5. Bone reduction at LOD1/2: ≈0.4–0.6, risky for clothes (follower
+       bones).
+  - **Fix (applied by Claude 2026-11-02; built, Deck-tested in trace 23):**
+    `AEnemyBase::WantsFreeArmPhysics()` override
+    returns false while `bopis.EnemyAnimRateOptimization` is on (the Deck).
+    PCs keep the dangling arm.
 - **Half-res translucency is Deck-only (2026-11-02, user: "can we make the half
   res for the particles a deck only setting?"):**
   - Removed from `[EffectsQuality@2]`, so PCs on High render full
@@ -4149,14 +4235,75 @@ length, `TimePerRound` = Loop length (user-set). The character drives it in
 - **End:** once the weapon stops reloading (full, dry, or swapped), Loop's next
   section is re-pointed to `End` (`Montage_SetNextSection`, this playthrough
   only) — the current insert finishes, then the rack plays. **Since
-  2026-10-25 only with `bPlayReloadEnd`** (character, default **off**; user:
-  "Just dont rack it at all for now"): otherwise Loop's next section is
-  `NAME_None`, so the montage ends with the last insert and blends out.
+  2026-11-02 only when the gun needs it:** `AWeaponBase::NeedsRackAfterReload()`
+  (a pump, `bRackAfterEmptyReload`, whose reload began empty) and the
+  montage has an End. Otherwise Loop's next section is `NAME_None`, so the
+  montage ends with the last insert and blends out. (2026-10-25 to 11-02 a
+  character flag, `bPlayReloadEnd`, off — user: "Just dont rack it at all for
+  now"; removed.) See *Shotgun rack after a reload from empty*.
 - `ActiveReloadMontage` tracks the montage from `DoReload` until it stops;
   `IsReloadAnimating()` exposes that so the AnimBP keeps the left-hand IK off
   through the whole montage, rack included (the weapon's `IsReloading()` goes
   false before the rack).
 - Montages without a `Loop` section (magazine reloads) are untouched.
+
+**Shotgun rack after a reload from empty (2026-11-02).** User: "make a pump only
+animation. Currently, after the shotgun reloads, we do not have a after load
+'pump' because the pump is part of the shot"; "I need it for the reload"; rack
+**only from empty** (picked over "after every reload"). **Tested in PIE
+(user: "it works").**
+- **Why only the Mossberg:** `BP_PumpShotgun` is now the Mossberg 500
+  (`/Game/Mossberg/`, anim type `PumpShotgun`). Its pump moves only through its
+  own gun animation (`A_Mossberg_Fire`: the `pump` bone 9 cm toward the stock,
+  back by 0.20 s, home by 0.33 s; `PumpBoneName` None, so the `Pump` curve
+  does nothing for it). `LeftHandGrip` sits on that `pump` bone, so the
+  IK'd left hand follows whatever the gun's pump does. The Benelli
+  (`BP_AutoShotgun`) keeps `AM_Shotgun_Reload`, whose End (the old slap) never
+  plays.
+- **Code** (applied by Claude, "apply and run"; rebuilt clean 14:49):
+  - `EWeaponSound::Rack`: no sound of its own. `PlayWeaponEvent` plays
+    `RackAnimation` on the weapon mesh (woken, at `ReloadSpeed`).
+  - `AWeaponBase::bRackAfterEmptyReload` (*Weapon|Ammo*, per-round only) and
+    `bReloadStartedEmpty` (set in `Reload`: the magazine was empty).
+    `NeedsRackAfterReload()` = both.
+  - `ABopisCharacterBase::UpdateReloadMontage`: Loop's next section is `End`
+    only if `NeedsRackAfterReload()` and the montage has an End. The
+    character flag `bPlayReloadEnd` is gone.
+- **Assets:**
+  - `MM_Shotgun_Reload_Pump`: `MM_Shotgun_Reload` with the End (from 1.33 s)
+    re-made in Blender. Start and Loop match the original (worst 0.0004).
+    - The gun comes back up to ready, and the upper body eases from the
+      slap's twist into the ready pose.
+    - The left hand goes from the loading port to the pump grip by 1.52 s.
+    - It rides the pump 9 cm back and home in step with the gun's stroke,
+      and the gun kicks 1.5 cm back and 2° down as the pump comes back.
+    - Then it stays on the grip.
+    - `HandGrip` curve: 0 until 1.42, 1 from 1.52 to the end, so in game the
+      IK holds the hand on the socket, which rides the pump.
+  - `AM_Shotgun_Reload_Pump`: a copy of `AM_Shotgun_Reload` (Start/Loop/End)
+    on the new sequence. Notifies: RoundIn 1.3266, **Rack 1.55**.
+    `BlendOutTriggerTime` 0.83, so it blends out from ~2.0 s instead of
+    holding the ready pose to 2.83.
+  - `A_Mossberg_Rack` (`/Game/Mossberg/`): `A_Mossberg_Fire` with every bone
+    but `pump` held at frame 0 (set through the sequence's
+    `AnimSequencerController`; the shell bone no longer moves). Its only
+    notify is **Pump at 0.1712**, so there's no Fire sound and no ejected
+    casing.
+- **Data** (bridge, saved 14:52):
+  - `BP_PumpShotgun`: `bRackAfterEmptyReload` on, `RackAnimation`
+    `A_Mossberg_Rack`.
+  - `BP_PlayerCharacter` / `BP_EnemyBase`: `ReloadMontages[PumpShotgun]` →
+    `AM_Shotgun_Reload_Pump`. Set on the four CC children too and all seven
+    compiled; the children still inherit on disk.
+- **Pipeline:** `Tools/AnimAuthoring/ShotgunRack/` (the revolver's approach).
+  The folder was deleted once done (2026-11-02). It was never committed;
+  its shared parts are in `Tools/AnimAuthoring/lib/`.
+  - `import_ue.py` makes all three assets.
+  - Python gotcha: a montage's `slot_anim_tracks` can be set, but its nested
+    struct arrays come back as copies. Rebuild each level (segments, track,
+    tracks) and set it back, or the edit is lost silently.
+  - `composite_sections` (montage sections) isn't reachable from Python, so
+    new sectioned montages start as copies of one that has the sections.
 
 **Reload upgrades (2026-10-17/18, user-confirmed):**
 - **Through a roll:** at a roll's start, `HoldReloadForRoll` decides what
@@ -4248,17 +4395,18 @@ handle is in now").**
   - Its elbow flares out to the left. Both arms are two-bone IK, with half the
     hand's roll put on the forearm. Fingers keep the original's keys.
 - **Pipeline** (`Tools/AnimAuthoring/M4Reload/`, Blender 4.0 + headless editor;
-  working files gitignored):
-  - `export_ue.py` (run with `UnrealEditor-Cmd … -run=pythonscript`) exports
-    the reload, Manny, the AR4 and the CC body as FBX, plus a JSON of
-    sockets, grip offsets and the montage's notifies.
+  working files gitignored). The folder was deleted once done (2026-11-02)
+  and is in git history. The shared parts live on in
+  `Tools/AnimAuthoring/lib/`; see *Animation authoring scripts*.
+  - `export_ue.py` exports the reload, Manny and the AR4 as FBX, plus a JSON
+    of the reload, its montage, the AR4's sockets and the grip.
   - `bl_inspect.py` prints the hand path in gun space and renders the
     original. `bl_author.py` authors and renders contact sheets.
     `bl_export.py` writes the FBX.
   - `import_ue.py` imports with the legacy FBX path, compares with the
     original, and builds the montage.
-  - For the MP5: copy the folder, swap the gun, the handle position and the
-    path keys.
+  - For the MP5: copy the folder, then set the gun and its grip in
+    `project.py` and the handle position and path keys in `bl_author.py`.
 - **Gotchas found:**
   - Guns ride **`HandGrip_R`** (`BP_PlayerCharacter` / `BP_EnemyBase`
     `WeaponAttachSocketName`), not the C++ default `hand_r`: (-7.0, 2.0, 0),
@@ -4284,6 +4432,153 @@ handle is in now").**
     - A parent's new map default also doesn't reach child CDOs already in
       memory, even after compiling the parent. On disk the children inherit
       (they hold no override). Set them too, then compile them.
+
+### Revolver reload: speedloader, full flick (2026-11-02)
+
+User: "Can you help me make a revolver reload?"; picked the speedloader with
+a hand close, then "hold on, do the flick" → **full flick** (flick open, flick
+shut).
+- **Round 1, tested.** User: "it works but the player cant see the gun
+  during the animation at all, hidden behind the body. Also he should pop the
+  bullets out and it should fall".
+- **Rounds 2–4, tested 2026-11-02 (user: "thats working"):** restaged to the right
+  side, and the empties became physics casings.
+
+- **Code:**
+  - A fourth charging style, `EChargingStyle::SwingOutCylinder`, in the
+    same machinery as the M4; the enum's comment now says "charged or
+    loaded". Rebuilt clean 13:37. `ChargingReloadMontages` and
+    `ReloadAnimation` already carry it.
+  - **Physics empties** (round 2, rebuilt clean 13:53):
+    - `AWeaponBase::ReloadCasingMesh` + `ReloadCasingBones` (*Weapon|Casings*).
+    - `PlayWeaponEvent(Eject)` during a reload with a `ReloadCasingMesh`
+      calls `DropReloadCasings`. It spawns an `AShellCasing` at each bone,
+      lying along the barrel (the mesh's X; the round is modelled along Z,
+      so pitch −90). Each gets 60–120 cm/s out of the cylinder's back (+X)
+      in a 25° cone, plus the shooter's velocity, and a gentler tumble than
+      shot casings.
+    - Otherwise `Eject` throws the shot's one casing as before.
+    - A separate mesh property, since `CasingMesh` on the revolver would
+      throw a casing on every shot.
+  - **The speedloader shows** (round 3, user: "now make the speedloader show
+    during the reload"; rebuilt clean 14:06):
+    - `AWeaponBase::ReloadMaterials` (*Weapon|Feedback*) maps a slot name to
+      the material that slot wears while reloading.
+    - `ShowReloadMaterials(true)` in `Reload`; `(false)` in `FinishReload`
+      and `CancelReload`.
+    - Putting back sets the override to null, which falls back to the
+      mesh's own material. That's fine while the Blueprint overrides none of
+      those slots.
+    - Outside its window the animation keeps the bone at scale 0.001, so a
+      material left swapped would still show nothing.
+  - All applied by Claude ("apply and run").
+- **Data** (bridge, saved 13:38–13:39):
+  - `BP_Revolver`: `ChargingStyle` `SwingOutCylinder`, `ReloadAnimation`
+    `A_Revolver_Reload`, `ReloadDuration` **2.6 → 2.0** (the user picked the
+    faster flick with that change).
+  - `BP_PlayerCharacter` / `BP_EnemyBase`: `ChargingReloadMontages` gained
+    `SwingOutCylinder` → `AM_Pistol_Reload_Revolver`.
+  - Set on the four CC children's CDOs too, then all seven compiled
+    (*Bridge-set Blueprint defaults*, above). On disk the children still
+    inherit; they hold no override.
+  - Round 2, `BP_Revolver` (saved 13:54): `ReloadCasingMesh`
+    `_357MagnumRound` (the pack's round: 4 cm along Z, with collision, so
+    `CasingScale` stays 1), `ReloadCasingBones` `Bullet1`–`Bullet6`. Its
+    existing `CasingImpactSound` (pistol shell on cement) plays on the
+    bounces.
+  - Round 3, `BP_Revolver` (saved 14:07): `ReloadMaterials`
+    { `Speedloader` → `/Game/_357Revolver/Textures/Speedloader` }, the pack's
+    own material for it. The bridge shows the key as `speedloader`; FNames
+    ignore case.
+- **Assets:**
+  - `MM_Pistol_Reload_Revolver` + `AM_Pistol_Reload_Revolver`
+    (Heroes/Mannequin/Animations/Actions; `SK_Mannequin`): 2.0 s, 60
+    frames. `MM_Pistol_Reload`'s body with both arms re-made and, since
+    round 2, the spine turned. The legs match the original throughout; the
+    whole body matches at both ends.
+  - Montage: `DefaultSlot`, blends 0.25/0.25, notifies **MagOut 0.575**
+    (the strike; `Revolver_Ejection_Bullets_Cue`), **MagIn 1.27** (rounds
+    in; `Revolver_Speed_Loader_Cue`), **Chamber 1.545** (flicked shut;
+    `Revolver_close_Cue`). No open click: there's no slot for
+    `Revolver_Open_Cue`.
+  - `A_Revolver_Reload` (`/Game/_357Revolver/Animations/`, on
+    `_357Revolver_Rig_Skeleton`): 2.0 s; every bone at frame 0 matches the
+    reference pose except the hidden speedloader. **Eject notify at 0.60 s**
+    (round 2, added by `import_ue.py`).
+- **The motion (the gun never leaves the right hand; it's attached there):**
+  - **Staged for the camera (round 2):**
+    - The game camera sits 70 cm above the capsule's centre (≈162 cm off
+      the floor). At the hip it's 300 cm back and 50 right; aimed, 140 back,
+      65 right and 15 up.
+    - In round 1 everything happened in front of the chest at belly height,
+      so the body hid it.
+    - Now the work is up on the right side at shoulder height, the gun
+      wrist 17–24 cm right of centre. The strike happens beside the head,
+      and the cylinder side is rolled 35–52° back toward the camera.
+    - `spine_03`–`05` turn the upper body 18° right (6° each, in 0.08–0.30
+      s, back by 1.90 s). The head follows, and so do the chest-keyed gun
+      and hand.
+    - Checked by rendering from the game's own camera positions.
+  - 0.10–0.18 s: thumb on the latch (`CylinderRelease` 0.3 cm forward).
+    0.24–0.38 s: the wrist snaps 72° left and the cylinder swings out (98°
+    overshoot, settles at 86°).
+  - 0.50 s: muzzle up beside the head. The Python's barrel stands
+    ~10 cm past the ejector rod's tip, so a palm can't come straight down
+    on it. The left hand stands against the barrel's left side (fingers
+    up) and its heel drives the rod 2 cm (0.555–0.58 s).
+  - At 0.60 s the gun's Eject notify drops the six rounds as physics
+    casings, and the rounds' bones hide (scale 0.001) until the
+    speedloader brings fresh ones. In round 1 they fell in the animation
+    and shrank away in mid-air.
+  - 0.86 s: muzzle down, chambers up. The left hand takes the loader where
+    the pistol reload takes its magazine (the original's lowest left-hand
+    frame, 18), brings it over the cylinder, seats it at 1.30 s, twists
+    20° and pulls it away at 1.47 s.
+  - **The empty loader goes back in the belt pouch** (round 4, user: "no
+    drops to the floor please"). The left hand carries it down while the
+    wrist flicks the cylinder shut. It's in the pouch at 1.67 s and hidden
+    from the next frame, and the hand is back on the grip by 2.0 s.
+    - Round 1 had it fall and shrink away by 1.80 s.
+    - A physics drop like the magazines was started, then called off
+      (user: "forget the speedloader actually").
+  - 1.49–1.545 s: the wrist snaps right and the cylinder slams shut; back on
+    aim by 2.0 s.
+- **The rig** (`_357Revolver_Rig`, a Colt Python; component space: barrel
+  along −X, top +Z, cylinder side −Y):
+  - The root bone `_357-Revolver-Rig` carries the 100× scale (bone data in
+    metres under it).
+  - `Cylinder` is the crane hinge: it swings about X through
+    (−3.3, −0.11, 1.1) cm. `CylinderEjector` is its child.
+  - `Bullet1`–`6` hang off `Root`, not the cylinder, so the animation
+    carries them along.
+  - `Speedloader` sits under the barrel. Its material slot (`Speedloader`)
+    wears `/Game/TransparentMat`, so it's invisible except while
+    `ReloadMaterials` swaps the real one in. The animation carries it in the
+    left hand from the belt grab (0.92 s) to the drop.
+  - The pack's `_357Revolver_Fire` keys nothing (every bone at rest); the
+    hammer doesn't move on a shot.
+- **Pipeline:** `Tools/AnimAuthoring/RevolverReload/` (deleted once done,
+  2026-11-02, never committed; its shared parts are in
+  `Tools/AnimAuthoring/lib/`), the M4's scripts
+  adapted.
+  - Keys are authored in the chest's space (`spine_05`) or the gun's, and
+    every key is re-evaluated in the current frame's space before
+    interpolating. A hand keyed on the gun stays on it while the gun moves.
+  - The gun's export keeps the root at 100× scale and names it
+    `_357 Revolver Rig`; Unreal turns the spaces into hyphens.
+  - Headless gotcha: `-AllowCommandletRendering` crashes on startup with
+    `-NoShaderCompile` (`AllowShaderCompiling()` assert). Leave that flag
+    out when rendering is on.
+  - **Re-importing over assets the open editor has loaded:**
+    1. Close the editor first (`RebuildEditor.ps1 -NoLaunch` when there's
+       code to build anyway).
+    2. Run `import_ue.py`.
+    3. Reopen the editor.
+
+    With the editor open, it keeps its in-memory copies and could save over
+    the new ones.
+  - `bl_author.py` renders `game` and `aim` views from the boom's actual
+    positions (`REV_VIEWS=aim,game,front`).
 
 ### Directional hit indicator (2026-10-16)
 
@@ -4463,7 +4758,10 @@ left-hand IK pinned the hand to `LeftHandGrip`, which sits on `Clip_Bone`
   world → `hand_r` space) to `LeftHandGripLocation`, so the IK'd hand rides
   the slide.
 - **Reload:** both shotguns keep the shared `AM_Shotgun_Reload` (user: "both
-  shotguns I plan are using the same anim sequence"). **No rack for now:**
+  shotguns I plan are using the same anim sequence"). *(Superseded
+  2026-11-02: the pump shotgun, now the Mossberg, has its own
+  `AM_Shotgun_Reload_Pump` with a rack End — see* Shotgun rack after a
+  reload from empty*.)* **No rack for now:**
   `bPlayReloadEnd` is off, so End (the slap) doesn't play. If a rack comes
   back, the plan was curves over `MM_Shotgun_Reload`'s End (`HandGrip` 1 for
   the hand on the grip, `Pump` for the slide), or End only after reloading
@@ -9065,6 +9363,42 @@ after `-TimeoutSeconds`, default 300). Engine path hard-coded to
 misreads BOM-less UTF-8 (an em dash decodes into a curly quote that breaks
 string parsing). Visual Studio still needs *Generate Visual Studio project
 files* to *show* new source files.
+
+**Animation authoring scripts** (`Tools/AnimAuthoring/`, cleaned up 2026-11-02;
+user: "can we clean up the tools section?", scope "AnimAuthoring only"). Clips
+the Lyra library lacks are re-made by script. **The folder's `README.md` is the
+reference.** It covers the project-folder template, the commands, the gotchas
+and a table of what's been done.
+- `lib/animlib.py` (Blender) and `lib/uelib.py` (headless editor) hold
+  everything the first three projects had in triplicate:
+  - the Unreal-to-FBX conversions and the gun-on-`hand_r` placement;
+  - the IK, curves and renders;
+  - the FBX export, asset reports and import;
+  - montage and notify editing.
+
+  A job gets its own folder of six short scripts: `project.py` with its files
+  and the gun's grip, and its motion in `bl_author.py`.
+- **Finished project folders are deleted** (user: "remove the weapon and
+  function specific folder scripts. Those are completed so no need for
+  them").
+  - `M4Reload`, `RevolverReload` and `ShotgunRack` went on 2026-11-02 after
+    the check below.
+  - The M4's are in git history. The revolver's and shotgun's were never
+    committed, so they're gone.
+  - What each did is in its spec section.
+- `RunUnreal.ps1 <script> [-Render]` runs a script in `UnrealEditor-Cmd` with
+  the right flags and prints its log lines. `RunBlender.ps1 <script> [args]`
+  runs one in background Blender 4.0. Both are pure ASCII, like
+  `RebuildEditor.ps1`.
+- One `.gitignore` for the whole folder; the working files (FBX, `.blend`,
+  JSON, logs, renders) are regenerated by each `export_ue.py`.
+- **Checked** (before the project folders were deleted): all three projects
+  were regenerated from fresh exports through the new code.
+  - Every animation key matched the files behind the tested assets: the
+    revolver and the shotgun exactly, the M4 within 2e-6.
+  - The gun FBXs came out the same.
+  - The `import_ue.py` scripts were refactored too but haven't been re-run,
+    since that would replace the live assets.
 
 ## Engineering gotchas
 

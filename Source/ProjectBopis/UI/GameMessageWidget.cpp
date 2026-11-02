@@ -53,7 +53,11 @@ void UGameMessageWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		}
 
 		const float TimeLeft = static_cast<float>(Live[MessageIndex]->EndTime - Now);
-		Line->SetText(Live[MessageIndex]->Text);
+		// Same message as last frame: keep its laid-out text.
+		if (!Line->GetText().IdenticalTo(Live[MessageIndex]->Text))
+		{
+			Line->SetText(Live[MessageIndex]->Text);
+		}
 		Line->SetRenderOpacity(FadeOutTime > 0.0f ? FMath::Clamp(TimeLeft / FadeOutTime, 0.0f, 1.0f) : 1.0f);
 		Line->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}

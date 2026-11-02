@@ -68,16 +68,21 @@ void UAmmoWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		ShowIcons(Icon, bDual);
 	}
 
-	// Nothing held: blank rather than "0 / 0".
-	if (MagazineText)
+	// Nothing held: blank rather than "0 / 0". Set only on a change: a new FText every frame
+	// makes Slate lay the text out again every frame.
+	const int32 Magazine = Weapon ? Weapon->GetAmmoInMagazine() : -1;
+	if (MagazineText && Magazine != ShownMagazine)
 	{
-		MagazineText->SetText(Weapon ? FText::AsNumber(Weapon->GetAmmoInMagazine()) : FText::GetEmpty());
+		MagazineText->SetText(Weapon ? FText::AsNumber(Magazine) : FText::GetEmpty());
+		ShownMagazine = Magazine;
 	}
-	if (ReserveText)
+	const int32 Reserve = Weapon ? Weapon->GetReserveAmmo() : -1;
+	if (ReserveText && Reserve != ShownReserve)
 	{
 		ReserveText->SetText(Weapon
-			? FText::Format(NSLOCTEXT("AmmoWidget", "Reserve", "/ {0}"), Weapon->GetReserveAmmo())
+			? FText::Format(NSLOCTEXT("AmmoWidget", "Reserve", "/ {0}"), Reserve)
 			: FText::GetEmpty());
+		ShownReserve = Reserve;
 	}
 }
 

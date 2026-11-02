@@ -7,8 +7,11 @@ void UHUDCountWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (Count)
+	// Only on a change: a new FText every frame makes Slate lay the text out again every frame.
+	const int32 Value = GetCount();
+	if (Count && Value != ShownCount)
 	{
-		Count->SetText(FText::AsNumber(GetCount()));
+		Count->SetText(FText::AsNumber(Value));
+		ShownCount = Value;
 	}
 }

@@ -33,4 +33,8 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> BarMaterial;
+
+	/** The values last sent to BarMaterial, so it's only updated on a change. */
+	float ShownFill = -1.0f;
+	FVector2f ShownSize = FVector2f::ZeroVector;
 };

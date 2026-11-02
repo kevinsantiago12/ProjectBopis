@@ -2016,6 +2016,77 @@
     still forces High + the constant every start). Applied by Claude
     ("Apply it yourself"). **Code given, not yet compiled.** Next lever
     for fights: the game thread (characters).
+  - Pushed by the user as `2fa1fdd3` "Optimization, M4 Reload fix". The
+    100% change was still uncompiled.
+  - **URO switchable** (user: "make the URO offable … so PC players can
+    have full anims"):
+    - a new cvar, `bopis.EnemyAnimRateOptimization` (bool, default
+      **off**, `ECVF_Scalability`), in `EnemyBase.cpp`;
+    - `AEnemyBase::Tick` enables URO only when it's on and no body
+      simulates; the constructor no longer forces it;
+    - `ApplyDeckOverrides` sets it on (`SetByCode`).
+    - Live-toggleable from the console. Applied by Claude ("Apply it
+      yourself"). **Code given, not yet compiled.**
+  - Next: game-thread items 1–5 (spec *Game-thread targets*): Deck-only
+    URO thresholds, HUD/Slate, impact particles on GPU, enemy movement,
+    physical-animation tick.
+  - **#1 applied:** `AnimRateScreenSizes` {0.5, 0.25} via
+    `OnAnimUpdateRateParamsCreated` (Deck only, where URO is on). Applied by
+    Claude ("Apply it yourself"). **Code given, not yet compiled.** Three
+    changes wait on one rebuild: 100%, the URO switch, and #1.
+  - **#2–#5** (user: "go finish up to #5 all the way"; spec *Game-thread
+    targets*):
+    - HUD text and bar material set only on a change;
+    - `EFT_Impacts` mask fixed to include High (it was skipping the Deck
+      entirely), saved 12:54;
+    - enemy movement: no physics pushes, no floor check when still;
+    - physical animation ticks only while simulating.
+  - **All built:** 100%, URO switch, #1–#5. Rebuilt clean 12:55 (bridge
+    answers); **Deck build 12:58** (game exe 12:57, exit 0). Not yet run
+    on the Deck.
+  - **Trace 22** (`20261102_130452`, Sandbox, only 31 s analysed, High
+    100%, #1–#5):
+    - **#3 worked:** `NS_ImpactConcrete` 1.59 → 0.60 ms,
+      `ConcreteSmoke` 0.56 → 0.17 (all threads).
+    - **#2 a little:** Slate tick and draw 0.88 / 0.88 → 0.81 / 0.80.
+    - **#1 did nothing:** `ABP_Player_C` evaluations 13.0 → 12.8 per frame,
+      `CharacterMesh0` 5.8 → 5.9 ms. `PhysicalAnimation` still ticked about
+      9 times per frame under #5, which ticks it only while a body
+      simulates. **Suspect: enemies always have some simulating body**,
+      so `AEnemyBase::Tick`'s `!IsAnySimulatingPhysics()` keeps URO off
+      permanently (it did before #1 too). To check in PIE.
+    - Busiest 20%: 45 fps, `UWorld_Tick` 15.8 ms (trace 21: 46, 15.7).
+  - **Bug (user): "when the player gets hit, the model spazzes out".**
+    Cause: #5. The hit reaction starts simulating and applies
+    physical-animation motors in the same frame, while the component's
+    tick is still off. The limbs run unpowered until `Tick` turns it on.
+    **Reverted #5** (Claude, "Apply it yourself"): `PhysicalAnimation`
+    ticks every frame again. **Code given, not yet compiled.**
+  - **Why #1 did nothing: free-arm physics.** Pistol enemies keep the left
+    arm on physics all fight, so `IsAnySimulatingPhysics()` stays true and
+    URO stays off.
+    - **Fix:** `AEnemyBase::WantsFreeArmPhysics()` returns false while
+      `bopis.EnemyAnimRateOptimization` is on (the Deck).
+    - Applied by Claude ("Apply it yourself"). Rebuilt clean 13:16 along
+      with the #5 revert ("Current Coding Work" was busy and said safe).
+      **Deck build 13:17** (exit 0). Not yet run on the Deck.
+  - **Trace 23** (`20261102_132154`, Sandbox, 235 s, High 100%, URO
+    unblocked + #2–#4, #5 reverted), against trace 21:
+    - **Busiest 20% of seconds: 53 fps** (46).
+    - **Seconds at 58+ fps: 83%** (54%); under 50: 3% (8%).
+    - Busy `UWorld_Tick` 13.6 ms (15.7); average 10.2 (11.8).
+    - Enemy anim `CharacterMesh0` 5.8 → 4.9 ms; `ABP_Player_C` evaluations
+      13.0 → 11.7 per frame.
+    - Concrete impacts 1.59 → 0.44 ms; movement 1.26 → 0.97; Slate
+      0.88 + 0.88 → 0.78 + 0.78.
+    - About 10% fewer characters moving (8.3 against 9.2), so part of the
+      gain is the fight.
+    - **Playtested on the Deck (user): "Both look fine".** No hit spazz,
+      and mid-range enemies don't look steppy.
+  - **Trace store cleaned** (user: "clean up old and unneeded traces"):
+    kept `20261102_122946` (trace 21, Sandbox baseline) and
+    `20261102_000532` (`Lvl_Linear` baseline). 16 others (≈5.6 GB) are in
+    the Recycle Bin.
   - **To check:** PIE (clothes follow far and dying enemies; gun fire and
     rest poses look right), then a Deck trace of both levels.
 - **2026-11-02: M4 reload with a rear charging-handle pull.** User: "make an
@@ -2054,12 +2125,140 @@
   - Fix: a resting mesh's tick is switched off and on (spec: the tick
     throttling notes).
   - Applied by Claude ("apply and run"); rebuilt clean 11:08, all peers idle,
-    the bridge answers. **Not yet PIE-tested.**
+    the bridge answers. **Tested in PIE (user: "thats working", 2026-11-02).**
+- **2026-11-02: revolver reload, speedloader with a full flick.** User: "Can
+  you help me make a revolver reload?", then "do the flick" (full flick).
+  Spec: *Revolver reload: speedloader, full flick*.
+  - **Animation (2.0 s):**
+    - The wrist flicks the cylinder out.
+    - Muzzle up: the left heel drives the ejector and the empties drop.
+    - Muzzle down: speedloader from the belt, seated, pulled away and
+      dropped.
+    - The wrist flicks it shut, then back to aim.
+  - **Imported and checked** (headless, after the Optimization thread's Deck
+    build): `MM_Pistol_Reload_Revolver`, `AM_Pistol_Reload_Revolver`
+    (MagOut 0.575, MagIn 1.27, Chamber 1.545) and `A_Revolver_Reload`. The
+    body matches the original exactly; the gun matches its reference pose
+    at frame 0.
+  - **Code:** `EChargingStyle::SwingOutCylinder`. Applied by Claude ("apply
+    and run"); rebuilt clean 13:37, all peers idle, the bridge answers.
+  - **Wired:**
+    - `BP_Revolver` (style, `A_Revolver_Reload`, `ReloadDuration` 2.6 →
+      2.0).
+    - `BP_PlayerCharacter` / `BP_EnemyBase` map it to the new montage.
+    - All seven Blueprints compiled, CC children included; saved and checked
+      on disk.
+  - **First PIE test** (user): "it works but the player cant see the gun
+    during the animation at all, hidden behind the body. Also he should pop
+    the bullets out and it should fall".
+  - **Round 2** ("apply and run"; rebuilt clean 13:53 with the editor kept
+    closed, all peers idle; assets re-imported, then the editor reopened;
+    the bridge answers):
+    - **Restaged:** the work moved to the right side at shoulder height.
+      The strike is beside the head, and the upper body turns 18° right.
+      Checked from the game's own camera positions.
+    - **Physics empties:** `ReloadCasingMesh` / `ReloadCasingBones` /
+      `DropReloadCasings`.
+    - An Eject notify at 0.60 s on `A_Revolver_Reload`. `BP_Revolver` uses
+      `_357MagnumRound` × `Bullet1`–`6`.
+    - **Tested** (user: "thats working").
+  - **Round 3: the speedloader shows** (user: "now make the speedloader show
+    during the reload"; "apply and run"; rebuilt clean 14:06, all peers
+    idle, the bridge answers):
+    - `AWeaponBase::ReloadMaterials` swaps a slot's material for the
+      reload's length.
+    - `BP_Revolver` maps the `Speedloader` slot (`TransparentMat` otherwise)
+      to the pack's `Speedloader` material. Saved and checked on disk.
+    - **Tested** (user: "thats working").
+  - **Round 4: no drop.** User: "no drops to the floor please" (after
+    "forget the speedloader actually", which called off a physics drop
+    before any code).
+    - The left hand now puts the empty loader back in the belt pouch
+      (1.67 s), then returns to the grip.
+    - Animation only. Re-imported with the editor closed (user: "do it"; all
+      peers idle; the editor reopened 14:28; the bridge answers). The Eject
+      notify was kept.
+    - **Tested** (user: "thats working").
+- **2026-11-02: shotgun rack after a reload from empty.** User: "make a pump
+  only animation… after the shotgun reloads, we do not have a after load
+  'pump'"; "I need it for the reload"; picked "only from empty". Spec:
+  *Shotgun rack after a reload from empty*.
+  - The pump shotgun is now the Mossberg (`BP_PumpShotgun`). Its pump moves
+    through its own gun clip, and the left-hand grip socket rides that pump.
+  - **Code** ("apply and run"; rebuilt clean 14:49 with the editor kept closed
+    for the import, all peers idle; the bridge answers):
+    - `EWeaponSound::Rack` + `RackAnimation`.
+    - `bRackAfterEmptyReload` / `NeedsRackAfterReload()`.
+    - The character plays the reload's End only when the gun needs it. The
+      `bPlayReloadEnd` flag is removed.
+  - **Assets:**
+    - `MM_Shotgun_Reload_Pump`: End re-made as the rack, with a `HandGrip`
+      curve.
+    - `AM_Shotgun_Reload_Pump`: Rack notify at 1.55 s, blends out from
+      ~2.0 s.
+    - `A_Mossberg_Rack`: the pump stroke alone, with its Pump sound.
+    - A first pass left the montage on the old sequence (Python struct
+      copies). Fixed and checked.
+  - **Data:** `BP_PumpShotgun` (rack on, `A_Mossberg_Rack`). Player, enemy
+    and CC reload maps: `PumpShotgun` → the new montage. Compiled, saved,
+    checked on disk. The Benelli is unchanged.
+  - **Tested in PIE (user: "it works").**
+  - **Scripts:** `Tools/AnimAuthoring/ShotgunRack/` (the revolver's are in
+    `RevolverReload/`).
+- **2026-11-02: AnimAuthoring cleaned up.** User: "can we clean up the tools
+  section?"; scope "AnimAuthoring only". Spec: *Animation authoring scripts*;
+  the folder's `README.md`.
+  - `lib/animlib.py` (Blender) and `lib/uelib.py` (headless editor) now hold
+    what the M4, revolver and shotgun projects had in triplicate. Each project
+    keeps a `project.py` and its own motion.
+  - New: `RunUnreal.ps1` / `RunBlender.ps1` runners, one `.gitignore`, and a
+    README.
+  - Removed: the three `bl_common.py` files and the per-project
+    `.gitignore`s.
+  - **Checked:** all three were regenerated from fresh exports through the
+    new code. Every animation key matched the tested assets' sources (the
+    revolver and the shotgun exactly, the M4 within 2e-6), and the gun FBXs
+    came out the same.
+  - The `import_ue.py` scripts weren't re-run (that would replace the live
+    assets).
+  - The M4's `export_ue.py` exports its FBX inputs again, as the other two do.
+  - **Then the three project folders were deleted** (user: "keep the
+    AnimAuthoring folder, remove the weapon and function specific folder
+    scripts. Those are completed so no need for them").
+    - Left: `lib/`, the runners, `.gitignore`, and a README rewritten as a
+      template with a *Done so far* table.
+    - The M4's scripts are in git history. The revolver's and shotgun's were
+      only ever staged, so they're gone once the deletion is committed.
 
 ### ▶ RESUME HERE
 **A. Next up**
-0000. **Deck performance on `Lvl_Sandbox`, next steps in order.** Spec:
-    *Sixth Deck trace*. Now GPU p50 17.6 ms (budget 16.6), GPU-bound.
+0000. **Deck performance: PAUSED 2026-11-02** (user: "I think we pause the
+    optimization for now").
+    - **Where it stands:** trace 23 (`20261102_132154`, Sandbox, High
+      100%): busiest 20% of seconds 53 fps, 83% of seconds at 58+ fps.
+      Fights are game-thread-bound (busy `UWorld_Tick` 13.6 ms). Deck code
+      in `UBopisGameInstance::OnStart` → `ApplyDeckOverrides`: High,
+      `DeckResolutionScale` 100, half-res translucency, URO on. Spec:
+      *Game-thread targets*.
+    - **Uncommitted:** `EnemyBase`, `BopisGameInstance`,
+      `BopisCharacterBase`, the HUD widgets, `EFT_Impacts`, the docs.
+    - **If resumed, cheapest first** (estimates: spec *Enemy animation
+      options*):
+      - `AnimRateScreenSizes` 0.5/0.25 → 0.7/0.35 on `BP_EnemyBase` (no
+        code; ≈0.6–0.8 ms frame);
+      - LOD Threshold 1 on Leg IK / Stride Warping / Orientation Warping in
+        `ABP_Player` (editor; ≈0.3–0.5 ms);
+      - Animation Budget Allocator, Deck only (C++; up to ≈1–1.3 ms in the
+        heaviest fights);
+      - head as a leader-pose follower (≈0.4–0.5 ms; morphs need another
+        route);
+      - `ConcreteSmoke` to GPU sim (editor click);
+      - an A/B of `Slate.EnableGlobalInvalidation 1`;
+      - CC mesh merge (big).
+    - Trace store: two baselines kept, `20261102_122946` and
+      `20261102_000532` (plus traces 22 and 23).
+    - The older steps below are mostly done; they're kept for the muzzle
+      flash and smoke PIE checks.
     1. **Muzzle flash: built (2026-11-01), PIE test it.** Check:
        - strafing fire leaves at most one puff per 0.35 s;
        - each shot gives a brief, shadowless flash;
@@ -2092,17 +2291,19 @@
       - decide 60 vs a 40 fps Deck mode after the first real level;
       - **Verify the engine install** in the Epic launcher
         (`SM_Template_Map_Floor` was re-saved; see the spec).
-000a. **M4 reload: tested 2026-11-02** (user: "your charge handle is in
-    now"). Left to check:
-    - a reload cut short by a dive leaves the handle forward;
-    - an enemy with an M4 reloads the same way.
+000a. **Reloads, all tested 2026-11-02** (user: "thats working", confirmed
+    as covering all of them):
+    - The M4, including a reload cut short by a dive and an enemy M4.
+    - The revolver: camera staging, physics empties, the speedloader shown
+      and pouched, a dive reload.
+    - The shotgun rack.
+    - The tap sounds.
 
-    Next for the MP5: `EChargingStyle::HKSlap` and its own ending, with the
-    same scripts, once its mesh is in.
-
-    **Tap sounds (2026-11-02): PIE test.** Single-click the 1911s, the 9mm,
-    the duals and the revolver quickly, after a pause too: every shot should
-    sound.
+    - **Next, the MP5:** `EChargingStyle::HKSlap` and its own ending, once
+      its mesh is in. Start from the shared library in
+      `Tools/AnimAuthoring/` (see its README).
+    - Optional: a sound slot for the revolver's open click
+      (`Revolver_Open_Cue`).
 000. *(Done 2026-11-01, user: "46 and 47 are good": the pickup switch and
     melee are tested.)* **Optional melee follow-ups:**
     - real blunt-hit sounds;

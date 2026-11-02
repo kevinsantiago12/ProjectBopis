@@ -121,6 +121,7 @@ bool AWeaponBase::Reload(float Speed)
 	}
 
 	bIsReloading = true;
+	bReloadStartedEmpty = CurrentAmmoInMagazine == 0;
 	ReloadSpeed = FMath::Max(Speed, 0.01f);
 	ReloadCycleStart = 0.0f;
 
@@ -143,6 +144,9 @@ bool AWeaponBase::Reload(float Speed)
 		WeaponMesh->PlayAnimation(ReloadAnimation, false);
 		WeaponMesh->SetPlayRate(ReloadSpeed);
 	}
+
+	// Parts only the reload uses (the revolver's speedloader), visible while it runs.
+	ShowReloadMaterials(true);
 
 	return true;
 }
@@ -179,6 +183,7 @@ void AWeaponBase::FinishReload()
 	bIsReloading = false;
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
+	ShowReloadMaterials(false);
 
 	// Cut short (a quick reload in the air, a cancel), the handle goes home rather than stopping
 	// mid-pull. On a normal finish it's home already.
@@ -202,6 +207,7 @@ void AWeaponBase::CancelReload()
 	bIsReloading = false;
 	SetMagazineHidden(WeaponMesh, false);
 	SetMagazineHidden(OffhandMesh, false);
+	ShowReloadMaterials(false);
 
 	// Cut short (a quick reload in the air, a cancel), the handle goes home rather than stopping
 	// mid-pull. On a normal finish it's home already.
@@ -746,6 +752,54 @@ void AWeaponBase::EjectCasing(bool bOffhand)
 	}
 }
 
+void AWeaponBase::DropReloadCasings(bool bOffhand)
+{
+	USkeletalMeshComponent* Mesh = (bOffhand && OffhandMesh) ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (!ReloadCasingMesh || !Mesh)
+	{
+		return;
+	}
+
+	// Each leaves its chamber lying along the barrel (the mesh's X; the round is modelled along its
+	// Z), slides on out of the cylinder's back (+X, down with the muzzle up) and falls, carried
+	// along with the shooter.
+	const FQuat Lying = Mesh->GetComponentQuat() * FRotator(-90.0f, 0.0f, 0.0f).Quaternion();
+	const FVector Back = Mesh->GetComponentTransform().GetUnitAxis(EAxis::X);
+	const FVector Carry = GetOwner() ? GetOwner()->GetVelocity() : FVector::ZeroVector;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	for (const FName Bone : ReloadCasingBones)
+	{
+		if (!Mesh->DoesSocketExist(Bone))
+		{
+			continue;
+		}
+		const FVector Velocity = Carry + FMath::VRandCone(Back, FMath::DegreesToRadians(25.0f))
+			* FMath::FRandRange(60.0f, 120.0f);
+		const FVector Spin = FMath::VRand() * CasingSpin * FMath::FRandRange(0.25f, 0.5f);
+		if (AShellCasing* Casing = GetWorld()->SpawnActor<AShellCasing>(AShellCasing::StaticClass(),
+			Mesh->GetSocketLocation(Bone), Lying.Rotator(), Params))
+		{
+			Casing->Launch(ReloadCasingMesh, CasingScale, CasingImpactSound, Velocity, Spin, CasingLifeSpan);
+		}
+	}
+}
+
+void AWeaponBase::ShowReloadMaterials(bool bShow)
+{
+	for (const TPair<FName, TObjectPtr<UMaterialInterface>>& Slot : ReloadMaterials)
+	{
+		const int32 Index = WeaponMesh->GetMaterialIndex(Slot.Key);
+		if (Index != INDEX_NONE)
+		{
+			// No override puts back the mesh's own material.
+			WeaponMesh->SetMaterial(Index, bShow ? Slot.Value.Get() : nullptr);
+		}
+	}
+}
+
 void AWeaponBase::PlayWeaponEvent(EWeaponSound Event, bool bOffhand)
 {
 	PlayWeaponSound(Event, bOffhand);
@@ -760,7 +814,22 @@ void AWeaponBase::PlayWeaponEvent(EWeaponSound Event, bool bOffhand)
 	}
 	else if (Event == EWeaponSound::Eject)
 	{
-		EjectCasing(bOffhand);
+		// During a reload, a cylinder's worth of empties; otherwise the shot's one casing.
+		if (IsReloading() && ReloadCasingMesh)
+		{
+			DropReloadCasings(bOffhand);
+		}
+		else
+		{
+			EjectCasing(bOffhand);
+		}
+	}
+	else if (Event == EWeaponSound::Rack && RackAnimation)
+	{
+		// The pump worked by hand: the gun's own stroke, which the left hand follows on its grip socket.
+		WakeMeshes();
+		WeaponMesh->PlayAnimation(RackAnimation, false);
+		WeaponMesh->SetPlayRate(ReloadSpeed);
 	}
 }
 
@@ -879,6 +948,7 @@ USoundBase* AWeaponBase::GetSound(EWeaponSound Sound) const
 	case EWeaponSound::Pump:    return PumpSound;
 	case EWeaponSound::Equip:   return EquipSound;
 	case EWeaponSound::Eject:   return nullptr; // no sound of its own — the action's is Pump/Chamber
+	case EWeaponSound::Rack:    return nullptr; // the rack clip carries its own Pump
 	}
 	return nullptr;
 }

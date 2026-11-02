@@ -303,6 +303,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Shooting|Hit Chance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CampedHitChance = 1.0f;
 
+	// ---- Performance ----
+
+	/** With bopis.EnemyAnimRateOptimization on (the Deck), the screen sizes (as LODs measure them)
+	    below which an enemy skips animation frames: under the first, every 2nd frame; under the
+	    second, every 3rd. Interpolated in between. Engine default: 0.24, 0.12. */
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy|Performance")
+	TArray<float> AnimRateScreenSizes = { 0.5f, 0.25f };
+
 	// ---- Shot placement ----
 
 	/** Where hits land on the player's body: bone → relative weight. Each hit picks one at
@@ -464,6 +472,7 @@ public:
 	void TriggerAmbush(AActor* Target);
 
 	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
+	virtual bool WantsFreeArmPhysics() const override;
 
 	/** Where to roam next: the furthest Target Point (RoamToPointChance), or a random
 	    reachable spot within RoamRadius. False if neither was found. */
@@ -474,6 +483,9 @@ public:
 		AController* EventInstigator, AActor* DamageCauser) override;
 
 private:
+
+	/** Applies AnimRateScreenSizes when the engine creates the body's update-rate settings. */
+	void ConfigureAnimUpdateRate(FAnimUpdateRateParameters* Params);
 
 	/** Alerted: focuses the player and raises the weapon. Otherwise lets go. */
 	void UpdateAim();

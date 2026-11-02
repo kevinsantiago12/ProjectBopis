@@ -1,8 +1,0 @@
-# Working files the scripts write beside themselves
-*.fbx
-*.blend
-*.blend1
-*.json
-*.txt
-renders/
-__pycache__/

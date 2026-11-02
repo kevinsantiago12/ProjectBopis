@@ -1182,12 +1182,14 @@ void ABopisCharacterBase::UpdateReloadMontage()
 	}
 
 	// Loading stops when the magazine fills, the reserve runs dry, or the weapon is
-	// swapped: let the current insert finish, then play End (the rack) — or, without
-	// bPlayReloadEnd, nothing: the montage ends with that insert and blends out.
+	// swapped: let the current insert finish, then play End (the rack) if the gun needs one —
+	// a pump loaded from empty. Otherwise nothing: the montage ends with that insert and blends out.
 	const AWeaponBase* EquippedWeapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr;
 	if (!EquippedWeapon || !EquippedWeapon->IsReloading())
 	{
-		AnimInstance->Montage_SetNextSection(LoopSection, bPlayReloadEnd ? EndSection : NAME_None, ActiveReloadMontage);
+		const bool bRack = EquippedWeapon && EquippedWeapon->NeedsRackAfterReload()
+			&& ActiveReloadMontage->IsValidSectionName(EndSection);
+		AnimInstance->Montage_SetNextSection(LoopSection, bRack ? EndSection : NAME_None, ActiveReloadMontage);
 		return;
 	}
 

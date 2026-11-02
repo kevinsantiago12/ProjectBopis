@@ -79,4 +79,9 @@ private:
 	TObjectPtr<UTexture2D> ShownIcon;
 
 	bool bShownDual = false;
+
+	/** The counts on screen, so the text is only re-laid-out when one changes. -2: nothing shown yet;
+	    -1: blank (nothing held). */
+	int32 ShownMagazine = -2;
+	int32 ShownReserve = -2;
 };

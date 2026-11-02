@@ -1,0 +1,9 @@
+# Working files the scripts write beside themselves in each project folder: exported and authored FBX,
+# Blender saves, the JSON reports, run logs, renders.
+*.fbx
+*.blend
+*.blend1
+*.json
+*.txt
+renders/
+__pycache__/
