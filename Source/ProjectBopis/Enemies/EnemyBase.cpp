@@ -133,6 +133,7 @@ void AEnemyBase::Tick(float DeltaSeconds)
 	UpdatePatrol(DeltaSeconds);
 	UpdateFacing(DeltaSeconds);
 	UpdateShooting(DeltaSeconds);
+	UpdateSweepBark(DeltaSeconds);
 }
 
 void AEnemyBase::BeginPlay()
@@ -673,8 +674,10 @@ void AEnemyBase::UpdateAim()
 	}
 
 	// Out of sight long enough, and searching rather than holding a spot: the gun comes down.
-	// The lowered stance turns the body to where it's going; the head does the looking.
-	if (LowerGunAfter > 0.0f && !bHoldsPosition && TimeSinceSeenPlayer >= LowerGunAfter)
+	// The lowered stance turns the body to where it's going; the head does the looking. An
+	// arena's sweepers never lower it: once the fight's on, it stays on.
+	if (LowerGunAfter > 0.0f && !bHoldsPosition && SweepPoints.Num() == 0
+		&& TimeSinceSeenPlayer >= LowerGunAfter)
 	{
 		bGunLowered = true;
 		SetAiming(false);
@@ -767,7 +770,10 @@ void AEnemyBase::UpdateMovementMode()
 	Movement->bOrientRotationToMovement = !bRaised;
 	Movement->RotationRate = FRotator(0.0f, TurnRate, 0.0f);
 	const bool bPatrolling = !bAlerted && PatrolPoints.Num() > 0;
+	// Sweeping an arena with the lead gone: on to the next point at pace.
+	const bool bSweeping = bLeadGone && SweepPoints.Num() > 0;
 	Movement->MaxWalkSpeed = bPushingIn ? PushSpeed
+		: bSweeping ? SweepSpeed
 		: bRaised ? RaisedSpeed
 		: bScriptedMove ? (bScriptedRun ? LoweredSpeed : PatrolSpeed)
 		: bPatrolling ? PatrolSpeed
@@ -1045,6 +1051,25 @@ void AEnemyBase::HearPlayer(const FVector& Location)
 
 bool AEnemyBase::ChooseRoamSpot(FVector& OutSpot) const
 {
+	// Sweeping an arena: on to one of its spawn points at random, any but the one it's standing
+	// at, so it keeps hunting through the map instead of standing around.
+	if (SweepPoints.Num() > 0)
+	{
+		TArray<const AActor*> Choices;
+		for (const AActor* Point : SweepPoints)
+		{
+			if (Point && FVector::Dist2D(Point->GetActorLocation(), GetActorLocation()) > 500.0f)
+			{
+				Choices.Add(Point);
+			}
+		}
+		if (Choices.Num() > 0)
+		{
+			OutSpot = Choices[FMath::RandRange(0, Choices.Num() - 1)]->GetActorLocation();
+			return true;
+		}
+	}
+
 	// Now and then across the map: the Target Point furthest from here (spawn points and
 	// the like), so a roam sweeps the arena rather than milling about one corner.
 	if (FMath::FRand() < RoamToPointChance)
@@ -1076,6 +1101,33 @@ bool AEnemyBase::ChooseRoamSpot(FVector& OutSpot) const
 		return true;
 	}
 	return false;
+}
+
+void AEnemyBase::UpdateSweepBark(float DeltaSeconds)
+{
+	if (!bLeadGone || SweepPoints.Num() == 0)
+	{
+		SweepBarkTimeLeft = -1.0f;
+		return;
+	}
+
+	// Just set off, it rolls its first wait below: it calls out a while in, not on the first step.
+	if (SweepBarkTimeLeft >= 0.0f)
+	{
+		SweepBarkTimeLeft -= DeltaSeconds;
+		if (SweepBarkTimeLeft >= 0.0f)
+		{
+			return;
+		}
+
+		// A dead player isn't being looked for.
+		const ABopisCharacterBase* PlayerBody = Cast<ABopisCharacterBase>(UGameplayStatics::GetPlayerPawn(this, 0));
+		if (!(PlayerBody && PlayerBody->IsDead()))
+		{
+			Bark(EBarkType::LostSight);
+		}
+	}
+	SweepBarkTimeLeft = FMath::FRandRange(SweepBarkIntervalMin, FMath::Max(SweepBarkIntervalMin, SweepBarkIntervalMax));
 }
 
 void AEnemyBase::AlertAllies()

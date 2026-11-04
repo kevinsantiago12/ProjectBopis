@@ -1,0 +1,1286 @@
+{
+ "/Game/Philippines_Markets/Props/Barrels_Set_01/SM_Barrel_01": {
+  "bounds_min": [
+   -31.2,
+   -31.1,
+   -0.0
+  ],
+  "bounds_max": [
+   31.0,
+   31.1,
+   96.9
+  ],
+  "size": [
+   62.2,
+   62.2,
+   96.9
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "blinn1",
+    "material": "/Game/Philippines_Markets/Materials/MI_Barrel_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.052,
+       0.041,
+       0.039,
+       1.0
+      ],
+      "Basecolor Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Tint 02 Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.241,
+       0.397,
+       0.745,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MI_Bucket_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2112,
+    "verts": 1324
+   },
+   {
+    "tris": 1268,
+    "verts": 899
+   },
+   {
+    "tris": 634,
+    "verts": 496
+   },
+   {
+    "tris": 316,
+    "verts": 290
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 2112,
+  "area_m2": 4.09,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 16,
+    "cover": 0.12,
+    "facing_area_m2": 0.88
+   },
+   "-X": {
+    "tris_on_bound": 16,
+    "cover": 0.12,
+    "facing_area_m2": 0.88
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.12,
+    "facing_area_m2": 0.88
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.12,
+    "facing_area_m2": 0.88
+   },
+   "+Z": {
+    "tris_on_bound": 192,
+    "cover": 0.07,
+    "facing_area_m2": 0.28
+   },
+   "-Z": {
+    "tris_on_bound": 96,
+    "cover": 0.62,
+    "facing_area_m2": 0.28
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.56,
+   0.56,
+   0.18
+  ],
+  "uv0": {
+   "u_along": [
+    0.62,
+    0.62,
+    0.02
+   ],
+   "v_along": [
+    0.11,
+    0.11,
+    0.86
+   ],
+   "cm_per_u": 207.2,
+   "cm_per_v": 207.3
+  },
+  "pack": "Philippines_Markets"
+ },
+ "/Game/Philippines_Markets/Props/Barrels_Set_01/SM_Barrel_02": {
+  "bounds_min": [
+   -31.1,
+   -30.9,
+   -0.0
+  ],
+  "bounds_max": [
+   31.9,
+   31.1,
+   100.0
+  ],
+  "size": [
+   63.0,
+   62.0,
+   100.0
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "blinn1",
+    "material": "/Game/Philippines_Markets/Materials/MI_Barrel_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.052,
+       0.041,
+       0.039,
+       1.0
+      ],
+      "Basecolor Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Tint 02 Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.241,
+       0.397,
+       0.745,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MI_Bucket_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2206,
+    "verts": 1539
+   },
+   {
+    "tris": 1103,
+    "verts": 907
+   },
+   {
+    "tris": 552,
+    "verts": 491
+   },
+   {
+    "tris": 276,
+    "verts": 271
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 2206,
+  "area_m2": 2.43,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.47
+   },
+   "-X": {
+    "tris_on_bound": 16,
+    "cover": 0.12,
+    "facing_area_m2": 0.47
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.11,
+    "facing_area_m2": 0.47
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.11,
+    "facing_area_m2": 0.47
+   },
+   "+Z": {
+    "tris_on_bound": 362,
+    "cover": 0.41,
+    "facing_area_m2": 0.26
+   },
+   "-Z": {
+    "tris_on_bound": 96,
+    "cover": 0.61,
+    "facing_area_m2": 0.27
+   }
+  },
+  "open_faces": [
+   "+X"
+  ],
+  "normal_spread": [
+   0.51,
+   0.51,
+   0.27
+  ],
+  "uv0": {
+   "u_along": [
+    0.58,
+    0.66,
+    0.04
+   ],
+   "v_along": [
+    0.22,
+    0.14,
+    0.77
+   ],
+   "cm_per_u": 204.7,
+   "cm_per_v": 204.0
+  },
+  "pack": "Philippines_Markets"
+ },
+ "/Game/Philippines_Markets/Props/CardboardSet_01/SM_CardboardBox_01": {
+  "bounds_min": [
+   -26.1,
+   -14.8,
+   -0.2
+  ],
+  "bounds_max": [
+   26.2,
+   14.9,
+   35.0
+  ],
+  "size": [
+   52.3,
+   29.7,
+   35.2
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "WorldGridMaterial",
+    "material": "/Game/Philippines_Markets/Materials/MI_Cardboard_Set_tint1",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "Basecolor Tint": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 02 Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.198,
+       0.198,
+       0.198,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MM_BasicProp"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 238,
+    "verts": 198
+   },
+   {
+    "tris": 118,
+    "verts": 123
+   },
+   {
+    "tris": 64,
+    "verts": 76
+   },
+   {
+    "tris": 64,
+    "verts": 76
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 238,
+  "area_m2": 0.96,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 32,
+    "cover": 0.92,
+    "facing_area_m2": 0.1
+   },
+   "-X": {
+    "tris_on_bound": 28,
+    "cover": 0.91,
+    "facing_area_m2": 0.1
+   },
+   "+Y": {
+    "tris_on_bound": 40,
+    "cover": 0.96,
+    "facing_area_m2": 0.18
+   },
+   "-Y": {
+    "tris_on_bound": 52,
+    "cover": 0.97,
+    "facing_area_m2": 0.18
+   },
+   "+Z": {
+    "tris_on_bound": 22,
+    "cover": 0.85,
+    "facing_area_m2": 0.19
+   },
+   "-Z": {
+    "tris_on_bound": 16,
+    "cover": 0.93,
+    "facing_area_m2": 0.22
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.22,
+   0.38,
+   0.44
+  ],
+  "uv0": {
+   "u_along": [
+    0.74,
+    0.27,
+    0.01
+   ],
+   "v_along": [
+    0.06,
+    0.38,
+    0.58
+   ],
+   "cm_per_u": 400.4,
+   "cm_per_v": 401.9
+  },
+  "pack": "Philippines_Markets"
+ },
+ "/Game/Philippines_Markets/Props/MonoBloc_Chairs_01/SM_Monobloc_Chair_01": {
+  "bounds_min": [
+   -28.6,
+   -31.7,
+   -0.0
+  ],
+  "bounds_max": [
+   28.6,
+   33.0,
+   107.1
+  ],
+  "size": [
+   57.1,
+   64.7,
+   107.1
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MI_Monobloc_Chair_01",
+    "material": "/Game/Philippines_Markets/Materials/MI_Monobloc_Chair_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.038,
+       0.033,
+       0.031,
+       1.0
+      ],
+      "Basecolor Tint": [
+       1.0,
+       0.966,
+       0.933,
+       1.0
+      ],
+      "Tint 02 Color": [
+       0.572,
+       1.0,
+       0.032,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.758,
+       0.8,
+       0.787,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MM_BasicProp"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1822,
+    "verts": 1852
+   },
+   {
+    "tris": 910,
+    "verts": 1005
+   },
+   {
+    "tris": 456,
+    "verts": 596
+   },
+   {
+    "tris": 228,
+    "verts": 350
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1822,
+  "area_m2": 1.49,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 13,
+    "cover": 0.0,
+    "facing_area_m2": 0.27
+   },
+   "-X": {
+    "tris_on_bound": 13,
+    "cover": 0.0,
+    "facing_area_m2": 0.27
+   },
+   "+Y": {
+    "tris_on_bound": 6,
+    "cover": 0.02,
+    "facing_area_m2": 0.27
+   },
+   "-Y": {
+    "tris_on_bound": 10,
+    "cover": 0.0,
+    "facing_area_m2": 0.27
+   },
+   "+Z": {
+    "tris_on_bound": 24,
+    "cover": 0.01,
+    "facing_area_m2": 0.2
+   },
+   "-Z": {
+    "tris_on_bound": 40,
+    "cover": 0.03,
+    "facing_area_m2": 0.2
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.42,
+   0.47,
+   0.38
+  ],
+  "uv0": {
+   "u_along": [
+    0.13,
+    0.46,
+    0.61
+   ],
+   "v_along": [
+    0.66,
+    0.33,
+    0.22
+   ],
+   "cm_per_u": 223.9,
+   "cm_per_v": 215.4
+  },
+  "pack": "Philippines_Markets"
+ },
+ "/Game/Philippines_Markets/Props/Plastic_Crate_Set_01/SM_Plastic_Crate_01": {
+  "bounds_min": [
+   -27.0,
+   -20.1,
+   -0.0
+  ],
+  "bounds_max": [
+   27.0,
+   20.1,
+   33.0
+  ],
+  "size": [
+   54.1,
+   40.1,
+   33.0
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MI_Plastic_Crate_Set_01",
+    "material": "/Game/Philippines_Markets/Materials/MI_Plastic_Crate_Set_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.054,
+       0.041,
+       0.045,
+       1.0
+      ],
+      "Basecolor Tint": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 02 Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.699,
+       0.052,
+       1.0,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MM_BasicProp"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 5848,
+    "verts": 10063
+   },
+   {
+    "tris": 2924,
+    "verts": 5928
+   },
+   {
+    "tris": 1462,
+    "verts": 3036
+   },
+   {
+    "tris": 730,
+    "verts": 1326
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -27.0,
+      -20.1,
+      -0.0
+     ],
+     "max": [
+      27.0,
+      20.1,
+      33.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 5848,
+  "area_m2": 1.63,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 342,
+    "cover": 0.64,
+    "facing_area_m2": 0.25
+   },
+   "-X": {
+    "tris_on_bound": 342,
+    "cover": 0.64,
+    "facing_area_m2": 0.25
+   },
+   "+Y": {
+    "tris_on_bound": 527,
+    "cover": 0.65,
+    "facing_area_m2": 0.29
+   },
+   "-Y": {
+    "tris_on_bound": 527,
+    "cover": 0.65,
+    "facing_area_m2": 0.29
+   },
+   "+Z": {
+    "tris_on_bound": 88,
+    "cover": 0.1,
+    "facing_area_m2": 0.28
+   },
+   "-Z": {
+    "tris_on_bound": 42,
+    "cover": 1.0,
+    "facing_area_m2": 0.28
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.3,
+   0.35,
+   0.39
+  ],
+  "uv0": {
+   "u_along": [
+    0.62,
+    0.28,
+    0.22
+   ],
+   "v_along": [
+    0.16,
+    0.42,
+    0.5
+   ],
+   "cm_per_u": 197.2,
+   "cm_per_v": 197.0
+  },
+  "pack": "Philippines_Markets"
+ },
+ "/Game/Philippines_Markets/Props/RiceBags_01/SM_Rice_Bag_Full_01": {
+  "bounds_min": [
+   -16.1,
+   -35.7,
+   0.2
+  ],
+  "bounds_max": [
+   16.1,
+   36.5,
+   84.5
+  ],
+  "size": [
+   32.2,
+   72.2,
+   84.3
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "ID_bag",
+    "material": "/Game/Philippines_Markets/Materials/MI_Rice_Bags",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Wear Color",
+      "Basecolor Tint",
+      "Tint 02 Color",
+      "Tint 01 Color",
+      "Fresnel Tint",
+      "Emmisive Color",
+      "Scale (Detail Normals)"
+     ],
+     "scalar": [
+      "Wear Strength",
+      "Wear Contrast",
+      "Wear Roughness Max",
+      "Normal_Strength (S)",
+      "Max Expensive Steps Debug Color",
+      "Height Ratio",
+      "Min Steps",
+      "Max Steps",
+      "Reference Plane",
+      "UV Tiling (U)",
+      "UV Tiling (V)",
+      "Contrast",
+      "Multiplier",
+      "Desat Basecolor",
+      "Tint 01 Contrast",
+      "Tint 01 Strength",
+      "Scale Multiplier",
+      "Color Overlay Strength",
+      "Tint 02 Contrast",
+      "Tint 02 Strength",
+      "ExponentIn",
+      "BaseReflect",
+      "Emmisive Strength",
+      "Normal_Strength (Detail)"
+     ],
+     "texture": [
+      "ORM Texture",
+      "Base Colour Texture",
+      "Normal Texture",
+      "POM_Heightmap",
+      "Wear/Tint Mask",
+      "Color Variation Texture"
+     ],
+     "vector_values": {
+      "Wear Color": [
+       0.062,
+       0.05,
+       0.049,
+       1.0
+      ],
+      "Basecolor Tint": [
+       0.613,
+       0.574,
+       0.472,
+       1.0
+      ],
+      "Tint 02 Color": [
+       1.2,
+       1.177,
+       1.031,
+       1.0
+      ],
+      "Tint 01 Color": [
+       0.781,
+       0.761,
+       0.719,
+       1.0
+      ],
+      "Fresnel Tint": [
+       0.5,
+       0.5,
+       0.5,
+       1.0
+      ],
+      "Emmisive Color": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "Scale (Detail Normals)": [
+       5.0,
+       5.0,
+       0.0,
+       1.0
+      ]
+     },
+     "parent": "/Game/Philippines_Markets/Materials/MM_BasicProp"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1212,
+    "verts": 680
+   },
+   {
+    "tris": 606,
+    "verts": 357
+   },
+   {
+    "tris": 302,
+    "verts": 195
+   },
+   {
+    "tris": 152,
+    "verts": 106
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1212,
+  "area_m2": 1.38,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 41,
+    "cover": 0.12,
+    "facing_area_m2": 0.46
+   },
+   "-X": {
+    "tris_on_bound": 37,
+    "cover": 0.11,
+    "facing_area_m2": 0.46
+   },
+   "+Y": {
+    "tris_on_bound": 6,
+    "cover": 0.01,
+    "facing_area_m2": 0.13
+   },
+   "-Y": {
+    "tris_on_bound": 3,
+    "cover": 0.0,
+    "facing_area_m2": 0.13
+   },
+   "+Z": {
+    "tris_on_bound": 42,
+    "cover": 0.09,
+    "facing_area_m2": 0.09
+   },
+   "-Z": {
+    "tris_on_bound": 146,
+    "cover": 0.39,
+    "facing_area_m2": 0.11
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.74,
+   0.33,
+   0.27
+  ],
+  "uv0": {
+   "u_along": [
+    0.33,
+    0.85,
+    0.08
+   ],
+   "v_along": [
+    0.26,
+    0.08,
+    0.88
+   ],
+   "cm_per_u": 438.5,
+   "cm_per_v": 436.8
+  },
+  "pack": "Philippines_Markets"
+ }
+}

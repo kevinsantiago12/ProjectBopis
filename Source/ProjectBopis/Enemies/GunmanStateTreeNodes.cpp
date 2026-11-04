@@ -50,14 +50,15 @@ EStateTreeRunStatus FGunmanMoveTask::EnterState(FStateTreeExecutionContext& Cont
 
 	Data.Destination = Destination;
 	const EPathFollowingRequestResult::Type Result = AI->MoveToLocation(Destination, Acceptance, bStopOnOverlap, true, true, true);
-	if (Result == EPathFollowingRequestResult::Failed)
-	{
-		Enemy->ReportUnreachable(Destination);
-		return EStateTreeRunStatus::Failed;
-	}
 
 	// Searching keeps going on the spot (see Tick); anything else is done once there.
 	const bool bKeepsSearching = Data.Goal == EGunmanMoveGoal::LastKnownPosition && Data.bFollowNewInfo;
+	if (Result == EPathFollowingRequestResult::Failed)
+	{
+		Enemy->ReportUnreachable(Destination);
+		// Searching with no way there: it waits where it stands until the lead goes cold.
+		return bKeepsSearching ? EStateTreeRunStatus::Running : EStateTreeRunStatus::Failed;
+	}
 	return (Result == EPathFollowingRequestResult::AlreadyAtGoal && !bKeepsSearching)
 		? EStateTreeRunStatus::Succeeded
 		: EStateTreeRunStatus::Running;
@@ -73,14 +74,22 @@ EStateTreeRunStatus FGunmanMoveTask::Tick(FStateTreeExecutionContext& Context, c
 	}
 
 	// Searching: a newer sighting or sound moves the goal — head there instead. It never
-	// finishes; finding the player again is what ends a search (the tree's transition).
+	// finishes; finding the player again, or the lead going cold, ends a search (the tree's
+	// transitions).
 	if (Data.Goal == EGunmanMoveGoal::LastKnownPosition && Data.bFollowNewInfo)
 	{
-		const AEnemyBase* Enemy = Cast<AEnemyBase>(AI->GetPawn());
+		AEnemyBase* Enemy = Cast<AEnemyBase>(AI->GetPawn());
 		if (Enemy && FVector::Dist2D(Enemy->GetLastKnownPlayerLocation(), Data.Destination) > 200.0f)
 		{
 			Data.Destination = Enemy->GetLastKnownPlayerLocation();
 			AI->MoveToLocation(Data.Destination, Data.AcceptanceRadius, true, true, true, true);
+		}
+		// Stopped short of the spot (a partial path, or none): as close as it's going to get.
+		// On the spot itself, the enemy's own check runs the wait.
+		else if (Enemy && !Enemy->IsLeadGone() && AI->GetMoveStatus() == EPathFollowingStatus::Idle
+			&& FVector::Dist2D(Enemy->GetActorLocation(), Enemy->GetLastKnownPlayerLocation()) >= 250.0f)
+		{
+			Enemy->WaitShortOfLastKnown(DeltaTime);
 		}
 		return EStateTreeRunStatus::Running;
 	}

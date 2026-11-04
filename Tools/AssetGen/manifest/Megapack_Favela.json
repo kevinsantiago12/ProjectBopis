@@ -1,0 +1,4522 @@
+{
+ "/Game/Megapack/Meshes/Favela/SM_windows_06": {
+  "bounds_min": [
+   -172.3,
+   -12.3,
+   -0.0
+  ],
+  "bounds_max": [
+   0.0,
+   0.0,
+   80.2
+  ],
+  "size": [
+   172.3,
+   12.3,
+   80.2
+  ],
+  "pivot": "x:max y:max z:min",
+  "extends": "-X -Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Windows_02",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 56,
+    "verts": 96
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 2,
+   "boxes": [
+    {
+     "min": [
+      -172.3,
+      -12.3,
+      -0.0
+     ],
+     "max": [
+      0.0,
+      0.0,
+      80.2
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 56,
+  "area_m2": 2.08,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.39
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.39
+   },
+   "+Y": {
+    "tris_on_bound": 8,
+    "cover": 0.12,
+    "facing_area_m2": 0.24
+   },
+   "-Y": {
+    "tris_on_bound": 8,
+    "cover": 0.12,
+    "facing_area_m2": 0.24
+   },
+   "+Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.42
+   },
+   "-Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.42
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.37,
+   0.23,
+   0.4
+  ],
+  "corners": [
+   [
+    -172.3,
+    -12.3,
+    -0.0
+   ],
+   [
+    -172.3,
+    -12.3,
+    80.2
+   ],
+   [
+    -172.3,
+    0.0,
+    -0.0
+   ],
+   [
+    -172.3,
+    0.0,
+    80.2
+   ],
+   [
+    -169.0,
+    -12.3,
+    3.3
+   ],
+   [
+    -169.0,
+    -12.3,
+    76.9
+   ],
+   [
+    -169.0,
+    0.0,
+    3.3
+   ],
+   [
+    -169.0,
+    0.0,
+    76.9
+   ],
+   [
+    -131.8,
+    -10.6,
+    3.1
+   ],
+   [
+    -131.8,
+    -10.6,
+    76.9
+   ],
+   [
+    -131.8,
+    -1.7,
+    3.1
+   ],
+   [
+    -131.8,
+    -1.7,
+    76.9
+   ],
+   [
+    -128.5,
+    -10.6,
+    3.1
+   ],
+   [
+    -128.5,
+    -10.6,
+    76.9
+   ],
+   [
+    -128.5,
+    -1.7,
+    3.1
+   ],
+   [
+    -128.5,
+    -1.7,
+    76.9
+   ],
+   [
+    -87.8,
+    -10.6,
+    3.1
+   ],
+   [
+    -87.8,
+    -10.6,
+    76.9
+   ],
+   [
+    -87.8,
+    -1.7,
+    3.1
+   ],
+   [
+    -87.8,
+    -1.7,
+    76.9
+   ],
+   [
+    -84.5,
+    -10.6,
+    3.1
+   ],
+   [
+    -84.5,
+    -10.6,
+    76.9
+   ],
+   [
+    -84.5,
+    -1.7,
+    3.1
+   ],
+   [
+    -84.5,
+    -1.7,
+    76.9
+   ],
+   [
+    -44.3,
+    -10.6,
+    3.1
+   ],
+   [
+    -44.3,
+    -10.6,
+    76.9
+   ],
+   [
+    -44.3,
+    -1.7,
+    3.1
+   ],
+   [
+    -44.3,
+    -1.7,
+    76.9
+   ],
+   [
+    -41.0,
+    -10.6,
+    3.1
+   ],
+   [
+    -41.0,
+    -10.6,
+    76.9
+   ],
+   [
+    -41.0,
+    -1.7,
+    3.1
+   ],
+   [
+    -41.0,
+    -1.7,
+    76.9
+   ],
+   [
+    -3.3,
+    -12.3,
+    3.3
+   ],
+   [
+    -3.3,
+    -12.3,
+    76.9
+   ],
+   [
+    -3.3,
+    0.0,
+    3.3
+   ],
+   [
+    -3.3,
+    0.0,
+    76.9
+   ],
+   [
+    0.0,
+    -12.3,
+    -0.0
+   ],
+   [
+    0.0,
+    -12.3,
+    80.2
+   ],
+   [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   [
+    0.0,
+    0.0,
+    80.2
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.51,
+    0.3,
+    0.18
+   ],
+   "v_along": [
+    0.11,
+    0.47,
+    0.42
+   ],
+   "cm_per_u": 631.2,
+   "cm_per_v": 631.2
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      -128.3,
+      -12.3,
+      4.0
+     ],
+     "max": [
+      -88.3,
+      0.0,
+      76.0
+     ],
+     "area_m2": 0.29,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      -84.3,
+      -12.3,
+      4.0
+     ],
+     "max": [
+      -44.3,
+      0.0,
+      76.0
+     ],
+     "area_m2": 0.29,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      -168.3,
+      -12.3,
+      4.0
+     ],
+     "max": [
+      -132.3,
+      0.0,
+      76.0
+     ],
+     "area_m2": 0.26,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      -40.3,
+      -12.3,
+      4.0
+     ],
+     "max": [
+      -4.3,
+      0.0,
+      76.0
+     ],
+     "area_m2": 0.26,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      -172.3,
+      -12.3,
+      -0.0
+     ],
+     "max": [
+      3.7,
+      0.0,
+      84.0
+     ],
+     "area_m2": 0.1,
+     "fill": 0.07,
+     "touches": [
+      "-X",
+      "+X",
+      "-Z",
+      "+Z"
+     ]
+    }
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wooden_part_03": {
+  "bounds_min": [
+   -373.1,
+   -10.4,
+   -0.5
+  ],
+  "bounds_max": [
+   1.3,
+   0.0,
+   76.1
+  ],
+  "size": [
+   374.4,
+   10.4,
+   76.6
+  ],
+  "pivot": "x:max y:max z:min",
+  "extends": "-X -Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "02 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_wooden_part_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 298,
+    "verts": 596
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -373.1,
+      -10.4,
+      -0.5
+     ],
+     "max": [
+      1.3,
+      0.0,
+      76.1
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 298,
+  "area_m2": 7.98,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 10,
+    "cover": 0.99,
+    "facing_area_m2": 0.54
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 0.17,
+    "facing_area_m2": 0.49
+   },
+   "+Y": {
+    "tris_on_bound": 2,
+    "cover": 0.58,
+    "facing_area_m2": 2.28
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.21,
+    "facing_area_m2": 3.84
+   },
+   "+Z": {
+    "tris_on_bound": 1,
+    "cover": 0.01,
+    "facing_area_m2": 0.42
+   },
+   "-Z": {
+    "tris_on_bound": 46,
+    "cover": 0.86,
+    "facing_area_m2": 0.42
+   }
+  },
+  "open_faces": [
+   "+Z"
+  ],
+  "normal_spread": [
+   0.14,
+   0.78,
+   0.11
+  ],
+  "uv0": {
+   "u_along": [
+    0.65,
+    0.0,
+    0.38
+   ],
+   "v_along": [
+    0.25,
+    0.23,
+    0.55
+   ],
+   "cm_per_u": 445.1,
+   "cm_per_v": 445.1
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wooden_part_05": {
+  "bounds_min": [
+   -190.5,
+   -4.4,
+   -0.0
+  ],
+  "bounds_max": [
+   -0.0,
+   0.0,
+   15.7
+  ],
+  "size": [
+   190.5,
+   4.4,
+   15.7
+  ],
+  "pivot": "x:max y:max z:min",
+  "extends": "-X -Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "02 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_wooden_part_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 52,
+    "verts": 92
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -190.5,
+      -4.4,
+      -0.0
+     ],
+     "max": [
+      -0.0,
+      0.0,
+      15.7
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 52,
+  "area_m2": 1.4,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.91,
+    "facing_area_m2": 0.01
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.92,
+    "facing_area_m2": 0.01
+   },
+   "+Y": {
+    "tris_on_bound": 6,
+    "cover": 0.98,
+    "facing_area_m2": 0.59
+   },
+   "-Y": {
+    "tris_on_bound": 4,
+    "cover": 0.9,
+    "facing_area_m2": 0.55
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.93,
+    "facing_area_m2": 0.12
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 0.95,
+    "facing_area_m2": 0.12
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.01,
+   0.85,
+   0.17
+  ],
+  "corners": [
+   [
+    -190.5,
+    -4.4,
+    0.1
+   ],
+   [
+    -190.5,
+    -4.4,
+    15.7
+   ],
+   [
+    -190.5,
+    -2.4,
+    0.1
+   ],
+   [
+    -190.5,
+    -2.4,
+    7.9
+   ],
+   [
+    -190.5,
+    -2.4,
+    15.7
+   ],
+   [
+    -190.5,
+    -2.0,
+    15.4
+   ],
+   [
+    -190.5,
+    0.0,
+    0.0
+   ],
+   [
+    -190.5,
+    -0.0,
+    15.4
+   ],
+   [
+    -189.8,
+    -4.4,
+    9.0
+   ],
+   [
+    -189.8,
+    -2.0,
+    1.1
+   ],
+   [
+    -189.4,
+    -4.4,
+    7.9
+   ],
+   [
+    -43.2,
+    -2.0,
+    0.3
+   ],
+   [
+    -42.9,
+    -2.0,
+    15.4
+   ],
+   [
+    -42.9,
+    0.0,
+    0.0
+   ],
+   [
+    -42.9,
+    -0.0,
+    15.4
+   ],
+   [
+    -15.2,
+    -2.0,
+    0.1
+   ],
+   [
+    -14.8,
+    -2.0,
+    15.4
+   ],
+   [
+    -14.8,
+    0.0,
+    0.0
+   ],
+   [
+    -14.8,
+    -0.0,
+    15.4
+   ],
+   [
+    -0.7,
+    -4.4,
+    6.3
+   ],
+   [
+    -0.6,
+    -4.4,
+    7.9
+   ],
+   [
+    -0.6,
+    -2.0,
+    -0.0
+   ],
+   [
+    -0.0,
+    -4.4,
+    0.1
+   ],
+   [
+    -0.0,
+    -4.4,
+    15.7
+   ],
+   [
+    -0.0,
+    -2.4,
+    0.1
+   ],
+   [
+    -0.0,
+    -2.4,
+    7.9
+   ],
+   [
+    -0.0,
+    -2.4,
+    15.7
+   ],
+   [
+    -0.0,
+    -2.0,
+    15.4
+   ],
+   [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   [
+    -0.0,
+    -0.0,
+    15.4
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.94,
+    0.0,
+    0.07
+   ],
+   "v_along": [
+    0.06,
+    0.17,
+    0.8
+   ],
+   "cm_per_u": 445.1,
+   "cm_per_v": 450.2
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Pillar_01": {
+  "bounds_min": [
+   -21.0,
+   -21.3,
+   -0.0
+  ],
+  "bounds_max": [
+   21.5,
+   21.1,
+   797.1
+  ],
+  "size": [
+   42.4,
+   42.3,
+   797.1
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_StreetLampA_03",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "EmissiveColor"
+     ],
+     "scalar": [
+      "EmissiveMultiply"
+     ],
+     "texture": [
+      "BC",
+      "ORM",
+      "N",
+      "E"
+     ],
+     "vector_values": {
+      "EmissiveColor": [
+       0.932,
+       0.888,
+       0.748,
+       1.0
+      ]
+     },
+     "parent": "/Game/Megapack/Material/Favela/M_StreetLamp_02"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 976,
+    "verts": 969
+   },
+   {
+    "tris": 488,
+    "verts": 523
+   },
+   {
+    "tris": 292,
+    "verts": 328
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 256
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -16.5,
+      -11.3,
+      0.0
+     ],
+     "max": [
+      16.6,
+      11.3,
+      797.1
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 976,
+  "area_m2": 7.82,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 4,
+    "cover": 0.0,
+    "facing_area_m2": 1.61
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.0,
+    "facing_area_m2": 1.81
+   },
+   "+Y": {
+    "tris_on_bound": 7,
+    "cover": 0.0,
+    "facing_area_m2": 1.81
+   },
+   "-Y": {
+    "tris_on_bound": 6,
+    "cover": 0.0,
+    "facing_area_m2": 1.81
+   },
+   "+Z": {
+    "tris_on_bound": 138,
+    "cover": 0.67,
+    "facing_area_m2": 0.46
+   },
+   "-Z": {
+    "tris_on_bound": 35,
+    "cover": 0.77,
+    "facing_area_m2": 0.33
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.57,
+   0.57,
+   0.1
+  ],
+  "uv0": {
+   "u_along": [
+    0.62,
+    0.64,
+    0.02
+   ],
+   "v_along": [
+    0.09,
+    0.07,
+    0.88
+   ],
+   "cm_per_u": 411.7,
+   "cm_per_v": 411.7
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Slate_01": {
+  "bounds_min": [
+   -193.0,
+   -112.0,
+   71.2
+  ],
+  "bounds_max": [
+   189.7,
+   41.8,
+   79.0
+  ],
+  "size": [
+   382.7,
+   153.8,
+   7.8
+  ],
+  "pivot": "x:centre y:offset z:offset",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "02 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Slate_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2872,
+    "verts": 1936
+   },
+   {
+    "tris": 1436,
+    "verts": 926
+   },
+   {
+    "tris": 862,
+    "verts": 614
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -192.7,
+      -112.0,
+      71.7
+     ],
+     "max": [
+      189.5,
+      41.8,
+      78.6
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2872,
+  "area_m2": 13.67,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 476,
+    "cover": 0.1,
+    "facing_area_m2": 0.02
+   },
+   "-X": {
+    "tris_on_bound": 476,
+    "cover": 0.1,
+    "facing_area_m2": 0.02
+   },
+   "+Y": {
+    "tris_on_bound": 4,
+    "cover": 0.04,
+    "facing_area_m2": 0.01
+   },
+   "-Y": {
+    "tris_on_bound": 4,
+    "cover": 0.04,
+    "facing_area_m2": 0.01
+   },
+   "+Z": {
+    "tris_on_bound": 48,
+    "cover": 0.1,
+    "facing_area_m2": 6.8
+   },
+   "-Z": {
+    "tris_on_bound": 28,
+    "cover": 0.07,
+    "facing_area_m2": 6.79
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.01,
+   0.43,
+   0.86
+  ],
+  "uv0": {
+   "u_along": [
+    0.0,
+    0.87,
+    0.43
+   ],
+   "v_along": [
+    1.0,
+    0.0,
+    0.01
+   ],
+   "cm_per_u": 410.6,
+   "cm_per_v": 389.5
+  },
+  "top_profile": {
+   "along": "X",
+   "bins": [
+    [
+     -193.0,
+     -161.1,
+     null
+    ],
+    [
+     -161.1,
+     -129.2,
+     null
+    ],
+    [
+     -129.2,
+     -97.3,
+     78.6
+    ],
+    [
+     -97.3,
+     -65.4,
+     null
+    ],
+    [
+     -65.4,
+     -33.5,
+     78.6
+    ],
+    [
+     -33.5,
+     -1.6,
+     null
+    ],
+    [
+     -1.6,
+     30.3,
+     null
+    ],
+    [
+     30.3,
+     62.1,
+     78.6
+    ],
+    [
+     62.1,
+     94.0,
+     null
+    ],
+    [
+     94.0,
+     125.9,
+     78.6
+    ],
+    [
+     125.9,
+     157.8,
+     null
+    ],
+    [
+     157.8,
+     189.7,
+     null
+    ]
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wall_Tile_01": {
+  "bounds_min": [
+   0.0,
+   -20.0,
+   0.0
+  ],
+  "bounds_max": [
+   225.0,
+   0.0,
+   300.0
+  ],
+  "size": [
+   225.0,
+   20.0,
+   300.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ]
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 96,
+    "verts": 90
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      0.0,
+      -20.0,
+      0.0
+     ],
+     "max": [
+      225.0,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 96,
+  "area_m2": 15.6,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "+Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 6.75
+   },
+   "-Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 6.75
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.45
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.45
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.08,
+   0.87,
+   0.06
+  ],
+  "uv0": {
+   "u_along": [
+    0.92,
+    0.08,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.06,
+    0.94
+   ],
+   "cm_per_u": 225.0,
+   "cm_per_v": 213.3
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wall_Tile_Blue": {
+  "bounds_min": [
+   0.0,
+   -20.0,
+   0.0
+  ],
+  "bounds_max": [
+   225.0,
+   0.0,
+   300.0
+  ],
+  "size": [
+   225.0,
+   20.0,
+   300.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/MI_Wall_Brick_yellow_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 96,
+    "verts": 90
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      0.0,
+      -20.0,
+      0.0
+     ],
+     "max": [
+      225.0,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 96,
+  "area_m2": 15.6,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "+Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 6.75
+   },
+   "-Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 6.75
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.45
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.45
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.08,
+   0.87,
+   0.06
+  ],
+  "uv0": {
+   "u_along": [
+    0.92,
+    0.08,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.06,
+    0.94
+   ],
+   "cm_per_u": 225.0,
+   "cm_per_v": 213.3
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wall_Tile_03": {
+  "bounds_min": [
+   0.0,
+   -20.0,
+   0.0
+  ],
+  "bounds_max": [
+   112.5,
+   0.0,
+   300.0
+  ],
+  "size": [
+   112.5,
+   20.0,
+   300.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/MI_Wall_Brick_White_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01"
+    },
+    "area_share": 0.903
+   },
+   {
+    "index": 1,
+    "name": "RadBricks_ncl1_2",
+    "material": "/Game/Megapack/Material/Favela/MI_Wall_Brick_White_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01"
+    },
+    "area_share": 0.097
+   }
+  ],
+  "lods": [
+   {
+    "tris": 68,
+    "verts": 79
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      0.0,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      112.5,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 68,
+  "area_m2": 8.4,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 10,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "+Y": {
+    "tris_on_bound": 20,
+    "cover": 1.0,
+    "facing_area_m2": 3.37
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 1.0,
+    "facing_area_m2": 3.37
+   },
+   "+Z": {
+    "tris_on_bound": 4,
+    "cover": 1.0,
+    "facing_area_m2": 0.23
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 1.0,
+    "facing_area_m2": 0.23
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.14,
+   0.8,
+   0.05
+  ],
+  "corners": [
+   [
+    0.0,
+    -20.0,
+    0.0
+   ],
+   [
+    0.0,
+    -20.0,
+    38.6
+   ],
+   [
+    0.0,
+    -20.0,
+    75.0
+   ],
+   [
+    0.0,
+    -20.0,
+    150.0
+   ],
+   [
+    0.0,
+    -20.0,
+    225.0
+   ],
+   [
+    0.0,
+    -20.0,
+    300.0
+   ],
+   [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0,
+    38.6
+   ],
+   [
+    0.0,
+    -0.0,
+    75.0
+   ],
+   [
+    0.0,
+    -0.0,
+    150.0
+   ],
+   [
+    0.0,
+    -0.0,
+    225.0
+   ],
+   [
+    0.0,
+    -0.0,
+    300.0
+   ],
+   [
+    56.2,
+    -20.0,
+    0.0
+   ],
+   [
+    56.2,
+    -20.0,
+    38.6
+   ],
+   [
+    56.2,
+    -20.0,
+    75.0
+   ],
+   [
+    56.2,
+    -0.0,
+    0.0
+   ],
+   [
+    56.2,
+    -0.0,
+    38.6
+   ],
+   [
+    56.2,
+    -0.0,
+    75.0
+   ],
+   [
+    56.3,
+    -20.0,
+    150.0
+   ],
+   [
+    56.3,
+    -20.0,
+    225.0
+   ],
+   [
+    56.3,
+    -20.0,
+    300.0
+   ],
+   [
+    56.3,
+    -0.0,
+    150.0
+   ],
+   [
+    56.3,
+    -0.0,
+    225.0
+   ],
+   [
+    56.3,
+    -0.0,
+    300.0
+   ],
+   [
+    112.5,
+    -20.0,
+    -0.0
+   ],
+   [
+    112.5,
+    -20.0,
+    38.6
+   ],
+   [
+    112.5,
+    -20.0,
+    75.0
+   ],
+   [
+    112.5,
+    -20.0,
+    150.0
+   ],
+   [
+    112.5,
+    -20.0,
+    225.0
+   ],
+   [
+    112.5,
+    -20.0,
+    300.0
+   ],
+   [
+    112.5,
+    0.0,
+    -0.0
+   ],
+   [
+    112.5,
+    0.0,
+    38.6
+   ],
+   [
+    112.5,
+    0.0,
+    75.0
+   ],
+   [
+    112.5,
+    -0.0,
+    150.0
+   ],
+   [
+    112.5,
+    0.0,
+    225.0
+   ],
+   [
+    112.5,
+    -0.0,
+    300.0
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.86,
+    0.14,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.05,
+    0.95
+   ],
+   "cm_per_u": 225.0,
+   "cm_per_v": 213.3
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_WallDoor_01": {
+  "bounds_min": [
+   -0.0,
+   -20.0,
+   -0.0
+  ],
+  "bounds_max": [
+   225.0,
+   0.0,
+   300.0
+  ],
+  "size": [
+   225.0,
+   20.0,
+   300.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ]
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 84,
+    "verts": 108
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 3,
+   "boxes": [
+    {
+     "min": [
+      -0.7,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      56.5,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "min": [
+      165.8,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      223.0,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "min": [
+      56.1,
+      -20.0,
+      219.5
+     ],
+     "max": [
+      170.4,
+      0.0,
+      301.7
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 84,
+  "area_m2": 11.65,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.04
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.04
+   },
+   "+Y": {
+    "tris_on_bound": 20,
+    "cover": 0.64,
+    "facing_area_m2": 4.33
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 0.64,
+    "facing_area_m2": 4.33
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.45
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 0.51,
+    "facing_area_m2": 0.45
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.18,
+   0.74,
+   0.08
+  ],
+  "uv0": {
+   "u_along": [
+    0.82,
+    0.18,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.08,
+    0.92
+   ],
+   "cm_per_u": 220.7,
+   "cm_per_v": 213.3
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      56.0,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      168.0,
+      0.0,
+      220.0
+     ],
+     "area_m2": 2.46,
+     "fill": 1.0,
+     "touches": [
+      "-Z"
+     ]
+    },
+    {
+     "min": [
+      -0.0,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      228.0,
+      0.0,
+      304.0
+     ],
+     "area_m2": 0.21,
+     "fill": 0.03,
+     "touches": [
+      "-X",
+      "+X",
+      "-Z",
+      "+Z"
+     ]
+    }
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wall_Windows_01": {
+  "bounds_min": [
+   -0.0,
+   -20.0,
+   -0.0
+  ],
+  "bounds_max": [
+   225.0,
+   0.0,
+   300.0
+  ],
+  "size": [
+   225.0,
+   20.0,
+   300.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ]
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 96,
+    "verts": 112
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 4,
+   "boxes": [
+    {
+     "min": [
+      -2.4,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      56.3,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "min": [
+      166.1,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      224.8,
+      0.0,
+      300.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "min": [
+      54.0,
+      -20.0,
+      -11.3
+     ],
+     "max": [
+      172.7,
+      0.0,
+      89.6
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "min": [
+      54.0,
+      -20.0,
+      219.9
+     ],
+     "max": [
+      172.7,
+      0.0,
+      298.4
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 96,
+  "area_m2": 13.71,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.86
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.86
+   },
+   "+Y": {
+    "tris_on_bound": 24,
+    "cover": 0.79,
+    "facing_area_m2": 5.32
+   },
+   "-Y": {
+    "tris_on_bound": 24,
+    "cover": 0.79,
+    "facing_area_m2": 5.32
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.67
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.67
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.13,
+   0.78,
+   0.1
+  ],
+  "uv0": {
+   "u_along": [
+    0.87,
+    0.13,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.1,
+    0.9
+   ],
+   "cm_per_u": 221.6,
+   "cm_per_v": 213.3
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      56.0,
+      -20.0,
+      92.0
+     ],
+     "max": [
+      168.0,
+      0.0,
+      220.0
+     ],
+     "area_m2": 1.43,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      -0.0,
+      -20.0,
+      -0.0
+     ],
+     "max": [
+      228.0,
+      0.0,
+      304.0
+     ],
+     "area_m2": 0.21,
+     "fill": 0.03,
+     "touches": [
+      "-X",
+      "+X",
+      "-Z",
+      "+Z"
+     ]
+    }
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Wall_14": {
+  "bounds_min": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "bounds_max": [
+   20.0,
+   200.5,
+   106.4
+  ],
+  "size": [
+   20.0,
+   200.5,
+   106.4
+  ],
+  "pivot": "x:min y:min z:min",
+  "extends": "+X +Y +Z",
+  "long_axis": "Y",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks",
+    "material": "/Game/Megapack/Material/Favela/M_Bricks_Bland_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [
+      "BlandContrast"
+     ],
+     "texture": [
+      "Hight_map",
+      "First_BC",
+      "Second_BC",
+      "First_ORM",
+      "Second_ORM",
+      "First_Normal",
+      "Second_Normal"
+     ]
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 12,
+    "verts": 24
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "max": [
+      20.0,
+      200.5,
+      106.4
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 12,
+  "area_m2": 5.5,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 2.13
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 2.13
+   },
+   "+Y": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.21
+   },
+   "-Y": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.21
+   },
+   "+Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.4
+   },
+   "-Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 0.4
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.78,
+   0.08,
+   0.15
+  ],
+  "corners": [
+   [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0,
+    106.4
+   ],
+   [
+    0.0,
+    200.5,
+    0.0
+   ],
+   [
+    0.0,
+    200.5,
+    106.4
+   ],
+   [
+    20.0,
+    -0.0,
+    0.0
+   ],
+   [
+    20.0,
+    -0.0,
+    106.4
+   ],
+   [
+    20.0,
+    200.5,
+    0.0
+   ],
+   [
+    20.0,
+    200.5,
+    106.4
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.08,
+    0.92,
+    0.0
+   ],
+   "v_along": [
+    0.15,
+    0.0,
+    0.85
+   ],
+   "cm_per_u": 300.9,
+   "cm_per_v": 301.0
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_MainBorder_04": {
+  "bounds_min": [
+   -0.2,
+   -13.2,
+   -7.9
+  ],
+  "bounds_max": [
+   150.0,
+   13.2,
+   7.9
+  ],
+  "size": [
+   150.2,
+   26.4,
+   15.9
+  ],
+  "pivot": "x:min y:centre z:centre",
+  "extends": "+X \u00b1Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "default",
+    "material": "/Game/Megapack/Material/Favela/MI_MainBorderBright_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2510,
+    "verts": 1416
+   },
+   {
+    "tris": 1254,
+    "verts": 773
+   },
+   {
+    "tris": 502,
+    "verts": 348
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -0.0,
+      -13.2,
+      -7.9
+     ],
+     "max": [
+      150.0,
+      13.2,
+      7.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2510,
+  "area_m2": 1.24,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 73,
+    "cover": 0.84,
+    "facing_area_m2": 0.04
+   },
+   "-X": {
+    "tris_on_bound": 93,
+    "cover": 0.82,
+    "facing_area_m2": 0.03
+   },
+   "+Y": {
+    "tris_on_bound": 572,
+    "cover": 0.72,
+    "facing_area_m2": 0.22
+   },
+   "-Y": {
+    "tris_on_bound": 449,
+    "cover": 0.87,
+    "facing_area_m2": 0.21
+   },
+   "+Z": {
+    "tris_on_bound": 562,
+    "cover": 0.87,
+    "facing_area_m2": 0.36
+   },
+   "-Z": {
+    "tris_on_bound": 368,
+    "cover": 0.95,
+    "facing_area_m2": 0.38
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.08,
+   0.37,
+   0.62
+  ],
+  "uv0": {
+   "u_along": [
+    0.02,
+    0.67,
+    0.37
+   ],
+   "v_along": [
+    0.94,
+    0.03,
+    0.08
+   ],
+   "cm_per_u": 168.5,
+   "cm_per_v": 167.9
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_windows_02": {
+  "bounds_min": [
+   -55.0,
+   -14.0,
+   -3.5
+  ],
+  "bounds_max": [
+   55.0,
+   16.0,
+   129.8
+  ],
+  "size": [
+   109.9,
+   30.1,
+   133.3
+  ],
+  "pivot": "x:centre y:offset z:offset",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "03 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Window_02",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 0.543
+   },
+   {
+    "index": 1,
+    "name": "03 - Default_ncl1_1",
+    "material": "/Game/Megapack/Material/Favela/MI_T_WindowGlass_01",
+    "blend": "BLEND_ADDITIVE",
+    "two_sided": "True",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "AO Roughness Metallic",
+      "Normal Map",
+      "Transparent mask"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Door_02"
+    },
+    "area_share": 0.457
+   }
+  ],
+  "lods": [
+   {
+    "tris": 856,
+    "verts": 946
+   },
+   {
+    "tris": 428,
+    "verts": 657
+   },
+   {
+    "tris": 256,
+    "verts": 494
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -55.0,
+      -14.0,
+      -3.5
+     ],
+     "max": [
+      55.0,
+      16.0,
+      129.8
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 856,
+  "area_m2": 5.03,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 10,
+    "cover": 0.26,
+    "facing_area_m2": 0.27
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 0.26,
+    "facing_area_m2": 0.27
+   },
+   "+Y": {
+    "tris_on_bound": 2,
+    "cover": 0.03,
+    "facing_area_m2": 1.76
+   },
+   "-Y": {
+    "tris_on_bound": 3,
+    "cover": 0.03,
+    "facing_area_m2": 1.77
+   },
+   "+Z": {
+    "tris_on_bound": 152,
+    "cover": 0.27,
+    "facing_area_m2": 0.5
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 0.44,
+    "facing_area_m2": 0.5
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.11,
+   0.7,
+   0.2
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.31,
+    0.13
+   ],
+   "v_along": [
+    0.32,
+    0.0,
+    0.67
+   ],
+   "cm_per_u": 221.8,
+   "cm_per_v": 221.8
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      -55.0,
+      -14.0,
+      -3.5
+     ],
+     "max": [
+      57.0,
+      16.0,
+      132.5
+     ],
+     "area_m2": 0.1,
+     "fill": 0.06,
+     "touches": [
+      "-X",
+      "+X",
+      "-Z",
+      "+Z"
+     ]
+    }
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Door_01": {
+  "bounds_min": [
+   -53.3,
+   -9.7,
+   1.2
+  ],
+  "bounds_max": [
+   53.3,
+   9.7,
+   218.9
+  ],
+  "size": [
+   106.6,
+   19.4,
+   217.7
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "03 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 0.885
+   },
+   {
+    "index": 1,
+    "name": "03 - Default_ncl1_1",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_02",
+    "blend": "BLEND_ADDITIVE",
+    "two_sided": "True",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "AO Roughness Metallic",
+      "Normal Map",
+      "Transparent mask"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Door_02"
+    },
+    "area_share": 0.115
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1192,
+    "verts": 1134
+   },
+   {
+    "tris": 596,
+    "verts": 674
+   },
+   {
+    "tris": 238,
+    "verts": 333
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -53.3,
+      -9.7,
+      1.2
+     ],
+     "max": [
+      53.3,
+      9.7,
+      218.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 1192,
+  "area_m2": 7.14,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 20,
+    "cover": 0.22,
+    "facing_area_m2": 0.23
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.23
+   },
+   "+Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.12
+   },
+   "-Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.13
+   },
+   "+Z": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.2
+   },
+   "-Z": {
+    "tris_on_bound": 10,
+    "cover": 0.42,
+    "facing_area_m2": 0.24
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.07,
+   0.87,
+   0.07
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.13,
+    0.32
+   ],
+   "v_along": [
+    0.37,
+    0.01,
+    0.63
+   ],
+   "cm_per_u": 325.7,
+   "cm_per_v": 326.7
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Door_01_Blue": {
+  "bounds_min": [
+   -53.3,
+   -9.7,
+   1.2
+  ],
+  "bounds_max": [
+   53.3,
+   9.7,
+   218.9
+  ],
+  "size": [
+   106.6,
+   19.4,
+   217.7
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "03 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_Blue_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Rad Color",
+      "Green Color"
+     ],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Color Mask",
+      "Normal Map",
+      "ORM"
+     ],
+     "vector_values": {
+      "Rad Color": [
+       0.151,
+       0.151,
+       0.151,
+       0.0
+      ],
+      "Green Color": [
+       0.09,
+       0.147,
+       0.188,
+       0.0
+      ]
+     },
+     "parent": "/Game/Megapack/Material/Favela/M_Door_Color_Var_01"
+    },
+    "area_share": 0.885
+   },
+   {
+    "index": 1,
+    "name": "03 - Default_ncl1_1",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_02",
+    "blend": "BLEND_ADDITIVE",
+    "two_sided": "True",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "AO Roughness Metallic",
+      "Normal Map",
+      "Transparent mask"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Door_02"
+    },
+    "area_share": 0.115
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1192,
+    "verts": 1134
+   },
+   {
+    "tris": 596,
+    "verts": 674
+   },
+   {
+    "tris": 238,
+    "verts": 333
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -53.3,
+      -9.7,
+      1.2
+     ],
+     "max": [
+      53.3,
+      9.7,
+      218.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 1192,
+  "area_m2": 7.14,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 20,
+    "cover": 0.22,
+    "facing_area_m2": 0.23
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.23
+   },
+   "+Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.12
+   },
+   "-Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.13
+   },
+   "+Z": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.2
+   },
+   "-Z": {
+    "tris_on_bound": 10,
+    "cover": 0.42,
+    "facing_area_m2": 0.24
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.07,
+   0.87,
+   0.07
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.13,
+    0.32
+   ],
+   "v_along": [
+    0.37,
+    0.01,
+    0.63
+   ],
+   "cm_per_u": 325.7,
+   "cm_per_v": 326.7
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Door_01_Green": {
+  "bounds_min": [
+   -53.3,
+   -9.7,
+   1.2
+  ],
+  "bounds_max": [
+   53.3,
+   9.7,
+   218.9
+  ],
+  "size": [
+   106.6,
+   19.4,
+   217.7
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "03 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_Green_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Rad Color",
+      "Green Color"
+     ],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Color Mask",
+      "Normal Map",
+      "ORM"
+     ],
+     "vector_values": {
+      "Rad Color": [
+       0.055,
+       0.068,
+       0.052,
+       0.0
+      ],
+      "Green Color": [
+       0.088,
+       0.099,
+       0.071,
+       0.0
+      ]
+     },
+     "parent": "/Game/Megapack/Material/Favela/M_Door_Color_Var_01"
+    },
+    "area_share": 0.885
+   },
+   {
+    "index": 1,
+    "name": "03 - Default_ncl1_1",
+    "material": "/Game/Megapack/Material/Favela/MI_Door_02",
+    "blend": "BLEND_ADDITIVE",
+    "two_sided": "True",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "AO Roughness Metallic",
+      "Normal Map",
+      "Transparent mask"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Door_02"
+    },
+    "area_share": 0.115
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1192,
+    "verts": 1134
+   },
+   {
+    "tris": 596,
+    "verts": 674
+   },
+   {
+    "tris": 238,
+    "verts": 333
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -53.3,
+      -9.7,
+      1.2
+     ],
+     "max": [
+      53.3,
+      9.7,
+      218.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 1192,
+  "area_m2": 7.14,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 20,
+    "cover": 0.22,
+    "facing_area_m2": 0.23
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.23
+   },
+   "+Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.12
+   },
+   "-Y": {
+    "tris_on_bound": 56,
+    "cover": 0.0,
+    "facing_area_m2": 3.13
+   },
+   "+Z": {
+    "tris_on_bound": 6,
+    "cover": 0.21,
+    "facing_area_m2": 0.2
+   },
+   "-Z": {
+    "tris_on_bound": 10,
+    "cover": 0.42,
+    "facing_area_m2": 0.24
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.07,
+   0.87,
+   0.07
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.13,
+    0.32
+   ],
+   "v_along": [
+    0.37,
+    0.01,
+    0.63
+   ],
+   "cm_per_u": 325.7,
+   "cm_per_v": 326.7
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Door_Jamb_01": {
+  "bounds_min": [
+   -55.0,
+   -9.1,
+   -0.0
+  ],
+  "bounds_max": [
+   55.0,
+   9.1,
+   217.9
+  ],
+  "size": [
+   110.1,
+   18.2,
+   217.9
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "RadBricks_ncl1_2",
+    "material": "/Game/Megapack/Material/Favela/MI_Bricks_02",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Rad Color",
+      "Green Color"
+     ],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Color Mask",
+      "Normal Map",
+      "ORM"
+     ],
+     "vector_values": {
+      "Rad Color": [
+       0.552,
+       0.31,
+       0.06,
+       0.0
+      ],
+      "Green Color": [
+       0.266,
+       0.091,
+       0.044,
+       0.0
+      ]
+     },
+     "parent": "/Game/Megapack/Material/Favela/M_Door_Color_Var_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 132,
+    "verts": 240
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -55.0,
+      -9.1,
+      -0.0
+     ],
+     "max": [
+      55.0,
+      9.1,
+      217.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 132,
+  "area_m2": 2.21,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 10,
+    "cover": 1.01,
+    "facing_area_m2": 0.81
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 1.01,
+    "facing_area_m2": 0.81
+   },
+   "+Y": {
+    "tris_on_bound": 30,
+    "cover": 0.05,
+    "facing_area_m2": 0.13
+   },
+   "-Y": {
+    "tris_on_bound": 30,
+    "cover": 0.05,
+    "facing_area_m2": 0.13
+   },
+   "+Z": {
+    "tris_on_bound": 30,
+    "cover": 1.01,
+    "facing_area_m2": 0.2
+   },
+   "-Z": {
+    "tris_on_bound": 20,
+    "cover": 0.04,
+    "facing_area_m2": 0.2
+   }
+  },
+  "open_faces": [
+   "-Z"
+  ],
+  "normal_spread": [
+   0.72,
+   0.11,
+   0.18
+  ],
+  "uv0": {
+   "u_along": [
+    0.19,
+    0.01,
+    0.8
+   ],
+   "v_along": [
+    0.09,
+    0.89,
+    0.03
+   ],
+   "cm_per_u": 95.5,
+   "cm_per_v": 95.5
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      -55.0,
+      -9.1,
+      -0.0
+     ],
+     "max": [
+      57.0,
+      9.1,
+      220.0
+     ],
+     "area_m2": 2.29,
+     "fill": 0.93,
+     "touches": [
+      "-X",
+      "+X",
+      "-Z",
+      "+Z"
+     ]
+    }
+   ]
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Barrel_01": {
+  "bounds_min": [
+   -73.9,
+   -75.5,
+   -2.1
+  ],
+  "bounds_max": [
+   75.3,
+   74.5,
+   78.4
+  ],
+  "size": [
+   149.2,
+   150.0,
+   80.5
+  ],
+  "pivot": "x:centre y:centre z:offset",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Y",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07___Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Barrel_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1224,
+    "verts": 774
+   },
+   {
+    "tris": 612,
+    "verts": 468
+   },
+   {
+    "tris": 368,
+    "verts": 287
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1224,
+  "area_m2": 9.95,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.02,
+    "facing_area_m2": 1.78
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.02,
+    "facing_area_m2": 1.78
+   },
+   "+Y": {
+    "tris_on_bound": 4,
+    "cover": 0.01,
+    "facing_area_m2": 1.78
+   },
+   "-Y": {
+    "tris_on_bound": 4,
+    "cover": 0.01,
+    "facing_area_m2": 1.78
+   },
+   "+Z": {
+    "tris_on_bound": 72,
+    "cover": 0.07,
+    "facing_area_m2": 1.77
+   },
+   "-Z": {
+    "tris_on_bound": 108,
+    "cover": 0.66,
+    "facing_area_m2": 1.81
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.43,
+   0.43,
+   0.35
+  ],
+  "uv0": {
+   "u_along": [
+    0.31,
+    0.29,
+    0.66
+   ],
+   "v_along": [
+    0.61,
+    0.62,
+    0.15
+   ],
+   "cm_per_u": 566.3,
+   "cm_per_v": 566.3
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Barrel_Cap_2": {
+  "bounds_min": [
+   -76.3,
+   -76.3,
+   -8.5
+  ],
+  "bounds_max": [
+   76.3,
+   76.8,
+   7.4
+  ],
+  "size": [
+   152.6,
+   153.1,
+   15.9
+  ],
+  "pivot": "x:centre y:centre z:offset",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Y",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07___Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Barrel_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1017,
+    "verts": 850
+   },
+   {
+    "tris": 508,
+    "verts": 490
+   },
+   {
+    "tris": 406,
+    "verts": 406
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1017,
+  "area_m2": 4.75,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.08,
+    "facing_area_m2": 0.26
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.08,
+    "facing_area_m2": 0.26
+   },
+   "+Y": {
+    "tris_on_bound": 6,
+    "cover": 0.08,
+    "facing_area_m2": 0.24
+   },
+   "-Y": {
+    "tris_on_bound": 6,
+    "cover": 0.08,
+    "facing_area_m2": 0.23
+   },
+   "+Z": {
+    "tris_on_bound": 72,
+    "cover": 0.01,
+    "facing_area_m2": 1.98
+   },
+   "-Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 1.81
+   }
+  },
+  "open_faces": [
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.2,
+   0.2,
+   0.82
+  ],
+  "uv0": {
+   "u_along": [
+    0.63,
+    0.62,
+    0.21
+   ],
+   "v_along": [
+    0.63,
+    0.64,
+    0.19
+   ],
+   "cm_per_u": 566.0,
+   "cm_per_v": 566.2
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Stand_01": {
+  "bounds_min": [
+   -72.7,
+   -69.9,
+   0.9
+  ],
+  "bounds_max": [
+   72.7,
+   69.9,
+   58.3
+  ],
+  "size": [
+   145.4,
+   139.8,
+   57.4
+  ],
+  "pivot": "x:centre y:centre z:offset",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "default",
+    "material": "/Game/Megapack/Material/Favela/MI_Stand_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1402,
+    "verts": 1162
+   },
+   {
+    "tris": 700,
+    "verts": 743
+   },
+   {
+    "tris": 420,
+    "verts": 539
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -72.7,
+      -69.9,
+      1.0
+     ],
+     "max": [
+      72.7,
+      69.9,
+      58.3
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 1402,
+  "area_m2": 9.33,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 123,
+    "cover": 0.47,
+    "facing_area_m2": 0.97
+   },
+   "-X": {
+    "tris_on_bound": 161,
+    "cover": 0.46,
+    "facing_area_m2": 0.97
+   },
+   "+Y": {
+    "tris_on_bound": 10,
+    "cover": 0.03,
+    "facing_area_m2": 0.76
+   },
+   "-Y": {
+    "tris_on_bound": 10,
+    "cover": 0.03,
+    "facing_area_m2": 0.76
+   },
+   "+Z": {
+    "tris_on_bound": 16,
+    "cover": 0.91,
+    "facing_area_m2": 2.93
+   },
+   "-Z": {
+    "tris_on_bound": 229,
+    "cover": 0.25,
+    "facing_area_m2": 2.94
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.21,
+   0.17,
+   0.64
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.34,
+    0.1
+   ],
+   "v_along": [
+    0.23,
+    0.51,
+    0.28
+   ],
+   "cm_per_u": 347.6,
+   "cm_per_v": 347.6
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Antenna_01": {
+  "bounds_min": [
+   -95.0,
+   -5.4,
+   -100.6
+  ],
+  "bounds_max": [
+   95.0,
+   123.4,
+   104.1
+  ],
+  "size": [
+   190.0,
+   128.8,
+   204.7
+  ],
+  "pivot": "x:centre y:offset z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Antenna_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2916,
+    "verts": 2076
+   },
+   {
+    "tris": 1458,
+    "verts": 1246
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -94.9,
+      -5.4,
+      -100.6
+     ],
+     "max": [
+      94.9,
+      123.1,
+      104.1
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2916,
+  "area_m2": 7.73,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "-X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "+Y": {
+    "tris_on_bound": 20,
+    "cover": 0.0,
+    "facing_area_m2": 2.94
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 0.01,
+    "facing_area_m2": 3.03
+   },
+   "+Z": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.29
+   },
+   "-Z": {
+    "tris_on_bound": 46,
+    "cover": 0.01,
+    "facing_area_m2": 0.29
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.26,
+   0.77,
+   0.2
+  ],
+  "uv0": {
+   "u_along": [
+    0.76,
+    0.27,
+    0.31
+   ],
+   "v_along": [
+    0.33,
+    0.17,
+    0.85
+   ],
+   "cm_per_u": 273.2,
+   "cm_per_v": 280.0
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Antenna_02": {
+  "bounds_min": [
+   -95.0,
+   -5.4,
+   -100.6
+  ],
+  "bounds_max": [
+   95.0,
+   123.4,
+   104.1
+  ],
+  "size": [
+   190.0,
+   128.8,
+   204.7
+  ],
+  "pivot": "x:centre y:offset z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Antenna_03",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/MI_Antenna_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2916,
+    "verts": 2076
+   },
+   {
+    "tris": 1458,
+    "verts": 1246
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -94.9,
+      -5.4,
+      -100.6
+     ],
+     "max": [
+      94.9,
+      123.1,
+      104.1
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2916,
+  "area_m2": 7.73,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "-X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "+Y": {
+    "tris_on_bound": 20,
+    "cover": 0.0,
+    "facing_area_m2": 2.94
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 0.01,
+    "facing_area_m2": 3.03
+   },
+   "+Z": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.29
+   },
+   "-Z": {
+    "tris_on_bound": 46,
+    "cover": 0.01,
+    "facing_area_m2": 0.29
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.26,
+   0.77,
+   0.2
+  ],
+  "uv0": {
+   "u_along": [
+    0.76,
+    0.27,
+    0.31
+   ],
+   "v_along": [
+    0.33,
+    0.17,
+    0.85
+   ],
+   "cm_per_u": 273.2,
+   "cm_per_v": 280.0
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_Antenna_03": {
+  "bounds_min": [
+   -95.0,
+   -5.4,
+   -100.6
+  ],
+  "bounds_max": [
+   95.0,
+   123.4,
+   104.1
+  ],
+  "size": [
+   190.0,
+   128.8,
+   204.7
+  ],
+  "pivot": "x:centre y:offset z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Antenna_02",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/MI_Antenna_03"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2916,
+    "verts": 2076
+   },
+   {
+    "tris": 1458,
+    "verts": 1246
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -94.9,
+      -5.4,
+      -100.6
+     ],
+     "max": [
+      94.9,
+      123.1,
+      104.1
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2916,
+  "area_m2": 7.73,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "-X": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.58
+   },
+   "+Y": {
+    "tris_on_bound": 20,
+    "cover": 0.0,
+    "facing_area_m2": 2.94
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 0.01,
+    "facing_area_m2": 3.03
+   },
+   "+Z": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.29
+   },
+   "-Z": {
+    "tris_on_bound": 46,
+    "cover": 0.01,
+    "facing_area_m2": 0.29
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.26,
+   0.77,
+   0.2
+  ],
+  "uv0": {
+   "u_along": [
+    0.76,
+    0.27,
+    0.31
+   ],
+   "v_along": [
+    0.33,
+    0.17,
+    0.85
+   ],
+   "cm_per_u": 273.2,
+   "cm_per_v": 280.0
+  },
+  "pack": "Megapack_Favela"
+ },
+ "/Game/Megapack/Meshes/Favela/SM_AntennaSupportPart_02": {
+  "bounds_min": [
+   -21.3,
+   -0.4,
+   -33.0
+  ],
+  "bounds_max": [
+   22.3,
+   35.0,
+   31.9
+  ],
+  "size": [
+   43.6,
+   35.4,
+   64.9
+  ],
+  "pivot": "x:offset y:min z:centre",
+  "extends": "\u00b1X +Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "07 - Default",
+    "material": "/Game/Megapack/Material/Favela/MI_Antenna_01",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": [
+      "Base Color",
+      "Normal Map",
+      "AO Roughness Metallic"
+     ],
+     "parent": "/Game/Megapack/Material/Favela/M_Bricks_01"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1280,
+    "verts": 1302
+   },
+   {
+    "tris": 640,
+    "verts": 720
+   },
+   {
+    "tris": 256,
+    "verts": 366
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -21.2,
+      -0.0,
+      -33.0
+     ],
+     "max": [
+      22.3,
+      35.0,
+      31.9
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 1280,
+  "area_m2": 0.76,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.0,
+    "facing_area_m2": 0.21
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.0,
+    "facing_area_m2": 0.21
+   },
+   "+Y": {
+    "tris_on_bound": 8,
+    "cover": 0.04,
+    "facing_area_m2": 0.16
+   },
+   "-Y": {
+    "tris_on_bound": 62,
+    "cover": 0.31,
+    "facing_area_m2": 0.16
+   },
+   "+Z": {
+    "tris_on_bound": 72,
+    "cover": 0.04,
+    "facing_area_m2": 0.03
+   },
+   "-Z": {
+    "tris_on_bound": 72,
+    "cover": 0.04,
+    "facing_area_m2": 0.03
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.6,
+   0.46,
+   0.08
+  ],
+  "uv0": {
+   "u_along": [
+    0.33,
+    0.31,
+    0.45
+   ],
+   "v_along": [
+    0.21,
+    0.36,
+    0.48
+   ],
+   "cm_per_u": 267.6,
+   "cm_per_v": 267.6
+  },
+  "pack": "Megapack_Favela"
+ }
+}

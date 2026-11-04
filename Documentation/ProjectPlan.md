@@ -874,6 +874,11 @@ archetype-composition idea, not extended from the old classes.
 > layout only, not built in UE5):
 > [Design Document/Arena_Slums_Layout.html](../Design%20Document/Arena_Slums_Layout.html).
 > 48 × 40 m, half-court + ring lanes + a +4 m gallery, 8 enemy-entrance alleys.
+> **2026-11-02 redesign** (user: "remove the court, make it exclusively alleys";
+> stairs must land in open street; no grenade launcher): 54 × 48 m, 4.5 m alleys
+> on a 1.5 m grid, longest sightline ~25 m; build data in
+> `Design Document/Arena_Slums_Layout.json`. **Goal (user, 2026-11-02): 20 kills**
+> clears the arena (4 alive at a time).
 
 Goal: prove the core combat loop in an actual space, with real weapons and
 real enemies. The "linear navigation, nonlinear combat" pillar this phase was
@@ -883,6 +888,14 @@ over cover, escalating shootouts), and the arena-shape question can be
 settled by playing it rather than decided up front.
 
 - [ ] Blockout one small arena with varied sightlines, corners, and cover (per the design doc's Levels section).
+  - [x] `Lvl_BackAlleys`, a copy of the Sandbox (2026-11-02). Layout: `Arena_Slums_Layout.html` (user: "yep 1 and 2").
+  - [x] The art packs (`Philippines_Markets`, `Megapack`, `AsiaSlum`) analysed, prepped and read back; kit list (spec *Environment art packs*, 2026-11-02).
+  - [x] The user's calls: stand-ins for the jeepney and tricycle; AsiaSlum glass made opaque; the court waits for the user's assets.
+  - [x] First build and dressing pass (2026-11-02: blocks, spawn doors, gallery, cover, kiosk, dressing, gameplay, pickups).
+  - [x] The court: the user's `BasketballCourt` pack, prepped; the quad cut to a half-court and placed with the hoop (2026-11-02).
+  - [ ] User test in PIE; lighting and mood.
+  - [ ] Merge each block for draw calls.
+  - [ ] Bake it, add it to `MapsToCook`, measure it on the Deck.
 - [ ] Place 2+ enemy archetypes and at least one weapon pickup.
 - [ ] Playtest question to answer: does the same room genuinely support both a close-range and a long-range approach? (Kept from the old premise — still worth asking, but no longer the only question. Also: does the space push the player to keep moving?)
 

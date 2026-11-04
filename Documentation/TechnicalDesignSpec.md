@@ -108,6 +108,11 @@
   - [Historical: the first-person rig (2026-08-30 → 2026-09-30)](#historical-the-first-person-rig-2026-08-30--2026-09-30)
 - [Current state](#current-state)
   - [Vendor content](#vendor-content)
+- [Environment art packs (2026-11-02)](#environment-art-packs-2026-11-02)
+  - [Prep pass (applied 2026-11-02)](#prep-pass-applied-2026-11-02)
+  - [AsiaSlum's building prefabs are high-rises](#asiaslums-building-prefabs-are-high-rises)
+  - [Kit list for the slum arena (`Arena_Slums_Layout.html`)](#kit-list-for-the-slum-arena-arena_slums_layouthtml)
+  - [`Lvl_BackAlleys`: first build (2026-11-02)](#lvl_backalleys-first-build-2026-11-02)
 - [Build tooling](#build-tooling)
 - [Engineering gotchas](#engineering-gotchas)
   - [Full list (from ProjectPlan.md, 2026-10-24)](#full-list-from-projectplanmd-2026-10-24)
@@ -1081,8 +1086,9 @@ The Sixth Deck trace's per-shot costs, removed in `AWeaponBase`.
   each shot (never stacked) at the muzzle that fired, for
   `MuzzleLightDuration` 0.05 s:
   - no shadows, `bAffectTranslucentLighting` off;
-  - 60 cd, 250 cm, colour 255/184/107 (set on the component per
-    Blueprint);
+  - 15 cd, 62.5 cm, colour 255/184/107 (user, 2026-11-04: a quarter of the
+    60 cd, 250 cm it was). Set in the `AWeaponBase` constructor; all 14 weapon
+    Blueprints read back with these values, so none overrides them;
   - enemies light the scene only within `EnemyMuzzleLightDistance` (1500 cm)
     of the camera.
 - **Asset lights off:** `spawnFraction` 0 on the `ParticleModuleLight`s of
@@ -5256,6 +5262,7 @@ in a trigger" — "also does not get affected by time dilation". Code:
 - **Assets:** tracks in `/Game/Audio/BGM` (`DarkCrimes` so far); tick
   Looping on a wave for music that carries on. Planned: an `SC_Music` sound
   class as the overall music level, like `SC_Barks`.
+- **Placed in:** `Lvl_Linear`, `Lvl_BackAlleys` (`Music_Start`), both Play At Start with `DarkCrimes`.
 - **Later, if wanted:** a Play Music step for scripted events; combat /
   explore intensity layers; music that carries across level loads.
 - *User-tested 2026-10-25* (start track, fade-out trigger, unaffected by slow motion).
@@ -6176,6 +6183,56 @@ hit bones, physics and weapon attachment all run on it.
   shadow skin. Unticked on the class by the user and saved; the class
   default now reads off. Parts already built keep the old value until their
   character rebuilds (restart PIE, nudge a placed one).
+- **Hair shine under baked lighting (2026-11-04, user: "fix the hair shine";
+  "when lumen was on, they looked ok").** Applied and saved; **not yet judged
+  in game.**
+  - **Why it changed:** the materials didn't. Mesh hair (`MSM_Hair`) takes all
+    its ambient light through `EvaluateEnvHair`, whose R lobe is untinted and
+    scales with Specular (`HairBsdf.ush`).
+    - Lumen multiplies that by its traced lighting and occlusion
+      (`DiffuseIndirectComposite.usf`).
+    - Baked lighting multiplies it by the volumetric lightmap, sampled toward
+      the camera, with no close-range occlusion from the hair and head
+      (`BasePassPixelShader.usf`).
+    - Reflection captures can't help: hair skips them.
+    - This cause is read from the shaders, not measured side by side.
+  - **The target is dry** (user: "I would rather have a dry look than the
+    shiny wet look").
+  - **The levers:** `EvaluateEnvHair` uses `Area 0.2`, so Roughness barely
+    moves the ambient sheen, and Specular is what cuts it. Roughness flattens
+    the direct highlight, which a dry look wants gone too.
+  - **Hand calculation,** dark hair (base colour 0.05) viewed side-on: the R
+    lobe was about 60% of the ambient response. The dry `MI_Hair_Long` values
+    cut it to under a tenth of what it was, leaving less of it than the
+    colour-tinted TRT lobe.
+  - **Values (Roughness, Specular),** original → first pass → **dry, current**:
+    - `MI_Hair_Long` 0.25, 0.5 → 0.4, 0.2 → **0.7, 0.1**;
+    - `MI_Hair_Strands` 0.4, 0.5 → 0.4, 0.2 → **0.7, 0.1**;
+    - `MI_Side_Part_01_Base` and `_02_Base` 0.3, 0.3 → 0.4, 0.12 → **0.7, 0.06**.
+    - `MI_Eyebrows_Masked` 0.38, 0.5 → **0.7, 0.1**.
+    - **Unchanged:** the afro MIs (0.6, 0.3), since `CCMH_Preset_PH_Male`
+      excludes those styles.
+  - **Still shiny at those values, on the Hair model** (user screenshot, taken
+    after they went in): a broad warm band on the crown, only slightly
+    desaturated, so not just the white R lobe. The Hair model's TRT lobe
+    isn't scaled by Specular, and no material setting switches it off.
+  - **Material change, current** (user: "I think a material change is
+    needed"): `M_Hair_CCMH` and `M_Haircap` moved from `MSM_Hair` to
+    `MSM_DefaultLit`.
+    - **Pins disconnected:** Metallic (held Scatter) and Normal (held the
+      strand direction), which mean something else under Default Lit. The
+      nodes stay in the graph.
+    - **Follows automatically:** everything built on them (hairstyles, beards,
+      caps, eyebrows, the afro MIs). Recompiled clean, saved.
+    - **Now plain diffuse:** the look follows the tint. The earlier shader
+      reasoning no longer applies to these materials, and reflection captures
+      now reach them, though at Specular 0.1 that's slight.
+    - **Undo:** close the editor and `git checkout` those two `.uasset` files.
+  - **Testing trap:** each gun has a shadowless `MuzzleLight`. At its old 250 cm,
+    60 cd, a close capture of an enemy mid-shot showed it blown out from head
+    to toe. That wasn't a lighting fault.
+  - Blueprints only set the colour tint at runtime, so these values reach the
+    game. They're shared: the player and all CC enemies.
 - **Clothing layer order at the waist (2026-10-22):** every garment carries a
   **`Layer Depth`** index on its MI (CC's apparel master
   `M_Base_Material_Apparel`, group Layering, default 0): **0** outer (jackets,
@@ -7185,6 +7242,63 @@ target point (the furthest one)".
 - **`ST_Gunman`** (edited by the user): Search gains *Go Look → Roam if Lead
   Gone*, plus a new state **Roam**: Gunman Move [Roam], *On Completed →
   Roam*, and *On Tick → Go Look if NOT Lead Gone*.
+  - **Not what the asset has (read 2026-11-04 from a T3D export).** Search's
+    children are Go Look, Wait, Roam, with no enter conditions. Go Look has
+    only *On Completed → Wait*; Wait has no transitions; Roam has only *On Tick
+    → Go Look if NOT Lead Gone*. **No transition targets Roam, so Roam never
+    runs.** Go Look never completes unless its move fails, and then Wait holds
+    the enemy until it sees the player.
+
+**Arena sweep (2026-11-03, applied by Claude on "apply and run"; built clean,
+not yet PIE-tested).** User: "aggressive sweep to point… go from one spawn
+point to the other picked randomly". Once alerted, an arena enemy never goes
+back to a calm patrol.
+- **Who:** only enemies an `AEncounterDirector` brings in. `TrySpawnOne`
+  calls `SetSweepPoints(SpawnPoints)` for woken reserves and fresh builds
+  alike. Trigger and placed enemies have none, so they roam as above.
+- **The order is unchanged up to the roam:**
+  1. Engage.
+  2. *Has Lost Player 3 s*.
+  3. Go Look at the last known spot.
+  4. Wait `LeadGoneAfter`.
+  5. Roam, which for a sweeper is the sweep.
+- **`ChooseRoamSpot`:** with `SweepPoints`, it picks a random point more than
+  5 m away (2D), so not the one it's on. If none qualifies, it falls back to
+  the roam rules above.
+- **Gun up throughout:** `UpdateAim` skips `LowerGunAfter` for sweepers, so
+  there's no lowered stance and no re-raise reaction beat.
+  - The lead-gone branch clears the Gameplay focus. Path following's Move
+    focus (the next path point) then drives the control rotation, so the
+    raised stance turns the body along its path.
+- **Speed:** `UpdateMovementMode` uses **`SweepSpeed 450`** (`Enemy|
+  Movement`) while `bLeadGone` and sweeping. Pushes still win, and sight
+  resets `bLeadGone`, so a re-engage drops back to `RaisedSpeed`.
+- **Hearing:** `HearPlayer` resets the lead, so a sweeper goes to the sound,
+  waits there the same way, then sweeps on.
+- **Connected 2026-11-04 (user: "go apply"). Code built clean and the tree
+  compiled (read back: 10 compiled transitions, including both below). Not yet
+  tested in PIE.**
+  `ST_Gunman` lacked any transition into Roam (see *Roaming* above). Added:
+  - Go Look: *On Tick → Roam if Lead Gone*.
+  - Roam: *On State Completed → Roam*.
+- **Stopped short of the spot:** `FGunmanMoveTask` now runs the wait itself when
+  a search is idle 2.5 m or more from the last known spot (`WaitShortOfLastKnown`:
+  a partial path, or none). With no path at all, a search stays Running rather
+  than failing into Wait, which has no way out.
+- **Sweep barks (2026-11-04, user: "bark the Lost Sight bark here and there"):**
+  `UpdateSweepBark` tries `EBarkType::LostSight` every `SweepBarkIntervalMin`–`Max`
+  (8–15 s, `Enemy|Barks`), first try one interval in. The bark's Chance (0.7),
+  level-wide Cooldown (6 s) and 30 m earshot still apply. No bark while the player
+  is dead. The user runs the Tagalog set, which has 5 Lost Sight clips. Built clean;
+  not yet heard in PIE.
+- **Reaches every non-holder:** these are tree changes, so non-arena enemies that
+  aren't holders start roaming as designed on 2026-10-14.
+- **The bridge can write StateTree transitions** (corrects *the bridge can't
+  author StateTrees* above): `ObjectTools.set_properties` on the state's
+  `Transitions`, same JSON as `get_properties`. It can't compile them. Use the
+  `StateTreeCompileAll` commandlet with the editor closed, or the tree editor's
+  Compile.
+- **Not swept:** `Lvl_BackAlleys`'s `Wander_R1–3`, which aren't spawn points.
 
 **Gunman behaviour v1 is complete.**
 
@@ -9350,6 +9464,972 @@ treat them as read-only and reference them from our own Blueprints and data.
 
 ---
 
+## Environment art packs (2026-11-02)
+
+User: "I now have the assets, analyze the models, see what we can use"; "also
+evaluate for performance". Three packs under `Content/`: `Philippines_Markets`,
+`Megapack` and `AsiaSlum`. They're for `Lvl_BackAlleys`, the back-alley arena
+copied from the Sandbox.
+
+The numbers come from a headless read of every static mesh, texture and
+material (3,816 assets), taken **before the prep pass** below. There were no
+load errors or missing references in 5.8.
+
+| | Philippines_Markets | AsiaSlum | Megapack |
+|---|---|---|---|
+| What | Filipino market and street props: metal and tiled stalls, rice bags, monobloc chairs, crates, cardboard, umbrellas, buckets, water meters, electrical cabinet | A modular Asian slum kit: house walls, corners, door frames, windows, doors, floors, roofs, balconies, stairs, roll-up shop shutters, security grilles, pipes, cables, laundry, tarps, AC units, signs, debris; interiors | Three city sets: **Favela** (brick and plaster walls, tarps, awnings, poles and wires, jalousie windows, water tanks, graffiti, garbage) · **Yakohama** (Japanese street: signage, escalators, monorail, poles) · **MiddleEast** |
+| Fit for 2002 Philippine back alleys | Dressing, very good. No buildings | Structure, very good | Favela good; Yakohama only generic pieces (poles, wires, AC, vending machines); MiddleEast no |
+| Static meshes | 206 · LOD0 median 781 tris, max 22k | 273 · median 960, **max 842k** | 618 · median 444, max 104k |
+| LODs | **205 of 206 have 4** | **none** | 207 of 618 (33%) |
+| Heavy, no LODs | none | 18 over 20k: balconies 177k, security grilles 82–85k (×5), electric box 45k; the merged prefabs 195k–842k (one with 214 material slots) | 3: electric pole 97k, `MiddleEast/SM_House_06` 48k (11 slots), a street lamp 26k |
+| Lightmap UVs (light-map index) | **84 meshes on UV 0** (none): generate before baking; the rest on UV 1 | UV 1 (all but one) | UV 1 |
+| Collision | Simple shapes on 189 (convex 147, box 43) | Convex hulls on 272 (auto) | Simple on 531 (box 261, convex 281), complex-as-simple on 68 |
+| Textures | 154, 38 at 4K: ~0.9 GB full size, ~0.5 GB at a 2K cap | 336 at 2K: ~1.5 GB | 1,139: **669 at 4K, 4 at 8K**, ~13 GB full size, ~4.7 GB at a 2K cap (only what a level uses gets cooked) |
+| Materials | 105, opaque but 3 glass | 129: 11 translucent, 9 masked | 492: **99 translucent**, 38 masked, 52 two-sided |
+| Nanite | off on all | off | off |
+| Physical materials | none (engine default) | none | none |
+
+**Performance read** (Deck GPU was 17.6 ms against 16.6 before any art):
+- Philippines_Markets is ready to place.
+- AsiaSlum and the heavier Megapack pieces needed a prep pass first (done,
+  below).
+  - Nanite is off in this project, so a mesh without LODs is drawn at full
+    detail at any distance.
+  - The AsiaSlum grilles and balconies would cost millions of triangles
+    across a single facade.
+  - Translucent materials (Megapack signboards, glass, clear tarps) are the
+    Deck's known weak spot. Fight translucency was a main GPU cost in the
+    traces.
+- Short alleys with full-height walls will help a lot: hidden pieces aren't
+  drawn (hardware occlusion).
+
+### Prep pass (applied 2026-11-02)
+
+User: "use the slum arena as basis and do a prepass"; "yep 1 and 2" (the
+layout plus the prep pass). The pass is scripted, so it ran on every mesh,
+material and texture in the three packs, not only the pieces used. The
+exceptions are AsiaSlum's merged `Prefab/ActorMerge` meshes and Megapack's
+`BGPlaneBuildings`.
+- The packs aren't committed yet. The changes are in the pack files on disk
+  and go into git with them.
+- The script is `prep_ue.py`: a dry run first, then the apply in a full
+  editor. LOD reduction and lightmap-UV generation need the static-mesh editor
+  subsystem, which a commandlet lacks. It lives in the session scratchpad,
+  not the repo; this section is its record.
+- 0 errors; 1,333 assets saved, plus 714 textures in a second headless run.
+
+| Step | Rule | Applied | Read back |
+|---|---|---|---|
+| LODs | One-LOD meshes of 2,000+ triangles get LOD1–3 at 50/25/10% (engine reduction, auto screen sizes) | 151 | 151 |
+| Lightmap UVs | Meshes lightmapping off UV 0 get UVs generated from UV 0 into channel 1, and lightmap index 1 | 85 (84 market props, 1 AsiaSlum) | Settings on all 85. The built channel only shows at the first bake (Map Check flags missing or overlapping lightmap UVs) |
+| Lightmap resolution | Raised, never lowered, by size: 64 under 2 m, 128 under 5 m, 256 under 10 m, 512 above | 405 | 405 |
+| Collision, architecture | Walls, floors, roofs, frames, windows, balconies, shutters and the like collide on their own triangles (complex as simple), on the first LOD of 8,000 triangles or fewer, so doorways and the undersides of balconies stay open. Stairs keep their ramp hulls | 295 | 289. The other 6 are the 82k grilles and 177k balconies, whose lowest LOD is still 8–18k (never used, below) |
+| Collision, props | Props of 30 cm or more with no shapes get a box (not decals or flat cards) | 45 | 45 |
+| Surface types | A physical material from `ImpactsVFXVol1/Materials/Physical_Materials` by material name: the instance's own name first, then its parent's (not Megapack's catch-all `M_Asphalt` / `M_Bricks_01`) | 604 of 727. The rest are decals, graffiti, emissives, particles, guns and Yakohama/MiddleEast-only pieces | 604 |
+| Textures | Over 2K: Max Texture Size 2048 (the source stays) | 714 | 714 |
+
+Surface types still on the default, to set if the piece gets used:
+- Favela: `MI_Fencing_02` (fences → Metal), `MI_IntProps_01` (stoves and
+  fridge → Metal), `MI_SceneProps_01` (rails → Metal), `MI_Slate_01`,
+  `MI_StopSupport_03` (street lamp).
+- Yakohama: `MI_TrashBo_01`, `MI_WaterDispenser`.
+
+**Script gotchas (5.8):**
+- **Texture sizes read wrong in a full editor.** Textures compile
+  asynchronously there, and `blueprint_get_size_x()` returns the placeholder's
+  size. So the full-editor apply capped none. Size checks go headless
+  (`-run=pythonscript`), where the sizes are real.
+- **Out of memory.** One headless run that loads ~700 4K/8K textures ran out
+  of memory at 22 GB after 665. Call `unreal.SystemLibrary.collect_garbage()`
+  every 20.
+- **Reading UVs and build settings:**
+  - `StaticMesh.source_models` can't be read from Python.
+  - `EditorStaticMeshLibrary.get_num_uv_channels` returns 0 headless.
+  - The subsystem's `get_num_uv_channels` reads the source mesh description,
+    which never holds generated lightmap UVs (they exist only in the built
+    data).
+  - Read the build settings with `sms.get_lod_build_settings` instead.
+- **A crash with no Python exception:**
+  `StaticMeshDescription.get_vertex_instance_uv` on a channel past the last
+  asserts and crashes the editor.
+
+### AsiaSlum's building prefabs are high-rises
+
+Read from each prefab's construction script. (In 5.8,
+`SubobjectDataSubsystem.k2_gather_subobject_data_for_blueprint` returns every
+component twice. The counts below are halved for that.)
+
+| Prefab | Size (m) | Static mesh components | LOD0 triangles |
+|---|---|---|---|
+| `Prefab_BP_TypeA/B/C_00x` (15 houses) | 7–28 wide, 21–45 tall | 143–668 | 55k–252k |
+| `Prefab_BP_Type*_Stair_0x` (4) | 22–41 tall | 6–263 | 2k–321k |
+| `Prefab_BP_DecoHouseA` | 6.5 × 6.8 × 6.2 | 65 | 16k |
+| `Prefab_BP_DecoHouseB` | 4.0 × 7.5 × 6.6 | 43 | 19k |
+
+- The Type houses are the pack's Kowloon-style backdrop towers. One of them
+  costs more than the arena's whole budget, so **don't place them**.
+- The two DecoHouses are two storeys, the right scale for the shanties. Use
+  them as the model.
+- The pieces themselves are light: walls 12–96 triangles, door frames up to
+  560, windows up to 544. **The cost is the count.**
+  - Most wall pieces have 3–4 material slots.
+  - Every slot of every component is its own draw call.
+
+**How the blocks get built:**
+1. Build each block from the AsiaSlum modules, and only on the sides that
+   face a lane. The layout's blocks are solid, and their insides are never
+   seen.
+2. Build each block as a Level Instance, then convert it to a **Packed Level
+   Actor**. That gives one instanced component per mesh, so draw calls follow
+   the number of different pieces in a block, not the number of pieces.
+3. Each packed block still culls as a unit.
+4. Keep each block's palette small.
+
+**Module grid:**
+- AsiaSlum walls are 3 m wide and 4 m tall, with 1.5 m and 2 m halves.
+- One storey is 4 m, so the second-storey floor is exactly the layout's +4 m
+  gallery.
+- Two storeys reach 8 m to the eaves. The layout says +7 m; the difference
+  doesn't matter.
+- Block sides that are off the 3 m grid (the 14 m ones) close with the
+  halves.
+
+**Stairs:**
+- `SM_Stair_A_001` rises 2.15 m over 4.5 m (about 25°).
+- The gallery's 4 m rise needs one of:
+  - two flights with a landing;
+  - about 8.5 m of straight run;
+  - a steeper stair (about 39°) that fits the layout's 3 × 5 m footprints.
+- Settle it while building. Extending into the S3/S4 stubs is an option.
+
+### Kit list for the slum arena (`Arena_Slums_Layout.html`)
+
+| Layout element | Pieces | Leave out |
+|---|---|---|
+| Shanty blocks (6) | AsiaSlum: `SM_HouseWall_A_*`, `SM_HouseWallCorner_A_*`, `SM_HouseWallDoorFrmae_A_*`, `SM_HouseWindow_A/B_*`, `SM_Trim_A_*`, `SM_TrimWall_A`, `SM_Roof_A/B_*`, `SM_MetalPlate_A/B/C_*` (corrugated sheets, patching). Favela: `SM_Wall_02`–`15`, `SM_Wall_Tile_*` (3 m tall, 2.25 or 5 m wide: hollow-block and plaster patches), `SM_Wall_Column_*`, `SM_Pillar_01`. Yakohama: `SM_Jalousie_01`–`04` (jalousie windows) | `SM_HouseWallDoorFrmae_B_001/002` (glass) |
+| Spawn doors S1–S8, recessed at the stub ends | `SM_HouseDoor_A_002`–`005`, `SM_HouseDoor_B_003`; Favela `SM_Door_01` / `_Blue` / `_Green` (1,192, LODs), `SM_Metal_Gate_01`, `SM_Metal_Door_01` | `SM_HouseDoor_A_001`, `SM_HouseDoor_B_001/002` (glass) |
+| Sari-sari row (north) | AsiaSlum: `SM_Shop_A_001`, `SM_RollupDoor_A` + `SM_RollupDoorFrame_A` (roll-up shutters), `SM_SecurityWinodw_A_001` (the store's grille window, 896), `SM_Sign_A/B`, `SM_ShopProps_A`. Markets: bottle crates, rice bags, styrofoam boxes, plastic crates, monobloc chairs and stools, cardboard, the water-cooler bottle, `ElectricalCabinet`, `Water_Meter_*`, the wing lights | `SM_SecurityWinodw_B*` (82–85k), `SM_ShopFrige_A_004` (glass) |
+| Row house, 2 storeys + the +4 m gallery (east) | The walls above, two storeys. Deck: `SM_Floor_A_001` (3 × 3 m) on `SM_Pillar_01` / `SM_Wall_Column_*` posts, with Favela `SM_Wooden_part_01`–`05` planks and `SM_Concrete_Beam_01`. Railings: `SM_Rail_A_*`, `SM_Balcony_A_*`, `SM_Balcony_B_001/002/004/006/009` (1.5–2.5k). Stairs: `SM_Stair_A_001/002` + `SM_StairRail_A/B_*`, or Favela `SM_Old_Stair_01/02` | `SM_Balcony_B_003/005/007/008` (9k–177k), `SM_BalconyWindow_A_*` (glass) |
+| Half-court | Ground: the Sandbox floor in a concrete material. Cover "blocks": MiddleEast `SM_Concrete_Block_01/02` (0.7 × 2.4 × 1.1 m, 3.5k) or stacked Markets rice bags | No court surface, line decals or **hoop** in any pack. The lines need a simple decal material of our own |
+| Jeepney (north lane, full height) | **None in any pack** | |
+| Tricycle (court cover) | **None in any pack** | |
+| Kiosk (south lane, full height) + drums | Markets `MarketStall_Tiled_*` or `Market_Stall_Metal_Top_*` (roofs 13–17k, with LODs), closed in with AsiaSlum `SM_TarpCover_A_*` / `SM_Fabric_A_*`. Drums: Markets `SM_Barrel_01/02` (2.1k, LODs), Favela `SM_Barrel_01` + cap, MiddleEast `SM_Water_Tank_01`–`03` (704) | |
+| West lane: laundry and wires overhead | Laundry: AsiaSlum `SM_Cloth_B_*`, `SM_DryingRack_A_*`, `SM_Rope_A_*`; MiddleEast `SM_clothes_A/B_*` (0.4–5.8k). Wires: AsiaSlum `SM_Cable_A/C/D_*`, Markets `SM_WIRE_01/02`, MiddleEast `SM_Wires_01` (one 27 × 37 m web, 916). Poles: MiddleEast `SM_Electric_Pole_01`–`05` (1.3–5.1k) | `SM_Cloth_A_*` (7–21k), Favela `SM_ElectricPole_0x` (merged, 58–104k), `SM_Clothes_0x` (mannequin clothing) |
+| Stub alleys and lanes, dressing | Markets cardboard, crates, buckets, styrofoam; MiddleEast `SM_Garbage_bag_*` (4.6–5.1k); AsiaSlum `SM_Debris_A_*`, `SM_Pipe_A/B/C_*`, `SM_PipeValve_*`, `SM_MailBox_A_*`, `SM_AirConditionerFrame_A`; Favela `SM_Rain_Pipe_01`, `SM_Gas_Pipe_*`. Sparingly: `SM_AirConditioner_A` (13k), `SM_Antenna_A_*` (5–11k) | `SM_Gas_A` (28k), `SM_ElectricBox_C` (the 45k one), `SM_ElectricBox_B_*` (glass) |
+
+**Never:**
+- AsiaSlum: `Prefab/ActorMerge/*` and the Type prefabs.
+- Favela: `ChristStatue`, `FootbalGoal` / `SoccerNet` (Brazil), `Mannequin`
+  (41k), `AK47A`, `ScaneTarpaulinClear` (translucent, 7–17k).
+- Yakohama: signage, escalators, monorail, train.
+- MiddleEast: buildings and windows.
+  - Its generic street props are in the list above: blocks, water tanks,
+    garbage, laundry, poles, wires.
+  - This narrows the 2026-11-02 "leave out MiddleEast". Those props carry
+    nothing regional.
+
+**Translucent pieces:** 61 meshes.
+- In AsiaSlum, 22 share `MI_Glass_A_001/002`: some house doors, the B door
+  frames, every `SM_Window_A/B`, the balcony windows, the shop fridge, the
+  electric box, kitchen props.
+- Switching those two instances to opaque through their Blend Mode override
+  (dark, dirty glass) would make all 22 usable at once. **The user's call**
+  (it changes the look).
+- The rest are Megapack decals, graffiti cards and Yakohama/MiddleEast glass.
+- **Done 2026-11-02** (user: "make the glass opaque"):
+  - `MI_Glass_A_001/002` are now children of `M_BaseMaterial` with
+    `MI_Glass_A_003`'s values (the pack's own opaque dirty glass). They keep
+    the Glass surface type.
+  - All 22 meshes are usable.
+
+### `Lvl_BackAlleys`: first build (2026-11-02)
+
+User: "blockout stand-ins for now, make the glass opaque, go build. The
+basketball court, I will add assets, hold on". The court is left bare until
+then.
+
+**How it was built:**
+- Two scripts, `gen_level.py` and `gen_dress.py` (session scratchpad), turn
+  the layout into placement lists. Those go into `Saved/BackAlleys/plan_*.json`,
+  and one bridge batch per file places them.
+- **Coordinates:** layout metres (lx east, ly south, from the NW corner) map
+  to Unreal as X = (20 − ly) × 100 and Y = (lx − 24) × 100. North is +X, the
+  arena is centred on the origin, and the ground is at z 0.
+- **Wall convention:**
+  - AsiaSlum wall, frame and window pieces have their pivot at a bottom
+    corner and run along local +X. Their outside face is local y = 0, so a
+    wall facing n gets the yaw whose local +Y is n (east 0, west 180, north
+    −90, south 90).
+  - Doors sit at frame-local (205, 5, 0), the pack's own offset.
+
+**What's in it** (outliner `BackAlleys/…`, about 540 actors):
+
+| Folder | Contents |
+|---|---|
+| `Blocks` | 8 blocks, lane-facing sides only. Two 4 m storeys of walls, door frames with doors, and windows, with a parapet trim. The sari-sari row has shop fronts |
+| `SpawnDoors` | A wall with a door across each stub's dead end (S1–S8), plus a backing wall behind each door |
+| `Lids` | A lid on every block at 7.8 m, and a dark core box 1.5 m behind its lane faces that runs on past the arena edge (`MI_BackAlleys_Interior`) |
+| `Gallery` | A +4 m deck (`SM_Floor_A_001` × 5), 5 posts, a plank rail. `SM_Stair_A_001` at both ends, scaled to 4 m up over 5 m (39°, traced: 400 / 238 / 74) |
+| `Cover` | Jersey barriers (MiddleEast `SM_Concrete_Block_01` × 2) and four sets of three blue drums |
+| `StandIns` | Grey cubes for the jeepney (7 × 2.4 × 2.6 m) and tricycle (2.4 × 1.3 × 1.5 m) |
+| `Kiosk` | A one-storey shack built from wall pieces, with a shop front facing the court and a tin roof |
+| `Dressing` | Awnings over the shop fronts and every other door; tin patches; two cables across each stub; the MiddleEast wire web over the court; laundry lines on a power pole across the west lane; roof tanks and antennas; garbage; the sari-sari sign, crates, rice sacks and a monobloc chair |
+| `Gameplay` | PlayerStart at START, 8 spawn points 1.6 m in front of the doors, the EncounterDirector |
+| `Pickups` | Rifle (a `BP_WeaponPickup` with `BP_AssaultRifle`) and rifle ammo on the gallery; the shotgun in the west lane; grenades by the jeepney; the launcher and its ammo in the south lane; .45 ammo at the court corners |
+
+**Settings and assets:**
+- **Ground:** the template floor at 44 × 52 m with `MI_BackAlleys_Ground`
+  (`M_BaseMaterial` with Favela main-road textures, U/V tile 15, Asphalt).
+- **Volumes:** the nav mesh and lightmass volumes cover the arena.
+- **EncounterDirector:**
+  - 8 spawn points; `MaxAlive` 4 (the layout's "4 at a time").
+  - `TotalEnemies` kept at the Sandbox's 20, because "goal or endless" is
+    still open in the layout.
+  - Unchanged: `MinSpawnDistance` 12 m, `bPreferOutOfView`.
+
+**Why the lids and cores:**
+- The pack's window walls are open holes:
+  - `HouseWindow_A_001`: 140 × 160 cm at s 80–220, z 110–270;
+  - `HouseWindow_A_002`: 120 × 80 cm at s 90–210, z 130–210.
+
+  Both were measured with traces.
+- The pack's door is about 12 cm narrower than its frame on each side.
+- A hollow block with no back wall showed sky through all of these.
+- The lid puts each block's inside in shadow, and the core gives every
+  opening a dark room 1.3 m deep.
+- That's 16 actors instead of hundreds of window inserts.
+- The upper wall on each spawn-door end wall is plain wall: nothing is behind
+  it.
+
+**Collision:**
+- Overhead dressing has its component profile set to `NoCollision`: wires,
+  cables, laundry, awnings, tin, the sign. A trace through the wire web
+  reaches the ground.
+- The house pieces (doors included) collide on their own triangles, from the
+  prep pass.
+
+**Performance, not yet measured:**
+- About 540 actors, and most wall pieces have 3–4 material slots. So it's
+  roughly a thousand mesh draws before any merging.
+- **Next:** merge each block (`SceneTools.merge_actors`) or turn each into a
+  Packed Level Actor (editor), then measure on the Deck.
+
+**The court (2026-11-02).** User, through a peer session: "they've added a
+basketball court asset… You might have to cut it in half… include it in the
+prep pass". The pack is `Content/BasketballCourt/` (349 MB): 21 meshes, 52
+materials (all opaque but one additive), 91 textures (8 at 4K).
+
+- **The half-court:**
+  - `SM_Basketball_Court` is one 2-triangle quad, 19 × 32 m: FIBA 15 × 28
+    with 2 m run-off. There are 6 colour variants, `MI_Court_1`–`6`.
+  - It was cut at its centre line with Geometry Script, headless, into
+    `/Game/ThirdPerson/BackAlleys/SM_BackAlleys_HalfCourt`: 19 × 16 m, 3
+    triangles, pivot on the centre line, baseline at +Y.
+  - 5.8 names:
+    - copy with `GeometryScript_AssetUtils.copy_mesh_from_static_mesh`;
+    - cut with `GeometryScript_MeshBooleans.apply_mesh_plane_cut`;
+    - create with `GeometryScript_NewAssetUtils.create_new_static_mesh_asset_from_mesh`;
+    - `unreal.MathLibrary.make_transform` doesn't exist; build an
+      `unreal.Transform` directly.
+  - Placed at **0.8 scale** (yaw −90, pivot X −680, z 1, no collision; the
+    floor collides). That's 15.2 × 12.8 m with run-off, filling the layout's
+    16 × 12 zone, baseline at the north (ly 14).
+- **The hoop:**
+  - `SM_Stands`, `SM_Backboard`, `SM_Rim` and `SM_Net` share one pivot frame,
+    with the board facing local +Y.
+  - Placed full size at (499, 0), yaw 90, so the board is 1.2 m (scaled)
+    inside the baseline.
+  - The rim and net have no collision.
+- **Prep (bridge, in the open editor):**
+  - LODs at 50/25/10% on the 14 meshes over 2,000 triangles.
+  - LOD thresholds instead of `MinLOD`, which the bridge can't write. The net
+    draws LOD2 (22k, from 89k) and the rim LOD1 (24k, from 47k).
+  - Own-triangle collision on `SM_Stands`, whose single convex hull blocked
+    the space under the arm.
+  - Surface types on all 49 instances; 2K caps on the 8 court textures.
+  - The props on lightmap UV 0 (benches, lights, bin, ball) use volumetric
+    lightmaps.
+- **Placed in `BackAlleys/Court`:** the half-court, the hoop, two benches,
+  two court lights (emissive lamps, for night later), a bin, a ball.
+- **Leave out:** the chain-link fence (`SM_Wire_Wall` / `Door` / `Doorframe`,
+  130k / 90k / 32k LOD0, modelled wire) and the gym props (cones, hurdles,
+  training rods, scoreboard).
+
+**Second layout: wider ring, full-size court (2026-11-02).**
+
+User: "the space between the court and the building need to be much wider.
+Put the court in 1.0 scale and widen the space… try 2x the size of the
+jeepney placeholder". Asked which size: "2× its width: ~5 m".
+
+**What changed:**
+- The arena is now **53 × 46 m** (was 48 × 40). The court is 19 × 16 m with
+  run-off, centred on the origin.
+- New mapping: X = (23 − ly) × 100, Y = (lx − 24.5) × 100.
+- Gaps from the court edge:
+  - 5 m to B2 (north), B7 (south) and B4 (west);
+  - 5 m to the gallery posts on the east, with the row house 4 m further.
+- Blocks keep their depths, the alleys stay 4–5 m wide, and there are still
+  8 doors:
+
+  | Block | lx | ly |
+  |---|---|---|
+  | B1 | 0–14.5 | 0–9 |
+  | B2 | 18.5–30.5 | 0–10 |
+  | B3 | 34.5–53 | 0–9 |
+  | B4 | 0–10 | 14–32 |
+  | B5 | 43–53 | 14–32 |
+  | B6 | 0–14.5 | 37–46 |
+  | B7 | 18.5–30.5 | 36–46 |
+  | B8 | 34.5–53 | 37–46 |
+
+- Gallery: lx 39–43, ly 15–31. Stairs: lx 40–43, ly 10–15 and 31–36. The
+  hoop is on the north baseline.
+
+**How it was rebuilt:**
+- `gen_level2.py` (scratchpad) builds everything from that block table:
+  - which sides face a lane, and which corners are visible (those on the
+    arena edge are hidden);
+  - lids and cores, doors, gallery, kiosk, court, cover and dressing.
+- 544 actors placed, the old 537 removed. The gameplay actors were moved,
+  not recreated.
+
+**Ground fix:**
+- The template floor's collision box is about 88% of its visible size.
+- After transform changes, the editor's physics kept stale extents. Traces
+  missed the outer metre at the door ends.
+- **`Floor_Collision`** (`BackAlleys/Lids`) is an invisible slab, 54 × 60 m,
+  with its top 5 mm under the floor surface. It's hidden in game and casts no
+  shadow.
+- The floor itself is 5.6 × 6.4 at (0, 200), with ground tiling 18. It's
+  **Movable**, as in the Sandbox: set it to Static before the bake.
+
+**Third layout: all alleys (2026-11-02, current).**
+
+User: "redesign, remove the court, make it exclusively alleys. The long sight
+lines are not great for arena level style"; "also, remove the grenade
+launcher".
+
+**The layout** comes from the "Arena Level Design: Slums" session:
+`Design Document/Arena_Slums_Layout.json` (and the `.html` plan).
+- 54 × 48 m, 29 blocks, all alleys 4.5 m wide, everything on a 1.5 m grid.
+- Longest sightline about 25 m.
+- 8 dead-end door alleys.
+- A +4 m deck along B11's south face, with 3 × 5 m stairs at both ends.
+- Mapping: X = (24 − ly) × 100, Y = (lx − 27) × 100.
+
+**Built by `gen_level3.py`** (scratchpad), which reads that JSON:
+- **Walls go per storey and per 1.5 m cell**, on every block side whose
+  outside is open at that storey. That includes a 2-storey block's upper
+  floor above a 1-storey neighbour. Runs fill exactly with 3 m modules and
+  1.5 m halves, with no overshoot.
+- Thin 1.5 m blocks (B17, B19, B21, B22) and B10 get plain walls only.
+- Every block gets a lid and a dark core. The core is inset 1.5 m behind
+  exposed sides, or 0.3 m on thin blocks.
+- 1-storey blocks get tin roof sheets (`SM_MetalPlate_C_001`), since they
+  can be seen from the deck.
+- Specials: shop fronts on B2's south face (the sari-sari row); door frames
+  on B11's upper south face, onto the deck.
+- A check confirmed every open cell on the arena edge is covered by a door's
+  end wall.
+
+**What's in the level:**
+- 892 actors from the plan, plus 9 pickups and 3 `Wander_R*` TargetPoints.
+  The wander points aren't wired to anything yet.
+- No court and no grenade launcher. The court pack and
+  `SM_BackAlleys_HalfCourt` stay in Content, unused.
+- **Goal: "20 kills"** (user, through the design session). The
+  EncounterDirector already has `TotalEnemies` 20, `MaxAlive` 4 and
+  `bKillCamOnClear`, so the final kill plays the kill cam.
+- Nothing acts on the clear beyond that. An exit, message or menu needs a
+  hook: e.g. the director calling an `ALevelExitTrigger::Fire()`, or an
+  `OnCleared` event. That's C++, the user's call.
+- **Checked:**
+  - all 8 spawns have ground and headroom;
+  - the start and every pickup sit on a surface;
+  - both stairs trace 400 → 238 → 74;
+  - the deck is at 400.
+
+**Bridge gotchas found:**
+- `AssetTools.read_file` reads up to 80 KB, which is how the bulk placement
+  data reaches a script.
+- `CaptureViewport` returns its PNG as base64 text (about 1.9M characters).
+  Claude Code saves that to `tool-results/`; decode it to a PNG to look at.
+- `ObjectTools.set_properties` can't replace a whole parameter array ("insertion
+  points are ambiguous"). Use `MaterialInstanceTools` (`set_parent`, `set_*_parameter`).
+- In tool scripts, `find_actors` needs `name`, `tag` and `collision_channels`.
+  The sandbox's dicts don't take a `.get` default.
+
+**Fourth build: Favela walls (2026-11-03, current).** User: "Favela walls,
+4 m storeys", after an analysis of how the Favela map builds houses
+(`Tools/LevelGen/LESSONS.md`).
+
+**The generator** now lives in **`Tools/LevelGen/`**, which supersedes the
+scratchpad scripts:
+- `gen_level.py`;
+- `place_plan_ue.py`, the bridge placer: five calls, constants set per call;
+- analysis tools;
+- a README and `LESSONS.md`.
+
+**A storey:**
+- **Tile:** a Favela 3 m wall tile.
+  - `SM_Wall_Tile_Blue` / `_01`, or `SM_WallDoor_01` / `SM_Wall_Windows_01`,
+    all 2.25 m.
+  - `SM_Wall_Tile_03` (1.125 m) for runs under 1.7 m.
+  - Pivot at the bottom corner, running along local +X, with the outside
+    face at local y 0: the same yaw rule as AsiaSlum.
+  - Each run is filled by stretching (×0.89–1.33).
+- **Band:** a 1 m concrete band, `SM_Wall_14` with `MI_Concrete_01`, scale z
+  0.943. It runs along its local +Y, so its yaw is the tile yaw − 90. It
+  reads as the floor beam, or as the parapet on the top storey.
+- **Trims:** `SM_MainBorder_04` at +3 m over the seam, 6 cm in, plus a cap at
+  +4 m on the top storey.
+
+**Openings** (Favela offsets, scaled with the tile):
+- **Door:** `SM_Door_01` (or `_Blue` / `_Green`) at (111, −11, +5) and
+  `SM_Door_Jamb_01` at (112, −9, +5).
+- **Window:** `SM_windows_02` at (111, −11, +90), turned 180.
+- **Glass:** slot 1 on both is additive. It's overridden with
+  `MI_Glass_A_001` (opaque).
+
+**Mix and materials:**
+- **Openings:**
+  - street floors: 12% doors, 9% windows;
+  - upper floors: 13% windows;
+  - a blank run of 3 or more tiles gets one window;
+  - B11's deck face alternates door and window.
+- **Materials** (per-slot overrides from `/Game/Megapack/Material/Favela/`):
+  - **Per block:** a main plaster from yellow, white, blue or concrete.
+  - **Street floors:** 30% are old brick.
+  - **Patches:** 1–2 tile patches of old brick or concrete.
+  - **Openings:** in `M_Bricks_Bland_01` or old brick.
+
+**What else changed:**
+- The B2 shop fronts keep the AsiaSlum pieces.
+- The spawn-door end walls are Favela: a door tile centred on the door, a
+  tile each side, a plain upper storey, and a dark cube backer.
+
+**Dressing:**
+- 159 DecalActors (`BackAlleys/Decals`, cap 160):
+  - `MI_Decal_02/05/08` grime around doors at 1.2–1.9 m;
+  - `MI_Decal_Dirt_06` splash at the foot and streaks under the band;
+  - roll 90, scale y = height, z = width (`DecalSize` is an extent).
+- 14 leaning TV antennas on brackets at the roof line, replacing the AsiaSlum
+  roof antennas.
+- Favela water drums on stands on some roofs.
+
+**Placer additions:** each plan item now has `mats` (per-slot override
+paths) and `decal` (place a DecalActor and set `DecalMaterial`). Re-running
+it doesn't duplicate the wander points.
+
+**Result:**
+- 2,248 plan actors with 0 failures; 2,270 in `BackAlleys/` with the
+  gameplay actors. Saved.
+- **Traces:** the spawns have ground and headroom; the start and pickups sit
+  on surfaces; the stairs trace 400 → 238 → 74; the deck is at 400.
+- **Nav mesh, from two captures with the nav overlay on:** it covers the
+  deck, and both stairs connect.
+  - The block lids also get unreachable nav islands. The cheap fix is to
+    turn off "can ever affect navigation" on the lids.
+
+**Revision, same day: corners and materials.**
+- **Corners** (user: "overlapping faces… corners of the buildings"): the
+  20 cm wall thickness put each wall's end cap in the other wall's face.
+  - `corner_adjust()` in `gen_level.py`: inside corners run on 10 cm into the
+    wall ahead.
+  - At outside corners, north/south runs stop 20 cm short and the east/west
+    trims run on 7 cm.
+- **Materials** (user: "mostly the concrete material… red brick… need to be
+  non-red hollow blocks"):
+  - **New:** `/Game/ThirdPerson/BackAlleys/Materials/`, made headless by
+    `Tools/LevelGen/create_materials_ue.py`, with the Concrete surface type.
+    - `MI_BackAlleys_HollowBlock` (`M_Bricks_01` + MiddleEast
+      `T_Brick_wall_BC/N/ORM`);
+    - `MI_BackAlleys_ConcreteOverBlock` and `_Paint{White,Yellow,Blue}OverBlock`:
+      `M_Bricks_Bland_01` with `Second_*` (the red brick) swapped for the
+      blocks.
+  - **Mix:** concrete over blocks 42%, plain `MI_Concrete_01` 38%, bare
+    blocks 18%. No `MI_OldWall_01`, `MI_Wall_Brick_*` or `M_Bricks_Bland_01`
+    remain.
+  - **Headless quirk:** `set_material_instance_texture_parameter_value`
+    returns False headless, but the values are stored.
+- **Rebuilt:** 2,242 actors, 0 failures, 2,257 removed. Traces unchanged.
+  Saved.
+- **The block texture:** it reads as rough stone blocks, not smooth CHB. No
+  pack has a CHB texture.
+
+**Revision 2: CHB material, trims, AC units (2026-11-03, current).**
+
+**`M_BackAlleys_CHB`** (user: "Make a CHB material"; made headless by
+`Tools/LevelGen/create_chb_material_ue.py`):
+- **The blocks:** procedural concrete hollow blocks, drawn in four Custom
+  HLSL nodes in world space (u = (x + y) / 40, v = z / 20).
+  - Running bond, 1 cm mortar, a tone change per block.
+  - Detail comes from a desaturated concrete texture, `Tile` 200 cm.
+- **Render:** an optional layer over the blocks (`RenderBC/N/ORM`,
+  `RenderTint`), chipped where `ChipH` (`T_Wall_H`) is below
+  1 − `Coverage`, with a dark rim at the chip edge.
+- **Parameters:** `Coverage`, `BlockW` 40, `BlockH` 20, `Mortar` 1,
+  `BlockTint`.
+- **Instances:** `MI_BackAlleys_CHB_Bare` (0), `_CHB_Concrete` (0.8),
+  `_CHB_PaintWhite/Yellow/Blue` (0.75), `MI_BackAlleys_Concrete` (1.0, the
+  bands).
+- **Isolated** (user: "isolate any new materials we created outside the
+  external assets"):
+  - Our materials are under `/Game/ThirdPerson/BackAlleys/Materials`, with
+    copies of the 13 pack textures they use in `.../Textures` (about
+    170 MB).
+  - The surface type is the project's `ImpactsVFXVol1/.../Concrete`.
+  - The first five MIs (`*OverBlock`, `_HollowBlock`) have pack parents and
+    are now unused. Delete them in the editor when convenient.
+- **Headless quirks:**
+  - `unreal.CustomInput` takes no constructor arguments: set `input_name`.
+  - A duplicated asset must be saved explicitly (`save_asset`).
+
+**Corners and trims:**
+- **Outside corners** (user: overlap the walls, but no shared faces): both
+  runs go 2 cm past the corner and intersect.
+  - The east/west trim reaches 7 cm past the corner; the north/south trim
+    stops 21 cm short of its run end, behind it.
+- **Inside corners:** both runs go 10 cm into the wall ahead.
+  - The east/west trim follows; the north/south trim stops 7 cm before the
+    other wall's face.
+  - Door end walls: north/south-facing ones span the alley less 7 cm each
+    side; east/west-facing ones run 10 cm into the side walls.
+- **Lids:** inset 5 cm and 5 cm lower, off the band's face and top.
+- **Check:** `Tools/LevelGen/analysis/check_overlaps.py` finds 0 problems;
+  the pre-fix flush corners show as 20 cm overlaps.
+
+**Air conditioners** (user: "add ocasional air conditioners"):
+- 12 AsiaSlum sets (`SM_AirConditionerFrame_A_001` + `SM_AirConditioner_A_001`
+  + `SM_AirConditionerFan_A_001`) on plain tiles.
+- Offsets from the pack's demo map; 2.3 m up on street floors, 1.5 m up on
+  upper floors.
+
+**Rebuilt:** 2,283 actors, 2,302 in `BackAlleys/`. Traces unchanged. Saved.
+- One laundry item failed to place (a bridge glitch); it was re-placed by
+  hand with the plan's transform.
+- **Captures:** the corner, a bare CHB wall and an AC unit look right; no
+  material errors in the log.
+
+**Blockouts only (2026-11-03, current; standing rule):** "forget all the
+dressings and, just make the building block outs. No other objects in the
+level besides building blockouts as a rule."
+- **Kept** (the user's answer): the buildings, the gameplay actors, the
+  gallery deck and stairs.
+- **Removed:** cover (stand-ins, kiosk, barriers, drums), pickups, dressing
+  (including the AC units and antennas), decals.
+- **Generator:** the `COVER`, `PICKUPS` and `DRESSING` switches are False; the
+  code stays behind them.
+- **Level:** 1,927 actors in `BackAlleys/`.
+
+  | Folder | Actors |
+  |---|---|
+  | `Blocks` | 1,631 |
+  | `Lids` | 75 |
+  | `SpawnDoors` | 192 |
+  | `Gallery` | 16 |
+  | `Gameplay` | 13 |
+
+  - Outside it: only engine and environment actors (sky sphere, sun, sky
+    light, fog, reflection capture, floor, nav and lightmass volumes).
+- **Checks:** traces unchanged; the overlap check is clean. Saved.
+- **More windows, as the default** (user: "increase the number of windows",
+  "increase it by default"): `P_GROUND` windows 0.25 (was 0.09), `P_UPPER`
+  0.40 (was 0.13).
+  - 106 window tiles (was 50).
+  - Rebuilt: 1,966 actors (`Blocks` 1,683). Traces unchanged. Saved.
+- **One material per block face** (user: "Keep the texturing consistent per
+  block face"):
+  - `face_mats[side]` is picked once per block side from `FACE_MATS`
+    (concrete over blocks 0.45, plain concrete 0.2, bare blocks 0.15, white,
+    yellow and blue paint 0.1 / 0.06 / 0.04).
+  - The pick covers every storey and opening; each door end wall gets one
+    material too.
+  - The patchwork rules (street-floor block, patches, patched-in openings)
+    are removed.
+  - **Result:** 90 faces, 0 mixed; 104 windows.
+  - Rebuilt: 1,960 actors (`Blocks` 1,677). Traces unchanged. Saved.
+- **Per storey, more colours** (user: "second floor material can differ from
+  ground floor"; "make more variant colors of MI_BackAlleys_CHB"):
+  - **Per storey:** `face_mats[(side, storey)]`; an upper storey keeps the
+    lower one's material 40% of the time.
+  - **14 new instances of `M_BackAlleys_CHB`:**
+    - 10 paints: tinted `T_plaster_01`, coverage 0.72. Mint, Pink, SkyBlue,
+      Cream, Peach, Lime, Lavender, Teal, Salmon, PaleYellow.
+    - `_ConcreteWarm` and `_ConcreteDark` (coverage 0.8).
+    - `_BareLight` and `_BareDark` (`BlockTint`).
+  - **`FACE_MATS`:** concrete 0.5, bare blocks 0.15, paints 0.35.
+  - `create_chb_material_ue.py` now creates missing assets only.
+    `REBUILD = True` rebuilds them, with the editor closed only.
+  - **Result:** 165 face-storeys, 0 mixed.
+  - Rebuilt: 1,958 actors. Traces unchanged. Saved.
+- **Corner columns** (user screenshot: "This corner pattern is bad"):
+  - 55 outside corners get a 20 × 20 cm `SM_Cube` in
+    `MI_BackAlleys_Concrete`, 2 cm proud of both faces, top 5 cm over the
+    band.
+  - Both wall runs stop 10 cm inside the column.
+  - The east/west trim runs 7 cm past the corner; the north/south trim stops
+    9 cm short of its run end.
+  - **The other cause:** `SM_Wall_Tile_03`'s second material slot is now
+    overridden too; the pack brick showed through at corners.
+- **Bands:** tried in the wall's material, then rolled back to
+  `MI_BackAlleys_Concrete` (user).
+- **Stain decals** (user: "I want stain decals next"; the one exception to
+  blockouts only):
+  - `STAINS = True`, `DECAL_CAP` 200, in `BackAlleys/Decals`.
+  - **Mix:** grime around doors (`MI_Decal_02/05/08`), foot splash, streaks
+    from the band and from window sills (`MI_Decal_Dirt_06`, 139 of 200).
+  - These are pack decal materials; the isolation rule covers materials we
+    create.
+- **Rebuilt:** 2,213 actors (`Blocks` 1,730 with the columns, `Decals` 200).
+  Traces unchanged. Saved.
+- **Stains reworked** (user: "meant to be stretched to the entire wall", a
+  hand-placed reference, "only use the dirt decal", "not all of them"):
+  - **The decals:** Favela's wall decals are whole-wall masks (drips
+    `T_decal_07`, damp `T_decal_08`, colour wash `T_decal_02`).
+  - **Wall runs:** the generator records every visible wall run per storey
+    (`wall_runs`, including the 4.5 m of each door end wall that shows).
+  - **Placement:** 35% of the ≤ 5 m stretches get `MI_Decal_Dirt_06`.
+    - Box 500 cm tall, 1.23 × the stretch wide, centre at storey +162.
+    - The mask's hard edge lands at +292, behind the trim.
+    - Roll 90, depth scale 0.03.
+  - **Result:** 98 decals.
+  - Rebuilt: 2,111 actors. Traces unchanged. Saved. The capture matches the
+    user's reference.
+- **Grouped drips** (user: "stretch the decal accross up to 3 walls
+  instead"):
+  - Per wall tile, p 0.35. Adjacent picked tiles merge into one decal over
+    up to 3 tiles (`STAIN_SPAN`), and the next tile is skipped.
+  - Each run records its tile widths (`wall_runs[...]["widths"]`).
+  - **Result:** 121 decals, 1.0 to 6.4 m wide.
+  - Only the `Decals` folder was swapped in the level. Saved.
+  - **Single-tile drips are shorter:** `DRIP_H_SINGLE` 300 cm, same edge at
+    +292, so the streaks end about 1.1 m up. 94 single-tile, 27 grouped
+    (500 cm). Decals swapped and saved.
+  - **Then up to 4 tiles, length by span:** `STAIN_SPAN` 4; height
+    300 → 500 cm linearly with the tiles covered (1–4).
+    - This build: 94 / 21 / 5 / 1 decals.
+    - Decals swapped and saved.
+  - **Whole faces, no half blocks** (user):
+    - Drips are picked per wall run (p 0.35), covering every tile of the
+      run, the end half tile included. A coverage check confirms that the
+      decal widths add up to each run's tiles.
+    - Runs of more than 4 tiles split into equal groups of ≤ 4.
+    - `STAIN_WIDEN` 1.12.
+    - **Result:** 57 decals over 54 runs.
+    - Decals swapped and saved.
+  - **Shorter drips** (user: "shorten the length more"): `DRIP_H_SINGLE`
+    230, `DRIP_H` 380, so 230 → 380 cm over 1–4 tiles, edge still at +292.
+    Decals swapped and saved.
+- **Decals removed, then restored as `Dirt_08`** (user: "forget the decals
+  completely", then "bring it back but use decal dirt 8"):
+  - `STAINS = True`, `DRIPS` = `MI_Decal_Dirt_08`. Same 57 placements, plan
+    2,070 actors.
+  - **In the level:** swapped to 57 `Dirt_08` drips and saved.
+  - **Note:** `Dirt_08` (Decal Color 0.09/0.08/0.07) barely reads on dark
+    concrete in flat lighting. `Dirt_06` (0.27/0.24/0.20) is the lighter
+    one.
+- **One wall material** (user: "remove the material variation"; asked:
+  "All of it: one material"):
+  - `ONE_MATERIAL = True`, `WALL_MAT` = `MI_BackAlleys_CHB_Concrete` for
+    every face and storey.
+  - The window layout and drips are unchanged.
+  - Rebuilt: 2,070 actors. Traces unchanged. Saved.
+  - `Blocks` reads 1,731 against the plan's 1,730: one actor not from the
+    generator, left alone.
+- **Covered roof terraces** (user: study Favela's corrugated-roof balcony,
+  then "Yes, build them"):
+  - `TERRACES = True` on the five 1-storey blocks: 142 pieces in
+    `BackAlleys/Terraces`.
+  - **Floor:** the lid in `MI_Concrete_01`.
+  - **Parapets:** `SM_Wall_14`, 1.06 m, inset 1 cm. They run 10 cm into
+    taller neighbours, and the north/south one is cut 20 cm at outside
+    corners.
+  - **Sheets:** a row of `SM_Slate_01`, underside 2.75 m up, 30 cm laps.
+  - **Frame:** plank-pair posts (≤ 1.9 m apart) and beams on open long
+    sides.
+  - The tin roof sheets are removed. The face check is clean.
+  - Rebuilt: 2,196 actors. Traces unchanged. Saved.
+  - The full rebuild also cleared the one extra `Blocks` actor that wasn't
+    from the generator.
+- **Balconies** (user: "replace some of the block's second story as
+  balconies instead"):
+  - Six 2-storey blocks lose a 1.5 m strip of their upper storey along one
+    face: B28 W, B3 W, B7 N, B26 N, B25 N, B8 N.
+  - The generator splits each into a main block and a 1-storey strip
+    (`<id>b`). The strip is roofed by the terrace builder.
+  - The upper wall behind alternates doors and windows.
+  - The layout JSON is unchanged; the split happens in `gen_level.py` after
+    loading (`BALCONY_FACES`).
+  - Rebuilt: 2,409 actors (`Terraces` 282). Traces unchanged. Overlap and
+    face checks clean. Saved.
+- **Wide roof terraces** (user's reference picture: "cut off the second story
+  section completely and build on it"):
+  - **Where:** 4 blocks ≥ 6 m deep lose half their upper storey along one
+    face: B20 W 3 m, B24 N 6 m, B18 N 3 m, B4 S 6 m.
+  - **Built:** each gets an open terrace with parapets on all open sides
+    (arena edge included), and a lean-to (`lean_to()`): `SM_Slate_01` down
+    the slope, 2.4 m reach, 9° fall, underside 2.9 m above the floor at the
+    wall, 9 cm side laps.
+  - **Supports:** plank-pair posts on the floor and a beam.
+  - **Narrow balconies** re-picked: B26 N, B8 N, B7 W, B23 S, B6 S, B9 N.
+  - Rebuilt: 2,541 actors (`Terraces` 408). Traces unchanged. Checks clean.
+    Saved.
+  - **Not built:** the reference picture's water tanks (dressing).
+- **Terrace edges** (user: "main border on top of a stone bannister" and
+  "wooden window frame as banisters … as variation"):
+  - **Parapets:** now capped with `SM_MainBorder_04` (`ParapetCap_*`).
+  - **Banisters:** 40% of terraces (`BANISTER_SHARE`, seed 41) get
+    `SM_Window_Frame_02` panels at 0.74 (about 81 × 118 cm), Favela's
+    banister, instead of a parapet.
+  - **Parapet ends:** use `taller_at`, so the arena edge no longer counts
+    as a wall to run into.
+  - Rebuilt: 2,651 actors (`Terraces` 518). Traces unchanged. Checks clean.
+    Saved.
+- **Jalousie windows** (user's texture): `T_BackAlleys_Jalousie_BC/_N` and
+  `M_BackAlleys_Jalousie` (ours, made headless by
+  `Tools/LevelGen/create_jalousie_ue.py`).
+  - The 98 window inserts are now the engine plane: 1.10 × 1.33 m, 9 cm into
+    the opening, roll +90 so it faces out. Fixed in place in the level and
+    in the generator. Saved.
+  - **Textures:** set to stretch to a power of two and capped at 1024; they
+    first built at 1254 px uncompressed. They recompress on next load.
+  - **Then replaced** by the user's double-pane set (1024 × 1024):
+    `T_BackAlleys_JalousieDouble_BC/_N` and `MI_BackAlleys_JalousieDouble`.
+    The 98 windows were switched in the level, and the generator uses it.
+    Saved.
+- **Doors:** AsiaSlum `SM_HouseDoor_B_003` replaces Favela's `SM_Door_01`
+  plus jamb, and the AsiaSlum `SM_HouseDoor_A_004`. 43 doors.
+  - Scaled to the Favela door opening (110 × 218 cm × the tile stretch),
+    10 cm into the wall. The jamb is removed (the door has its own frame).
+  - The fit is checked in numbers and in a capture.
+  - Rebuilt: 2,608 actors. Traces unchanged. Saved.
+  - **Then replaced by the user's five plane doors** (2026-11-03): timber,
+    green plywood, blue plywood, corrugated metal and painted steel.
+    - Each is 1024 × 2048 with its own frame. Imported by
+      `Tools/LevelGen/create_doors_ue.py` into `BackAlleys/Textures` and
+      `/Materials` (`MI_BackAlleys_Door_<Name>`, parent
+      `M_BackAlleys_Jalousie`; Wood or Metal surface type).
+    - Placed as an engine plane filling the 110 × 218 slot, 2 cm in, with
+      one texture per door chosen at random.
+    - All 43 wall doors were swapped in place and saved. The B2 AsiaSlum
+      frames keep `SM_HouseDoor_B_003`.
+  - **Then mixed with AsiaSlum steel** (user, same day). Each slot is one of
+    the five planes or the louvred `SM_HouseDoor_B_003` alone.
+    - Half the planes sit behind a grille (`SM_HouseDoor_A_002/_004/_005`),
+      fitted by bounds (`steel_door()` in `gen_level.py`).
+    - Doors open right-handed: hinges on the right seen from the alley. The
+      planes are mirrored for this.
+    - In the level: 43 doors plus 25 grilles. Saved.
+    - The grilles are turned so their hinges face inside: yaw + 180 plus a
+      mirror along the run, which keeps them right-handed (user: "Turn the
+      grilles").
+- **Houses, heights, setbacks and metal roofs** (2026-11-03, user: "All four
+  at once", after a back-street photo). Details in `Tools/LevelGen/LESSONS.md`.
+  - **Houses:** blocks 9 m or longer split into houses 4.5-7.5 m wide.
+  - **Heights:** free houses get 3.4-4.2 m storeys. Some get a third storey;
+    4 inner ones become 1-storey corrugated-roof houses.
+  - **Setbacks:** open street faces are set back 0, 0.3 or 0.6 m, inward
+    only.
+  - **Fixed:** the deck, stairs, spawn-door, shop-row, B10 and B11 houses
+    keep 4 m storeys and their walls, so the gameplay geometry is unchanged.
+  - **Walls:** exposure is now computed geometrically per house and height
+    (`side_intervals`, `cover_top`), not on the 1.5 m grid.
+  - **Roofs:** sloped corrugated roofs (`SM_Slate_01`), single slope 5-10
+    deg or two-sided 12-15 deg, never flat (3 deg minimum). The gaps under
+    them are filled in the wall material, with `SM_Ramp` gables. About 10%
+    of houses keep flat concrete roofs.
+  - **Rebuilt:** 3,195 actors (was 2,594). Traces unchanged (stairs
+    400/238/74, deck 400, spawns clear). Saved.
+  - **Nav checked offline** (`analysis/check_nav_roofs.py`). No roof joins
+    the deck or stairs, and enemies only pick reachable points.
+  - **Not checked yet:** the Deck budget at the higher actor count.
+- **Metal roofs redone with a kisame** (2026-11-03, user's shanty photo and
+  "theres usually a kisame there", answered "Both"). Details in
+  `Tools/LevelGen/LESSONS.md`.
+  - **Slope:** mostly single slopes (two-sided 15%).
+  - **Sheets:** patchwork corrugated `SM_MetalPlate_A_001`–`004` (mixed
+    lengths, real laps, skew, ragged eave). They replace `SM_Slate_01`:
+    364 tris against 2,872. Finishes are our own
+    `MI_BackAlleys_MetalSheet_Galv/RedOxide/Rust`: one main finish per roof,
+    and 25% of the sheets are replacements in another.
+  - **Frame:** the walls stop at the flat ceiling (the lid). The roof sits on
+    a frame 42 cm up. Boards in one paint per house close it in:
+    - timber fascia under open eaves;
+    - level kisame boards under the overhangs;
+    - barge boards on open slopes;
+    - one weatherboard per side, from the wall top to the kisame;
+    - on sloping sides, a timber-painted wedge (`SM_Ramp`) above the board,
+      sealing the side up to the sheets.
+  - **Flashing:** galvanised strips where a roof meets a taller wall, and a
+    ridge cap on two-sided roofs.
+  - **Placement:** tilted pieces use `put_axes` / `axes_rot`
+    (`FMatrix::Rotator`).
+  - **Wall mix:** walls are `MI_BackAlleys_CHB_Concrete`. Faces with no door
+    or window on any storey are the user's `MI_BackAlleys_HollowBlocks`
+    (UV-mapped, stretches with tile scale) 30% of the time (`P_HOLLOW`,
+    `WALL_MIX_RNG` seed 107: 16 of 52 windowless faces, 46 tiles). A face never
+    mixes; neighbours may differ. This replaced the earlier mixes.
+  - **Paint:** half the houses take one `MI_BackAlleys_PaintedWall_<Colour>`
+    (`P_PAINTED`, `PAINT_RNG` seed 103: 21 of 41). Faces with openings always
+    take it, windowless ones half the time (`P_PAINT_SIDE`), hollow-block faces
+    never. Parapets and fully painted corners follow it.
+  - **Music:** `Music_Start`, an `AMusicTrigger` in `BackAlleys/Gameplay` playing
+    `DarkCrimes` from the level start. `plan3_gameplay.json` has it; the placer skips it if present.
+  - **Gallery rail:** `SM_Rail_A_001` scaled to 1.05 m on the deck's south, west and
+    east sides. Blocks movement; bullets pass between the bars.
+  - **Awnings:** over windows and doors: `SM_awning_base_01` with a corrugated
+    `SM_MetalPlate_A` sheet, no collision. A house has them or not, and a face has
+    them on all its openings or none.
+  - **Bands and borders:** on painted faces the band always matches. The border between storeys goes where wall and band
+    match. Between the floors each building has one of three, from shuffle bags: no
+    border, a border (always with a contrasting band), or the band 15 cm proud
+    (not on houses touching the gallery). Choices draw from `shuffle_bag` so nothing
+    repeats visibly (user: "have the player not see patterns").
+  - **Stairs:** two `SM_Stair_A_001` flights in line, 7 m run for the 4 m rise
+    (about 30 deg, risers 13-17 cm), a landing at 2 m on two pillars. They run 2 m
+    past the layout's stair rect.
+  - **Window grilles:** every ground-floor window, 37. Five low-poly kinds
+    (`WIN_GRILLES`), from a shuffle bag per house, fitted to the opening, no
+    collision.
+  - **Building floors:** houses and door end walls stand on 18 cm concrete
+    slabs, proud by 8 cm over open ground (`FLOOR_H`, `FLOOR_OUT`), so doors
+    have a riser. A last pass lifts all building folders by `FLOOR_H`; the road,
+    gallery and gameplay points stay put.
+  - **Drips and treatments:** a drip's hard top edge hides behind a border or
+    protruding band. With no border, lower floors get no drips; a face that had
+    them gets top-floor drips instead.
+  - **Textured parent:** `M_BackAlleys_HollowBlocks` (Concrete) is the master
+    of the hollow-block, jalousie (overrides to Glass) and door instances.
+    `M_BackAlleys_Jalousie` is unused. A material instance's physical material
+    only applies with `bOverridePhysMaterial` on.
+  - **Timber:** weatherboards and wedges use `M_BackAlleys_Boards`
+    (`MI_BackAlleys_Boards_Natural/Blue/Green/Brown`), mapped from world
+    position because the pack wood textures are atlases with smeared padding.
+    Flashing and ridge caps use `MI_BackAlleys_Flashing`. The fascia, barge
+    and kisame stay on the beams' own UVs.
+  - **Status:** 3,602 items (roofs 762). Overlap and nav checks are clean.
+    Rebuilt in the level on 2026-11-03. The flashing and weatherboards were
+    then swapped in place, and the 25% wall mix was re-applied. The level
+    matches the plan.
+- **Implications:**
+  - Encounters now play with no cover.
+  - The pickups listed in the layout aren't placed.
+  - The goal (20 kills) and the director are unchanged.
+
+**Didn't fit / open:**
+- No jeepney or tricycle in any pack; still stand-ins.
+- Favela's green window grilles (`SM_Window_Frame_01/02`) and small concrete
+  canopies are left out, because their placement wasn't clear from the dump.
+- **Actor count:** about 2.5× the AsiaSlum build, so per-block merging is
+  required before a Deck measurement.
+- Not walked by the user in PIE yet.
+
+### Asset manifest (`Tools/AssetGen/`, 2026-11-03)
+
+The asset thread owns `Tools/AssetGen/`. The level generator reads from it
+and doesn't edit it.
+- **`measure_ue.py`** runs headless through `RunUnreal.ps1`: read-only, no
+  bridge, about 3 minutes with the editor open. It writes
+  `manifest/index.json`, keyed by object path, plus one file per pack.
+  - Units are local, unscaled cm.
+  - Per mesh: bounds, `pivot` and `extends` (which way it runs from the
+    pivot); `slots` with blend mode and area share; LODs; `collision`
+    (`complex` / `simple` with boxes / `none`); sockets; `sides` and
+    `open_faces`; `normal_spread`; `corners` (≤ 40 vertices).
+  - `openings` for wall and frame pieces (4 cm grid); `top_profile` for
+    stairs, floors and roofs.
+  - Field reference: `Tools/AssetGen/README.md`.
+- **Rule:** fit kit pieces from the manifest, not from hand-typed bounds.
+  When a new mesh enters the generator, add it to `MESHES` and rerun.
+- **5.8 Python gotchas found:**
+  - `MeshDescription.get_triangle_vertices` returns `VertexID` structs.
+    Read the index from `.id_value`.
+  - Triangles wind **clockwise** (Unreal's front face), so
+    `(b − a) × (c − a)` points *into* the mesh. Negate it for the outward
+    normal.
+  - Enum properties stringify as `<Enum.NAME: n>`; parse out the name.
+  - `FKConvexElem.vertex_data` isn't readable, so convex hulls are counted,
+    not boxed.
+- **Budget, 2026-11-03 build** (3,195 actors, 3.14M LOD0 triangles):
+  - `SM_MainBorder_04`: 918 × 2,510 = 2.3M (73%), with complex
+    collision.
+  - `SM_Slate_01`: 233 × 2,872 = 670k.
+  - Everything else is under 100k combined per mesh.
+  - Proposed: our own low-poly trim (about 30 triangles, box collision)
+    and corrugated sheet (100–200 triangles), made headless with Geometry
+    Script. **TBD: the user's OK.**
+- **Painted roof sheets (2026-11-03, user: "Yes, make them"):**
+  `create_metal_sheet_ue.py` makes `M_BackAlleys_MetalSheet` with our own
+  copies of `T_MetalPlate_A_001_D/M/N/R`, and three instances: `_Galv`, the
+  pack look; `_RedOxide`, faded primer; `_Rust`, dark old rust.
+  - **Paint layer:** `PaintColor` covers the sheet (`Coverage`) wherever
+    the texture isn't rusty. The rust mask is `saturate((D.r − D.b) × 6)`
+    against `Wear`.
+  - Paint keeps the texture's shading, and painted parts go non-metallic
+    at roughness `PaintRough`.
+  - `BaseTint` darkens the unpainted metal.
+  - Metal surface type. UV0 tiles at 1 and `MetalScale` is 0, both copied
+    from the pack instance.
+  - **Colours:** tuned offline with `preview_metal_sheet.ps1`. Not yet seen
+    lit: the shader compiles on the first editor load.
+- **Texture hollow blocks (2026-11-03):** the user had GPT turn the Favela
+  red brick (`T_Bricks_01_BC`) into concrete hollow blocks, keeping the
+  brick's layout and UVs.
+  - **The repair:** GPT's face mask lost about a third of the joints, so
+    `repair_chb_texture.ps1` rebuilt them from the source's joint grid
+    (11 courses, 70 head joints).
+  - **The normal map:** the repair rebuilt it as well (DirectX); GPT's
+    own normal map only had the joints its mask kept.
+  - **Assets:** `T_BackAlleys_HollowBlocks_BC/_N` (2048) and
+    `MI_BackAlleys_HollowBlocks`, an instance of `M_BackAlleys_HollowBlocks`
+    on UV0 at roughness 0.9 with the Concrete surface type.
+  - It maps on the Favela tiles' UV0 as their brick did, so it stretches
+    with tile X scale; the procedural `M_BackAlleys_CHB` is
+    world-aligned.
+  - **Repair dropped (user: "I dont want that" → "Use GPT's original"):**
+    `MI_BackAlleys_HollowBlocks` now uses GPT's texture and DirectX normal
+    unchanged, as `T_BackAlleys_HollowBlocksGPT_BC/_N`.
+    - Re-pointed through the bridge (`MaterialInstanceTools`), because the
+      open editor had the instance loaded. Then saved alone with
+      `AssetTools.save_assets(asset_paths)`.
+    - The repaired `T_BackAlleys_HollowBlocks_BC/_N` are unused.
+  - **In the level:** faces with no door or window only, never a whole
+    house. See *Wall mix* in the level's build notes.
+- **Paint materials (2026-11-04):** user: "a wall material based of the look
+  of the decal paints, and variants of the decal of usual philippine house
+  colors, so I can use it if I want the color change outside of the tile
+  face boundaries".
+  - **What Favela's paint is:** `M_Decal_01` is a flat `Decal Color` through
+    a mask (`T_decal_02`). All the imperfections are in that mask. The other
+    `T_decal_01`–`06` are graffiti.
+  - **Decals:** `M_BackAlleys_PaintDecal`, with our own copy of `T_decal_02`,
+    plus `MI_BackAlleys_PaintDecal_<Colour>`.
+  - **Wall material:** `M_BackAlleys_PaintedWall`, with
+    `MI_BackAlleys_PaintedWall_<Colour>`. `T_Concrete_01` under the same flat
+    paint, world-aligned like `M_BackAlleys_CHB`.
+    - **Mask:** `T_BackAlleys_PaintChips`, the inside of `T_decal_02` cut to
+      tile (`make_paint_mask.ps1`), every 2.7 m.
+    - **Repetition:** two samples of it, switched by the concrete's own
+      blotchy colour at 4.3 m.
+    - **Not `T_Wall_H`:** it's a brick wall's height map, so it wears paint
+      away in brick shapes.
+  - **Colours (12):** White, Cream, Yellow, Peach, Salmon, Pink, Mint,
+    AppleGreen, SkyBlue, Teal, Lavender, Terracotta. Dusty, at most about
+    0.55 linear (Favela peaks near 0.34). The same values in both sets, so
+    they match. Picked from general knowledge, not from photos.
+  - **Cost:** the wall material is 386 pixel instructions and 7 samplers
+    (`M_BackAlleys_CHB`: 408 and 9). The decal is 360 on top of the wall, per
+    covered pixel. Not measured on the Deck.
+  - **Not in the level:** §8 of `Claude-Rules.md` allows only
+    `MI_Decal_Dirt_08` as a generated decal. These are for the user to place.
+  - **Checked** only in a headless lit preview
+    (`preview_painted_walls_ue.py`), not in the level's lighting.
+- **Default `WorldGridMaterial` slots** need an override wherever they're
+  placed: `SM_MetalPlate_C_001`, `SM_Sign_A_001`, `SM_Cable_A_005`,
+  `SM_AirConditioner_A_001`, `SM_HouseDoor_A_002` slot 1, and the engine
+  Plane and Cube.
+
 ## Build tooling
 
 **`Tools/RebuildEditor.bat`** (wrapper for `RebuildEditor.ps1`, 2026-10-06):
@@ -9405,6 +10485,8 @@ and a table of what's been done.
 The ones most likely to bite first; the **full list** with reproduction detail
 follows below (moved here from ProjectPlan.md on 2026-10-24 — add new ones there).
 
+- **GPU Lightmass logs `Total lighting time` when a bake is stopped, too**
+  (2026-11-04). That line doesn't prove a bake completed.
 - **A Blend Space (or Sequence) Player reads its `StartPosition` only when
   its state initializes, and with the value from its last update.** So a
   start point that changes per use lags one use behind, and the first use

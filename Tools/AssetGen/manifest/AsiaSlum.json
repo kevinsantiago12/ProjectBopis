@@ -1,0 +1,4706 @@
+{
+ "/Game/AsiaSlum/FBX/SM_Stair_A_001": {
+  "bounds_min": [
+   0.0,
+   -303.2,
+   -214.6
+  ],
+  "bounds_max": [
+   451.3,
+   3.2,
+   0.0
+  ],
+  "size": [
+   451.3,
+   306.5,
+   214.6
+  ],
+  "pivot": "x:min y:offset z:max",
+  "extends": "+X \u00b1Y -Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "WorldGridMaterial",
+    "material": "/Game/AsiaSlum/Material/MI_Stair_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 380,
+    "verts": 492
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 256
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 380,
+  "area_m2": 61.74,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 10,
+    "cover": 0.12,
+    "facing_area_m2": 6.79
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 0.07,
+    "facing_area_m2": 0.46
+   },
+   "+Y": {
+    "tris_on_bound": 30,
+    "cover": 0.22,
+    "facing_area_m2": 2.18
+   },
+   "-Y": {
+    "tris_on_bound": 30,
+    "cover": 0.22,
+    "facing_area_m2": 2.18
+   },
+   "+Z": {
+    "tris_on_bound": 20,
+    "cover": 0.21,
+    "facing_area_m2": 34.87
+   },
+   "-Z": {
+    "tris_on_bound": 10,
+    "cover": 0.1,
+    "facing_area_m2": 15.26
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.31,
+   0.07,
+   0.77
+  ],
+  "uv0": {
+   "u_along": [
+    0.26,
+    0.67,
+    0.11
+   ],
+   "v_along": [
+    0.62,
+    0.29,
+    0.27
+   ],
+   "cm_per_u": 987.5,
+   "cm_per_v": 1068.4
+  },
+  "top_profile": {
+   "along": "X",
+   "bins": [
+    [
+     0.0,
+     37.6,
+     0.0
+    ],
+    [
+     37.6,
+     75.2,
+     0.0
+    ],
+    [
+     75.2,
+     112.8,
+     -18.1
+    ],
+    [
+     112.8,
+     150.4,
+     -34.9
+    ],
+    [
+     150.4,
+     188.1,
+     -10.6
+    ],
+    [
+     188.1,
+     225.7,
+     -69.9
+    ],
+    [
+     225.7,
+     263.3,
+     -87.1
+    ],
+    [
+     263.3,
+     300.9,
+     -10.6
+    ],
+    [
+     300.9,
+     338.5,
+     -142.2
+    ],
+    [
+     338.5,
+     376.1,
+     -159.7
+    ],
+    [
+     376.1,
+     413.7,
+     -175.0
+    ],
+    [
+     413.7,
+     451.3,
+     -189.2
+    ]
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Floor_A_001": {
+  "bounds_min": [
+   0.0,
+   -300.0,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   -0.0,
+   20.0
+  ],
+  "size": [
+   300.0,
+   300.0,
+   20.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "FloorA",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.559
+   },
+   {
+    "index": 1,
+    "name": "FloorB",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.441
+   }
+  ],
+  "lods": [
+   {
+    "tris": 768,
+    "verts": 486
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 768,
+  "area_m2": 20.4,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-X": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "+Y": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-Y": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "+Z": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 9.0
+   },
+   "-Z": {
+    "tris_on_bound": 128,
+    "cover": 1.0,
+    "facing_area_m2": 9.0
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.06,
+   0.06,
+   0.88
+  ],
+  "uv0": {
+   "u_along": [
+    0.94,
+    0.06,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.88,
+    0.12
+   ],
+   "cm_per_u": 300.3,
+   "cm_per_v": 300.3
+  },
+  "top_profile": {
+   "along": "X",
+   "bins": [
+    [
+     0.0,
+     25.0,
+     20.0
+    ],
+    [
+     25.0,
+     50.0,
+     20.0
+    ],
+    [
+     50.0,
+     75.0,
+     20.0
+    ],
+    [
+     75.0,
+     100.0,
+     20.0
+    ],
+    [
+     100.0,
+     125.0,
+     20.0
+    ],
+    [
+     125.0,
+     150.0,
+     20.0
+    ],
+    [
+     150.0,
+     175.0,
+     20.0
+    ],
+    [
+     175.0,
+     200.0,
+     20.0
+    ],
+    [
+     200.0,
+     225.0,
+     20.0
+    ],
+    [
+     225.0,
+     250.0,
+     20.0
+    ],
+    [
+     250.0,
+     275.0,
+     20.0
+    ],
+    [
+     275.0,
+     300.0,
+     20.0
+    ]
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseDoor_A_002": {
+  "bounds_min": [
+   -114.2,
+   -10.2,
+   5.2
+  ],
+  "bounds_max": [
+   1.8,
+   4.2,
+   240.5
+  ],
+  "size": [
+   116.0,
+   14.4,
+   235.3
+  ],
+  "pivot": "x:offset y:offset z:offset",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Door",
+    "material": "/Game/AsiaSlum/Material/MI_MetalDoor_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.998
+   },
+   {
+    "index": 1,
+    "name": "17_-_Default",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 0.002
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2640,
+    "verts": 3439
+   },
+   {
+    "tris": 1320,
+    "verts": 2039
+   },
+   {
+    "tris": 660,
+    "verts": 1154
+   },
+   {
+    "tris": 264,
+    "verts": 564
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 2640,
+  "area_m2": 5.82,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 18,
+    "cover": 0.4,
+    "facing_area_m2": 1.09
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 0.35,
+    "facing_area_m2": 1.09
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 1.62
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 1.62
+   },
+   "+Z": {
+    "tris_on_bound": 4,
+    "cover": 0.34,
+    "facing_area_m2": 0.21
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 0.34,
+    "facing_area_m2": 0.21
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.36,
+   0.57,
+   0.11
+  ],
+  "uv0": {
+   "u_along": [
+    0.21,
+    0.08,
+    0.74
+   ],
+   "v_along": [
+    0.46,
+    0.36,
+    0.18
+   ],
+   "cm_per_u": 572.4,
+   "cm_per_v": 406.0
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      -90.2,
+      -10.2,
+      145.2
+     ],
+     "max": [
+      -66.2,
+      4.2,
+      233.2
+     ],
+     "area_m2": 0.17,
+     "fill": 0.79,
+     "touches": []
+    },
+    {
+     "min": [
+      -62.2,
+      -10.2,
+      145.2
+     ],
+     "max": [
+      -38.2,
+      4.2,
+      233.2
+     ],
+     "area_m2": 0.17,
+     "fill": 0.79,
+     "touches": []
+    },
+    {
+     "min": [
+      -34.2,
+      -10.2,
+      145.2
+     ],
+     "max": [
+      -10.2,
+      4.2,
+      233.2
+     ],
+     "area_m2": 0.17,
+     "fill": 0.79,
+     "touches": []
+    },
+    {
+     "min": [
+      -90.2,
+      -10.2,
+      13.2
+     ],
+     "max": [
+      -66.2,
+      4.2,
+      85.2
+     ],
+     "area_m2": 0.13,
+     "fill": 0.76,
+     "touches": []
+    },
+    {
+     "min": [
+      -62.2,
+      -10.2,
+      13.2
+     ],
+     "max": [
+      -38.2,
+      4.2,
+      85.2
+     ],
+     "area_m2": 0.13,
+     "fill": 0.76,
+     "touches": []
+    },
+    {
+     "min": [
+      -34.2,
+      -10.2,
+      13.2
+     ],
+     "max": [
+      -10.2,
+      4.2,
+      85.2
+     ],
+     "area_m2": 0.13,
+     "fill": 0.76,
+     "touches": []
+    }
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseDoor_A_004": {
+  "bounds_min": [
+   -114.2,
+   -10.2,
+   5.2
+  ],
+  "bounds_max": [
+   1.8,
+   4.9,
+   240.5
+  ],
+  "size": [
+   116.0,
+   15.1,
+   235.3
+  ],
+  "pivot": "x:offset y:offset z:offset",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Door",
+    "material": "/Game/AsiaSlum/Material/MI_MetalDoor_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 940,
+    "verts": 1603
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 940,
+  "area_m2": 5.45,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 18,
+    "cover": 0.38,
+    "facing_area_m2": 1.06
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 0.33,
+    "facing_area_m2": 1.06
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 1.45
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 1.45
+   },
+   "+Z": {
+    "tris_on_bound": 4,
+    "cover": 0.33,
+    "facing_area_m2": 0.21
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 0.33,
+    "facing_area_m2": 0.21
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.39,
+   0.55,
+   0.08
+  ],
+  "uv0": {
+   "u_along": [
+    0.25,
+    0.09,
+    0.67
+   ],
+   "v_along": [
+    0.37,
+    0.38,
+    0.26
+   ],
+   "cm_per_u": 532.4,
+   "cm_per_v": 532.4
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseDoor_A_005": {
+  "bounds_min": [
+   -160.0,
+   -10.2,
+   0.0
+  ],
+  "bounds_max": [
+   2.5,
+   4.9,
+   329.6
+  ],
+  "size": [
+   162.4,
+   15.1,
+   329.6
+  ],
+  "pivot": "x:offset y:offset z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Door",
+    "material": "/Game/AsiaSlum/Material/MI_MetalDoor_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1152,
+    "verts": 1840
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1152,
+  "area_m2": 9.85,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 18,
+    "cover": 0.38,
+    "facing_area_m2": 1.47
+   },
+   "-X": {
+    "tris_on_bound": 10,
+    "cover": 0.33,
+    "facing_area_m2": 1.47
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 3.07
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.0,
+    "facing_area_m2": 3.07
+   },
+   "+Z": {
+    "tris_on_bound": 4,
+    "cover": 0.33,
+    "facing_area_m2": 0.38
+   },
+   "-Z": {
+    "tris_on_bound": 4,
+    "cover": 0.33,
+    "facing_area_m2": 0.38
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.32,
+   0.62,
+   0.08
+  ],
+  "uv0": {
+   "u_along": [
+    0.3,
+    0.07,
+    0.66
+   ],
+   "v_along": [
+    0.41,
+    0.32,
+    0.29
+   ],
+   "cm_per_u": 745.8,
+   "cm_per_v": 547.8
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseDoor_B_003": {
+  "bounds_min": [
+   -112.6,
+   -8.9,
+   -0.0
+  ],
+  "bounds_max": [
+   2.3,
+   3.6,
+   228.0
+  ],
+  "size": [
+   114.9,
+   12.5,
+   228.0
+  ],
+  "pivot": "x:offset y:offset z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "17_-_Default",
+    "material": "/Game/AsiaSlum/Material/MI_MetalDoor_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 840,
+    "verts": 1366
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 840,
+  "area_m2": 6.48,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 22,
+    "cover": 0.45,
+    "facing_area_m2": 0.2
+   },
+   "-X": {
+    "tris_on_bound": 14,
+    "cover": 0.4,
+    "facing_area_m2": 0.2
+   },
+   "+Y": {
+    "tris_on_bound": 2,
+    "cover": 0.0,
+    "facing_area_m2": 2.87
+   },
+   "-Y": {
+    "tris_on_bound": 2,
+    "cover": 0.0,
+    "facing_area_m2": 2.88
+   },
+   "+Z": {
+    "tris_on_bound": 12,
+    "cover": 0.4,
+    "facing_area_m2": 0.19
+   },
+   "-Z": {
+    "tris_on_bound": 12,
+    "cover": 0.4,
+    "facing_area_m2": 0.19
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.08,
+   0.85,
+   0.22
+  ],
+  "uv0": {
+   "u_along": [
+    0.5,
+    0.21,
+    0.43
+   ],
+   "v_along": [
+    0.44,
+    0.09,
+    0.49
+   ],
+   "cm_per_u": 391.0,
+   "cm_per_v": 577.4
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseWall_A_001": {
+  "bounds_min": [
+   0.0,
+   -20.0,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   -0.0,
+   400.0
+  ],
+  "size": [
+   300.0,
+   20.0,
+   400.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Outwall",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBlend_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       0.949,
+       0.865,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.448
+   },
+   {
+    "index": 1,
+    "name": "Inside",
+    "material": "/Game/AsiaSlum/Material/MI_InnerrWall_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       0.844,
+       0.844,
+       0.844,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.448
+   },
+   {
+    "index": 2,
+    "name": "aaa",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.104
+   }
+  ],
+  "lods": [
+   {
+    "tris": 96,
+    "verts": 90
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 96,
+  "area_m2": 26.8,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.8
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.8
+   },
+   "+Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 12.0
+   },
+   "-Y": {
+    "tris_on_bound": 32,
+    "cover": 1.0,
+    "facing_area_m2": 12.0
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 0.6
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.06,
+   0.9,
+   0.04
+  ],
+  "uv0": {
+   "u_along": [
+    0.9,
+    0.1,
+    0.0
+   ],
+   "v_along": [
+    0.04,
+    0.0,
+    0.96
+   ],
+   "cm_per_u": 300.0,
+   "cm_per_v": 400.0
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseWall_A_001_HalfA": {
+  "bounds_min": [
+   0.0,
+   -20.0,
+   0.0
+  ],
+  "bounds_max": [
+   150.0,
+   -0.0,
+   400.0
+  ],
+  "size": [
+   150.0,
+   20.0,
+   400.0
+  ],
+  "pivot": "x:min y:max z:min",
+  "extends": "+X -Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Outwall",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.423
+   },
+   {
+    "index": 1,
+    "name": "Inside",
+    "material": "/Game/AsiaSlum/Material/MI_InnerrWall_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       0.844,
+       0.844,
+       0.844,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.423
+   },
+   {
+    "index": 2,
+    "name": "aaa",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.155
+   }
+  ],
+  "lods": [
+   {
+    "tris": 220,
+    "verts": 188
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 220,
+  "area_m2": 14.2,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 14,
+    "cover": 1.0,
+    "facing_area_m2": 0.8
+   },
+   "-X": {
+    "tris_on_bound": 14,
+    "cover": 1.0,
+    "facing_area_m2": 0.8
+   },
+   "+Y": {
+    "tris_on_bound": 84,
+    "cover": 1.0,
+    "facing_area_m2": 6.0
+   },
+   "-Y": {
+    "tris_on_bound": 84,
+    "cover": 1.0,
+    "facing_area_m2": 6.0
+   },
+   "+Z": {
+    "tris_on_bound": 12,
+    "cover": 1.0,
+    "facing_area_m2": 0.3
+   },
+   "-Z": {
+    "tris_on_bound": 12,
+    "cover": 1.0,
+    "facing_area_m2": 0.3
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.11,
+   0.85,
+   0.04
+  ],
+  "uv0": {
+   "u_along": [
+    0.85,
+    0.15,
+    0.0
+   ],
+   "v_along": [
+    0.04,
+    0.0,
+    0.96
+   ],
+   "cm_per_u": 301.1,
+   "cm_per_v": 400.4
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseWallDoorFrmae_A_001": {
+  "bounds_min": [
+   0.0,
+   -22.4,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   5.4,
+   400.0
+  ],
+  "size": [
+   300.0,
+   27.8,
+   400.0
+  ],
+  "pivot": "x:min y:offset z:min",
+  "extends": "+X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Outwall",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBlend_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       0.949,
+       0.865,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.341
+   },
+   {
+    "index": 1,
+    "name": "Inside",
+    "material": "/Game/AsiaSlum/Material/MI_InnerrWall_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       0.844,
+       0.844,
+       0.844,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.341
+   },
+   {
+    "index": 2,
+    "name": "aaa",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.168
+   },
+   {
+    "index": 3,
+    "name": "Frame",
+    "material": "/Game/AsiaSlum/Material/MI_WooDFrame_A_001_White",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.63,
+       0.599,
+       0.548,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.151
+   }
+  ],
+  "lods": [
+   {
+    "tris": 244,
+    "verts": 346
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 244,
+  "area_m2": 22.36,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 4,
+    "cover": 0.72,
+    "facing_area_m2": 1.66
+   },
+   "-X": {
+    "tris_on_bound": 4,
+    "cover": 0.72,
+    "facing_area_m2": 1.66
+   },
+   "+Y": {
+    "tris_on_bound": 4,
+    "cover": 0.02,
+    "facing_area_m2": 8.49
+   },
+   "-Y": {
+    "tris_on_bound": 24,
+    "cover": 0.07,
+    "facing_area_m2": 8.57
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.72,
+    "facing_area_m2": 1.05
+   },
+   "-Z": {
+    "tris_on_bound": 50,
+    "cover": 0.77,
+    "facing_area_m2": 1.03
+   }
+  },
+  "open_faces": [
+   "+Y"
+  ],
+  "normal_spread": [
+   0.15,
+   0.77,
+   0.09
+  ],
+  "uv0": {
+   "u_along": [
+    0.78,
+    0.13,
+    0.1
+   ],
+   "v_along": [
+    0.08,
+    0.11,
+    0.81
+   ],
+   "cm_per_u": 178.5,
+   "cm_per_v": 176.7
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      76.0,
+      -22.4,
+      4.0
+     ],
+     "max": [
+      224.0,
+      5.4,
+      240.0
+     ],
+     "area_m2": 3.49,
+     "fill": 1.0,
+     "touches": []
+    }
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseWallDoorFrmae_A_002": {
+  "bounds_min": [
+   0.0,
+   -22.4,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   5.4,
+   400.0
+  ],
+  "size": [
+   300.0,
+   27.8,
+   400.0
+  ],
+  "pivot": "x:min y:offset z:min",
+  "extends": "+X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Outwall",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBlend_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       0.949,
+       0.865,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.364
+   },
+   {
+    "index": 1,
+    "name": "Inside",
+    "material": "/Game/AsiaSlum/Material/MI_InnerrWall_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       0.844,
+       0.844,
+       0.844,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.364
+   },
+   {
+    "index": 2,
+    "name": "aaa",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.158
+   },
+   {
+    "index": 3,
+    "name": "Frame",
+    "material": "/Game/AsiaSlum/Material/MI_WooDFrame_A_001_White",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.63,
+       0.599,
+       0.548,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.115
+   }
+  ],
+  "lods": [
+   {
+    "tris": 244,
+    "verts": 346
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 244,
+  "area_m2": 23.81,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 4,
+    "cover": 0.72,
+    "facing_area_m2": 1.65
+   },
+   "-X": {
+    "tris_on_bound": 4,
+    "cover": 0.72,
+    "facing_area_m2": 1.65
+   },
+   "+Y": {
+    "tris_on_bound": 4,
+    "cover": 0.02,
+    "facing_area_m2": 9.33
+   },
+   "-Y": {
+    "tris_on_bound": 20,
+    "cover": 0.05,
+    "facing_area_m2": 9.33
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.72,
+    "facing_area_m2": 0.94
+   },
+   "-Z": {
+    "tris_on_bound": 50,
+    "cover": 0.76,
+    "facing_area_m2": 0.93
+   }
+  },
+  "open_faces": [
+   "+Y"
+  ],
+  "normal_spread": [
+   0.14,
+   0.79,
+   0.08
+  ],
+  "uv0": {
+   "u_along": [
+    0.81,
+    0.11,
+    0.09
+   ],
+   "v_along": [
+    0.07,
+    0.11,
+    0.84
+   ],
+   "cm_per_u": 260.0,
+   "cm_per_v": 192.4
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      96.0,
+      -22.4,
+      4.0
+     ],
+     "max": [
+      204.0,
+      5.4,
+      240.0
+     ],
+     "area_m2": 2.55,
+     "fill": 1.0,
+     "touches": []
+    }
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_HouseWindow_A_001": {
+  "bounds_min": [
+   0.0,
+   -24.0,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   1.9,
+   400.0
+  ],
+  "size": [
+   300.0,
+   25.9,
+   400.0
+  ],
+  "pivot": "x:min y:offset z:min",
+  "extends": "+X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Outwall",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.335
+   },
+   {
+    "index": 1,
+    "name": "Inside",
+    "material": "/Game/AsiaSlum/Material/MI_InnerrWall_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       0.844,
+       0.844,
+       0.844,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.335
+   },
+   {
+    "index": 2,
+    "name": "aaa",
+    "material": "/Game/AsiaSlum/Material/MI_OuterWallBase_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 0.138
+   },
+   {
+    "index": 3,
+    "name": "Frame",
+    "material": "/Game/AsiaSlum/Material/MI_WooDFrame_A_001_White",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.63,
+       0.599,
+       0.548,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.192
+   }
+  ],
+  "lods": [
+   {
+    "tris": 158,
+    "verts": 252
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 158,
+  "area_m2": 27.42,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.77,
+    "facing_area_m2": 1.62
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.77,
+    "facing_area_m2": 1.98
+   },
+   "+Y": {
+    "tris_on_bound": 8,
+    "cover": 0.05,
+    "facing_area_m2": 10.26
+   },
+   "-Y": {
+    "tris_on_bound": 8,
+    "cover": 0.08,
+    "facing_area_m2": 10.25
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.77,
+    "facing_area_m2": 1.66
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 0.77,
+    "facing_area_m2": 1.66
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.14,
+   0.75,
+   0.12
+  ],
+  "uv0": {
+   "u_along": [
+    0.73,
+    0.24,
+    0.03
+   ],
+   "v_along": [
+    0.13,
+    0.02,
+    0.84
+   ],
+   "cm_per_u": 196.8,
+   "cm_per_v": 195.4
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      84.0,
+      -24.0,
+      112.0
+     ],
+     "max": [
+      216.0,
+      1.9,
+      268.0
+     ],
+     "area_m2": 2.06,
+     "fill": 1.0,
+     "touches": []
+    }
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Shop_A_001": {
+  "bounds_min": [
+   0.0,
+   -21.7,
+   0.0
+  ],
+  "bounds_max": [
+   300.0,
+   77.2,
+   400.0
+  ],
+  "size": [
+   300.0,
+   98.8,
+   400.0
+  ],
+  "pivot": "x:min y:offset z:min",
+  "extends": "+X \u00b1Y +Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Shop",
+    "material": "/Game/AsiaSlum/Material/MI_Display_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 196,
+    "verts": 322
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 196,
+  "area_m2": 25.96,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 4,
+    "cover": 0.2,
+    "facing_area_m2": 2.41
+   },
+   "-X": {
+    "tris_on_bound": 22,
+    "cover": 0.2,
+    "facing_area_m2": 2.41
+   },
+   "+Y": {
+    "tris_on_bound": 8,
+    "cover": 0.03,
+    "facing_area_m2": 4.89
+   },
+   "-Y": {
+    "tris_on_bound": 18,
+    "cover": 0.17,
+    "facing_area_m2": 5.08
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.2,
+    "facing_area_m2": 5.59
+   },
+   "-Z": {
+    "tris_on_bound": 6,
+    "cover": 0.64,
+    "facing_area_m2": 5.58
+   }
+  },
+  "open_faces": [
+   "+Y"
+  ],
+  "normal_spread": [
+   0.19,
+   0.42,
+   0.44
+  ],
+  "uv0": {
+   "u_along": [
+    0.39,
+    0.47,
+    0.18
+   ],
+   "v_along": [
+    0.43,
+    0.16,
+    0.43
+   ],
+   "cm_per_u": 561.1,
+   "cm_per_v": 561.1
+  },
+  "openings": {
+   "plane": "XZ",
+   "through": "Y",
+   "grid_cm": 4.0,
+   "regions": [
+    {
+     "min": [
+      12.0,
+      -21.7,
+      260.0
+     ],
+     "max": [
+      288.0,
+      77.2,
+      368.0
+     ],
+     "area_m2": 2.98,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      12.0,
+      -21.7,
+      0.0
+     ],
+     "max": [
+      288.0,
+      77.2,
+      176.0
+     ],
+     "area_m2": 2.38,
+     "fill": 0.49,
+     "touches": [
+      "-Z"
+     ]
+    },
+    {
+     "min": [
+      12.0,
+      -21.7,
+      180.0
+     ],
+     "max": [
+      288.0,
+      77.2,
+      216.0
+     ],
+     "area_m2": 0.99,
+     "fill": 1.0,
+     "touches": []
+    },
+    {
+     "min": [
+      12.0,
+      -21.7,
+      220.0
+     ],
+     "max": [
+      288.0,
+      77.2,
+      256.0
+     ],
+     "area_m2": 0.99,
+     "fill": 1.0,
+     "touches": []
+    }
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Roof_A_002": {
+  "bounds_min": [
+   -6.1,
+   -2.2,
+   -71.9
+  ],
+  "bounds_max": [
+   318.0,
+   218.7,
+   41.3
+  ],
+  "size": [
+   324.1,
+   220.9,
+   113.2
+  ],
+  "pivot": "x:offset y:offset z:offset",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Roof",
+    "material": "/Game/AsiaSlum/Material/MI_Roof_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.63,
+       0.599,
+       0.548,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 604,
+    "verts": 1124
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 256
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 604,
+  "area_m2": 37.53,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 34,
+    "cover": 0.32,
+    "facing_area_m2": 3.38
+   },
+   "-X": {
+    "tris_on_bound": 34,
+    "cover": 0.32,
+    "facing_area_m2": 3.38
+   },
+   "+Y": {
+    "tris_on_bound": 28,
+    "cover": 0.02,
+    "facing_area_m2": 2.43
+   },
+   "-Y": {
+    "tris_on_bound": 82,
+    "cover": 0.2,
+    "facing_area_m2": 2.42
+   },
+   "+Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 12.96
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 0.01,
+    "facing_area_m2": 12.97
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.2,
+   0.28,
+   0.67
+  ],
+  "uv0": {
+   "u_along": [
+    0.08,
+    0.74,
+    0.35
+   ],
+   "v_along": [
+    0.79,
+    0.11,
+    0.13
+   ],
+   "cm_per_u": 978.9,
+   "cm_per_v": 978.9
+  },
+  "top_profile": {
+   "along": "X",
+   "bins": [
+    [
+     -6.1,
+     20.9,
+     41.3
+    ],
+    [
+     20.9,
+     47.9,
+     -2.6
+    ],
+    [
+     47.9,
+     74.9,
+     null
+    ],
+    [
+     74.9,
+     102.0,
+     null
+    ],
+    [
+     102.0,
+     129.0,
+     39.2
+    ],
+    [
+     129.0,
+     156.0,
+     null
+    ],
+    [
+     156.0,
+     183.0,
+     null
+    ],
+    [
+     183.0,
+     210.0,
+     39.2
+    ],
+    [
+     210.0,
+     237.0,
+     null
+    ],
+    [
+     237.0,
+     264.0,
+     null
+    ],
+    [
+     264.0,
+     291.0,
+     31.3
+    ],
+    [
+     291.0,
+     318.0,
+     41.3
+    ]
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_MetalPlate_A_001": {
+  "bounds_min": [
+   -81.2,
+   -2.4,
+   -324.9
+  ],
+  "bounds_max": [
+   81.2,
+   2.4,
+   -0.0
+  ],
+  "size": [
+   162.5,
+   4.8,
+   324.9
+  ],
+  "pivot": "x:centre y:centre z:max",
+  "extends": "\u00b1X \u00b1Y -Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MetalPlate",
+    "material": "/Game/AsiaSlum/Material/MI_MetalPlate_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 364,
+    "verts": 476
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 364,
+  "area_m2": 11.87,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 0.17,
+    "facing_area_m2": 0.03
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 0.11,
+    "facing_area_m2": 0.02
+   },
+   "+Y": {
+    "tris_on_bound": 36,
+    "cover": 0.49,
+    "facing_area_m2": 5.9
+   },
+   "-Y": {
+    "tris_on_bound": 18,
+    "cover": 0.19,
+    "facing_area_m2": 5.9
+   },
+   "+Z": {
+    "tris_on_bound": 90,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-Z": {
+    "tris_on_bound": 90,
+    "cover": 0.15,
+    "facing_area_m2": 0.01
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.39,
+   0.89,
+   0.0
+  ],
+  "uv0": {
+   "u_along": [
+    0.33,
+    0.13,
+    0.63
+   ],
+   "v_along": [
+    0.56,
+    0.26,
+    0.37
+   ],
+   "cm_per_u": 1142.3,
+   "cm_per_v": 436.5
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_MetalPlate_A_002": {
+  "bounds_min": [
+   -81.2,
+   -2.4,
+   -324.9
+  ],
+  "bounds_max": [
+   81.2,
+   2.4,
+   -0.0
+  ],
+  "size": [
+   162.5,
+   4.8,
+   324.9
+  ],
+  "pivot": "x:centre y:centre z:max",
+  "extends": "\u00b1X \u00b1Y -Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MetalPlate",
+    "material": "/Game/AsiaSlum/Material/MI_MetalPlate_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 364,
+    "verts": 476
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 364,
+  "area_m2": 11.87,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 0.17,
+    "facing_area_m2": 0.03
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 0.11,
+    "facing_area_m2": 0.02
+   },
+   "+Y": {
+    "tris_on_bound": 36,
+    "cover": 0.49,
+    "facing_area_m2": 5.9
+   },
+   "-Y": {
+    "tris_on_bound": 18,
+    "cover": 0.19,
+    "facing_area_m2": 5.9
+   },
+   "+Z": {
+    "tris_on_bound": 90,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-Z": {
+    "tris_on_bound": 90,
+    "cover": 0.15,
+    "facing_area_m2": 0.01
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.39,
+   0.89,
+   0.0
+  ],
+  "uv0": {
+   "u_along": [
+    0.57,
+    0.27,
+    0.36
+   ],
+   "v_along": [
+    0.32,
+    0.12,
+    0.64
+   ],
+   "cm_per_u": 1142.3,
+   "cm_per_v": 314.4
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_MetalPlate_C_001": {
+  "bounds_min": [
+   -0.4,
+   0.0,
+   -15.0
+  ],
+  "bounds_max": [
+   200.0,
+   300.0,
+   3.4
+  ],
+  "size": [
+   200.4,
+   300.0,
+   18.5
+  ],
+  "pivot": "x:min y:min z:offset",
+  "extends": "+X +Y \u00b1Z",
+  "long_axis": "Y",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "14_-_Default",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 712,
+    "verts": 576
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 712,
+  "area_m2": 10.89,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 50,
+    "cover": 1.0,
+    "facing_area_m2": 1.25
+   },
+   "-X": {
+    "tris_on_bound": 50,
+    "cover": 1.0,
+    "facing_area_m2": 1.25
+   },
+   "+Y": {
+    "tris_on_bound": 58,
+    "cover": 0.48,
+    "facing_area_m2": 0.18
+   },
+   "-Y": {
+    "tris_on_bound": 58,
+    "cover": 0.48,
+    "facing_area_m2": 0.18
+   },
+   "+Z": {
+    "tris_on_bound": 16,
+    "cover": 1.0,
+    "facing_area_m2": 7.01
+   },
+   "-Z": {
+    "tris_on_bound": 144,
+    "cover": 0.17,
+    "facing_area_m2": 1.01
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.23,
+   0.03,
+   0.74
+  ],
+  "uv0": {
+   "u_along": [
+    0.04,
+    0.95,
+    0.01
+   ],
+   "v_along": [
+    0.73,
+    0.02,
+    0.26
+   ],
+   "cm_per_u": 536.3,
+   "cm_per_v": 645.3
+  },
+  "top_profile": {
+   "along": "Y",
+   "bins": [
+    [
+     0.0,
+     25.0,
+     3.4
+    ],
+    [
+     25.0,
+     50.0,
+     -3.4
+    ],
+    [
+     50.0,
+     75.0,
+     -3.4
+    ],
+    [
+     75.0,
+     100.0,
+     null
+    ],
+    [
+     100.0,
+     125.0,
+     3.4
+    ],
+    [
+     125.0,
+     150.0,
+     -3.4
+    ],
+    [
+     150.0,
+     175.0,
+     -3.4
+    ],
+    [
+     175.0,
+     200.0,
+     3.4
+    ],
+    [
+     200.0,
+     225.0,
+     3.4
+    ],
+    [
+     225.0,
+     250.0,
+     -3.4
+    ],
+    [
+     250.0,
+     275.0,
+     -3.4
+    ],
+    [
+     275.0,
+     300.0,
+     3.4
+    ]
+   ]
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Sign_A_001": {
+  "bounds_min": [
+   -150.0,
+   -6.7,
+   -42.0
+  ],
+  "bounds_max": [
+   150.0,
+   6.5,
+   42.0
+  ],
+  "size": [
+   300.0,
+   13.3,
+   84.1
+  ],
+  "pivot": "x:centre y:centre z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "14_-_Default",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 0.886
+   },
+   {
+    "index": 1,
+    "name": "Emmisive",
+    "material": "/Game/AsiaSlum/Material/MI_MetalFrame_A_001_Black",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.234,
+       0.234,
+       0.234,
+       0.0
+      ],
+      "Color": [
+       0.828,
+       0.427,
+       0.035,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 0.114
+   }
+  ],
+  "lods": [
+   {
+    "tris": 156,
+    "verts": 296
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 156,
+  "area_m2": 6.94,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 6,
+    "cover": 0.9,
+    "facing_area_m2": 0.17
+   },
+   "-X": {
+    "tris_on_bound": 6,
+    "cover": 0.9,
+    "facing_area_m2": 0.17
+   },
+   "+Y": {
+    "tris_on_bound": 16,
+    "cover": 0.05,
+    "facing_area_m2": 2.71
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.05,
+    "facing_area_m2": 2.71
+   },
+   "+Z": {
+    "tris_on_bound": 6,
+    "cover": 0.9,
+    "facing_area_m2": 0.59
+   },
+   "-Z": {
+    "tris_on_bound": 6,
+    "cover": 0.9,
+    "facing_area_m2": 0.59
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.06,
+   0.78,
+   0.2
+  ],
+  "uv0": {
+   "u_along": [
+    0.81,
+    0.1,
+    0.11
+   ],
+   "v_along": [
+    0.14,
+    0.16,
+    0.72
+   ],
+   "cm_per_u": 260.4,
+   "cm_per_v": 260.4
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Cable_A_005": {
+  "bounds_min": [
+   -190.3,
+   -0.0,
+   -53.8
+  ],
+  "bounds_max": [
+   190.3,
+   -0.0,
+   53.8
+  ],
+  "size": [
+   380.6,
+   0.0,
+   107.5
+  ],
+  "pivot": "x:centre y:min z:centre",
+  "extends": "\u00b1X +Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "21_-_Default",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 6,
+    "verts": 8
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 6,
+  "area_m2": 4.09,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "-X": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "+Y": {
+    "tris_on_bound": 6,
+    "cover": 1.0,
+    "facing_area_m2": 4.09
+   },
+   "-Y": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "+Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "-Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "-Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "corners": [
+   [
+    -190.3,
+    -0.0,
+    -53.8
+   ],
+   [
+    -190.3,
+    -0.0,
+    53.8
+   ],
+   [
+    -8.8,
+    -0.0,
+    -53.8
+   ],
+   [
+    -8.8,
+    -0.0,
+    53.8
+   ],
+   [
+    81.3,
+    -0.0,
+    -53.8
+   ],
+   [
+    81.3,
+    -0.0,
+    53.8
+   ],
+   [
+    190.3,
+    -0.0,
+    -53.8
+   ],
+   [
+    190.3,
+    -0.0,
+    53.8
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "cm_per_u": 380.6,
+   "cm_per_v": 380.6
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_Rope_A_001": {
+  "bounds_min": [
+   -0.0,
+   -1.1,
+   -1.1
+  ],
+  "bounds_max": [
+   125.0,
+   1.2,
+   1.2
+  ],
+  "size": [
+   125.0,
+   2.3,
+   2.3
+  ],
+  "pivot": "x:min y:centre z:centre",
+  "extends": "+X \u00b1Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Rope",
+    "material": "/Game/AsiaSlum/Material/MI_Rope_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1208,
+    "verts": 1327
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1208,
+  "area_m2": 0.08,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 11,
+    "cover": 0.49,
+    "facing_area_m2": 0.0
+   },
+   "-X": {
+    "tris_on_bound": 9,
+    "cover": 0.48,
+    "facing_area_m2": 0.0
+   },
+   "+Y": {
+    "tris_on_bound": 257,
+    "cover": 0.65,
+    "facing_area_m2": 0.02
+   },
+   "-Y": {
+    "tris_on_bound": 291,
+    "cover": 0.72,
+    "facing_area_m2": 0.02
+   },
+   "+Z": {
+    "tris_on_bound": 216,
+    "cover": 0.61,
+    "facing_area_m2": 0.02
+   },
+   "-Z": {
+    "tris_on_bound": 283,
+    "cover": 0.57,
+    "facing_area_m2": 0.02
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.13,
+   0.64,
+   0.61
+  ],
+  "uv0": {
+   "u_along": [
+    0.65,
+    0.39,
+    0.42
+   ],
+   "v_along": [
+    0.66,
+    0.39,
+    0.4
+   ],
+   "cm_per_u": 62.2,
+   "cm_per_v": 62.1
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_AirConditioner_A_001": {
+  "bounds_min": [
+   -50.2,
+   -22.1,
+   4.6
+  ],
+  "bounds_max": [
+   75.0,
+   22.4,
+   86.1
+  ],
+  "size": [
+   125.2,
+   44.5,
+   81.5
+  ],
+  "pivot": "x:offset y:centre z:offset",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "Air",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 0.856
+   },
+   {
+    "index": 1,
+    "name": "AA",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 0.144
+   }
+  ],
+  "lods": [
+   {
+    "tris": 13022,
+    "verts": 13397
+   },
+   {
+    "tris": 6511,
+    "verts": 8052
+   },
+   {
+    "tris": 3255,
+    "verts": 4956
+   },
+   {
+    "tris": 1302,
+    "verts": 2221
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 128
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 13022,
+  "area_m2": 3.66,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 12,
+    "cover": 0.05,
+    "facing_area_m2": 0.42
+   },
+   "-X": {
+    "tris_on_bound": 20,
+    "cover": 0.72,
+    "facing_area_m2": 0.42
+   },
+   "+Y": {
+    "tris_on_bound": 542,
+    "cover": 0.04,
+    "facing_area_m2": 0.98
+   },
+   "-Y": {
+    "tris_on_bound": 6,
+    "cover": 0.0,
+    "facing_area_m2": 0.88
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 0.58,
+    "facing_area_m2": 0.49
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 0.58,
+    "facing_area_m2": 0.49
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "-Y"
+  ],
+  "normal_spread": [
+   0.26,
+   0.52,
+   0.3
+  ],
+  "uv0": {
+   "u_along": [
+    0.75,
+    0.22,
+    0.09
+   ],
+   "v_along": [
+    0.07,
+    0.28,
+    0.7
+   ],
+   "cm_per_u": 114.1,
+   "cm_per_v": 114.1
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_AirConditionerFrame_A_001": {
+  "bounds_min": [
+   -60.8,
+   -0.1,
+   -7.2
+  ],
+  "bounds_max": [
+   60.8,
+   84.8,
+   104.8
+  ],
+  "size": [
+   121.6,
+   84.9,
+   112.0
+  ],
+  "pivot": "x:centre y:min z:offset",
+  "extends": "\u00b1X +Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "AA",
+    "material": "/Game/AsiaSlum/Material/MI_MetalFrame_A_001_White",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "BlendColor",
+      "Color"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "BlendScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "metallic",
+      "Rough",
+      "BlendTexture",
+      "BlendAlpha",
+      "BaseColor",
+      "ColorMask",
+      "BlendNormal"
+     ],
+     "vector_values": {
+      "BlendColor": [
+       0.667,
+       0.667,
+       0.667,
+       0.0
+      ],
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial_ColorMask"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 608,
+    "verts": 962
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_COMPLEX_AS_SIMPLE",
+   "type": "complex",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 608,
+  "area_m2": 2.31,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 112,
+    "cover": 0.07,
+    "facing_area_m2": 0.42
+   },
+   "-X": {
+    "tris_on_bound": 122,
+    "cover": 0.21,
+    "facing_area_m2": 0.42
+   },
+   "+Y": {
+    "tris_on_bound": 4,
+    "cover": 0.0,
+    "facing_area_m2": 0.56
+   },
+   "-Y": {
+    "tris_on_bound": 16,
+    "cover": 0.14,
+    "facing_area_m2": 0.56
+   },
+   "+Z": {
+    "tris_on_bound": 20,
+    "cover": 0.0,
+    "facing_area_m2": 0.18
+   },
+   "-Z": {
+    "tris_on_bound": 28,
+    "cover": 0.03,
+    "facing_area_m2": 0.18
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.36,
+   0.45,
+   0.32
+  ],
+  "uv0": {
+   "u_along": [
+    0.22,
+    0.48,
+    0.47
+   ],
+   "v_along": [
+    0.43,
+    0.25,
+    0.39
+   ],
+   "cm_per_u": 113.0,
+   "cm_per_v": 113.0
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_AirConditionerFan_A_001": {
+  "bounds_min": [
+   -22.5,
+   -1.5,
+   -22.7
+  ],
+  "bounds_max": [
+   23.0,
+   1.5,
+   22.9
+  ],
+  "size": [
+   45.5,
+   2.9,
+   45.7
+  ],
+  "pivot": "x:centre y:centre z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "AA",
+    "material": "/Game/AsiaSlum/Material/MI_AirConditioner_A_002",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 1332,
+    "verts": 1274
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 1332,
+  "area_m2": 0.22,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 20,
+    "cover": 0.02,
+    "facing_area_m2": 0.0
+   },
+   "-X": {
+    "tris_on_bound": 32,
+    "cover": 0.02,
+    "facing_area_m2": 0.0
+   },
+   "+Y": {
+    "tris_on_bound": 135,
+    "cover": 0.1,
+    "facing_area_m2": 0.1
+   },
+   "-Y": {
+    "tris_on_bound": 135,
+    "cover": 0.1,
+    "facing_area_m2": 0.1
+   },
+   "+Z": {
+    "tris_on_bound": 18,
+    "cover": 0.02,
+    "facing_area_m2": 0.0
+   },
+   "-Z": {
+    "tris_on_bound": 24,
+    "cover": 0.02,
+    "facing_area_m2": 0.0
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Z",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.17,
+   0.94,
+   0.17
+  ],
+  "uv0": {
+   "u_along": [
+    0.6,
+    0.22,
+    0.6
+   ],
+   "v_along": [
+    0.6,
+    0.08,
+    0.61
+   ],
+   "cm_per_u": 127.7,
+   "cm_per_v": 124.9
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_MetalPlate_A_003": {
+  "bounds_min": [
+   -81.2,
+   -2.4,
+   -164.9
+  ],
+  "bounds_max": [
+   81.2,
+   2.4,
+   0.0
+  ],
+  "size": [
+   162.5,
+   4.8,
+   164.9
+  ],
+  "pivot": "x:centre y:centre z:max",
+  "extends": "\u00b1X \u00b1Y -Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MetalPlate",
+    "material": "/Game/AsiaSlum/Material/MI_MetalPlate_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 364,
+    "verts": 476
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 364,
+  "area_m2": 6.04,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 0.11,
+    "facing_area_m2": 0.01
+   },
+   "+Y": {
+    "tris_on_bound": 36,
+    "cover": 0.49,
+    "facing_area_m2": 3.0
+   },
+   "-Y": {
+    "tris_on_bound": 18,
+    "cover": 0.19,
+    "facing_area_m2": 3.0
+   },
+   "+Z": {
+    "tris_on_bound": 90,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-Z": {
+    "tris_on_bound": 90,
+    "cover": 0.15,
+    "facing_area_m2": 0.01
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.39,
+   0.89,
+   0.0
+  ],
+  "uv0": {
+   "u_along": [
+    0.54,
+    0.23,
+    0.4
+   ],
+   "v_along": [
+    0.35,
+    0.17,
+    0.6
+   ],
+   "cm_per_u": 1142.3,
+   "cm_per_v": 186.8
+  },
+  "pack": "AsiaSlum"
+ },
+ "/Game/AsiaSlum/FBX/SM_MetalPlate_A_004": {
+  "bounds_min": [
+   -81.2,
+   -2.4,
+   -164.9
+  ],
+  "bounds_max": [
+   81.2,
+   2.4,
+   0.0
+  ],
+  "size": [
+   162.5,
+   4.8,
+   164.9
+  ],
+  "pivot": "x:centre y:centre z:max",
+  "extends": "\u00b1X \u00b1Y -Z",
+  "long_axis": "Z",
+  "thin_axis": "Y",
+  "slots": [
+   {
+    "index": 0,
+    "name": "MetalPlate",
+    "material": "/Game/AsiaSlum/Material/MI_MetalPlate_A_001",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "Color",
+      "EmmsiveColor"
+     ],
+     "scalar": [
+      "RoughScale",
+      "MetalScale",
+      "V_Tile",
+      "U_Tile",
+      "UVDivide",
+      "Emmisive",
+      "windintensity",
+      "windweight"
+     ],
+     "texture": [
+      "Normal",
+      "BaseColor",
+      "metallic",
+      "Rough",
+      "EmmisiveMask"
+     ],
+     "vector_values": {
+      "Color": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ],
+      "EmmsiveColor": [
+       1.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     },
+     "parent": "/Game/AsiaSlum/Material/Parent/M_BaseMaterial"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 364,
+    "verts": 476
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 364,
+  "area_m2": 6.04,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 0.11,
+    "facing_area_m2": 0.01
+   },
+   "+Y": {
+    "tris_on_bound": 36,
+    "cover": 0.49,
+    "facing_area_m2": 3.0
+   },
+   "-Y": {
+    "tris_on_bound": 18,
+    "cover": 0.19,
+    "facing_area_m2": 3.0
+   },
+   "+Z": {
+    "tris_on_bound": 90,
+    "cover": 0.17,
+    "facing_area_m2": 0.01
+   },
+   "-Z": {
+    "tris_on_bound": 90,
+    "cover": 0.15,
+    "facing_area_m2": 0.01
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.39,
+   0.89,
+   0.0
+  ],
+  "uv0": {
+   "u_along": [
+    0.45,
+    0.18,
+    0.5
+   ],
+   "v_along": [
+    0.44,
+    0.21,
+    0.5
+   ],
+   "cm_per_u": 1142.3,
+   "cm_per_v": 186.8
+  },
+  "pack": "AsiaSlum"
+ }
+}

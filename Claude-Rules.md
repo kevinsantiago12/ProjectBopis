@@ -125,3 +125,55 @@ list, not just chat.
 - Design and lore are owned by the user and their design partner. Never invent
   lore to fill `[UNDECIDED]` gaps; ask instead. *(see `CLAUDE.md`)*
 - Don't reintroduce anything from the discarded 2098 sci-fi premise.
+
+## 8. Level generation
+
+- **Building blockouts only (2026-11-03):** "forget all the dressings and,
+  just make the building block outs. No other objects in the level besides
+  building blockouts as a rule."
+  - **Stays:** the buildings, the gameplay actors, and the gallery deck and
+    stairs.
+  - **Out:** cover, pickups, dressing and decals, until the user asks for
+    them.
+  - **Roof terraces (2026-11-03):** covered roof terraces on the 1-storey
+    blocks (parapet, corrugated sheets, plank frame) count as building
+    ("Yes, build them"). Their water drums don't.
+  - **Decals (2026-11-03):** wall drip decals are allowed, `MI_Decal_Dirt_08`
+    only. ("I want stain decals next"; withdrawn, then "actually, bring it
+    back but use decal dirt 8".) The rest of the dressing stays off.
+  - Details and the generator switches: `Tools/LevelGen/LESSONS.md`.
+- **Analysing models (2026-11-03):** "I give you permission to analyze them …
+  when you need to." When level work needs it, inspect the meshes (bounds,
+  collision, renders) through headless scripts or Blender without asking
+  first. Only when it's needed, never as a standing sweep. Bridge calls
+  still follow §3.
+  - **The user also asked for a one-off full analysis (2026-11-03)** of
+    Megapack, AsiaSlum and Philippines_Markets: "the models themselves via
+    editor or blender, not just metadata."
+- **Reference images (2026-11-03):** Pinterest and Google Images in the
+  built-in browser are allowed for references ("look at google images as
+  well. So I allow you to do that"). Viewing only; ask before downloading.
+- **Hollow blocks (2026-11-03):** "only use them on walls with no windows or
+  doors. They are not to be used for whole houses"; "the only mixing rule is
+  not to mix on the same face". Neighbouring faces may differ.
+- **Paint (2026-11-04):** "One color per house, but some side can remain
+  unpainted". Faces never mix. Keep the dirt decals ("keep the dirt decal
+  placement there").
+- **Window grilles (2026-11-04):** ground-floor windows get grilles, and they
+  count as building ("find an appropriate window grill and put it in the first
+  floor windows", "more variation is appreciated").
+- **Hidden patterns (2026-11-04):** "we are trying to have patterns in building
+  but have the player not see patterns when playing". Build from rules, but
+  never let a rule read as a rule: no fixed cycles, keep exceptions.
+- **Bands and borders (2026-11-04):** on a painted face the band always matches
+  ("when the face is painted, the band looks off if left unpainted. It works for
+  hollow blocks but not for painted"). Between the floors a building has one of three: "1. No
+  borders, 2. A border 3. A portruding band". Same paint on wall and band means
+  no border; the protruding band is "the band between the 1st and 2nd floor, not
+  the top floor".
+- **Drips (2026-11-04):** a dirt decal's hard top edge must hide behind a ledge
+  (a border or a protruding band), never show on a clean wall ("reevaluate the
+  placements of Dirt decals, becuase of the new border and band rules").
+- Read `Tools/LevelGen/LESSONS.md` before every level build. Run
+  `Tools/LevelGen/analysis/check_overlaps.py` after every generator change
+  (no coincident faces).

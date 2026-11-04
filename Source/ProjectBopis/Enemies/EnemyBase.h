@@ -89,6 +89,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Enemy|Barks", meta = (ClampMin = "0.0"))
 	float AllyDownRadius = 1500.0f;
 
+	/** Sweeping an arena, it tries the Lost Sight bark every so often: seconds, random in range.
+	    The bark's own Chance and Cooldown still apply, so a sweep isn't a chorus. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Barks", meta = (ClampMin = "0.0"))
+	float SweepBarkIntervalMin = 8.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy|Barks", meta = (ClampMin = "0.0"))
+	float SweepBarkIntervalMax = 15.0f;
+
 	/** Holds an area instead of hunting (room encounters in a linear level): once alerted, it
 	    only moves within HoldRadius of where it was placed, never pushes in, and never leaves
 	    to search or roam — out of sight, it covers the last place it saw the player. */
@@ -133,7 +141,8 @@ protected:
 
 	/** Seconds out of sight before the gun comes down and it searches in the lowered stance:
 	    jogging, turned to where it's going, its head toward the last known spot. Seeing the
-	    player again raises it, after a reaction beat. 0: never lowers. Holders keep theirs up. */
+	    player again raises it, after a reaction beat. 0: never lowers. Holders keep theirs up,
+	    and so do an arena's sweepers. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Awareness", meta = (ClampMin = "0.0"))
 	float LowerGunAfter = 4.0f;
 
@@ -198,7 +207,7 @@ protected:
 	float MissCarryDistance = 1500.0f;
 
 	/** Searching: this long (seconds) at the last known spot without finding the player and
-	    the lead is gone — it roams instead (Gunman Check: Lead Gone). */
+	    the lead is gone — it roams instead, or sweeps an arena (Gunman Check: Lead Gone). */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Behaviour|Roam", meta = (ClampMin = "0.0"))
 	float LeadGoneAfter = 3.0f;
 
@@ -217,6 +226,11 @@ protected:
 	/** Max walk speed while patrolling (not alerted, with PatrolPoints): a walk, not a jog. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
 	float PatrolSpeed = 180.0f;
+
+	/** Max walk speed sweeping an arena (SetSweepPoints, once the lead is gone): on to the next
+	    point at pace, gun up — a hunt, not a patrol. */
+	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
+	float SweepSpeed = 450.0f;
 
 	/** Max walk speed with the weapon raised. */
 	UPROPERTY(EditAnywhere, Category = "Enemy|Movement", meta = (ClampMin = "0.0"))
@@ -402,6 +416,14 @@ public:
 	/** Alerted, the player lost, and the last known spot searched out: nothing to go on. */
 	bool IsLeadGone() const { return bLeadGone; }
 
+	/** Searching and stopped short of the last known spot, with no way any closer: the wait
+	    runs as it would on the spot, so the lead still goes cold. */
+	void WaitShortOfLastKnown(float DeltaSeconds)
+	{
+		TimeAtLastKnown += DeltaSeconds;
+		bLeadGone = TimeAtLastKnown >= LeadGoneAfter;
+	}
+
 	bool HoldsPosition() const { return bHoldsPosition; }
 
 	/** Waiting in ambush for its encounter trigger: blind and deaf to the player (and to allies'
@@ -437,6 +459,10 @@ public:
 	}
 
 	void SetPatrolPoints(const TArray<TObjectPtr<AActor>>& Points) { PatrolPoints = Points; }
+
+	/** An arena's spawn points, handed over by its AEncounterDirector: once the lead is gone, it
+	    sweeps between them, picked at random, at SweepSpeed with the gun up, instead of roaming. */
+	void SetSweepPoints(const TArray<TObjectPtr<AActor>>& Points) { SweepPoints = Points; }
 
 	void SetBarkVoice(UBarkVoice* Voice);
 
@@ -474,8 +500,9 @@ public:
 	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
 	virtual bool WantsFreeArmPhysics() const override;
 
-	/** Where to roam next: the furthest Target Point (RoamToPointChance), or a random
-	    reachable spot within RoamRadius. False if neither was found. */
+	/** Where to roam next. Sweeping an arena, a random sweep point other than the one it's at;
+	    otherwise the furthest Target Point (RoamToPointChance), or a random reachable spot
+	    within RoamRadius. False if none was found. */
 	bool ChooseRoamSpot(FVector& OutSpot) const;
 
 	/** Being hit alerts it — to whoever fired. */
@@ -504,6 +531,12 @@ private:
 
 	/** Calm and standing, with a FaceTarget: turns to it. */
 	void UpdateFacing(float DeltaSeconds);
+
+	/** Sweeping: calls out now and then (SweepBarkInterval). */
+	void UpdateSweepBark(float DeltaSeconds);
+
+	/** Seconds to its next call-out on this sweep; below 0, not sweeping. */
+	float SweepBarkTimeLeft = -1.0f;
 
 	/** In a scripted event's hands: a Move To, so it doesn't patrol off. */
 	bool bScriptedMove = false;
@@ -593,6 +626,11 @@ private:
 
 	/** The last known spot has been searched out (see LeadGoneAfter). */
 	bool bLeadGone = false;
+
+	/** An arena's spawn points, swept at random once the lead is gone (SetSweepPoints). Empty
+	    for everyone else, who roam. */
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> SweepPoints;
 
 	/** Where it was placed: the centre of its hold area. */
 	FVector HomeLocation = FVector::ZeroVector;

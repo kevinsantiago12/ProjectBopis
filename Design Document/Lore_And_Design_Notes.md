@@ -740,6 +740,14 @@ the room rather than hunting the player. Some may wait **crouched**. They do
 **not** use cover tactically — no popping up from behind cover to shoot
 (user: "I dont want whack a mole").
 
+**Arena enemies hunt, never patrol — *stated 2026-11-03*.** In an arena, once
+anyone is alerted, "the walking 'patrol' never happens again… Going back on
+patrol goes against the full action setting." An enemy that loses the player
+first chases, then goes to the last known spot and waits there a moment. If
+the player isn't found, it makes an "aggressive sweep to point": from one
+spawn point to another picked at random, in a ready stance. Room enemies in
+linear levels still hold their room, as above.
+
 **Slice setting — settled 2026-10-23:** the first playable slice is set in
 **Filipino slum alleyways** (user). District and story arc still open.
 

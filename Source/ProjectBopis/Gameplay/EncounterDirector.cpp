@@ -158,6 +158,8 @@ bool AEncounterDirector::TrySpawnOne()
 		}
 	}
 
+	// Once it's lost the player, it sweeps this arena's spawn points instead of standing about.
+	Enemy->SetSweepPoints(SpawnPoints);
 	Alive.Add(Enemy);
 	++SpawnedCount;
 	if (bSpawnAlerted)

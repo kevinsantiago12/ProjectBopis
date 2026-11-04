@@ -105,158 +105,199 @@ code { font: 500 .9em var(--mono); }
 @media (max-width: 900px) { .row2, .lists { grid-template-columns: 1fr; } }
 </style>
 
+<style>
+.lane { fill: var(--floor); }
+.edge { fill: none; stroke: var(--wall); stroke-width: .4; }
+.blk1 { fill: var(--mass); stroke: var(--wall); stroke-width: .25; opacity: .55; }
+.stair { fill: var(--floor); stroke: var(--wall); stroke-width: .14; }
+.t-c { font: 500 .7px var(--body); fill: var(--floor); }
+.plan2 { display: block; width: 100%; min-width: 760px; height: auto; }
+.cols { columns: 2 340px; column-gap: 28px; display: block; }
+.cols table { break-inside: avoid; margin-bottom: 8px; }
+</style>
+
 <div class="wrap">
   <header>
-    <div class="eyebrow">ProjectBopis · level layout · respawning arena · slums · draft 2026-10-23</div>
+    <div class="eyebrow">ProjectBopis · level layout · respawning arena · slum alleys only · draft 2026-11-02</div>
     <h1>Slum Arena Layout</h1>
-    <p class="lede">One slum block, about <b>48 × 40 m</b>, where <b>gunmen keep coming</b>. A barangay half-court in the middle, a ring of lanes around it, eight dead-end eskinitas where enemies come out of shanty doors, and a plank gallery at +4 m on the row house. <b>Everything loops:</b> no lane ends in a dead end for the player except the spawn alleys. Lanes are 4–6 m wide, wider than a real eskinita, so a dive has room.</p>
+    <p class="lede"><b>Redesign:</b> the court is gone, and the arena is all alleys now, 4.5 m wide, on a 1.5 m grid so the 3 m wall kit fits. 54 × 48 m. Every alley bends or ends in a T within 10–20 m, so <b>the longest line of sight is about 25 m</b> (a 1.2 m-wide line, measured across the whole map) instead of 40+ m with the court. Eight dead-end alleys still end in shanty doors where enemies come out. The +4 m gallery is now a balcony on the south face of one house. <b>Both its stairs come down facing north along an open alley</b>, with 5.5 m and 11.5 m of lane ahead. No grenade launcher.</p>
   </header>
 
   <div class="sheet">
     <div class="sheet-head">
       <h2>Plan · ground + gallery</h2>
-      <span class="meta">1 grid square = 1 m · heavy line every 5 m · north up</span>
+      <span class="meta">metres from the NW corner (x east, y south) · grid 1.5 m, heavy line every 6 m · north up</span>
     </div>
     <div class="scroll">
-      <svg class="plan" viewBox="0 0 100 50" role="img" aria-label="Top-down plan of the slum arena: central half-court, ring lanes, eight spawn stubs, gallery on the east row house, pickups">
+      <svg class="plan2" viewBox="0 0 96 54" role="img" aria-label="Top-down plan of the all-alley slum arena">
         <defs>
-          <pattern id="g1" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M1 0V1H0" class="g1" fill="none"/></pattern>
-          <pattern id="g5" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="url(#g1)"/><path d="M5 0V5H0" class="g5" fill="none"/></pattern>
+          <pattern id="g1" width="1.5" height="1.5" patternUnits="userSpaceOnUse"><path d="M1.5 0V1.5H0" class="g1" fill="none"/></pattern>
+          <pattern id="g5" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="url(#g1)"/><path d="M6 0V6H0" class="g5" fill="none"/></pattern>
           <pattern id="hatch" width=".7" height=".7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2=".7" class="hl"/></pattern>
-          <marker id="arr" viewBox="0 0 4 4" refX="2" refY="2" markerWidth="3" markerHeight="3" orient="auto"><path d="M0 0L4 2L0 4z" class="arrowhead"/></marker>
         </defs>
-        <rect width="100" height="50" fill="url(#g5)"/>
-
-        <!-- legend -->
+        <rect width="96" height="54" fill="url(#g5)"/>
         <g>
-          <text x="3" y="4.6" class="t-head">LEGEND</text>
-          <rect x="3.2" y="6.2" width="1.6" height="1.3" class="blk"/><text x="5.6" y="7.2" class="t-leg">Shanty block (solid)</text>
-          <circle cx="4" cy="9.4" r=".75" class="spawn"/><circle cx="4" cy="9.4" r=".25" class="spawn-d"/><text x="5.6" y="9.7" class="t-leg">Enemy entrance (shanty door)</text>
-          <path d="M4 11.1L4.8 12.5H3.2Z" class="roam"/><text x="5.6" y="12.1" class="t-leg">Where lost enemies wander to</text>
-          <rect x="3.55" y="13.6" width=".9" height=".9" class="pick" transform="rotate(45 4 14.05)"/><text x="5.6" y="14.4" class="t-leg">Pickup</text>
-          <circle cx="4" cy="16.6" r=".6" class="start"/><text x="5.6" y="16.9" class="t-leg">Player start</text>
-          <rect x="3.3" y="18.4" width="1.4" height="1.4" class="cover"/><text x="5.6" y="19.4" class="t-leg">Low cover (dive past)</text>
-          <rect x="3.1" y="20.8" width="1.8" height="1.4" class="tall"/><text x="5.6" y="21.8" class="t-leg">Full-height sightline breaker</text>
-          <rect x="3.1" y="23.2" width="1.8" height="1.3" class="bal"/><text x="5.6" y="24.2" class="t-leg">Plank gallery at +4 m</text>
-          <line x1="2.8" y1="26.3" x2="5" y2="26.3" class="sight"/><text x="5.6" y="26.6" class="t-leg">Long sightline (rifle lane)</text>
-          <line x1="2.8" y1="28.6" x2="5" y2="28.6" class="wire"/><text x="5.6" y="28.9" class="t-leg">Laundry / wires overhead (dressing)</text>
-          <g transform="translate(3 31.5)">
-            <rect x="0" y="0" width="5" height=".5" class="slab"/><rect x="5" y="0" width="5" height=".5" fill="none" class="dim" style="stroke:var(--wall);stroke-width:.1"/>
-            <text x="0" y="1.6" class="t-dim">0</text><text x="4.7" y="1.6" class="t-dim">5</text><text x="9.4" y="1.6" class="t-dim">10 m</text>
+          <text x="2" y="5" class="t-head">LEGEND</text>
+          <rect x="2.2" y="6.6" width="1.6" height="1.3" class="blk"/><text x="4.6" y="7.6" class="t-leg">House, 2 storeys (8 m)</text>
+          <rect x="2.2" y="8.9" width="1.6" height="1.3" class="blk1"/><text x="4.6" y="9.9" class="t-leg">Boundary wall, 1 storey (4 m)</text>
+          <circle cx="3" cy="12" r=".75" class="spawn"/><circle cx="3" cy="12" r=".25" class="spawn-d"/><text x="4.6" y="12.3" class="t-leg">Enemy door + spawn spot</text>
+          <path d="M3 13.7l.8 1.4h-1.6z" class="roam"/><text x="4.6" y="14.7" class="t-leg">Where lost enemies wander</text>
+          <rect x="2.55" y="16.4" width=".9" height=".9" class="pick" transform="rotate(45 3 16.85)"/><text x="4.6" y="17.2" class="t-leg">Pickup</text>
+          <circle cx="3" cy="19.4" r=".6" class="start"/><text x="4.6" y="19.7" class="t-leg">Player start</text>
+          <rect x="2.3" y="21.3" width="1.4" height="1.4" class="cover"/><text x="4.6" y="22.3" class="t-leg">Low cover (dive past)</text>
+          <rect x="2.1" y="23.7" width="1.8" height="1.4" class="tall"/><text x="4.6" y="24.7" class="t-leg">Full-height (jeepney, kiosk)</text>
+          <rect x="2.1" y="26.1" width="1.8" height="1.3" class="bal"/><text x="4.6" y="27.1" class="t-leg">Gallery deck at +4 m</text>
+          <rect x="2.4" y="28.9" width="1.2" height="1.8" class="stair"/><path d="M3 27.8l-.5 .8h1z" class="arrowhead"/><text x="4.6" y="30" class="t-leg">Stair, arrow = way down</text>
+          <g transform="translate(2 32.5)">
+            <rect x="0" y="0" width="6" height=".5" class="slab"/><rect x="6" y="0" width="6" height=".5" fill="none" class="dim" style="stroke:var(--wall);stroke-width:.1"/>
+            <text x="0" y="1.6" class="t-dim">0</text><text x="5.7" y="1.6" class="t-dim">6</text><text x="11.2" y="1.6" class="t-dim">12 m</text>
           </g>
-          <text x="3" y="37" class="t-w">Endless: 4 gunmen at a time</text>
-          <text x="3" y="38.3" class="t-sub">a new one every few seconds after a kill</text>
-          <text x="3" y="39.5" class="t-sub">never from a door within 12 m of you</text>
-          <text x="3" y="40.7" class="t-sub">and preferably from one you can't see</text>
+          <text x="2" y="36.7" class="t-w">GOAL: 20 kills clears the arena</text>
+          <text x="2" y="38" class="t-w">4 gunmen at a time, respawning</text>
+          <text x="2" y="39.3" class="t-sub">never from a door within 12 m of you,</text>
+          <text x="2" y="40.5" class="t-sub">preferably from one you can't see</text>
         </g>
-
-        <!-- arena, local origin = NW corner, 48 × 40 m -->
-        <g transform="translate(36 5)">
-          <rect x="0" y="0" width="48" height="40" class="room"/>
-
-          <!-- shanty blocks -->
-          <rect x="0" y="0" width="14" height="9" class="blk"/>
-          <rect x="18" y="0" width="12" height="10" class="blk"/>
-          <rect x="34" y="0" width="14" height="8" class="blk"/>
-          <rect x="0" y="13" width="10" height="14" class="blk"/>
-          <rect x="38" y="13" width="10" height="14" class="blk"/>
-          <rect x="0" y="31" width="14" height="9" class="blk"/>
-          <rect x="18" y="30" width="12" height="10" class="blk"/>
-          <rect x="34" y="32" width="14" height="8" class="blk"/>
-
-          <text x="7" y="4.6" class="t-sub" text-anchor="middle">shanties</text>
-          <text x="24" y="4.6" class="t-sub" text-anchor="middle">sari-sari row</text>
-          <text x="41" y="4.2" class="t-sub" text-anchor="middle">shanties</text>
-          <text x="5" y="20.3" class="t-sub" text-anchor="middle">shanties</text>
-          <text x="43" y="19.6" class="t-sub" text-anchor="middle">row house</text>
-          <text x="43" y="20.6" class="t-sub" text-anchor="middle">2 storeys</text>
-          <text x="7" y="36" class="t-sub" text-anchor="middle">shanties</text>
-          <text x="24" y="35.4" class="t-sub" text-anchor="middle">shanties</text>
-          <text x="41" y="36.4" class="t-sub" text-anchor="middle">shanties</text>
-
-          <!-- half-court markings -->
-          <rect x="16" y="14" width="16" height="12" class="ghost"/>
-          <path d="M20 14 V18.5 H28 V14" class="ghost"/>
-          <path d="M19.5 18.5 A4.5 4.5 0 0 0 28.5 18.5" class="ghost"/>
-          <rect x="23.4" y="14.1" width="1.2" height=".5" class="slab"/>
-          <text x="24" y="16.2" class="t-room" text-anchor="middle">Half-court</text>
-          <text x="24" y="17.1" class="t-sub" text-anchor="middle">16 × 12 · open</text>
-
-          <!-- court cover -->
-          <rect x="19.5" y="20" width="2" height="2" class="cover"/>
-          <text x="20.5" y="23" class="t-sub" text-anchor="middle">blocks</text>
-          <rect x="27" y="20.5" width="2.4" height="1.3" class="cover"/>
-          <text x="28.2" y="23" class="t-sub" text-anchor="middle">tricycle</text>
-
-          <!-- north lane: jeepney -->
-          <rect x="20.5" y="10.6" width="7" height="2.4" rx=".4" class="tall"/>
-          <text x="24" y="12.1" class="t-sub" text-anchor="middle" style="fill:var(--floor)">jeepney</text>
-          <text x="9.5" y="11.6" class="t-room" text-anchor="middle">North lane</text>
-
-          <!-- south lane: kiosk + drums -->
-          <rect x="25" y="26.8" width="3.2" height="2.4" class="tall"/>
-          <text x="26.6" y="28.3" class="t-sub" text-anchor="middle" style="fill:var(--floor)">kiosk</text>
-          <rect x="20.5" y="27.4" width="1.2" height="1.2" class="cover"/>
-          <text x="9.5" y="29.6" class="t-room" text-anchor="middle">South lane</text>
-
-          <!-- west lane: drums + laundry -->
-          <rect x="11.6" y="15.2" width="1.2" height="1.2" class="cover"/>
-          <rect x="13.4" y="23.4" width="1.2" height="1.2" class="cover"/>
-          <path d="M10 18.2 L16 18.6 M10 20.8 L16 21.2" class="wire"/>
-          <text x="12.2" y="27.6" class="t-room" text-anchor="middle">West</text>
-          <text x="12.2" y="28.7" class="t-room" text-anchor="middle">lane</text>
-
-          <!-- east lane: gallery + stairs -->
-          <rect x="34" y="13" width="4" height="14" class="bal"/>
-          <rect x="35" y="8" width="3" height="5" class="room" style="stroke-width:.15"/>
-          <path d="M35 9H38M35 10H38M35 11H38M35 12H38" class="tread"/>
-          <rect x="35" y="27" width="3" height="5" class="room" style="stroke-width:.15"/>
-          <path d="M35 28H38M35 29H38M35 30H38M35 31H38" class="tread"/>
-          <text x="36.5" y="7.4" class="t-sub" text-anchor="middle">stairs ↓</text>
-          <text x="36.5" y="33.2" class="t-sub" text-anchor="middle">stairs ↑</text>
-          <text x="36" y="15.4" class="t-room" text-anchor="middle" style="font-size:.95px">Gallery</text>
-          <text x="36" y="16.3" class="t-sub" text-anchor="middle">+4 m</text>
-          <rect x="32.6" y="19.4" width="1.2" height="1.2" class="cover"/>
-          <path d="M30 13.5 L38 14 M30 26.5 L38 26" class="wire"/>
-
-          <!-- spawn points, recessed shanty doors at stub ends -->
-          <g>
-            <circle cx="16" cy="1.6" r=".75" class="spawn"/><circle cx="16" cy="1.6" r=".25" class="spawn-d"/><text x="16" y="3.3" class="t-w" text-anchor="middle">S1</text>
-            <circle cx="32" cy="1.6" r=".75" class="spawn"/><circle cx="32" cy="1.6" r=".25" class="spawn-d"/><text x="32" y="3.3" class="t-w" text-anchor="middle">S2</text>
-            <circle cx="46.4" cy="10.5" r=".75" class="spawn"/><circle cx="46.4" cy="10.5" r=".25" class="spawn-d"/><text x="44.6" y="10.8" class="t-w" text-anchor="middle">S3</text>
-            <circle cx="46.4" cy="29.5" r=".75" class="spawn"/><circle cx="46.4" cy="29.5" r=".25" class="spawn-d"/><text x="44.6" y="29.8" class="t-w" text-anchor="middle">S4</text>
-            <circle cx="32" cy="38.4" r=".75" class="spawn"/><circle cx="32" cy="38.4" r=".25" class="spawn-d"/><text x="32" y="37.2" class="t-w" text-anchor="middle">S5</text>
-            <circle cx="16" cy="38.4" r=".75" class="spawn"/><circle cx="16" cy="38.4" r=".25" class="spawn-d"/><text x="16" y="37.2" class="t-w" text-anchor="middle">S6</text>
-            <circle cx="1.6" cy="29" r=".75" class="spawn"/><circle cx="1.6" cy="29" r=".25" class="spawn-d"/><text x="3.4" y="29.3" class="t-w" text-anchor="middle">S7</text>
-            <circle cx="1.6" cy="11" r=".75" class="spawn"/><circle cx="1.6" cy="11" r=".25" class="spawn-d"/><text x="3.4" y="11.3" class="t-w" text-anchor="middle">S8</text>
-          </g>
-
-          <!-- roam-only target points -->
-          <path d="M24 18.6L24.7 19.8H23.3Z" class="roam"/><text x="24" y="20.7" class="t-r" text-anchor="middle">R1</text>
-          <path d="M13 9.8L13.7 11H12.3Z" class="roam"/><text x="13" y="9.4" class="t-r" text-anchor="middle">R2</text>
-          <path d="M33 23L33.7 24.2H32.3Z" class="roam"/><text x="33" y="25.1" class="t-r" text-anchor="middle">R3</text>
-
-          <!-- pickups -->
-          <rect x="35.6" y="20.1" width=".9" height=".9" class="pick" transform="rotate(45 36 20.5)"/><text x="36" y="22.2" class="t-p" text-anchor="middle">rifle</text>
-          <rect x="35.6" y="24.6" width=".9" height=".9" class="pick" transform="rotate(45 36 25)"/><text x="36" y="26.4" class="t-p" text-anchor="middle">rifle ammo</text>
-          <rect x="11.1" y="19.6" width=".9" height=".9" class="pick" transform="rotate(45 11.5 20)"/><text x="11.6" y="22.4" class="t-p" text-anchor="middle">shotgun</text>
-          <rect x="29.1" y="11.4" width=".9" height=".9" class="pick" transform="rotate(45 29.5 11.8)"/><text x="31.6" y="12.1" class="t-p" text-anchor="middle">2× grenade</text>
-          <rect x="18.6" y="27.6" width=".9" height=".9" class="pick" transform="rotate(45 19 28)"/><text x="19" y="29.6" class="t-p" text-anchor="middle">launcher +3</text>
-          <rect x="16.6" y="14.6" width=".8" height=".8" class="pick" transform="rotate(45 17 15)"/>
-          <rect x="30.6" y="14.6" width=".8" height=".8" class="pick" transform="rotate(45 31 15)"/>
-          <rect x="16.6" y="24.6" width=".8" height=".8" class="pick" transform="rotate(45 17 25)"/>
-          <rect x="30.6" y="24.6" width=".8" height=".8" class="pick" transform="rotate(45 31 25)"/>
-          <text x="24" y="25.5" class="t-p" text-anchor="middle">ammo at the 4 court corners</text>
-
-          <!-- player start -->
-          <circle cx="24" cy="23.4" r=".6" class="start"/>
-          <text x="22.9" y="23.7" class="t-a" text-anchor="end">START</text>
-
-          <!-- long sightlines -->
-          <line x1="15.2" y1="9.4" x2="15.2" y2="30.4" class="sight" marker-end="url(#arr)"/>
-          <text x="14.6" y="13.6" class="t-a" text-anchor="end" transform="rotate(-90 14.6 13.6)">22 m</text>
-          <line x1="35.4" y1="14" x2="17" y2="29.6" class="sight" marker-end="url(#arr)"/>
-          <text x="27.5" y="20.6" class="t-a" transform="rotate(-40 27.5 20.6)">gallery → SW · 24 m</text>
+        <g transform="translate(38 3)">
+          <rect x="0" y="0" width="54" height="48" class="blk"/>
+          <rect x="6" y="6" width="15" height="4.5" class="lane"/>
+          <rect x="16.5" y="6" width="4.5" height="9" class="lane"/>
+          <rect x="16.5" y="10.5" width="19.5" height="4.5" class="lane"/>
+          <rect x="31.5" y="6" width="4.5" height="9" class="lane"/>
+          <rect x="31.5" y="6" width="16.5" height="4.5" class="lane"/>
+          <rect x="43.5" y="6" width="4.5" height="16.5" class="lane"/>
+          <rect x="39" y="18" width="9" height="4.5" class="lane"/>
+          <rect x="39" y="18" width="4.5" height="13.5" class="lane"/>
+          <rect x="39" y="27" width="9" height="4.5" class="lane"/>
+          <rect x="43.5" y="27" width="4.5" height="15" class="lane"/>
+          <rect x="31.5" y="37.5" width="16.5" height="4.5" class="lane"/>
+          <rect x="31.5" y="33" width="4.5" height="9" class="lane"/>
+          <rect x="16.5" y="33" width="19.5" height="4.5" class="lane"/>
+          <rect x="16.5" y="33" width="4.5" height="9" class="lane"/>
+          <rect x="6" y="37.5" width="15" height="4.5" class="lane"/>
+          <rect x="6" y="25.5" width="4.5" height="16.5" class="lane"/>
+          <rect x="6" y="25.5" width="9" height="4.5" class="lane"/>
+          <rect x="10.5" y="16.5" width="7.5" height="13.5" class="lane"/>
+          <rect x="6" y="16.5" width="9" height="4.5" class="lane"/>
+          <rect x="6" y="6" width="4.5" height="15" class="lane"/>
+          <rect x="24" y="15" width="7.5" height="10.5" class="lane"/>
+          <rect x="24" y="25.5" width="3" height="1.5" class="lane"/>
+          <rect x="27" y="21" width="12" height="4.5" class="lane"/>
+          <rect x="15" y="27" width="15" height="4.5" class="lane"/>
+          <rect x="27" y="27" width="4.5" height="6" class="lane"/>
+          <rect x="12" y="0" width="4.5" height="6" class="lane"/>
+          <rect x="39" y="0" width="4.5" height="6" class="lane"/>
+          <rect x="48" y="12" width="6" height="4.5" class="lane"/>
+          <rect x="48" y="33" width="6" height="4.5" class="lane"/>
+          <rect x="36" y="42" width="4.5" height="6" class="lane"/>
+          <rect x="10.5" y="42" width="4.5" height="6" class="lane"/>
+          <rect x="0" y="10.5" width="6" height="4.5" class="lane"/>
+          <rect x="0" y="31.5" width="6" height="4.5" class="lane"/>
+          <rect x="0" y="0" width="12" height="6" class="blk"/>
+          <rect x="16.5" y="0" width="22.5" height="6" class="blk"/>
+          <rect x="43.5" y="0" width="4.5" height="6" class="blk"/>
+          <rect x="48" y="0" width="6" height="12" class="blk"/>
+          <rect x="0" y="6" width="6" height="4.5" class="blk"/>
+          <rect x="21" y="6" width="10.5" height="4.5" class="blk"/>
+          <rect x="10.5" y="10.5" width="6" height="6" class="blk"/>
+          <rect x="36" y="10.5" width="7.5" height="7.5" class="blk"/>
+          <rect x="0" y="15" width="6" height="16.5" class="blk"/>
+          <rect x="16.5" y="15" width="1.5" height="1.5" class="blk1"/>
+          <rect x="18" y="15" width="6" height="12" class="blk"/>
+          <rect x="31.5" y="15" width="4.5" height="6" class="blk"/>
+          <rect x="48" y="16.5" width="6" height="16.5" class="blk"/>
+          <rect x="36" y="18" width="3" height="3" class="blk"/>
+          <rect x="6" y="21" width="4.5" height="4.5" class="blk"/>
+          <rect x="43.5" y="22.5" width="4.5" height="4.5" class="blk"/>
+          <rect x="27" y="25.5" width="4.5" height="1.5" class="blk1"/>
+          <rect x="31.5" y="25.5" width="7.5" height="7.5" class="blk"/>
+          <rect x="10.5" y="30" width="4.5" height="1.5" class="blk1"/>
+          <rect x="10.5" y="31.5" width="6" height="6" class="blk"/>
+          <rect x="16.5" y="31.5" width="10.5" height="1.5" class="blk1"/>
+          <rect x="39" y="31.5" width="4.5" height="1.5" class="blk1"/>
+          <rect x="36" y="33" width="7.5" height="4.5" class="blk"/>
+          <rect x="0" y="36" width="6" height="12" class="blk"/>
+          <rect x="21" y="37.5" width="10.5" height="4.5" class="blk"/>
+          <rect x="48" y="37.5" width="6" height="4.5" class="blk"/>
+          <rect x="6" y="42" width="4.5" height="6" class="blk"/>
+          <rect x="15" y="42" width="21" height="6" class="blk"/>
+          <rect x="40.5" y="42" width="13.5" height="6" class="blk"/>
+          <rect x="0" y="0" width="54" height="48" class="edge"/>
+          <rect x="22.5" y="33" width="7" height="2.4" class="tall"/>
+          <rect x="10.6" y="27.6" width="3.2" height="2.4" class="tall"/>
+          <rect x="30" y="13.2" width="2.4" height="1.3" class="cover"/>
+          <rect x="31" y="22" width="2.4" height="0.7" class="cover"/>
+          <rect x="40" y="8" width="2.4" height="0.7" class="cover"/>
+          <rect x="7.5" y="6.8" width="1.8" height="1.4" class="cover"/>
+          <rect x="44.2" y="30.3" width="1.8" height="1.4" class="cover"/>
+          <rect x="43.5" y="38.4" width="1.8" height="1.4" class="cover"/>
+          <rect x="34" y="11.2" width="1.8" height="1.4" class="cover"/>
+          <rect x="15" y="27" width="12" height="3" class="bal"/>
+          <rect x="15" y="22" width="3" height="5" class="stair"/>
+          <line x1="15" y1="22.83" x2="18" y2="22.83" class="tread"/>
+          <line x1="15" y1="23.66" x2="18" y2="23.66" class="tread"/>
+          <line x1="15" y1="24.49" x2="18" y2="24.49" class="tread"/>
+          <line x1="15" y1="25.32" x2="18" y2="25.32" class="tread"/>
+          <line x1="15" y1="26.15" x2="18" y2="26.15" class="tread"/>
+          <path d="M16.5 20.7 l-.7 1.2 h1.4z" class="arrowhead"/>
+          <rect x="24" y="22" width="3" height="5" class="stair"/>
+          <line x1="24" y1="22.83" x2="27" y2="22.83" class="tread"/>
+          <line x1="24" y1="23.66" x2="27" y2="23.66" class="tread"/>
+          <line x1="24" y1="24.49" x2="27" y2="24.49" class="tread"/>
+          <line x1="24" y1="25.32" x2="27" y2="25.32" class="tread"/>
+          <line x1="24" y1="26.15" x2="27" y2="26.15" class="tread"/>
+          <path d="M25.5 20.7 l-.7 1.2 h1.4z" class="arrowhead"/>
+          <rect x="13.55" y="0" width="1.4" height=".5" class="slab"/>
+          <circle cx="14.25" cy="1.6" r=".75" class="spawn"/><circle cx="14.25" cy="1.6" r=".25" class="spawn-d"/>
+          <text x="14.25" y="3.66" class="t-w" text-anchor="middle">S1</text>
+          <rect x="40.55" y="0" width="1.4" height=".5" class="slab"/>
+          <circle cx="41.25" cy="1.6" r=".75" class="spawn"/><circle cx="41.25" cy="1.6" r=".25" class="spawn-d"/>
+          <text x="41.25" y="3.66" class="t-w" text-anchor="middle">S2</text>
+          <rect x="53.5" y="13.55" width=".5" height="1.4" class="slab"/>
+          <circle cx="52.4" cy="14.25" r=".75" class="spawn"/><circle cx="52.4" cy="14.25" r=".25" class="spawn-d"/>
+          <text x="50.64" y="14.55" class="t-w" text-anchor="middle">S3</text>
+          <rect x="53.5" y="34.55" width=".5" height="1.4" class="slab"/>
+          <circle cx="52.4" cy="35.25" r=".75" class="spawn"/><circle cx="52.4" cy="35.25" r=".25" class="spawn-d"/>
+          <text x="50.64" y="35.55" class="t-w" text-anchor="middle">S4</text>
+          <rect x="37.55" y="47.5" width="1.4" height=".5" class="slab"/>
+          <circle cx="38.25" cy="46.4" r=".75" class="spawn"/><circle cx="38.25" cy="46.4" r=".25" class="spawn-d"/>
+          <text x="38.25" y="44.94" class="t-w" text-anchor="middle">S5</text>
+          <rect x="12.05" y="47.5" width="1.4" height=".5" class="slab"/>
+          <circle cx="12.75" cy="46.4" r=".75" class="spawn"/><circle cx="12.75" cy="46.4" r=".25" class="spawn-d"/>
+          <text x="12.75" y="44.94" class="t-w" text-anchor="middle">S6</text>
+          <rect x="0" y="33.05" width=".5" height="1.4" class="slab"/>
+          <circle cx="1.6" cy="33.75" r=".75" class="spawn"/><circle cx="1.6" cy="33.75" r=".25" class="spawn-d"/>
+          <text x="3.36" y="34.05" class="t-w" text-anchor="middle">S7</text>
+          <rect x="0" y="12.05" width=".5" height="1.4" class="slab"/>
+          <circle cx="1.6" cy="12.75" r=".75" class="spawn"/><circle cx="1.6" cy="12.75" r=".25" class="spawn-d"/>
+          <text x="3.36" y="13.05" class="t-w" text-anchor="middle">S8</text>
+          <path d="M21 12.15l.7 1.2h-1.4z" class="roam"/><text x="21" y="14.25" class="t-r" text-anchor="middle">R1</text>
+          <path d="M12 33.15l.7 1.2h-1.4z" class="roam"/><text x="12" y="35.25" class="t-r" text-anchor="middle">R2</text>
+          <path d="M42 19.65l.7 1.2h-1.4z" class="roam"/><text x="42" y="21.75" class="t-r" text-anchor="middle">R3</text>
+          <rect x="20.55" y="28.05" width=".9" height=".9" class="pick" transform="rotate(45 21 28.5)"/>
+          <rect x="19.05" y="28.75" width=".9" height=".9" class="pick" transform="rotate(45 19.5 29.2)"/>
+          <rect x="45.3" y="34.05" width=".9" height=".9" class="pick" transform="rotate(45 45.75 34.5)"/>
+          <rect x="30.55" y="33.85" width=".9" height=".9" class="pick" transform="rotate(45 31 34.3)"/>
+          <rect x="17.55" y="7.8" width=".9" height=".9" class="pick" transform="rotate(45 18 8.25)"/>
+          <rect x="7.8" y="37.55" width=".9" height=".9" class="pick" transform="rotate(45 8.25 38)"/>
+          <rect x="36.05" y="22.8" width=".9" height=".9" class="pick" transform="rotate(45 36.5 23.25)"/>
+          <rect x="45.3" y="11.55" width=".9" height=".9" class="pick" transform="rotate(45 45.75 12)"/>
+          <circle cx="29.25" cy="19" r=".6" class="start"/>
+          <text x="27.75" y="3.3" class="t-sub" text-anchor="middle">sari-sari row (shop fronts face south)</text>
+          <text x="21" y="20.6" class="t-sub" text-anchor="middle">balcony</text>
+          <text x="21" y="21.5" class="t-sub" text-anchor="middle">house</text>
+          <text x="21" y="31.25" class="t-a" text-anchor="middle" style="font-size:.62px">GALLERY +4 m</text>
+          <text x="16.5" y="18.4" class="t-dim" text-anchor="middle">5.5 m</text>
+          <text x="25.5" y="18.4" class="t-dim" text-anchor="middle">11.5 m</text>
+          <text x="26" y="34.5" class="t-c" text-anchor="middle">jeepney</text>
+          <text x="12.2" y="29.1" class="t-c" text-anchor="middle">kiosk</text>
+          <text x="21" y="27.9" class="t-p" text-anchor="middle" style="font-size:.6px">rifle + ammo</text>
+          <text x="45.75" y="36.2" class="t-p" text-anchor="middle">shotgun</text>
+          <text x="31" y="36" class="t-p" text-anchor="middle">2× grenade</text>
+          <text x="18" y="9.9" class="t-p" text-anchor="middle">.45</text>
+          <text x="8.25" y="39.7" class="t-p" text-anchor="middle">.45</text>
+          <text x="36.5" y="24.9" class="t-p" text-anchor="middle">.45</text>
+          <text x="45.75" y="13.7" class="t-p" text-anchor="middle">.45</text>
+          <text x="29.25" y="20.8" class="t-a" text-anchor="middle">START</text>
         </g>
       </svg>
     </div>
@@ -264,49 +305,57 @@ code { font: 500 .9em var(--mono); }
 
   <div class="row2">
     <div class="sheet">
-      <div class="sheet-head"><h2>Section · cut west → east at y 20</h2><span class="meta">heights in metres · looking north</span></div>
+      <div class="sheet-head"><h2>Section · west stair</h2><span class="meta">cut north → south at x 16.5 · looking east</span></div>
       <div class="pad">
-        <svg viewBox="-1 0 42 13" role="img" aria-label="Section through the west lane, court, east lane under the gallery and the two-storey row house">
-          <!-- ground at y=11, 1 unit = 1 m, x=0 is the west lane's west wall -->
-          <rect x="-1" y="5" width="1" height="6" class="sec-blk"/>
-          <line x1="0" y1="11" x2="38" y2="11" class="ground"/>
-          <rect x="28" y="4" width="10" height="7" class="sec-blk"/>
-          <line x1="28" y1="7.6" x2="38" y2="7.6" class="beyond"/>
-          <rect x="24" y="6.6" width="4" height=".4" class="slab"/>
-          <line x1="24.15" y1="6.6" x2="24.15" y2="5.6" class="ground" style="stroke-width:.12"/>
-          <line x1="24" y1="5.6" x2="28" y2="5.6" class="ground" style="stroke-width:.1"/>
-          <path d="M26 11 L24 7" class="beyond"/>
-          <rect x="2" y="10.1" width="1.2" height=".9" class="cover" style="fill:var(--cover)"/>
-          <rect x="16" y="9.5" width="2.4" height="1.5" class="cover" style="fill:var(--cover)"/>
-          <line x1="24" y1="4.6" x2="10" y2="9.6" class="sight"/>
-          <text x="3" y="12.3" class="t-dim">west lane 6</text>
-          <text x="12" y="12.3" class="t-dim">half-court 16</text>
-          <text x="22.6" y="12.3" class="t-dim">east lane 6</text>
-          <text x="30" y="12.3" class="t-dim">row house</text>
-          <text x="24.3" y="5.1" class="t-dim">+4 gallery</text>
-          <line x1="27.4" y1="7" x2="27.4" y2="11" class="dim"/>
-          <text x="26.8" y="9.6" class="t-dim" text-anchor="end">3.6 clear</text>
-          <text x="30" y="3.6" class="t-dim">+7</text>
-          <text x="2" y="4" class="t-dim">gallery sees the whole court</text>
+        <svg viewBox="13 -1 22 12" role="img" aria-label="Section through the west stair: foot facing north into the alley, deck at +4 m over the lane">
+          <rect x="13" y="1" width="3.5" height="8" class="sec-blk"/>
+          <line x1="16.5" y1="9" x2="33" y2="9" class="ground"/>
+          <rect x="18" y="1" width="9" height="8" class="sec-blk" style="opacity:.45"/>
+          <path d="M22 9 L27 5 L27 9 Z" style="fill:var(--cover)"/>
+          <rect x="27" y="4.6" width="3" height=".4" class="slab"/>
+          <line x1="29.9" y1="4.6" x2="29.9" y2="3.6" class="ground" style="stroke-width:.1"/>
+          <line x1="27" y1="3.6" x2="30" y2="3.6" class="ground" style="stroke-width:.08"/>
+          <rect x="31.5" y="5" width="1.5" height="4" class="sec-blk"/>
+          <line x1="16.5" y1="9.7" x2="22" y2="9.7" class="sight"/>
+          <text x="19.25" y="10.7" class="t-a" text-anchor="middle" style="font-size:.6px">5.5 m open alley</text>
+          <text x="16.8" y="8.6" class="t-dim">← lane turns west</text>
+          <text x="23.2" y="8.6" class="t-dim">stair 4 m up / 5 m</text>
+          <text x="27.2" y="4.2" class="t-dim">deck +4</text>
+          <line x1="29.4" y1="5" x2="29.4" y2="9" class="dim"/>
+          <text x="29.2" y="7.3" class="t-dim" text-anchor="end">3.6</text>
+          <text x="19" y="1.8" class="t-dim">balcony house (beyond), 8 m</text>
+          <text x="31.3" y="4.6" class="t-dim">4 m wall</text>
+          <text x="13.3" y="0.4" class="t-dim">N</text><text x="32.4" y="0.4" class="t-dim">S</text>
         </svg>
-        <p class="note">The gallery is the high ground: rifle on it, sight over the whole court, but open to the court and both stairs, so standing there gets you flanked. It's a vantage point to take and then leave, not a camping spot. There's 3.6 m of headroom underneath, enough to dive through.</p>
+        <p class="note">You come down the stairs facing north into the widened west alley, not into a wall. The east stair is the mirror of this one, with 11.5 m of alley ahead running up to the north lane. The deck is the house's second floor (+4 m) and covers the north 3 m of the lane below, with 3.6 m of headroom under it. The rifle is up there, and so is a view down three alleys. Both stairs lead up to it, so it's a loop, not a dead end.</p>
       </div>
     </div>
 
     <div class="sheet">
-      <div class="sheet-head"><h2>Zones</h2><span class="meta">what each space is for</span></div>
+      <div class="sheet-head"><h2>What changed</h2><span class="meta">from the court version</span></div>
       <div class="pad">
         <table>
-          <tr><th>Zone</th><th>Size · role</th></tr>
-          <tr><td>Half-court</td><td>16 × 12 m, open. The hub: you start here, every lane opens onto it, ammo at its corners. Dangerous to stand in, quick to cross</td></tr>
-          <tr><td>North lane</td><td>4–5 m wide. A parked jeepney blocks the line of fire; grenades by its tail</td></tr>
-          <tr><td>South lane</td><td>4–5 m wide. A kiosk and drums; the grenade launcher</td></tr>
-          <tr><td>West lane</td><td>6 m wide, laundry overhead. The long rifle lane (22 m); shotgun halfway</td></tr>
-          <tr><td>East lane + gallery</td><td>6 m lane under a +4 m plank gallery, stairs at both ends. Rifle up top</td></tr>
-          <tr><td>Spawn alleys S1–S8</td><td>4–5 m wide, 8–10 m deep, a shanty door at the end. Where enemies come from. Shotgun range if you go in</td></tr>
+          <tr><th>Then</th><th>Now</th></tr>
+          <tr><td>16 × 12 m court</td><td>Gone. The middle is the balcony house and a T-shaped alley cluster</td></tr>
+          <tr><td>Lanes 5–6 m, straight</td><td>4.5 m alleys, each bending or ending in a T within 10–20 m</td></tr>
+          <tr><td>40+ m sightlines</td><td>Longest about 25 m, and only on a shallow diagonal through a bend. Most are 10–18 m</td></tr>
+          <tr><td>Stairs into a wall</td><td>Both stairs come down along an open alley (5.5 m and 11.5 m ahead)</td></tr>
+          <tr><td>Grenade launcher</td><td>Removed, along with its ammo</td></tr>
+          <tr><td>Stub alleys 8–10 m</td><td>6 m deep, 4.5 m wide, a door at the arena edge</td></tr>
         </table>
-        <p class="note">R1–R3 are where enemies who've lost you wander, so they cross the court and lanes looking for you instead of drifting back into the dead-end alleys.</p>
+        <p class="note">Full-height walls between every pair of alleys should also help the Deck: there's not much you can see from any one spot.</p>
       </div>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h2>Build data</h2><span class="meta">metres from the NW corner · x east, y south · also in <code>Arena_Slums_Layout.json</code></span></div>
+    <div class="pad cols">
+<h3 style="font:700 16px var(--display);text-transform:uppercase;margin:10px 0 4px">Blocks (solid)</h3><table><tr><th>id</th><th>x0</th><th>y0</th><th>x1</th><th>y1</th><th>storeys</th></tr><tr><td>B1</td><td>0</td><td>0</td><td>12</td><td>6</td><td>2</td></tr><tr><td>B2</td><td>16.5</td><td>0</td><td>39</td><td>6</td><td>2</td></tr><tr><td>B3</td><td>43.5</td><td>0</td><td>48</td><td>6</td><td>2</td></tr><tr><td>B4</td><td>48</td><td>0</td><td>54</td><td>12</td><td>2</td></tr><tr><td>B5</td><td>0</td><td>6</td><td>6</td><td>10.5</td><td>2</td></tr><tr><td>B6</td><td>21</td><td>6</td><td>31.5</td><td>10.5</td><td>2</td></tr><tr><td>B7</td><td>10.5</td><td>10.5</td><td>16.5</td><td>16.5</td><td>2</td></tr><tr><td>B8</td><td>36</td><td>10.5</td><td>43.5</td><td>18</td><td>2</td></tr><tr><td>B9</td><td>0</td><td>15</td><td>6</td><td>31.5</td><td>2</td></tr><tr><td>B10</td><td>16.5</td><td>15</td><td>18</td><td>16.5</td><td>1</td></tr><tr><td>B11</td><td>18</td><td>15</td><td>24</td><td>27</td><td>2</td></tr><tr><td>B12</td><td>31.5</td><td>15</td><td>36</td><td>21</td><td>2</td></tr><tr><td>B13</td><td>48</td><td>16.5</td><td>54</td><td>33</td><td>2</td></tr><tr><td>B14</td><td>36</td><td>18</td><td>39</td><td>21</td><td>2</td></tr><tr><td>B15</td><td>6</td><td>21</td><td>10.5</td><td>25.5</td><td>2</td></tr><tr><td>B16</td><td>43.5</td><td>22.5</td><td>48</td><td>27</td><td>2</td></tr><tr><td>B17</td><td>27</td><td>25.5</td><td>31.5</td><td>27</td><td>1</td></tr><tr><td>B18</td><td>31.5</td><td>25.5</td><td>39</td><td>33</td><td>2</td></tr><tr><td>B19</td><td>10.5</td><td>30</td><td>15</td><td>31.5</td><td>1</td></tr><tr><td>B20</td><td>10.5</td><td>31.5</td><td>16.5</td><td>37.5</td><td>2</td></tr><tr><td>B21</td><td>16.5</td><td>31.5</td><td>27</td><td>33</td><td>1</td></tr><tr><td>B22</td><td>39</td><td>31.5</td><td>43.5</td><td>33</td><td>1</td></tr><tr><td>B23</td><td>36</td><td>33</td><td>43.5</td><td>37.5</td><td>2</td></tr><tr><td>B24</td><td>0</td><td>36</td><td>6</td><td>48</td><td>2</td></tr><tr><td>B25</td><td>21</td><td>37.5</td><td>31.5</td><td>42</td><td>2</td></tr><tr><td>B26</td><td>48</td><td>37.5</td><td>54</td><td>42</td><td>2</td></tr><tr><td>B27</td><td>6</td><td>42</td><td>10.5</td><td>48</td><td>2</td></tr><tr><td>B28</td><td>15</td><td>42</td><td>36</td><td>48</td><td>2</td></tr><tr><td>B29</td><td>40.5</td><td>42</td><td>54</td><td>48</td><td>2</td></tr></table>
+<h3 style="font:700 16px var(--display);text-transform:uppercase;margin:10px 0 4px">Enemy doors</h3><table><tr><th>id</th><th>x</th><th>y</th><th>faces</th></tr><tr><td>S1</td><td>14.25</td><td>0</td><td>S</td></tr><tr><td>S2</td><td>41.25</td><td>0</td><td>S</td></tr><tr><td>S3</td><td>54</td><td>14.25</td><td>W</td></tr><tr><td>S4</td><td>54</td><td>35.25</td><td>W</td></tr><tr><td>S5</td><td>38.25</td><td>48</td><td>N</td></tr><tr><td>S6</td><td>12.75</td><td>48</td><td>N</td></tr><tr><td>S7</td><td>0</td><td>33.75</td><td>E</td></tr><tr><td>S8</td><td>0</td><td>12.75</td><td>E</td></tr></table>
+<h3 style="font:700 16px var(--display);text-transform:uppercase;margin:10px 0 4px">Gallery + stairs</h3><table><tr><th>part</th><th>x0</th><th>y0</th><th>x1</th><th>y1</th><th>note</th></tr><tr><td>deck</td><td>15</td><td>27</td><td>27</td><td>30</td><td>+4 m, 3.6 m clear under</td></tr><tr><td>stair_W</td><td>15</td><td>22</td><td>18</td><td>27</td><td>foot at y 22 facing N, 5.5 m clear ahead; top at y 27 on the deck</td></tr><tr><td>stair_E</td><td>24</td><td>22</td><td>27</td><td>27</td><td>foot at y 22 facing N, 11.5 m clear ahead; top at y 27 on the deck</td></tr></table>
+<h3 style="font:700 16px var(--display);text-transform:uppercase;margin:10px 0 4px">Cover</h3><table><tr><th>piece</th><th>x0</th><th>y0</th><th>x1</th><th>y1</th></tr><tr><td>jeepney (full height)</td><td>22.5</td><td>33</td><td>29.5</td><td>35.4</td></tr><tr><td>kiosk (full height)</td><td>10.6</td><td>27.6</td><td>13.8</td><td>30</td></tr><tr><td>tricycle</td><td>30</td><td>13.2</td><td>32.4</td><td>14.5</td></tr><tr><td>barrier_1</td><td>31</td><td>22</td><td>33.4</td><td>22.7</td></tr><tr><td>barrier_2</td><td>40</td><td>8</td><td>42.4</td><td>8.7</td></tr><tr><td>drums_1</td><td>7.5</td><td>6.8</td><td>9.3</td><td>8.2</td></tr><tr><td>drums_2</td><td>44.2</td><td>30.3</td><td>46</td><td>31.7</td></tr><tr><td>drums_3</td><td>43.5</td><td>38.4</td><td>45.3</td><td>39.8</td></tr><tr><td>drums_4</td><td>34</td><td>11.2</td><td>35.8</td><td>12.6</td></tr></table>
+<h3 style="font:700 16px var(--display);text-transform:uppercase;margin:10px 0 4px">Pickups, wander points, start</h3><table><tr><th>what</th><th>x</th><th>y</th></tr><tr><td>rifle (on deck, +4)</td><td>21</td><td>28.5</td></tr><tr><td>rifle ammo (on deck, +4)</td><td>19.5</td><td>29.2</td></tr><tr><td>shotgun</td><td>45.75</td><td>34.5</td></tr><tr><td>2x grenade</td><td>31</td><td>34.3</td></tr><tr><td>.45 ammo</td><td>18</td><td>8.25</td></tr><tr><td>.45 ammo</td><td>8.25</td><td>38</td></tr><tr><td>.45 ammo</td><td>36.5</td><td>23.25</td></tr><tr><td>.45 ammo</td><td>45.75</td><td>12</td></tr><tr><td>wander R1</td><td>21</td><td>12.75</td></tr><tr><td>wander R2</td><td>12</td><td>33.75</td></tr><tr><td>wander R3</td><td>42</td><td>20.25</td></tr><tr><td>player start</td><td>29.25</td><td>19</td></tr></table>
     </div>
   </div>
 
@@ -314,28 +363,28 @@ code { font: 500 .9em var(--mono); }
     <section>
       <h2>How it plays</h2>
       <ul>
-        <li>You start in the open court with enemies coming from all sides. The first move is to get out of the middle.</li>
-        <li>Pick a weapon route: west lane for the shotgun, the gallery for the rifle, south for the launcher.</li>
-        <li>Enemies arrive from doors you can't see, so you keep turning and keep circling the ring.</li>
-        <li>Drops from the dead keep your favourite gun fed; grenades and rockets are the scarce extras.</li>
+        <li><b>Kill 20 to clear it.</b> 4 are out at once and each kill brings another, so the last 4 come out with nobody behind them.</li>
+        <li>You start in the east-middle alley with no long views, so the first contact is close.</li>
+        <li>Enemies come out of doors you can't see and arrive round corners at 5–15 m. That's pistol and shotgun range, with dives across T-junctions.</li>
+        <li>The gallery is the one high spot. Take the rifle, hold for a moment, and get off before they reach both stairs.</li>
+        <li>Fewer open spaces means fewer enemies converging on you at once. Any group has to come down a 4.5 m alley.</li>
       </ul>
     </section>
     <section>
       <h2>Layout calls I made</h2>
       <ul>
-        <li><b>Loops everywhere.</b> Ring lanes around the court plus the gallery's two stairs, so a pursuit can always run around rather than into a wall.</li>
-        <li><b>Enemies enter from dead ends only.</b> Each alley ends in a shanty door, so they come out of the houses, out of view.</li>
-        <li><b>Near and far in one space:</b> 22–24 m rifle lanes (west lane, gallery diagonal) vs. the court and stubs at shotgun range.</li>
-        <li>The jeepney and kiosk break the north and south lanes, which would otherwise be 48 m wall to wall.</li>
-        <li>Low cover is sparse and meant to dive past, never to peek from (no whack-a-mole).</li>
+        <li>The longest 25 m lines are shallow diagonals through a bend. Straight runs end at 18 m or less.</li>
+        <li>The jeepney (south lane) and the kiosk (west junction) each leave a 2.1 m squeeze to walk past, and each cuts one of the longer views.</li>
+        <li>The 1.5 m-thick pieces (B17, B19, B21, B22) are 4 m boundary walls rather than houses.</li>
+        <li>The block table is a plain split of the solid area. Neighbouring pieces touch, so walls go only on faces that border an alley.</li>
       </ul>
     </section>
     <section class="owned">
       <h2>Open</h2>
       <ul>
-        <li>Should grenades and launcher rounds come back after a while, or stay one-time finds?</li>
-        <li>Is there a goal (survive a time, a kill count) or is it endless until you die?</li>
-        <li>What this arena is for: a combat test bed, or a game mode alongside the linear campaign (canon stays "linear, not arena").</li>
+        <li><b>Decided 2026-11-02:</b> the goal is <b>20 kills</b>. The arena is cleared when the 20th gunman dies, and dying restarts it.</li>
+        <li>Grenades: a one-time find, or do they come back after a while?</li>
+        <li>What happens once it's cleared (an exit opens, a message, back to the menu)?</li>
       </ul>
     </section>
   </div>

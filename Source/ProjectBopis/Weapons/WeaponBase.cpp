@@ -65,9 +65,9 @@ AWeaponBase::AWeaponBase()
 	MuzzleLight->SetVisibility(false);
 	MuzzleLight->CastShadows = false;
 	MuzzleLight->bAffectTranslucentLighting = false;
-	MuzzleLight->AttenuationRadius = 250.0f;
+	MuzzleLight->AttenuationRadius = 62.5f;
 	MuzzleLight->IntensityUnits = ELightUnits::Candelas;
-	MuzzleLight->Intensity = 60.0f;
+	MuzzleLight->Intensity = 15.0f;
 	MuzzleLight->LightColor = FColor(255, 184, 107);
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.

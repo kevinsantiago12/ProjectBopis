@@ -394,6 +394,10 @@ you have — the dive, the roll, slow motion — to take them all down. They rea
 when they see or hear you, or the moment you step into the room, with a beat
 of surprise before they open fire.
 
+In an **arena fight**, once the shooting starts it never calms down. Break
+line of sight and the enemies come after you: first to where they last saw
+you, then sweeping the alleys from one end to the other, guns up.
+
 ### Under reconsideration
 
 The previous version's structure: a **linear campaign of at least ten

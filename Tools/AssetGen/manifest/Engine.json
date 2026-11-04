@@ -1,0 +1,422 @@
+{
+ "/Engine/BasicShapes/Plane": {
+  "bounds_min": [
+   -50.0,
+   -50.0,
+   -0.0
+  ],
+  "bounds_max": [
+   50.0,
+   50.0,
+   0.0
+  ],
+  "size": [
+   100.0,
+   100.0,
+   0.0
+  ],
+  "pivot": "x:centre y:centre z:min",
+  "extends": "\u00b1X \u00b1Y +Z",
+  "long_axis": "X",
+  "thin_axis": "Z",
+  "slots": [
+   {
+    "index": 0,
+    "name": "lambert1",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 2,
+    "verts": 4
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -50.0,
+      -50.0,
+      0.0
+     ],
+     "max": [
+      50.0,
+      50.0,
+      0.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      -0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 2,
+  "area_m2": 1.0,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "-X": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "+Y": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "-Y": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   },
+   "+Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 0.0
+   }
+  },
+  "open_faces": [
+   "+X",
+   "-X",
+   "+Y",
+   "-Y",
+   "-Z"
+  ],
+  "normal_spread": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "corners": [
+   [
+    -50.0,
+    -50.0,
+    0.0
+   ],
+   [
+    -50.0,
+    50.0,
+    -0.0
+   ],
+   [
+    50.0,
+    -50.0,
+    0.0
+   ],
+   [
+    50.0,
+    50.0,
+    -0.0
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "cm_per_u": 100.0,
+   "cm_per_v": 100.0
+  },
+  "pack": "Engine"
+ },
+ "/Engine/BasicShapes/Cube": {
+  "bounds_min": [
+   -50.0,
+   -50.0,
+   -50.0
+  ],
+  "bounds_max": [
+   50.0,
+   50.0,
+   50.0
+  ],
+  "size": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "pivot": "x:centre y:centre z:centre",
+  "extends": "\u00b1X \u00b1Y \u00b1Z",
+  "long_axis": "X",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "WorldGridMaterial",
+    "material": "/Engine/EngineMaterials/WorldGridMaterial",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [],
+     "scalar": [],
+     "texture": []
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 48,
+    "verts": 54
+   }
+  ],
+  "nanite": false,
+  "lightmap": {
+   "coord": 1,
+   "res": 64
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [
+    {
+     "min": [
+      -50.0,
+      -50.0,
+      -50.0
+     ],
+     "max": [
+      50.0,
+      50.0,
+      50.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 0
+  },
+  "sockets": [],
+  "tris_lod0": 48,
+  "area_m2": 6.0,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-X": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "+Y": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-Y": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "+Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-Z": {
+    "tris_on_bound": 8,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.33,
+   0.33,
+   0.33
+  ],
+  "corners": [
+   [
+    -50.0,
+    -50.0,
+    -50.0
+   ],
+   [
+    -50.0,
+    -50.0,
+    0.0
+   ],
+   [
+    -50.0,
+    -50.0,
+    50.0
+   ],
+   [
+    -50.0,
+    -0.0,
+    -50.0
+   ],
+   [
+    -50.0,
+    0.0,
+    -0.0
+   ],
+   [
+    -50.0,
+    0.0,
+    50.0
+   ],
+   [
+    -50.0,
+    50.0,
+    -50.0
+   ],
+   [
+    -50.0,
+    50.0,
+    -0.0
+   ],
+   [
+    -50.0,
+    50.0,
+    50.0
+   ],
+   [
+    0.0,
+    -50.0,
+    -50.0
+   ],
+   [
+    0.0,
+    -50.0,
+    0.0
+   ],
+   [
+    0.0,
+    -50.0,
+    50.0
+   ],
+   [
+    0.0,
+    -0.0,
+    -50.0
+   ],
+   [
+    0.0,
+    0.0,
+    50.0
+   ],
+   [
+    0.0,
+    50.0,
+    -50.0
+   ],
+   [
+    0.0,
+    50.0,
+    -0.0
+   ],
+   [
+    0.0,
+    50.0,
+    50.0
+   ],
+   [
+    50.0,
+    -50.0,
+    -50.0
+   ],
+   [
+    50.0,
+    -50.0,
+    0.0
+   ],
+   [
+    50.0,
+    -50.0,
+    50.0
+   ],
+   [
+    50.0,
+    -0.0,
+    -50.0
+   ],
+   [
+    50.0,
+    0.0,
+    -0.0
+   ],
+   [
+    50.0,
+    0.0,
+    50.0
+   ],
+   [
+    50.0,
+    50.0,
+    -50.0
+   ],
+   [
+    50.0,
+    50.0,
+    -0.0
+   ],
+   [
+    50.0,
+    50.0,
+    50.0
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.67,
+    0.33,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.33,
+    0.67
+   ],
+   "cm_per_u": 100.0,
+   "cm_per_v": 100.0
+  },
+  "pack": "Engine"
+ }
+}

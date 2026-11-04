@@ -1,0 +1,484 @@
+{
+ "/Game/LevelPrototyping/Meshes/SM_Ramp": {
+  "bounds_min": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "bounds_max": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "size": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "pivot": "x:min y:min z:min",
+  "extends": "+X +Y +Z",
+  "long_axis": "X",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "lambert1",
+    "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "SurfaceColor",
+      "TopGridColor",
+      "GridColor",
+      "TopSurfaceColor",
+      "TopSubGridGridColor",
+      "SubGridColor",
+      "Line Dimensions"
+     ],
+     "scalar": [
+      "Roughness",
+      "Grid Size",
+      "Sub Grid Number",
+      "CircleSize"
+     ],
+     "texture": [],
+     "vector_values": {
+      "SurfaceColor": [
+       0.18,
+       0.18,
+       0.18,
+       1.0
+      ],
+      "TopGridColor": [
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "GridColor": [
+       0.026,
+       0.026,
+       0.026,
+       1.0
+      ],
+      "TopSurfaceColor": [
+       0.048,
+       0.048,
+       0.048,
+       1.0
+      ],
+      "TopSubGridGridColor": [
+       0.168,
+       0.168,
+       0.168,
+       1.0
+      ],
+      "SubGridColor": [
+       0.089,
+       0.089,
+       0.089,
+       1.0
+      ],
+      "Line Dimensions": [
+       0.022,
+       0.001,
+       0.5,
+       0.0
+      ]
+     },
+     "parent": "/Game/LevelPrototyping/Materials/M_PrototypeGrid"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 8,
+    "verts": 18
+   }
+  ],
+  "nanite": true,
+  "lightmap": {
+   "coord": 1,
+   "res": 512
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 8,
+  "area_m2": 4.41,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 1,
+    "cover": 0.5,
+    "facing_area_m2": 0.5
+   },
+   "-X": {
+    "tris_on_bound": 1,
+    "cover": 0.5,
+    "facing_area_m2": 0.5
+   },
+   "+Y": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 1.41
+   },
+   "-Y": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "+Z": {
+    "tris_on_bound": 0,
+    "cover": 0.0,
+    "facing_area_m2": 1.41
+   },
+   "-Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   }
+  },
+  "open_faces": [
+   "+Y",
+   "+Z"
+  ],
+  "normal_spread": [
+   0.23,
+   0.45,
+   0.45
+  ],
+  "corners": [
+   [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0,
+    100.0
+   ],
+   [
+    0.0,
+    100.0,
+    0.0
+   ],
+   [
+    100.0,
+    -0.0,
+    0.0
+   ],
+   [
+    100.0,
+    -0.0,
+    100.0
+   ],
+   [
+    100.0,
+    100.0,
+    0.0
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.77,
+    0.23,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.45,
+    0.68
+   ],
+   "cm_per_u": 333.3,
+   "cm_per_v": 333.3
+  },
+  "top_profile": {
+   "along": "X",
+   "bins": [
+    [
+     0.0,
+     8.3,
+     null
+    ],
+    [
+     8.3,
+     16.7,
+     null
+    ],
+    [
+     16.7,
+     25.0,
+     null
+    ],
+    [
+     25.0,
+     33.3,
+     null
+    ],
+    [
+     33.3,
+     41.7,
+     100.0
+    ],
+    [
+     41.7,
+     50.0,
+     null
+    ],
+    [
+     50.0,
+     58.3,
+     null
+    ],
+    [
+     58.3,
+     66.7,
+     null
+    ],
+    [
+     66.7,
+     75.0,
+     100.0
+    ],
+    [
+     75.0,
+     83.3,
+     null
+    ],
+    [
+     83.3,
+     91.7,
+     null
+    ],
+    [
+     91.7,
+     100.0,
+     null
+    ]
+   ]
+  },
+  "pack": "LevelPrototyping"
+ },
+ "/Game/LevelPrototyping/Meshes/SM_Cube": {
+  "bounds_min": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "bounds_max": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "size": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "pivot": "x:min y:min z:min",
+  "extends": "+X +Y +Z",
+  "long_axis": "X",
+  "thin_axis": "X",
+  "slots": [
+   {
+    "index": 0,
+    "name": "lambert1",
+    "material": "/Game/LevelPrototyping/Materials/MI_PrototypeGrid_Gray",
+    "blend": "BLEND_OPAQUE",
+    "two_sided": "False",
+    "params": {
+     "vector": [
+      "SurfaceColor",
+      "TopGridColor",
+      "GridColor",
+      "TopSurfaceColor",
+      "TopSubGridGridColor",
+      "SubGridColor",
+      "Line Dimensions"
+     ],
+     "scalar": [
+      "Roughness",
+      "Grid Size",
+      "Sub Grid Number",
+      "CircleSize"
+     ],
+     "texture": [],
+     "vector_values": {
+      "SurfaceColor": [
+       0.18,
+       0.18,
+       0.18,
+       1.0
+      ],
+      "TopGridColor": [
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "GridColor": [
+       0.026,
+       0.026,
+       0.026,
+       1.0
+      ],
+      "TopSurfaceColor": [
+       0.048,
+       0.048,
+       0.048,
+       1.0
+      ],
+      "TopSubGridGridColor": [
+       0.168,
+       0.168,
+       0.168,
+       1.0
+      ],
+      "SubGridColor": [
+       0.089,
+       0.089,
+       0.089,
+       1.0
+      ],
+      "Line Dimensions": [
+       0.022,
+       0.001,
+       0.5,
+       0.0
+      ]
+     },
+     "parent": "/Game/LevelPrototyping/Materials/M_PrototypeGrid"
+    },
+    "area_share": 1.0
+   }
+  ],
+  "lods": [
+   {
+    "tris": 12,
+    "verts": 24
+   }
+  ],
+  "nanite": true,
+  "lightmap": {
+   "coord": 1,
+   "res": 512
+  },
+  "collision": {
+   "trace_flag": "CTF_USE_DEFAULT",
+   "type": "simple",
+   "shapes": 1,
+   "boxes": [],
+   "spheres": 0,
+   "capsules": 0,
+   "convex": 1
+  },
+  "sockets": [],
+  "tris_lod0": 12,
+  "area_m2": 6.0,
+  "sides": {
+   "+X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-X": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "+Y": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-Y": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "+Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   },
+   "-Z": {
+    "tris_on_bound": 2,
+    "cover": 1.0,
+    "facing_area_m2": 1.0
+   }
+  },
+  "open_faces": [],
+  "normal_spread": [
+   0.33,
+   0.33,
+   0.33
+  ],
+  "corners": [
+   [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.0,
+    100.0
+   ],
+   [
+    0.0,
+    100.0,
+    0.0
+   ],
+   [
+    0.0,
+    100.0,
+    100.0
+   ],
+   [
+    100.0,
+    -0.0,
+    0.0
+   ],
+   [
+    100.0,
+    -0.0,
+    100.0
+   ],
+   [
+    100.0,
+    100.0,
+    0.0
+   ],
+   [
+    100.0,
+    100.0,
+    100.0
+   ]
+  ],
+  "uv0": {
+   "u_along": [
+    0.67,
+    0.33,
+    0.0
+   ],
+   "v_along": [
+    0.0,
+    0.33,
+    0.67
+   ],
+   "cm_per_u": 333.3,
+   "cm_per_v": 333.3
+  },
+  "pack": "LevelPrototyping"
+ }
+}
