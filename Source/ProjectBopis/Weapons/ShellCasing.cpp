@@ -24,6 +24,8 @@ AShellCasing::AShellCasing()
 	// Small and fast: without continuous collision it can tunnel through a thin floor.
 	Body->BodyInstance.bUseCCD = true;
 	Body->SetNotifyRigidBodyCollision(true);
+	// Physics moves it, and every move would make the navmesh rebuild around it, on the game thread.
+	Body->SetCanEverAffectNavigation(false);
 	Body->SetSimulatePhysics(true);
 	RootComponent = Body;
 

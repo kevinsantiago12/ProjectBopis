@@ -632,7 +632,10 @@ tuned against it.
 - **Packaging** (`DefaultGame.ini`, `ProjectPackagingSettings`):
   - Development (console and `stat` readouts; Shipping strips them);
   - pak + IoStore, compressed;
-  - **`MapsToCook`: `Lvl_Sandbox`, `Lvl_Linear` only**. Before, there were
+  - **Default map:** `Lvl_BackAlleys` since 2026-11-06, for the game and the editor's
+    startup (`GameDefaultMap`, `EditorStartupMap`; was `Lvl_Sandbox`).
+  - **`MapsToCook`: `Lvl_Sandbox`, `Lvl_Linear`, `Lvl_BackAlleys` (added
+    2026-11-06) only**. Before, there were
     no settings, so all 16 maps, vendor demos included, were cooked.
   - The code loads nothing by path at runtime (only editor sprites), so
     cooking from the maps is safe. Add any map that's opened by name.
@@ -1087,8 +1090,11 @@ The Sixth Deck trace's per-shot costs, removed in `AWeaponBase`.
   `MuzzleLightDuration` 0.05 s:
   - no shadows, `bAffectTranslucentLighting` off;
   - 15 cd, 62.5 cm, colour 255/184/107 (user, 2026-11-04: a quarter of the
-    60 cd, 250 cm it was). Set in the `AWeaponBase` constructor; all 14 weapon
-    Blueprints read back with these values, so none overrides them;
+    original 60 cd, 250 cm). 3 cd at 250 cm was tried the same night and reverted
+    ("revert the muzzleflash to the last push"). A shorter radius also dims the
+    light near the gun, so 15 cd at 250 cm would be about 3x brighter at 50 cm than
+    15 cd at 62.5 cm. Set in the `AWeaponBase` constructor; the 14 weapon Blueprints
+    have read back whatever it sets, so none overrides them;
   - enemies light the scene only within `EnemyMuzzleLightDistance` (1500 cm)
     of the camera.
 - **Asset lights off:** `spawnFraction` 0 on the `ParticleModuleLight`s of
@@ -1096,6 +1102,13 @@ The Sixth Deck trace's per-shot costs, removed in `AWeaponBase`.
   `P_Shotgun_MuzzleFlash_01` and `P_SniperRifle_MuzzleFlash_01`
   (`/Game/MilitaryWeapSilver/FX`). `P_Grenade_MuzzleFlash_01` has no light.
   Every gun's shot light now comes from `MuzzleLight`.
+- **`Pop` is on (as the pack shipped it):** each of those five flash assets has a
+  `Pop` emitter, a glowing sphere mesh (`St_Sphere_01`, `M_GlowSphere_01`) at the
+  muzzle for 0.02–0.05 s. It reads as a floating orange disc, and no `MuzzleLight`
+  setting affects it. Turned off and restored on 2026-11-04 at the user's request.
+  - **To switch one off:** `DetailModeBitmask` 0 on the emitter, so the system
+    never creates an instance of it (`reset_properties` restores it). The bridge
+    can't write `bEnabled` on a `ParticleLODLevel`.
 - **Risk:** `SetEmitterEnable` runs after the spawn has activated. If Cascade
   emits its first burst during activation, smoke still shows every shot. The
   fix would be to spawn with auto-activate off, set the emitters, then
@@ -1751,6 +1764,19 @@ Claude):**
   Pistol enemies hold their guns up all fight, so their arm is nearly
   always simulating. The body physics asset (`PA_CCMH_Bopis`) and the
   enemy Blueprints have no always-simulated bodies.
+**Shell casings and the navmesh (trace 24, `Lvl_BackAlleys`, Deck, 2026-11-06).** World tick 8.1 ms hidden, 34.0 ms spotted (42.0 ms at the worst stretch). The difference is `Nav Tick Time`: 0.03 ms hidden, 20.5 ms spotted, 29.4 ms at worst, nearly all of it `STAT_RecastNavMeshGenerator_GatherGeometry` on the game thread, about 6.7 ms a tile and 3-4 tiles a frame.
+- **Trigger:** in the spotted stretch `ShellCasing` (5,221), `UpdateOverlaps` (5,244) and `Component UpdateNavData` (5,232) match one to one; none of them run while hidden. So it scales with how many are shooting.
+- **Why:** `UShapeComponent` can affect navigation by default, and the casing's `PhysicsActor` box still blocks the Vehicle channel, so ignoring Pawn doesn't take it out. Each one moved by physics dirties the navmesh, and Dynamic generation rebuilds those tiles. Dense level collision is what makes a tile this expensive.
+- **Ruled out in the same trace (hidden, spotted, ms a frame):** `PhysicalAnimation` 0.22, 0.28; physics blend 0.07, 0.12; `Char Movement Total` 1.62, 1.54; `StateTree` 0.12, 0.13; `Recast: pathfinding` 0.07 spotted. The stat-event names need `-statnamedevents`, which traces before this one didn't have, and that hid it. The 2026-11-02 estimate that casings cost at most 0.05 ms was wrong for this reason.
+- **Fix (compiled 2026-11-06, traced):** `Body->SetCanEverAffectNavigation(false)` on `AShellCasing` and `AWeaponDrop`, the same on `AProjectileBase`'s `CollisionComponent`.
+- **Result (trace 25, `20261106_012411`):** whole-trace `Nav Tick Time` 46.3 s to 0.8 s, tile rebuilds 6,368 to 60, `Component UpdateNavData` gone. Spotted (10 s): world tick 13.2 ms, frame 18.1 ms, 55 fps; hidden: 7.2 ms, 60 fps. Worst fight stretch 52 fps (was 19).
+- **Left, a hitch:** 13 one-frame spikes of 42-50 ms in about 70 s of fighting, each 4 tiles (about 37 ms in `GatherGeometry`). `Unregistering Nav Octree Element` matches `DirtyArea` (69 each), so a nav element is being removed. 11 of the 13 come 1.1-2.3 s before a dropped gun settles, which puts them at about the kill; 2 come right after a pickup event. The trace's call stacks name it: `FitMagazine`'s runtime `UStaticMeshComponent` on a gun. A dying enemy pushes the oldest corpse over the limit, the corpse's guns are destroyed, and each fitted magazine's unregister dirties the navmesh, despite `NoCollision`. A pickup's new gun reaches the same removal in `BeginPlay`. **Fix 1 (compiled 2026-11-06, traced):** `Magazine->SetCanEverAffectNavigation(false)` before `RegisterComponent`. The 180 ms and 292 ms frames are at what look like a level start and restart.
+- **Result (trace 26, `20261106_030058`, about 5 minutes):** 26 corpses trimmed with no rebuild, so the kill hitch is gone. Worst 5-second fight stretches 54 fps, world tick 14 ms. Whole-trace rebuilds: 6 of 4 tiles each, at level start, restart, and 4 in fights. Those 4 fight frames are 42-44 ms of world tick, 33-36 ms of it in the rebuild, and every one is a gun pickup: it follows `BeginPlay` registering the magazine by 14-16 ms (1 entry for a single gun, 2 for duals).
+- **Why pickups remain:** `UStaticMeshComponent::SetStaticMesh` calls `FNavigationSystem::UpdateComponentData`. `FitMagazine` called it before setting the flag and before `NoCollision`, while the component still had default collision, so `IsNavigationRelevant()` was true. That also answers why a `NoCollision` mesh counted as a nav element. The component isn't attached yet at that point, so it should be at the world origin. That part is inference: it fits every rebuild being 4 tiles with about the same four costs (about 6, 7, 10 and 12 ms) wherever the player is. Reading the engine code (`PrimitiveComponent.cpp`, about line 745), the flag also skips `OnComponentUnregistered` on destroy, so fix 1 leaves that entry behind.
+- **Fix 2 (applied by Claude and compiled 2026-11-06, not yet traced):** `SetCanEverAffectNavigation(false)` first in `FitMagazine`, above `SetStaticMesh`.
+- **Smaller frames in trace 26:** the 26 ms frame at 67.9 s includes a 12 ms `FMemory::Trim` in garbage collection; the one at 185.3 s isn't examined. The 181 ms frame at 7 s is the level start, and the 261 ms frame at 126 s is a level restart (about 11,000 nav registrations in the second before it).
+- **What limits the frame now:** spotted, `WaitForTasks` 3.9 ms (hidden 1.0), `TG_EndPhysics` 5.4 ms (hidden 1.4). GPU `Scene` 15.8 ms (hidden 14.3), so the GPU has little room left at 60.
+
   - **Enemy animation options (estimates from trace 23; paused by the user
     2026-11-02):** body anim ≈4.9 ms all threads (≈11.7 body evaluations
     at ≈0.4 ms, plus ≈10 cheaper head evaluations). The frame gains about
@@ -2309,6 +2335,99 @@ John Woo-scale hits.
 - `ExtraSystems` is Niagara-only. The weapon pack's Cascade
   `P_Impact_*_Large_01` effects would need it widened to `UFXSystemAsset`.
 - Bigger impacts during Focus.
+
+**`NS_ImpactPaper` (2026-11-06):** falling sheets for paper hits ("slowly
+dropping paper like in John Woo films"). All in `/Game/ThirdPerson/FX`; the
+pack isn't touched.
+- **On posters, not as a surface** ("use the wall's impact and sound"). Shots
+  go through a poster and hit the wall, which keeps its burst, sound and hole. In
+  `SpawnImpact`, unless the hit is on a character, a short trace on `ECC_Paper`
+  (`ECC_GameTraceChannel2`), 10 cm out from the hit and 2 cm in, asks whether a
+  poster is there. If so, `PaperBurst` goes off too.
+- **Collision:** the `Paper` trace channel ignores everything by default. The
+  `PosterPaper` preset (query only) ignores every channel except `Paper`, so it
+  doesn't affect shots, pawns, cameras or the nav mesh. The 300 posters use it, with
+  `bUseDefaultCollision` off, or the preset is ignored.
+- **Limits on `DA_ImpactEffects`:** `PaperBurst` is `NS_ImpactPaper`.
+  `PaperMinInterval` 0.2 game seconds: a magazine spreads its paper over the burst,
+  and a shotgun's pellets throw one burst.
+- **`EFT_ImpactPaper`:** a copy of `EFT_Impacts` with 10 instances (total and per
+  system). Paper lives 5–8 s, and in the shared 32 it could crowd out wall impacts.
+- Built and checked by trace and by reading the saved settings. Not yet seen in play.
+- **Two variations (user, 2026-11-06):** "I want bits of the poster, not actual
+  paper. We can have 2 variations, one is for actualy stacks of paper and another
+  for just bits." `NS_ImpactPaper` stays as whole sheets for stacks of paper; none
+  are in a level yet, so nothing throws it once `PaperBurst` moves to the bits.
+- **`NS_ImpactPosterBits`:** a copy of `NS_ImpactPaper` with `M_ImpactPosterBits`
+  and `T_ImpactPosterBits`: scraps cut from the poster images, torn to white at
+  the edge, plain backs. Four scraps of 16 frames each, so a scrap hands over to the
+  next at the moment it's edge-on. `ArtSource/VFX/Paper/ExportPosterImages_ue.py`,
+  then `RenderPosterBitsFlipbook.py`; run both again if the images change.
+- **Bits sizes:** "the clothes one is the most similar in terms of size". `NS_ImpactCloth`
+  has Sprite Size 1–10 and about 13 chips a hit (8 x 0.1–1 chunks, 8 x 0.1–2 fleks), which
+  fill about the same share of their frame as these scraps. So Sprite Size 1–10,
+  Spawn Count 8–16, Lifetime 4–6; the rest as in the table above.
+
+**How a hit picks its surface (2026-11-06):** shots and projectiles query simple
+collision, so the order is the body's `PhysMaterialOverride`, the mesh body setup's
+physical material, then the material: material slot 0, or each triangle's own
+material on a complex-as-simple mesh. A material instance's `PhysMaterial` counts
+only with `bOverridePhysMaterial` on; otherwise it reports its parent's. Footsteps
+read the same surfaces.
+
+**`Lvl_BackAlleys` surfaces (2026-11-06):** 45 material instances corrected, read back
+from disk. The earlier surface pass had not ticked the override.
+- **Override ticked, surface as already set:** `MI_wooden_part_01` (274 terrace
+  planks), the `MI_wood*` and `MI_wooden_beam_01` roof beams and awning frames, metal
+  doors, rails, shutters, AC units and pipes, `MI_Glass_A_001` (53 windows), barrels
+  (Plastic), tarps (Cloth), `MI_BackAlleys_Ground` (Asphalt) and
+  `MI_BackAlleys_Interior` (Plaster).
+- **Surface changed, judged from the textures:** balconies and the stall front to
+  Metal (were Concrete), `MI_Window_02` and `MI_Windows_02` to Metal (were Glass),
+  `MI_Slate_01` to Metal and `MI_MainBorderBright_01` to Concrete (had none, so Brick),
+  meter boxes to Electronics (were Metal), `MI_Windows_grill_01` to Metal.
+- **By piece:** the 8 gallery pillars, Concrete through `phys`, as their material is
+  shared with the street lamps.
+- **Left:** `MI_PrototypeGrid_Gray` on 98 lids and spawn-door cubes (no surface, so
+  `Default`, a concrete burst), and 374 other pack instances with the same flaw that this
+  level doesn't use.
+- `T_ImpactPaper`: 1024, 8 x 8, one seamless tumble of three turns, rendered by
+  `ArtSource/VFX/Paper/RenderPaperFlipbook.py`. 64 frames because Focus plays
+  them at 0.3x, and 16 would step visibly.
+- `M_ImpactPaper`: a copy of `M_Fleks4` with that sheet, translucent and unlit, so
+  the shading is baked into the frames. Brightness is `Unlit Brightness` (0.25).
+- `NS_ImpactPaper`: a copy of `NS_ImpactLeaves`. By script: `LeafChunks1`'s
+  renderer gets the material and Sub Image Size 8 x 8. Python and the bridge
+  can't change module values, so those are set in the Niagara editor. First guesses,
+  for the user to tune live:
+
+  | Module | Input | Leaves | Paper |
+  |---|---|---|---|
+  | Spawn Burst Instantaneous | Spawn Count | 10–20 | 5–9 |
+  | Initialize Particle | Lifetime | 4–6 | 5–8 |
+  | Initialize Particle | Sprite Size | 1–20 | 20–40 |
+  | Add Velocity | Velocity min | 10, -50, -50 | 30, -60, 0 |
+  | Add Velocity | Velocity max | 100, 50, -50 | 140, 60, 80 |
+  | Drag | Drag | 0.75–1.5 | 1.5–2.5 |
+  | Drag | Drag, Evaluation Type | Every Frame | Spawn Only |
+  | Curl Noise Force | Noise Strength, multiply A | 1000 | 250 |
+  | Set Variables | Particles.SpriteRotationRate | -0.5–0.5 | -0.15–0.15 |
+  | Sub UV Animation | Mode | Random | Infinite |
+  | Sub UV Animation | Start / End Frame | 2 / 5 | 0 / 63 |
+  | Sub UV Animation | Sub UV Play Rate | not used | 0.28 |
+  | Sub UV Animation | SubUV Start Time Offset | 0 | Random Range Float, 0–3.6 |
+
+  The effect keeps the pack's version 2.0 of the module, whose frame is
+  `Lerp(Start, End, FMod(PlayRate * (Age + Offset), 1))`. So the play rate is loops
+  per second (0.28 is 18 frames a second), and the offset is in seconds (one loop
+  is 3.6 s, so that range gives each sheet a random start). Frames Per Second and
+  Random Start Frame only exist from version 2.1.
+  Plus: `LeafBase` and `LeafSmoke` switched off. Gravity stays at -75, which with
+  that drag falls at about 30–50 cm/s.
+- **Limits:** the sheet fills about 65 % of its frame, so a 46 cm sprite is a full A4
+  page. Sprites face the camera, so a landed sheet stands upright and keeps
+  flipping until it fades. The emitter is in local space, with X along the hit
+  normal and Z up on a wall, so its directions should only be right on walls.
 
 ### Weapon sounds (2026-10-23)
 
@@ -3097,7 +3216,21 @@ buttstock's vertices ~8 cm forward (Blender, or the skeletal-mesh modeling
 tools) and reimporting. Sockets added on its
 own bones: `MuzzleFlash` on `b_gun_muzzleflash`, `AmmoEject` on
 `b_gun_shelleject` (zero offset — check the flash direction). Still needs a
-`LeftHandGrip` and grip offsets. **Still a projectile weapon**
+`LeftHandGrip` and grip offsets.
+- **Compact stock (2026-11-06; user: "its super extended at the moment and its cutting into
+  the shoulder on aiming").** `BP_AssaultRifle` now uses `SK_AR4_CompactStock`, on the same
+  skeleton: 91 → 82 cm in the mesh, about 100 → 90 in game at the Blueprint's current scale 1.1.
+  - **`ArtSource/Weapons/AR4/CompactStockAR4.py`:** slides the stock 9 cm along its buffer tube.
+    The stock is separate parts from the tube though it has no bone: every part ending behind
+    y -13.5, 63 parts and 842 vertices. The tube's rear end disappears inside the stock's shell.
+    It stops just short of the castle nut (y -3.23), so 9 is about all a real one has.
+  - **Round trip** as for the stockless AK (Source: `SK_AR4.FBX`, our export). Import headless with
+    `FbxImportUI` (legacy importer), new asset only. Bones match; 9,727 vertices against 9,735.
+    Python can't set a socket's name, so `MuzzleFlash` and `AmmoEject` were copied through the
+    bridge (`SkeletalMeshTools.add_socket`, `set_socket_transform`). `LeftHandGrip` and `Magazine`
+    are on the skeleton and come along.
+  - **Undo:** set `BP_AssaultRifle`'s mesh back to `SK_AR4`, which is untouched.
+- **Still a projectile weapon**
 (`BP_RifleRound_Projectile`, the old setting's fragmenting round) — hitscan is
 the user's call.
 
@@ -4057,8 +4190,14 @@ is newer than the source (19:04:08); bridge up.
 **`AWeaponPickup`:**
 - Its own `WeaponClass`; the mesh is taken from the class's default object in
   `OnConstruction`, so no per-pickup mesh setup.
-- `AmmoMode`: **Fixed** (`FixedRounds`) or **Random**, rolled in `BeginPlay`
-  from half a magazine to a full one.
+- `AmmoMode`: **Fixed** (`FixedRounds`) or **Random**, rolled in `BeginPlay`:
+  `BaseMagazines` 1 plus 0 to `RandomExtraMagazines` 0.5 of the weapon's magazine (2026-11-06,
+  user: "1 mag + random(0, half mag)"; was half to full). Tune them on `BP_WeaponPickup`; the
+  per-gun pickup Blueprints are its children.
+- **New gun:** a magazine goes in it and the rest to the shared pool, since
+  `SetAmmoInMagazine` clamps to the magazine size. **A gun already owned:** fills the pool as far
+  as it can and goes, and what doesn't fit is lost (user: "fill the max and consume the pickup").
+  With the pool already full nothing is taken and it stays. `AAmmoPickup` still keeps leftovers.
 - On walk-over, in order:
   1. **Not carried:** `Holder->GiveWeapon(Class, Rounds)` spawns it hidden, loads
      the magazine with the rounds, adds it and equips it if `bAutoEquipOnPickup`
@@ -5245,6 +5384,10 @@ in a trigger" — "also does not get affected by time dilation". Code:
   same track again carries on rather than restarting; None fades to
   silence; `FadeTime` 0 is a hard cut. A level reload (death) starts the
   music over.
+- **Never loses its voice (2026-11-06).** The game has 32 voices, ranked by priority times
+  volume, and the rest are cut. A track with default priority could be cut under heavy fire,
+  and a non-looping sound that's cut counts as finished (`FWaveInstance::StopWithoutNotification`),
+  so it never came back. `bAlwaysPlay` on the music's component ranks it above every normal sound.
 - **Out of slow motion.** The Focus's slow-mo sound is
   `SetGlobalPitchModulation`, which every sound gets **except UI sounds**
   (`FSoundSource::UpdateCommon`, `Audio.cpp`). The music's components are
@@ -6228,9 +6371,9 @@ hit bones, physics and weapon attachment all run on it.
       reasoning no longer applies to these materials, and reflection captures
       now reach them, though at Specular 0.1 that's slight.
     - **Undo:** close the editor and `git checkout` those two `.uasset` files.
-  - **Testing trap:** each gun has a shadowless `MuzzleLight`. At its old 250 cm,
-    60 cd, a close capture of an enemy mid-shot showed it blown out from head
-    to toe. That wasn't a lighting fault.
+  - **Testing trap:** each gun has a shadowless `MuzzleLight`. At its old 60 cd,
+    a close capture of an enemy mid-shot showed it blown out from head to toe.
+    That wasn't a lighting fault.
   - Blueprints only set the colour tint at runtime, so these values reach the
     game. They're shared: the player and all CC enemies.
 - **Clothing layer order at the waist (2026-10-22):** every garment carries a
@@ -6613,8 +6756,8 @@ owned, weapon + rounds if not, duals unlocked by a second single).
 - **Why a separate class:** physics needs the moving body as the actor's root.
   Re-rooting `AWeaponPickup` would move every placed pickup to the origin. The
   drop flies and hands over to an untouched pickup.
-- **Rounds** follow the pickup's `AmmoMode` (BP default: random, half to full
-  magazine). Duals drop as one pickup showing a single pistol mesh.
+- **Rounds** follow the pickup's `AmmoMode` (BP default: random, 1 to 1.5
+  magazines since 2026-11-06). Duals drop as one pickup showing a single pistol mesh.
 - **`DropAsClass` (2026-10-14):** what a weapon turns into when an enemy drops
   it (`Weapon|Drop`; empty = itself), read through
   `AWeaponBase::GetDropClass()` by `DropWeapon`. For enemy-only variants:
@@ -9216,6 +9359,19 @@ the floor or the camera looks at concrete.
 Payne). Renamed the same day: code, assets and docs. Older entries in this file
 and the ProgressLog still say "bullet time".
 
+**The player's rounds fly 2x in Focus (2026-11-06; compiled, not playtested).** User:
+"can we 2x the bullet speed only for the player guns when in focus mode?"
+- **How:** `FireProjectile` calls `AProjectileBase::ApplyFocusSpeed` on a round the player
+  fires while `IsFocusActive()`, so a dive's slow motion counts and the kill cam alone
+  doesn't. It scales `Velocity` and `MaxSpeed`: the rounds' Blueprints have `MaxSpeed` equal
+  to `InitialSpeed`, so the movement component would clamp the velocity straight back.
+- **Tuning:** `FocusSpeedMultiplier` per round class, 2 by default. `AGrenade` sets 1, since
+  an arc would carry much further. Thrown grenades don't go through `FireProjectile`.
+- **Speeds:** pistols, machine pistols, revolver and shotguns 160 → 320 m/s; rifles and sniper
+  480 → 960 m/s. Enemy rounds and their leading (`GetProjectileSpeed`) don't change.
+- **Set when fired:** it stays if Focus ends mid-flight, and an earlier round doesn't speed up
+  when Focus starts. Rounds are only drawn in slow motion, so each shows for half as long.
+
 **Design (user):**
 - toggle on **Q**;
 - the world runs at **0.3×** and the **player is slowed with it** (Max Payne),
@@ -9525,7 +9681,7 @@ exceptions are AsiaSlum's merged `Prefab/ActorMerge` meshes and Megapack's
 | Lightmap resolution | Raised, never lowered, by size: 64 under 2 m, 128 under 5 m, 256 under 10 m, 512 above | 405 | 405 |
 | Collision, architecture | Walls, floors, roofs, frames, windows, balconies, shutters and the like collide on their own triangles (complex as simple), on the first LOD of 8,000 triangles or fewer, so doorways and the undersides of balconies stay open. Stairs keep their ramp hulls | 295 | 289. The other 6 are the 82k grilles and 177k balconies, whose lowest LOD is still 8–18k (never used, below) |
 | Collision, props | Props of 30 cm or more with no shapes get a box (not decals or flat cards) | 45 | 45 |
-| Surface types | A physical material from `ImpactsVFXVol1/Materials/Physical_Materials` by material name: the instance's own name first, then its parent's (not Megapack's catch-all `M_Asphalt` / `M_Bricks_01`) | 604 of 727. The rest are decals, graffiti, emissives, particles, guns and Yakohama/MiddleEast-only pieces | 604 |
+| Surface types | A physical material from `ImpactsVFXVol1/Materials/Physical_Materials` by material name: the instance's own name first, then its parent's (not Megapack's catch-all `M_Asphalt` / `M_Bricks_01`) | 604 of 727 (most had no effect until 2026-11-06: see *Impact effects*). The rest are decals, graffiti, emissives, particles, guns and Yakohama/MiddleEast-only pieces | 604 |
 | Textures | Over 2K: Max Texture Size 2048 (the source stays) | 714 | 714 |
 
 Surface types still on the default, to set if the piece gets used:
@@ -10278,6 +10434,44 @@ level besides building blockouts as a rule."
     `DarkCrimes` from the level start. `plan3_gameplay.json` has it; the placer skips it if present.
   - **Gallery rail:** `SM_Rail_A_001` scaled to 1.05 m on the deck's south, west and
     east sides. Blocks movement; bullets pass between the bars.
+  - **Building dressing (2026-11-04):** a generator pass over blank tiles. Hollow-block
+    faces and thin walls (1.5 m blocks with no openings, runs under 2 m) stay empty. 11
+    overhanging rooms (`SM_Balcony_A_003`, 1.2-1.5 m deep, with a plane door on the wall
+    behind), 11 stacked downpipes on eave faces (one per house at most), 20 wall air
+    conditioners, plywood patches at real sheet size in 25 groups of two or three, 15 single
+    tin patches, vent blocks on 50 tiles at one height and row count per face, door steps on 19
+    of 22 doors. Nothing on the walls the stairs run against, below their top.
+    `analysis/check_dressing.py` tests these. Rooms and air conditioners block shots; patches,
+    vents and pipes have no collision. New materials: `MI_BackAlleys_Ply_*` (Wood surface),
+    `MI_BackAlleys_VentBlock_*`, children of `M_BackAlleys_HollowBlocks`.
+  - **Laundry (2026-11-04):** only where somebody could reach it, no collision. Lines on 4
+    balcony strips and in 5 overhanging rooms, clothes on the gallery rail, racks under 6
+    second-floor windows and beside 5 ground doors, and 3 lines over a street, each from
+    beside a second-floor window to a second-floor wall. A plan item's `draw` sets
+    `LDMaxDrawDistance`: 35 m here. Clothes use the pack's four LODs, lines are two engine
+    cubes instead of the 1,208-tri rope mesh.
+  - **Street dressing (2026-11-05):** a last generator pass with a switch per group, so nothing
+    before it moves. 475 actors: 11 wire spans and 7 runs along walls (never under 5.6 m), 10 meter
+    boxes with conduits, 15 water tanks, 10 aerials, 5 bulbs, 10 tubes, 8 street lamps, 4 shutters, 4
+    gates, 8 tarps, 9 blank signs, 57 window sills, 5 rebar stubs, 20 peeling-paint decals. Plan items
+    gain `light` (a Static point or spot light's settings) and `noshadow`; `vol` gives
+    `ForceVolumetric`, so none of it adds lightmaps. Culled at 35, 50 or 80 m by kind. Lights in
+    Candelas: bulb 4.5, tube 6, lamp 40, for a night version: the level stays in daylight, so `STREET_LIGHTS_ON` is
+    False and only the unlit fittings are placed. Since then: long signs only,
+    84 wires at the second floor, and a low layer of 115 at the top of the ground floor (never under 3 m,
+    over the gallery only above 6.2 m), 969 wire actors in all, not traced on the Deck. Posters: 300 planes
+    from the user's placeholder images, about 61 x 91 cm in blocks up to the trim, `M_BackAlleys_PosterPaper`
+    (masked, two texture samples, brightness capped at 0.55 like the wall paints) wearing each copy by where it
+    stands, on `STREET_POSTERS`. They also go on hollow-block faces, door end walls, B2's plain stretches and
+    the wall under a room, stopped there only by its struts, and fit under vent blocks in shorter bands. Everything on a street-level wall stays 40 cm from
+    the ends of its face (`FACE_EDGE`). Visible `SM_Shop_A_001` stalls are closed with a wall just behind the frame and a roll-up
+    shutter (`BackAlleys/Shutters`); the one buried behind `B6h2` is removed. 7 power poles (`BackAlleys/Poles`, Concrete surface) with 5 pole-to-pole lines and
+    24 bundles down to the houses' boxes, 1,828 wire actors in all; 30 tyres on roofs; 32 water meters at wall feet, in 20 lots spread across the level; 16
+    graffiti decals from the user's masks on clear walls and shutters, not on hollow-block faces or thin walls. Tyres,
+    meters and graffiti have no collision. New materials:
+    `MI_BackAlleys_Sign_*` (Metal surface, no lettering), `M_BackAlleys_PeelDecal` and
+    `MI_BackAlleys_Peel_*`, `M_BackAlleys_Tyre` and its instance (`Brightness` 0.35), `MI_BackAlleys_WaterMeter` (brass),
+    `M_BackAlleys_SprayDecal` and `MI_BackAlleys_Spray_<name>_<paint>` (one texture sample for the mask, one for wear).
   - **Awnings:** over windows and doors: `SM_awning_base_01` with a corrugated
     `SM_MetalPlate_A` sheet, no collision. A house has them or not, and a face has
     them on all its openings or none.

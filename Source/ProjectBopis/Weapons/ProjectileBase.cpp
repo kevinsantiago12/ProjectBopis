@@ -18,6 +18,14 @@ float AProjectileBase::GetInitialSpeed() const
 	return ProjectileMovement ? ProjectileMovement->InitialSpeed : 0.0f;
 }
 
+void AProjectileBase::ApplyFocusSpeed()
+{
+	// MaxSpeed too: these rounds have it equal to InitialSpeed, so the movement component
+	// would clamp the new velocity straight back.
+	ProjectileMovement->MaxSpeed *= FocusSpeedMultiplier;
+	ProjectileMovement->Velocity *= FocusSpeedMultiplier;
+}
+
 AProjectileBase::AProjectileBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -28,6 +36,8 @@ AProjectileBase::AProjectileBase()
 	// The project's Projectile profile: blocks everything, but its object type lets
 	// characters' capsules ignore it so rounds strike the body underneath.
 	CollisionComponent->SetCollisionProfileName(TEXT("Projectile"));
+	// A round in flight is no obstacle: without this, each one makes the navmesh rebuild along its path.
+	CollisionComponent->SetCanEverAffectNavigation(false);
 
 	// Report the physical material we hit, so impacts can match the surface.
 	CollisionComponent->bReturnMaterialOnMove = true;

@@ -1,0 +1,15 @@
+﻿LogPython: Warning: [DRESSMAT] T_BackAlleys_VentBlock_Diamond_BC exists, kept
+LogPython: Warning: [DRESSMAT] T_BackAlleys_VentBlock_Diamond_N exists, kept
+LogPython: Warning: [DRESSMAT] MI_BackAlleys_VentBlock_Diamond exists, kept
+LogPython: Warning: [DRESSMAT] T_BackAlleys_VentBlock_Slots_BC exists, kept
+LogPython: Warning: [DRESSMAT] T_BackAlleys_VentBlock_Slots_N exists, kept
+LogPython: Warning: [DRESSMAT] MI_BackAlleys_VentBlock_Slots exists, kept
+LogPython: Warning: [DRESSMAT] T_BackAlleys_Plywood_N exists, kept
+LogPython: Warning: [DRESSMAT] T_BackAlleys_Ply_Natural_BC imported
+LogPython: Warning: [DRESSMAT] MI_BackAlleys_Ply_Natural saved
+LogPython: Warning: [DRESSMAT] T_BackAlleys_Ply_Weathered_BC imported
+LogPython: Warning: [DRESSMAT] MI_BackAlleys_Ply_Weathered saved
+LogPython: Warning: [DRESSMAT] T_BackAlleys_Ply_GreenPaint_BC imported
+LogPython: Warning: [DRESSMAT] MI_BackAlleys_Ply_GreenPaint saved
+Exit code 1. Full log: C:\Users\kevin\Documents\Unreal 
+Projects\ProjectBopis\Tools\LevelGen\create_dress_materials_ue_log.txt

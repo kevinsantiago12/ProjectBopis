@@ -53,8 +53,10 @@ void AWeaponPickup::BeginPlay()
 	const AWeaponBase* WeaponDefaults = WeaponClass ? WeaponClass->GetDefaultObject<AWeaponBase>() : nullptr;
 	const int32 MagazineSize = WeaponDefaults ? WeaponDefaults->GetMagazineSize() : 0;
 
+	const int32 Base = FMath::RoundToInt(MagazineSize * BaseMagazines);
+	const int32 Extra = FMath::RoundToInt(MagazineSize * RandomExtraMagazines);
 	RoundsRemaining = AmmoMode == EPickupAmmoMode::Random
-		? FMath::RandRange(MagazineSize / 2, MagazineSize)
+		? FMath::RandRange(Base, Base + Extra)
 		: FixedRounds;
 
 	TriggerComponent->OnComponentBeginOverlap.AddDynamic(this, &AWeaponPickup::OnTriggerOverlap);
@@ -75,12 +77,10 @@ void AWeaponPickup::TryGive(AActor* Collector)
 		return;
 	}
 
-	// New weapon: it joins the backpack carrying this pickup's rounds.
+	// New weapon: it joins the backpack with this pickup's rounds.
 	if (!Holder->FindCarriedWeapon(WeaponClass))
 	{
-		Holder->GiveWeapon(WeaponClass, RoundsRemaining);
-		ShowWeaponMessage(this, WeaponClass);
-		Consume();
+		GiveNewWeapon(Holder, WeaponClass);
 		return;
 	}
 
@@ -88,13 +88,12 @@ void AWeaponPickup::TryGive(AActor* Collector)
 	const TSubclassOf<AWeaponBase> DualClass = WeaponClass->GetDefaultObject<AWeaponBase>()->GetDualWieldClass();
 	if (DualClass && !Holder->FindCarriedWeapon(DualClass))
 	{
-		Holder->GiveWeapon(DualClass, RoundsRemaining);
-		ShowWeaponMessage(this, DualClass);
-		Consume();
+		GiveNewWeapon(Holder, DualClass);
 		return;
 	}
 
-	// Already have everything this pickup offers: it's an ammo box now.
+	// Already have everything this pickup offers: it's an ammo box now. It fills the pool as far
+	// as it can and goes; what doesn't fit is lost.
 	const EAmmoType AmmoType = WeaponClass->GetDefaultObject<AWeaponBase>()->GetAmmoType();
 	const int32 Taken = Holder->AddAmmo(AmmoType, RoundsRemaining);
 	if (Taken <= 0)
@@ -102,16 +101,19 @@ void AWeaponPickup::TryGive(AActor* Collector)
 		return;
 	}
 
-	RoundsRemaining -= Taken;
 	UGameMessageSubsystem::ShowAmmoMessage(this, AmmoType, Taken);
-	if (RoundsRemaining <= 0)
-	{
-		Consume();
-	}
-	else if (PickupSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
-	}
+	Consume();
+}
+
+void AWeaponPickup::GiveNewWeapon(UWeaponHolderComponent* Holder, TSubclassOf<AWeaponBase> NewClass)
+{
+	// A magazine can't hold more than its size, so what's over goes to the shared pool.
+	const AWeaponBase* Defaults = NewClass->GetDefaultObject<AWeaponBase>();
+	const int32 InMagazine = FMath::Min(RoundsRemaining, Defaults->GetMagazineSize());
+	Holder->GiveWeapon(NewClass, InMagazine);
+	Holder->AddAmmo(Defaults->GetAmmoType(), RoundsRemaining - InMagazine);
+	ShowWeaponMessage(this, NewClass);
+	Consume();
 }
 
 void AWeaponPickup::Consume()

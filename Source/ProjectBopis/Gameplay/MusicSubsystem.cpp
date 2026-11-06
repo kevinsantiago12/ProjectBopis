@@ -42,6 +42,8 @@ void UMusicSubsystem::PlayMusic(USoundBase* Track, float FadeTime, float Volume)
 	if (Current)
 	{
 		Current->bIsUISound = true;
+		// Never loses its voice: a non-looping track that's dropped is finished for good.
+		Current->bAlwaysPlay = true;
 		Current->FadeIn(FadeTime, 1.0f, 0.0f, EAudioFaderCurve::Sin);
 	}
 }

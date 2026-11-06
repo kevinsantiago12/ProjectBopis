@@ -9,3 +9,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogProjectBopis, Log, All);
 
 /** The "Projectile" object channel from DefaultEngine.ini — bullets in flight. */
 #define ECC_Projectile ECC_GameTraceChannel1
+
+/** The "Paper" trace channel from DefaultEngine.ini: only posters answer it. */
+#define ECC_Paper ECC_GameTraceChannel2

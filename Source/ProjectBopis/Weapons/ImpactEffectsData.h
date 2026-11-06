@@ -104,6 +104,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Smoke", meta = (ClampMin = "0.0"))
 	float SmokePuffLifetime = 2.0f;
 
+	/** Thrown as well when the hit lands on a poster. The wall keeps its own burst, sound and hole. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Paper")
+	TObjectPtr<UNiagaraSystem> PaperBurst;
+
+	/** At most one paper burst per this many game seconds, so a magazine spreads its paper
+	    across the burst, and a shotgun's pellets throw one and not eight. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Paper", meta = (ClampMin = "0.0"))
+	float PaperMinInterval = 0.2f;
+
 	/** A hit on a character's head plays one of these instead of its surface's sound. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Impact|Sound")
 	TArray<TObjectPtr<USoundBase>> HeadshotSounds;
@@ -145,6 +154,9 @@ private:
 
 	/** The earliest the next puff may go off while smoke is still in the air (world seconds). */
 	mutable double NextSmokeTime = 0.0;
+
+	/** When the last paper burst went off (world seconds). */
+	mutable double LastPaperTime = 0.0;
 };
 
 /** Keeps the number of bullet holes in the world down: past MaxBulletHoles, the oldest goes. */

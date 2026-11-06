@@ -795,7 +795,24 @@ walls, pipes and borders could serve as untextured geometry with our own materia
 **Patchwork reference.** AsiaSlum `SM_MetalPlate_B_001/002` and the Markets stall roofs show the
 rust-patch look. They're too thick or heavy to tile, but their materials can be reused.
 
-**Downpipes.** Favela `SM_Rain_Pipe_01`.
+**Downpipes.** Favela `SM_Rain_Pipe_01`, stacked; in use.
+
+**Wall dressing in use (2026-11-04).** AsiaSlum `SM_Balcony_A_003` as overhanging rooms.
+MiddleEast `SM_Windows_04` (a cooler in a window frame) and `SM_Air_Conditioning_*` (desert
+coolers, squashed to about 60 cm wide; a thin rod below reads as a bracket). AsiaSlum
+`SM_MetalPlate_A_003/004` as tin patches, `Interior/SM_Front_A_001` as a tiled step top.
+
+**Street dressing in use (2026-11-05).** `SM_ElectricBox_C_002/003`, `SM_Antenna_A_001..003` (with
+`MI_Antenna_A_001`), MiddleEast `SM_Antenna_01`, `SM_Light_A_002` (with `MI_Light_A_001`), Favela
+`SM_StreetLamp_02/05/06`, `SM_Barrel_01` and caps, `SM_Stand_01`, `SM_Fencing_03`, `SM_Metal_Gate_01`,
+`SM_RollupDoor_A_001`, `SM_TarpCover_A_002`, `SM_Sign_A_001/002`, `SM_Sign_B_005`. Favela's
+`SM_Antenna_01` is the satellite dish; MiddleEast's is a bare 5 m mast. `SM_DamageWall_A_*` is under
+`FBX/Interior/`.
+
+**Laundry in use (2026-11-04).** MiddleEast `SM_clothes_A_02..05`, `B_01`, `B_03` have four
+LODs, down to 200-350 tris; `A_01` is 395 with none. `SM_clothes_B_02` is 5.8k: left out.
+AsiaSlum `SM_DryingRack_A_002` (108 tris) as wall racks. `SM_Rope_A_001` is 1,208 tris with
+no LODs, so lines are engine cubes.
 
 ### Budget
 

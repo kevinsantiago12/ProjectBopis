@@ -21,8 +21,11 @@ BOUNDS = {"SM_Cube": ((0, 0, 0), (100, 100, 100)), "SM_Ramp": ((0, 0, 0), (100, 
           "SM_wooden_beams_01": ((-12.7, -368.8, -11.9), (12.7, 368.8, 11.9)),
           "SM_wooden_beams_02": ((-12.7, -368.8, -11.9), (12.7, 368.8, 11.9)),
           "SM_wooden_beams_03": ((-12.7, -368.8, -11.9), (12.7, 368.8, 11.9)),
-          "SM_wooden_beams_05": ((-12.7, -368.8, -17.2), (12.7, 368.8, 17.2))}
-WALKABLE = ("BackAlleys/Roofs", "BackAlleys/Lids", "BackAlleys/Terraces")
+          "SM_wooden_beams_05": ((-12.7, -368.8, -17.2), (12.7, 368.8, 17.2)),
+          "SM_Balcony_A_003": ((-11.1, -5, -1.1), (317.4, 237.5, 399.4)),
+          "SM_Balcony_B_004": ((-11.1, -5, -1.1), (624.4, 237.5, 399.4)),
+          "SM_Balcony_B_006": ((-11.1, -5, -1.1), (624.4, 237.5, 399.4))}
+WALKABLE = ("BackAlleys/Roofs", "BackAlleys/Lids", "BackAlleys/Terraces", "BackAlleys/Rooms")
 
 
 def world_box(p):
@@ -73,7 +76,7 @@ print("%d walkable pieces (roofs, lids, terraces)" % len(items))
 print("pieces within %d cm of the deck or stairs and within step reach: %d" % (REACH, len(touch)))
 for t in touch:
     print("  ", t)
-low = sorted((world_box(p)[2], p["label"]) for p in items if p["folder"] == "BackAlleys/Roofs")
+low = sorted((world_box(p)[2], p["label"]) for p in items if p["folder"] in ("BackAlleys/Roofs", "BackAlleys/Rooms"))
 print("lowest roof pieces (bottom z, cm; agent height %d):" % AGENT_H, [(round(z), l) for z, l in low[:5]])
 tops = sorted(round(world_box(p)[5]) for p in items)
 print("walkable tops range %d..%d cm (ground 0, deck 400)" % (tops[0], tops[-1]))

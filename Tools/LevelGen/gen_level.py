@@ -287,6 +287,7 @@ GLASS = "/Game/AsiaSlum/Material/MI_Glass_A_001"           # opaque since 2026-1
 # User: "Make a CHB material" -> M_BackAlleys_CHB (Tools/LevelGen/create_chb_material_ue.py): procedural 40 x 20 cm
 # hollow blocks in world space, optionally under a chipped concrete or paint render. All ours, no pack materials.
 BM = "/Game/ThirdPerson/BackAlleys/Materials/"
+PHYS = "/Game/ImpactsVFXVol1/Materials/Physical_Materials/"
 # Picked once per block face (see favela_run): mostly concrete, some bare hollow block, a few paint accents.
 # Picked per block face and storey (see the block loop). User 2026-11-03: "make more variant colors of
 # MI_BackAlleys_CHB" -> concrete still leads (0.5), bare blocks 0.15, and 13 paint colours share 0.35.
@@ -1173,6 +1174,7 @@ def metal_roof(bid, b):
     high = OPP[low]
     lk, hk = sides[low][0], sides[high][0]
     gable = lk in ("open", "edge") and hk in ("open", "edge") and span >= 6.0 and ROOF_ROLL() < P_GABLE
+    b["eaves"] = [low, high] if gable else [low]           # where it drains to, for the downpipes
     pitch = ROOF_RNG.uniform(*(GABLE_PITCH if gable else MONO_PITCH))
     run = span / 2 if gable else span                     # m from a low wall to the high edge / ridge
     max_rise = 160.0
@@ -1429,6 +1431,7 @@ for i in range(int((dk["x1"] - dk["x0"]) / 3)):
         (RAIL_SX, 1, RAIL_SZ), folder=GAL)
 for i, lx in enumerate((dk["x0"] + 0.2, 19.0, 23.0, dk["x1"] - 0.2)):
     put("Gallery_Post_%d" % i, ME + "Favela/SM_Pillar_01", Xs + 21, ue(lx, 0)[1], 0.0, 0, (1, 1, 380 / 797.0), folder=GAL)
+    items[-1]["phys"] = PHYS + "Concrete"          # its material is shared with the street lamps, which are Metal
 _, Yw = ue(dk["x0"], 0)
 _, Yeast = ue(dk["x1"], 0)
 put("Gallery_Rail_W", RAIL, Xs + RAIL_X0 * RAIL_SX, Yw + 6, 400.0 + RAIL_Z0 * RAIL_SZ, 0, (RAIL_SX, 1, RAIL_SZ), folder=GAL)
@@ -1448,6 +1451,7 @@ for st in L["stairs"]:   # top step at the pivot, downhill along local +X = nort
     for k, inset in enumerate((30.0, 270.0)):
         put("%s_Post%d" % (st["id"], k), ME + "Favela/SM_Pillar_01", Xtop + STAIR_RUN / 2 + 25.0, Yx1 - inset, 0.0, 0,
             (1, 1, 190.0 / 797.0), folder=GAL)
+        items[-1]["phys"] = PHYS + "Concrete"      # its material is shared with the street lamps, which are Metal
 
 
 _mark = len(items)
@@ -1966,11 +1970,11 @@ def awning(p, house, kind):
     if kind == "panel":
         sa, sd, sz = w / 324.1, AWN_D / 220.9, 0.55
         x, y = at(px, py, side, cs - w / 2 + 6.1 * sa, 0.5 + 2.2 * sd)
-        put(label, AS + "SM_Roof_A_002", x, y, z + 250.0, YAW[side], (sa, sd, sz), folder=AWN, nocoll=True)
+        put(label, AS + "SM_Roof_A_002", x, y, z + 250.0, YAW[side], (sa, sd, sz), folder=AWN)
         return
     sa, sd, sz = w / 419.2, AWN_D / 136.3, 0.4
     x, y = at(px, py, side, cs, 0.5 + 0.2 * sd)
-    put(label, ME + "MiddleEast/SM_awning_base_01", x, y, z + 248.0, YAW[side] - 90, (sd, sa, sz), folder=AWN, nocoll=True)
+    put(label, ME + "MiddleEast/SM_awning_base_01", x, y, z + 248.0, YAW[side] - 90, (sd, sa, sz), folder=AWN)
     ztop, zfront = z + 248.0 + 59.9 * sz, z + 248.0 - 17.0 * sz    # the frame's top at the wall and at the front
     run_ = (float(rx), float(ry), 0.0)
     ang = math.atan2(ztop - zfront, AWN_D)
@@ -1985,10 +1989,10 @@ def awning(p, house, kind):
             _awn_finish[house] = AWN_RNG.choices([g for g, _ in SHEET_MIX], [q for _, q in SHEET_MIX])[0]
         f = _awn_finish[house]
         put_axes(label + "2", AWN_RNG.choice(AWN_PLATES), run_, normal, up_slope, (w / PLATE_W, 1.0, length / 164.9),
-                 (0.0, 0.0, 0.0), top, mats=[SHEET_MATS[f]], nocoll=True)
+                 (0.0, 0.0, 0.0), top, mats=[SHEET_MATS[f]])
     else:
         centre = v_add(v_add((x0, y0, ztop), up_slope, -length / 2), normal, 1.2)
-        put_board(label + "2", CUBE, centre, up_slope, run_, normal, (length, w, 1.5), mats=[FLASH_MAT], nocoll=True)
+        put_board(label + "2", CUBE, centre, up_slope, run_, normal, (length, w, 1.5), mats=[FLASH_MAT])
     items[-1]["folder"] = AWN
 
 
@@ -2016,6 +2020,2939 @@ for p in list(items):
     awning(p, h, _awn_kind[h])
     _awn_count[_awn_kind[h]] += 1
 print("awnings:", _awn_count, "; houses:", dict(__import__("collections").Counter(_awn_kind.values())))
+# --- Building dressing: something to see on the blank tiles ----------------------------------------------------------------
+# User 2026-11-04: "do downpipes and window air conditioning. and the overhang rooms, ply patches. See what you can do about
+# this yourself. There are alot of blank face tiles so I want them to see more (The hollow block faces can remain empty." ...
+# "door steps and vent blocks too". All of it goes on plain tiles of runs that show (not buried), hollow-block faces stay empty.
+# Each kind has its own random sequence, so nothing else moves, and picks from bags with exceptions: some houses have none
+# ("have patterns in building but have the player not see patterns when playing"). Claimed in this order, as each needs more
+# room than the next: rooms, downpipes, air conditioners, patches, vent blocks. Patches and vent blocks can share a tile, low and
+# high. Own folders, so a kind can be taken back out. Shapes: analysis/dress_shape_ue.py and dress_profile_ue.py.
+DR_ROOMS, DR_PIPES, DR_ACS, DR_PATCH, DR_VENT, DR_STEP = ("BackAlleys/" + k for k in (
+    "Rooms", "Downpipes", "WallACs", "Patches", "Vents", "DoorSteps"))
+PLANE = "/Engine/BasicShapes/Plane"
+_plain_tile = ("SM_Wall_Tile_01", "SM_Wall_Tile_Blue", "SM_Wall_Tile_03")
+_by_label = {p["label"]: p for p in items if p["folder"] == BLK}
+_dress_tiles, _bare_runs = [], {}
+# User: "this wall section needs no vents, its just a wall divider"; "That bit is a thin wall, not a house". Thin walls get no dressing:
+# the 1.5 m blocks with no door or window, and any run too short to be a house's side (a balcony strip's end).
+THIN_RUN = 200.0
+_thin_blocks = {k for k, b in BLOCKS.items() if min(b["x1"] - b["x0"], b["y1"] - b["y0"]) <= 1.5 and not b.get("balcony")}
+for r in wall_runs:
+    q = r["name"].split("_")
+    h = q[0][:-1] if q[0].endswith("b") and q[0][:-1] in BLOCKS else q[0]
+    if q[0] in _thin_blocks or sum(r["widths"]) < THIN_RUN:
+        continue
+    for i, w_ in enumerate(r["widths"]):
+        p = _by_label.get("%s_%d" % (r["name"], i))
+        if p is None or p["asset"].split("/")[-1] not in _plain_tile or p["mats"][0] == HOLLOW:
+            continue
+        t = {"label": p["label"], "house": h, "bid": q[0], "side": r["side"], "letter": q[1][0], "s": int(q[1][1:]),
+             "x": p["loc"][0], "y": p["loc"][1], "z": p["loc"][2], "w": w_, "run": r["name"], "i": i, "z0": r["z"],
+             "bare_face": (h, q[1][0]) in _cset, "has": []}
+        _dress_tiles.append(t)
+_dress_labels = {t["label"]: t for t in _dress_tiles}
+
+
+def _lay(X, Y):
+    return Y / 100.0 + 27.0, 24.0 - X / 100.0
+
+
+def _ground_open(t, s_, n_):
+    """Open ground (no house at any height) in front of tile t, s_ cm along it and n_ cm out."""
+    lx, ly = _lay(*at(t["x"], t["y"], t["side"], s_, n_))
+    return 0 < lx < W and 0 < ly < H and cover_top(lx, ly, BLOCKS[t["bid"]]) <= 0
+
+
+def _reach_clear(t, s_, n_, z):
+    lx, ly = _lay(*at(t["x"], t["y"], t["side"], s_, n_))
+    return awn_clear(lx, ly, z, t["bid"])
+
+
+def _stair_clear(t, s0, s1, z_low):
+    """User: "some of your patch placements and vent placements go into the stairs". The gallery stairs run against walls (B11's sides):
+    nothing on that stretch of wall lower than the stairs' top. Upstairs, high enough, is clear of them."""
+    if z_low >= 520.0:
+        return True
+    for s_ in (s0 - 10.0, (s0 + s1) / 2, s1 + 10.0):
+        lx, ly = _lay(*at(t["x"], t["y"], t["side"], s_, 30.0))
+        if any(g["x0"] - 0.3 < lx < g["x1"] + 0.3 and g["y0"] - 2.3 < ly < g["y1"] + 0.3 for g in L["stairs"]):
+            return False
+    return True
+
+
+def _clear_of_end_walls(lx, ly, pad):
+    for d in L["doors"]:
+        ax, ay = (2.5, 0.4) if d["face"] in "NS" else (0.4, 2.5)
+        if abs(lx - d["x"]) < ax + pad and abs(ly - d["y"]) < ay + pad:
+            return False
+    return True
+
+
+# Rooms overhanging the alley. User: "the overhang rooms". AsiaSlum's add-on boxes: local X along the wall from -11.1, local +Y
+# outward from the open back at -5, floor at -1.1. On upper storeys, over open ground only, on 1-3 blank tiles side by side,
+# scaled to the run, ROOM_D deep instead of 2.4 m so the alley keeps its sky, and under the storey's top trim. Timber joists
+# and struts under the floor, or it looks hung from nothing. Not within a metre of the wall opposite, another room, the deck, the
+# stairs or a door end wall. One a house at most. Collision stays: they stop bullets.
+ROOM_NATIVE = {AS + "SM_Balcony_A_003": 328.5, AS + "SM_Balcony_B_004": 635.5, AS + "SM_Balcony_B_006": 635.5}
+ROOM_COLOURS = (("White", 0.5), ("BLUE", 0.3), ("RED", 0.2))
+ROOM_D = (120.0, 135.0, 150.0)
+ROOMS_WANTED = 12
+ROOM_RNG = random.Random(149)
+_draw_room_b = shuffle_bag(ROOM_RNG, (AS + "SM_Balcony_B_004", AS + "SM_Balcony_B_006"))
+_draw_room_door = shuffle_bag(DOOR_RNG, tuple(PLANE_DOORS))
+_room_rects, _room_spans, _rooms_made = [], {}, []
+_room_struts = []                                       # (tile, how far along it): where a room's strut lands on the wall
+_by_run = {}
+for t in _dress_tiles:
+    _by_run.setdefault(t["run"], []).append(t)
+_room_cands = {}
+for run_, ts in _by_run.items():
+    if ts[0]["s"] < 1 or BLOCKS[ts[0]["bid"]].get("balcony"):
+        continue
+    for a_ in range(len(ts)):
+        for c_ in (1, 2, 3):
+            seq = ts[a_:a_ + c_]
+            if len(seq) == c_ and all(seq[k + 1]["i"] == seq[k]["i"] + 1 for k in range(c_ - 1)) and \
+                    250.0 <= sum(q_["w"] for q_ in seq) <= 720.0:
+                _room_cands.setdefault(seq[0]["house"], []).append(seq)
+_room_order = sorted(_room_cands)
+ROOM_RNG.shuffle(_room_order)
+_n_rooms = 0
+for h in _room_order:
+    if _n_rooms >= ROOMS_WANTED:
+        break
+    cands = list(_room_cands[h])
+    ROOM_RNG.shuffle(cands)
+    for seq in cands:
+        t = seq[0]
+        total = sum(q_["w"] for q_ in seq)
+        w_r, d_r = total - 16.0, ROOM_RNG.choice(ROOM_D)
+        if not all(_ground_open(t, s_, n_) for s_ in (-14.0, total / 2, total + 14.0) for n_ in (5.0, d_r / 2, d_r + 100.0)):
+            continue
+        if not all(_reach_clear(t, s_, d_r + 40.0, t["z0"] + 60.0) for s_ in (-14.0, total / 2, total + 14.0)):
+            continue
+        c0 = at(t["x"], t["y"], t["side"], -100.0, 0.0)
+        c1 = at(t["x"], t["y"], t["side"], total + 100.0, d_r + 100.0)
+        rect = (min(c0[0], c1[0]), min(c0[1], c1[1]), max(c0[0], c1[0]), max(c0[1], c1[1]))
+        if any(rect[0] < o[2] and o[0] < rect[2] and rect[1] < o[3] and o[1] < rect[3] for o in _room_rects):
+            continue
+        if not all(_clear_of_end_walls(*_lay(*at(t["x"], t["y"], t["side"], s_, d_r)), 1.0) for s_ in (0.0, total)):
+            continue
+        _room_rects.append(rect)
+        _n_rooms += 1
+        mesh = AS + "SM_Balcony_A_003" if w_r < 430.0 else _draw_room_b()
+        sx_ = w_r / ROOM_NATIVE[mesh]
+        sy_, h_r = d_r / 242.5, BLOCKS[t["bid"]]["sh"] - 30.0
+        sz_ = h_r / 400.5
+        x_, y_ = at(t["x"], t["y"], t["side"], 8.0 + 11.1 * sx_, -1.0 + 5.0 * sy_)
+        colour = ROOM_RNG.choices([c for c, _ in ROOM_COLOURS], [k for _, k in ROOM_COLOURS])[0]
+        label = "Room_" + t["label"]
+        put(label, mesh, x_, y_, t["z"] + 1.1 * sz_, YAW[t["side"]], (sx_, sy_, sz_), folder=DR_ROOMS,
+            mats=["/Game/AsiaSlum/Material/MI_Balcony_A_001_" + colour])
+        # User: "put a doorr texture on the overhang balcony wall, looks like nothing leads to their right now". One of the user's
+        # plane doors on the wall behind, at the same 110 x 218 cm as the wall doors, standing on the room's floor (traced: 33 cm up,
+        # before the room's Z scale). Seen through the room's open windows. DOOR_RNG: nothing after this draws from it.
+        door_s = total / 2 + ROOM_RNG.uniform(-1.0, 1.0) * max(0.0, total / 2 - 75.0) * 0.6
+        door_x, door_y = at(t["x"], t["y"], t["side"], door_s, 0.8)
+        put(label + "_Door", PLANE, door_x, door_y, t["z"] + 33.0 * sz_ + 109.0, YAW[t["side"]],
+            (-1.10 if PLANE_HINGE_RIGHT else 1.10, 2.18, 1), folder=DR_ROOMS, roll=90.0, nocoll=True, mats=[BM + _draw_room_door()])
+        _room_spans.setdefault((t["bid"], t["side"]), []).append((t["x"], t["y"], total))
+        _rooms_made.append((t, total, d_r, sz_))
+        for q_ in seq:
+            q_["has"].append("room")
+        # Joists: level under the floor. Struts: from the wall up to 70% of the joist.
+        side = t["side"]
+        (nx, ny), (rx, ry) = NORMAL[side], RUN[side]
+        run3, out3, up3 = (float(rx), float(ry), 0.0), (float(nx), float(ny), 0.0), (0.0, 0.0, 1.0)
+        joists = 2 if w_r < 430.0 else 3
+        beam = BEAMS["brown"]
+        for k in range(joists):
+            s_ = 30.0 + (total - 60.0) * k / (joists - 1)
+            x_, y_ = at(t["x"], t["y"], side, s_, (d_r - 6.0) / 2)
+            put_board("%s_Joist%d" % (label, k), beam, (x_, y_, t["z"] - 6.0), run3, out3, up3, (9.0, d_r - 6.0, 12.0),
+                      nocoll=True)
+            items[-1]["folder"] = DR_ROOMS
+            reach, drop = d_r * 0.7, 95.0
+            leng = math.hypot(reach, drop)
+            dir3 = (out3[0] * reach / leng, out3[1] * reach / leng, drop / leng)
+            x_, y_ = at(t["x"], t["y"], side, s_, reach / 2)
+            put_board("%s_Strut%d" % (label, k), beam, (x_, y_, t["z"] - 12.0 - drop / 2), run3, dir3, v_cross(run3, dir3),
+                      (7.0, leng, 9.0), nocoll=True)
+            items[-1]["folder"] = DR_ROOMS
+            _room_struts.append((t, s_))
+        break
+
+# Downpipes. User: "do downpipes". Favela's SM_Rain_Pipe_01 (2.08 m, 564 tris, its own clips): local +Y outward, pipe centred 22.8
+# cm off the wall, which clears the trims and the protruding bands. Stacked from under the eave to just above the road. Only on the
+# side a metal roof drains to, near an end of the face (clear of openings and awnings, which keep 37 cm from a tile's edge), where
+# the wall shows at every storey. One on P_PIPE of those faces, and never two on a house (user: "for pipes, never 2 on the same house"),
+# in the pack's dark red or galvanised.
+PIPE = FV + "SM_Rain_Pipe_01"
+PIPE_H = 208.4
+P_PIPE = 0.8
+_pipe_houses = set()
+PIPE_GAP = 70.0                                         # user: "theres also a pipe that overlaps with another pipe", on two blocks at a corner
+_pipe_xy = []
+PIPE_RNG = random.Random(151)
+_pipe_style = {}
+_pipes = {}
+_draw_pipe_style = shuffle_bag(PIPE_RNG, (None, None, "galv"))
+_n_pipes = 0
+for bid, b in BLOCKS.items():
+    h = bid[:-1] if bid.endswith("b") and bid[:-1] in BLOCKS else bid
+    for side in b.get("eaves", ()):
+        letter = side[0].upper()
+        if h in _pipe_houses or (h, letter) in _hset or PIPE_RNG.random() > P_PIPE:
+            continue
+        rs = [r for r in wall_runs if r["name"].startswith("%s_%s0_" % (bid, letter))]
+        if not rs:
+            continue
+        r0 = max(rs, key=lambda r: r["len"])
+        ends = [PIPE_RNG.uniform(26.0, 34.0), r0["len"] - PIPE_RNG.uniform(26.0, 34.0)]
+        PIPE_RNG.shuffle(ends)
+        rx, ry = RUN[side]
+        for e_, s_ in enumerate(ends):
+            if h in _pipe_houses:
+                break
+            X_, Y_ = at(r0["start"][0], r0["start"][1], side, s_, 0.0)
+            px3, py3 = at(X_, Y_, side, 0.0, 23.0)              # the pipe's centre: its pivot is 15 cm nearer the wall
+            ok = not any(math.hypot(px3 - o[0], py3 - o[1]) < PIPE_GAP for o in _pipe_xy)
+            if any(o[0] < px3 < o[2] and o[1] < py3 < o[3] for o in _room_rects):   # the rooms' rectangles have a metre to spare
+                ok = False
+            for st in range(1, b["storeys"]):
+                rup = [r for r in wall_runs if r["name"].startswith("%s_%s%d_" % (bid, letter, st))]
+                if not any(-1.0 <= (X_ - r["start"][0]) * rx + (Y_ - r["start"][1]) * ry <= r["len"] + 1.0 for r in rup):
+                    ok = False
+            for (px_, py_, tot) in _room_spans.get((bid, side), ()):
+                if -20.0 < (X_ - px_) * rx + (Y_ - py_) * ry < tot + 20.0:
+                    ok = False
+            lx, ly = _lay(*at(X_, Y_, side, 0.0, 45.0))
+            if not ok or not (0 < lx < W and 0 < ly < H) or cover_top(lx, ly, b) > 0 or not awn_clear(lx, ly, 100.0, bid):
+                continue
+            top_, bot_ = b["storeys"] * b["sh"] + FLOOR_H + 6.0, 12.0
+            n_ = int(math.ceil((top_ - bot_) / PIPE_H))
+            step_ = (top_ - bot_) / n_
+            if h not in _pipe_style:
+                _pipe_style[h] = _draw_pipe_style()
+            x_, y_ = at(X_, Y_, side, 0.0, 7.6)
+            for j in range(n_):
+                put("Pipe_%s_%s%d_%d" % (bid, letter, e_, j), PIPE, x_, y_, bot_ + step_ * (j + 0.5), YAW[side],
+                    (1, 1, step_ / PIPE_H), folder=DR_PIPES, nocoll=True, mats=[FLASH_MAT] if _pipe_style[h] else None)
+            _pipes.setdefault((bid, side), []).append((X_, Y_))
+            _pipe_xy.append((px3, py3))
+            _pipe_houses.add(h)
+            _n_pipes += 1
+
+
+def _pipe_free(t, s0, s1):
+    """No downpipe across this stretch of wall, or standing in front of it on a neighbour's wall at a corner (s0..s1, up to 90 cm out)."""
+    rx, ry = RUN[t["side"]]
+    nx, ny = NORMAL[t["side"]]
+    return not any(s0 - 16.0 < (X_ - t["x"]) * rx + (Y_ - t["y"]) * ry < s1 + 16.0 and -30.0 < (X_ - t["x"]) * nx + (Y_ - t["y"]) * ny < 90.0
+                   for X_, Y_ in _pipe_xy)
+
+
+# Air conditioners. User: "window air conditioning"; "a lot of blank face tiles". MiddleEast's window unit in its timber frame
+# (SM_Windows_04), or the box alone through the wall (SM_Air_Conditioning_*), both natively a big desert cooler: squashed to a
+# 2002 window type about 60 cm wide and 45 cm out. Local -X outward, frame or flanges at X 0, so yaw 90 less than the wall. On blank tiles, so they
+# need no window hole. The frame's panes would show the wall through them, so a dark glass plane goes behind. Half the houses, one
+# kind per house, 1-2 units, upstairs first, and high enough on the ground floor to walk under.
+AC_FRAME = ME + "MiddleEast/SM_Windows_04"
+AC_BOXES = (ME + "MiddleEast/SM_Air_Conditioning_White_03", ME + "MiddleEast/SM_Air_Conditioning_01",
+            ME + "MiddleEast/SM_Air_Conditioning_Blue_02")
+P_AC_HOUSE = 0.5
+AC_RNG = random.Random(157)
+_draw_ac = shuffle_bag(AC_RNG, (AC_FRAME, AC_FRAME, AC_BOXES[0], AC_BOXES[0], AC_BOXES[1], AC_BOXES[2]))
+_ac_by_house = {}
+for t in _dress_tiles:
+    if not t["has"] and t["w"] >= 170.0:
+        _ac_by_house.setdefault(t["house"], []).append(t)
+_n_acs = 0
+for h in sorted(_ac_by_house):
+    if AC_RNG.random() > P_AC_HOUSE:
+        continue
+    mesh = _draw_ac()
+    ts = _ac_by_house[h]
+    AC_RNG.shuffle(ts)
+    ts.sort(key=lambda t: t["s"] == 0)                  # upstairs first
+    want = AC_RNG.choice((1, 1, 1, 2))
+    for t in ts:
+        if want == 0:
+            break
+        frame = mesh == AC_FRAME
+        sa, sd, sz = (0.66, 0.55, 0.62) if frame else (0.62, 0.55, 0.5)
+        wid, hei = (106.4 * sa, 151.1 * sz) if frame else (93.0 * sa, 93.6 * sz)
+        bottom = t["z"] + (AC_RNG.uniform(186.0, 192.0) if t["s"] == 0 else AC_RNG.uniform(120.0, 175.0))
+        sc = t["w"] / 2 + AC_RNG.uniform(-1.0, 1.0) * max(0.0, (t["w"] - wid) / 2 - 25.0)
+        if not _pipe_free(t, sc - wid / 2, sc + wid / 2) or not _reach_clear(t, sc, 90.0, t["z0"] + 190.0) or \
+                not _stair_clear(t, sc - wid / 2, sc + wid / 2, bottom):
+            continue
+        side = t["side"]
+        label = "AC_" + t["label"]
+        x_, y_ = at(t["x"], t["y"], side, sc - wid / 2 if frame else sc, 1.0)
+        put(label, mesh, x_, y_, bottom + 11.4 * sz if frame else bottom + hei / 2, YAW[side] - 90, (sd, sa, sz), folder=DR_ACS)
+        if frame:
+            x_, y_ = at(t["x"], t["y"], side, sc, 0.6)
+            put(label + "_Glass", PLANE, x_, y_, bottom + hei / 2, YAW[side], ((wid - 4.0) / 100.0, (hei - 4.0) / 100.0, 1),
+                folder=DR_ACS, roll=90.0, nocoll=True, mats=[GLASS])
+        t["has"].append("ac")
+        want -= 1
+        _n_acs += 1
+
+# Laundry beside ground doors (see Laundry below) takes its tiles now: by the time patches and vents have run, nearly every tile next to
+# a door is full. On the bare tile beside the door, at the door's end of it, high enough that what hangs stays above a head.
+LAUNDRY_RNG = random.Random(179)
+DOOR_RACKS = 5
+_door_at = set()
+for r in wall_runs:
+    q = r["name"].split("_")
+    if q[1][1:] != "0":
+        continue
+    for i, w_ in enumerate(r["widths"]):
+        p = _by_label.get("%s_%d" % (r["name"], i))
+        if p is not None and p["asset"].split("/")[-1] == "SM_WallDoor_01":
+            _door_at.add((r["name"], i))
+_door_ts = [t for t in _dress_tiles if t["s"] == 0 and not t["has"] and t["w"] >= 140.0 and
+            ((t["run"], t["i"] - 1) in _door_at or (t["run"], t["i"] + 1) in _door_at)]
+LAUNDRY_RNG.shuffle(_door_ts)
+_door_racks = []
+_door_rack_houses = set()
+for t in _door_ts:
+    if len(_door_racks) >= DOOR_RACKS or t["house"] in _door_rack_houses:
+        continue
+    w_r = min(t["w"] - 24.0, LAUNDRY_RNG.uniform(120.0, 170.0))
+    s0 = 12.0 if (t["run"], t["i"] - 1) in _door_at else t["w"] - w_r - 12.0
+    z_ = t["z"] + LAUNDRY_RNG.uniform(255.0, 272.0)
+    if not _pipe_free(t, s0, s0 + w_r) or not all(_ground_open(t, s_, 90.0) and _reach_clear(t, s_, 90.0, z_ + 60.0) for s_ in (s0, s0 + w_r)):
+        continue
+    t["has"].append("rack")
+    _door_racks.append((t, s0, w_r, z_))
+    _door_rack_houses.add(t["house"])
+
+# Plywood and tin patches. User: "ply patches". A sheet nailed over a bad bit of wall, a little off true. Plywood is an engine plane
+# (make_dress_textures.py, Wood surface), the tin AsiaSlum's real corrugated sheet in a roof finish. About two houses in three are
+# patchy, the rest have few. User: "the patches look out of place, maybe if you scale them bigger". Small boards floating mid-wall
+# read as stickers, so they're now real sheets: plywood about 1.2 x 2.4 m, one or two side by side, tin a whole plate. On the ground
+# they start just above the plinth. Upstairs, they stay above whatever a neighbour's roof hides. They stop under the trim line, and a
+# vent block only goes on the same tile if it fits above one. No collision: flat on the wall.
+# User: "if you are gonna place patches, place atleast 2 beside each other", "except the roof type, the wood one, yes do 2". Plywood is
+# always a group of two or three sheets, lapping, the same finish, over as many blank tiles in a row as it takes; a stretch too short for
+# two at their narrowest gets none. Tin stays one plate.
+PLY = [BM + "MI_BackAlleys_Ply_" + k for k in ("Natural", "Weathered", "GreenPaint")]
+PATCH_RNG = random.Random(163)
+P_PATCHY, P_PATCH_T, P_PATCH_RARE = 0.65, 0.6, 0.2
+PLY_MIN, TIN_MIN, PLY_LAP, TIN_LAP = 78.0, 110.0, 2.0, 8.0     # the narrowest sheet that still reads as one, and how far they lap
+PATCH_TOP = 262.0                                       # above the tile's base, under the trim line
+_draw_patch = shuffle_bag(PATCH_RNG, tuple(PLY) * 2 + tuple(SHEET_MATS[f] for f in ("Galv", "Rust", "RedOxide")))
+_draw_sheets = shuffle_bag(PATCH_RNG, (2, 2, 2, 3))
+_patchy = {}
+_n_patch = {"groups": 0, "ply": 0, "tin": 0}
+
+
+def _fit_sheets(n, ideal, least, lap, avail):
+    """n sheet widths for avail cm, shrunk if they must be; two if three won't go; None if two won't."""
+    for k_ in (n, 2):
+        widths = [PATCH_RNG.uniform(*ideal) for _ in range(k_)]
+        total_ = sum(widths) - lap * (k_ - 1)
+        if total_ > avail:
+            shrink = (avail + lap * (k_ - 1)) / sum(widths)
+            widths = [w_ * shrink for w_ in widths]
+        if min(widths) >= least:
+            return widths
+    return None
+
+
+for run_, ts in _by_run.items():
+    spans, cur = [], []
+    for t in ts:                                        # the blank tiles side by side in this run
+        if t["has"] or (cur and t["i"] != cur[-1]["i"] + 1):
+            if cur:
+                spans.append(cur)
+            cur = []
+        if not t["has"]:
+            cur.append(t)
+    if cur:
+        spans.append(cur)
+    for sp in spans:
+        t0 = sp[0]
+        h, side = t0["house"], t0["side"]
+        if h not in _patchy:
+            _patchy[h] = PATCH_RNG.random() < P_PATCHY
+        total = sum(t["w"] for t in sp)
+        start = 0.0
+        while total - start >= TIN_MIN + 24.0:
+            if PATCH_RNG.random() > (P_PATCH_T if _patchy[h] else P_PATCH_RARE):
+                start += PATCH_RNG.uniform(150.0, 260.0)
+                continue
+            avail = total - start - 24.0
+            mi = _draw_patch()
+            n_ = _draw_sheets()
+            widths = None
+            if mi not in PLY:                           # native 162 cm: the corrugations stay near true size
+                widths = _fit_sheets(1, (135.0, 190.0), TIN_MIN, TIN_LAP, avail)
+                if widths is None:
+                    mi = PATCH_RNG.choice(PLY)
+            if mi in PLY:
+                widths = _fit_sheets(n_, (108.0, 124.0), PLY_MIN, PLY_LAP, avail)
+            if widths is None:
+                break
+            lap = PLY_LAP if mi in PLY else TIN_LAP
+            g_ = sum(widths) - lap * (len(widths) - 1)
+            s0 = start + 12.0 + PATCH_RNG.uniform(0.0, max(0.0, avail - g_))
+            bot = PATCH_RNG.uniform(8.0, 26.0) if t0["s"] == 0 else PATCH_RNG.uniform(58.0, 78.0)
+            if not _pipe_free(t0, s0, s0 + g_) or not _stair_clear(t0, s0, s0 + g_, t0["z"] + bot):
+                start += 90.0
+                continue
+            # The tiles it lies on, and which one it starts on, for its name.
+            under, first, off = [], None, 0.0
+            for t in sp:
+                if off < s0 + g_ and s0 < off + t["w"]:
+                    under.append(t)
+                    first = first or t
+                off += t["w"]
+            run3 = (float(RUN[side][0]), float(RUN[side][1]), 0.0)
+            out3 = (float(NORMAL[side][0]), float(NORMAL[side][1]), 0.0)
+            patch_top = 0.0
+            s_ = s0
+            for k_, w_s in enumerate(widths):
+                label = "Patch_%s_%d" % (first["label"], k_)
+                if mi in PLY:
+                    tilt = PATCH_RNG.uniform(-0.8, 0.8)
+                    X3, up3 = v_rot(run3, out3, tilt), v_rot((0.0, 0.0, 1.0), out3, tilt)
+                    h_p = PATCH_RNG.uniform(min(190.0, PATCH_TOP - bot - 12.0), PATCH_TOP - bot)
+                    x_, y_ = at(t0["x"], t0["y"], side, s_ + w_s / 2, 1.0 + 0.4 * k_)
+                    put_axes(label, PLANE, X3, (-up3[0], -up3[1], -up3[2]), out3, (w_s / 100.0, h_p / 100.0, 1.0), (0.0, 0.0, 0.0),
+                             (x_, y_, t0["z"] + bot + h_p / 2), mats=[mi], nocoll=True)
+                    _n_patch["ply"] += 1
+                else:
+                    tilt = PATCH_RNG.uniform(-1.0, 1.0)
+                    X3, up3 = v_rot(run3, out3, tilt), v_rot((0.0, 0.0, 1.0), out3, tilt)
+                    h_p = PATCH_RNG.uniform(min(180.0, PATCH_TOP - bot - 12.0), PATCH_TOP - bot)
+                    x_, y_ = at(t0["x"], t0["y"], side, s_ + w_s / 2, 1.0 + PLATE_T / 2 + 1.5 * k_)
+                    top3 = v_add((x_, y_, t0["z"] + bot + h_p / 2), up3, h_p / 2)
+                    put_axes(label, PATCH_RNG.choice(AWN_PLATES), X3, out3, up3, (w_s / PLATE_W, 1.0, h_p / 164.9), (0.0, 0.0, 0.0), top3,
+                             mats=[mi], nocoll=True)
+                    _n_patch["tin"] += 1
+                items[-1]["folder"] = DR_PATCH
+                patch_top = max(patch_top, bot + h_p)
+                s_ += w_s - lap
+            for t in under:
+                t["has"].append("patch")
+                t["patch_top"] = patch_top
+            _n_patch["groups"] += 1
+            start = s0 + g_ + PATCH_RNG.uniform(90.0, 220.0)
+
+# Vent blocks. User: "vent blocks". Concrete blocks 20 x 20 cm, set high in the wall under the band, where a house lets its rooms
+# breathe (make_dress_textures.py: 4 x 2 blocks on an 80 x 40 cm plane). More on faces with no window at all, one pattern per house.
+# User: "The vents, align them if they are on the same face", "atleast the same height". A face (one side of a house, every storey)
+# has one height and one row count, so tops and bottoms line up. Faces differ from each other, and how wide a run is stays free.
+VENT = [BM + "MI_BackAlleys_VentBlock_" + k for k in ("Diamond", "Slots")]
+VENT_RNG = random.Random(167)
+P_VENT_BLANK, P_VENT_OPEN = 0.72, 0.5
+_draw_vent = shuffle_bag(VENT_RNG, tuple(VENT))
+_vent_house = {}
+_vent_face = {}
+_n_vents = 0
+for t in _dress_tiles:
+    if "room" in t["has"] or "ac" in t["has"] or t["w"] < 110.0:
+        continue
+    if t["s"] > 0 and not _ground_open(t, t["w"] / 2, 30.0):   # a terrace's lean-to may be there
+        continue
+    if VENT_RNG.random() > (P_VENT_BLANK if t["bare_face"] else P_VENT_OPEN):
+        continue
+    if t["house"] not in _vent_house:
+        _vent_house[t["house"]] = _draw_vent()
+    face_key = (t["house"], t["letter"])
+    if face_key not in _vent_face:
+        _vent_face[face_key] = (282.0 - VENT_RNG.uniform(0.0, 30.0), VENT_RNG.choice((1, 1, 1, 2)))
+    top, rows = _vent_face[face_key]
+    if t["w"] >= 270.0:
+        cols = VENT_RNG.choice((1, 2, 2, 3))
+    elif t["w"] >= 195.0:
+        cols = VENT_RNG.choice((1, 2, 2))
+    else:
+        cols = 1
+    w_v, h_v = cols * 80.0, rows * 40.0
+    if t.get("patch_top") and top - h_v < t["patch_top"] + 4.0:     # no room above the sheet: leave this tile out of the line
+        continue
+    pad = min(14.0, (t["w"] - w_v) / 2 - 1.0)        # a narrow tile takes one panel with less to spare
+    sc = VENT_RNG.uniform(w_v / 2 + pad, t["w"] - w_v / 2 - pad)
+    if not _pipe_free(t, sc - w_v / 2, sc + w_v / 2) or not _stair_clear(t, sc - w_v / 2, sc + w_v / 2, t["z"] + top - h_v):
+        continue
+    for c_ in range(cols):
+        for r_ in range(rows):
+            x_, y_ = at(t["x"], t["y"], t["side"], sc - w_v / 2 + 80.0 * (c_ + 0.5), 0.7)
+            put("Vent_%s_%d%d" % (t["label"], c_, r_), PLANE, x_, y_, t["z"] + top - 40.0 * (r_ + 0.5), YAW[t["side"]],
+                (0.8, 0.4, 1), folder=DR_VENT, roll=90.0, nocoll=True, mats=[_vent_house[t["house"]]])
+    t["has"].append("vent")
+    _n_vents += 1
+
+# Laundry. User: "start adding laundry hang, but keep it cheap if its far away". Then: "keep the laundry stuff on balconies , or near
+# reach of a window on the second floor. or near the doors. never out across the street, if it crosses the street, then make sure its
+# on the second floor". So somebody can always reach it: lines on the balcony strips and in the overhanging rooms, clothes over the
+# gallery rail, racks under second-floor windows and beside ground doors, and the only lines over a street start at a second-floor
+# window and tie off at the second floor opposite. One lot to a house, so no street of the same thing.
+# Cheap: the clothes are MiddleEast's lighter ones, which already have four LODs down to 200-350 tris (SM_clothes_B_02 at 5.8k stays
+# out). Everything culls at LAUNDRY_CULL by "draw" in the plan, and a line is two engine cubes, not SM_Rope_A_001 at 1,208 tris with no
+# LODs. Racks are AsiaSlum's, 108 tris. No collision: shots and players go through.
+DR_LAUNDRY = "BackAlleys/Laundry"
+LAUNDRY_CULL = 3500.0
+BALCONY_LINES, ROOM_LINES, STREET_LINES, WINDOW_RACKS, RAIL_CLOTHES = 5, 5, 6, 6, 5
+ROPE_MAT = "/Game/AsiaSlum/Material/MI_Rope_A_001"
+_clothes_path = ME + "MiddleEast/SM_clothes_"
+_draw_clothes = shuffle_bag(LAUNDRY_RNG, tuple(_clothes_path + k for k in ("A_01", "A_01", "A_02", "A_03", "A_04", "A_05", "B_01", "B_01", "B_03")))
+# Beside a door or over a rail: nothing long, so it stays above a head and doesn't fill the rail.
+_draw_short = shuffle_bag(LAUNDRY_RNG, tuple(_clothes_path + k for k in ("A_02", "A_03", "A_04", "A_05", "B_03")))
+_laundry_houses = set(_door_rack_houses)
+_n_laundry = {"balcony": 0, "room": 0, "street": 0, "window": 0, "door": 0, "rail": 0}
+
+
+def _cloth(label, x_, y_, z_, yaw_, short=False):
+    k = LAUNDRY_RNG.uniform(0.92, 1.06)
+    put(label, _draw_short() if short else _draw_clothes(), x_, y_, z_, yaw_ + LAUNDRY_RNG.uniform(-7.0, 7.0), (k, k, k),
+        folder=DR_LAUNDRY, nocoll=True)
+    items[-1]["draw"] = LAUNDRY_CULL
+
+
+def _laundry_line(label, a3, b3, yaw_, step=(75.0, 90.0, 90.0, 110.0, 170.0), end=45.0):
+    """A sagging line from a3 to b3 (x, y, z), two thin cubes, with clothes along it: a gap here and there, none right at an end."""
+    sag = LAUNDRY_RNG.uniform(5.0, 13.0) * math.hypot(b3[0] - a3[0], b3[1] - a3[1]) / 400.0
+    mid = ((a3[0] + b3[0]) / 2, (a3[1] + b3[1]) / 2, (a3[2] + b3[2]) / 2 - sag)
+    for k_, (p0, p1) in enumerate(((a3, mid), (mid, b3))):
+        d3 = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
+        len_ = math.sqrt(sum(c * c for c in d3))
+        X3 = (d3[0] / len_, d3[1] / len_, d3[2] / len_)
+        h_ = math.hypot(X3[0], X3[1])
+        Y3 = (-X3[1] / h_, X3[0] / h_, 0.0)
+        put_board("%s_Line%d" % (label, k_), CUBE, ((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2), X3, Y3,
+                  v_cross(X3, Y3), (len_, 1.2, 1.2), mats=[ROPE_MAT], nocoll=True)
+        items[-1]["folder"] = DR_LAUNDRY
+        items[-1]["draw"] = LAUNDRY_CULL
+    length = math.hypot(b3[0] - a3[0], b3[1] - a3[1])
+    d_ = end + LAUNDRY_RNG.uniform(0.0, 35.0)
+    j_ = 0
+    while d_ < length - end:
+        u = d_ / length
+        _cloth("%s_%d" % (label, j_), a3[0] + (b3[0] - a3[0]) * u, a3[1] + (b3[1] - a3[1]) * u,
+               a3[2] + (b3[2] - a3[2]) * u - sag * (1.0 - abs(2.0 * u - 1.0)), yaw_)
+        j_ += 1
+        d_ += LAUNDRY_RNG.choice(step)
+
+
+def _laundry_rack(label, t, s0, w_r, z_, short):
+    """SM_DryingRack_A_002: 271 long on local X from its pivot, 7 cm behind to 63 out on local -Y. Turned 180, X runs back along the wall."""
+    side = t["side"]
+    x_, y_ = at(t["x"], t["y"], side, s0 + w_r, 7.0)
+    put(label, AS + "SM_DryingRack_A_002", x_, y_, z_, YAW[side] + 180.0, (w_r / 271.0, 1.0, 1.0), folder=DR_LAUNDRY, nocoll=True)
+    items[-1]["draw"] = LAUNDRY_CULL
+    s_ = s0 + LAUNDRY_RNG.uniform(30.0, 50.0)
+    j_ = 0
+    while s_ < s0 + w_r - 25.0:
+        x_, y_ = at(t["x"], t["y"], side, s_, 62.0)
+        _cloth("%s_%d" % (label, j_), x_, y_, z_ - 2.0, YAW[side] - 90.0, short)
+        j_ += 1
+        s_ += LAUNDRY_RNG.choice((60.0, 75.0, 90.0))
+
+
+def _in_room(X, Y):
+    return any(o[0] < X < o[2] and o[1] < Y < o[3] for o in _room_rects)
+
+
+# On the balcony strips: tied between two of the frame's posts, 18 cm in from them, above the parapet and under the roof.
+_side_of = {"N": "north", "S": "south", "E": "east", "W": "west"}
+_strip_posts = {}
+for p in items:
+    if p["folder"] == TER and p["label"].startswith(("Post_", "AwnPost_")) and p["label"].endswith("_0"):
+        q = p["label"].split("_")
+        if BLOCKS.get(q[1], {}).get("balcony"):
+            _strip_posts.setdefault((q[1], q[2][0]), []).append(p)
+_strips = sorted(_strip_posts)
+LAUNDRY_RNG.shuffle(_strips)
+for bid, letter in _strips:
+    b = BLOCKS[bid]
+    house = bid[:-1] if bid.endswith("b") and bid[:-1] in BLOCKS else bid
+    ps = _strip_posts[(bid, letter)]
+    if _n_laundry["balcony"] >= BALCONY_LINES or house in _laundry_houses or len(ps) < 3:
+        continue
+    side = _side_of[letter]
+    rx, ry = RUN[side]
+    ps = sorted(ps, key=lambda p: p["loc"][0] * rx + p["loc"][1] * ry)
+    i0 = LAUNDRY_RNG.randrange(0, len(ps) - 2)
+    p0, p1 = ps[i0], ps[min(i0 + LAUNDRY_RNG.choice((2, 2, 3)), len(ps) - 1)]
+    nx, ny = NORMAL[side]
+    z_ = b["sh"] - 5.0 + FLOOR_H + LAUNDRY_RNG.uniform(180.0, 200.0)
+    a3 = (p0["loc"][0] - nx * 18.0, p0["loc"][1] - ny * 18.0, z_)
+    b3 = (p1["loc"][0] - nx * 18.0, p1["loc"][1] - ny * 18.0, z_)
+    _laundry_line("BalconyLine_%s_%s" % (bid, letter), a3, b3, YAW[side] - 90.0, step=(60.0, 75.0, 75.0, 95.0))
+    _laundry_houses.add(house)
+    _n_laundry["balcony"] += 1
+
+# In the overhanging rooms: side to side, a little nearer the front, at head height over the room's floor. Seen through its windows.
+_room_order2 = list(_rooms_made)
+LAUNDRY_RNG.shuffle(_room_order2)
+for t, total, d_r, sz_ in _room_order2:
+    if _n_laundry["room"] >= ROOM_LINES or t["house"] in _laundry_houses:
+        continue
+    side = t["side"]
+    inside = 0.826 * (BLOCKS[t["bid"]]["sh"] - 30.0)
+    z_ = t["z"] + 33.0 * sz_ + min(LAUNDRY_RNG.uniform(180.0, 200.0), inside - 15.0)
+    n_ = d_r * LAUNDRY_RNG.uniform(0.5, 0.7)
+    x0_, y0_ = at(t["x"], t["y"], side, 30.0, n_)
+    x1_, y1_ = at(t["x"], t["y"], side, total - 30.0, n_)
+    _laundry_line("RoomLine_%s" % t["label"], (x0_, y0_, z_), (x1_, y1_, z_), YAW[side] - 90.0, step=(60.0, 75.0, 75.0, 95.0), end=30.0)
+    _laundry_houses.add(t["house"])
+    _n_laundry["room"] += 1
+
+# Second-floor windows.
+_win_tiles = []
+for r in wall_runs:
+    q = r["name"].split("_")
+    if q[0] in _thin_blocks:
+        continue
+    h = q[0][:-1] if q[0].endswith("b") and q[0][:-1] in BLOCKS else q[0]
+    for i, w_ in enumerate(r["widths"]):
+        p = _by_label.get("%s_%d" % (r["name"], i))
+        if p is None:
+            continue
+        a_ = p["asset"].split("/")[-1]
+        if a_ == "SM_Wall_Windows_01" and q[1][1:] == "1":
+            _win_tiles.append({"label": p["label"], "house": h, "bid": q[0], "side": r["side"], "s": 1, "x": p["loc"][0], "y": p["loc"][1],
+                               "z": p["loc"][2], "w": w_, "sx": p["scale"][0]})
+LAUNDRY_RNG.shuffle(_win_tiles)
+
+# Over the street: only from beside a second-floor window, at a height you can reach from it, to a second-floor wall opposite.
+_line_mids = []
+for t in _win_tiles:
+    if _n_laundry["street"] >= STREET_LINES:
+        break
+    if t["house"] in _laundry_houses:
+        continue
+    side = t["side"]
+    s_ = 111.0 * t["sx"] + LAUNDRY_RNG.choice((-1.0, 1.0)) * (55.0 * t["sx"] + LAUNDRY_RNG.uniform(10.0, 30.0))
+    gap = None
+    for n_ in range(100, 700, 5):
+        lx, ly = _lay(*at(t["x"], t["y"], side, s_, float(n_)))
+        if solid(lx, ly, 1):
+            gap = float(n_)
+            break
+    if gap is None or not 250.0 <= gap <= 650.0:
+        continue
+    z_ = t["z"] + LAUNDRY_RNG.uniform(165.0, 205.0)
+    if not all(_ground_open(t, s_, k * gap / 6.0) and _reach_clear(t, s_, k * gap / 6.0, z_ + 60.0) for k in range(1, 6)):
+        continue
+    ax, ay = at(t["x"], t["y"], side, s_, 0.0)
+    bx, by = at(t["x"], t["y"], side, s_, gap)
+    mx, my = (ax + bx) / 2, (ay + by) / 2
+    if any(math.hypot(mx - o[0], my - o[1]) < 450.0 for o in _line_mids) or _in_room(mx, my):
+        continue
+    _line_mids.append((mx, my))
+    _laundry_line("StreetLine_%s" % t["label"], (ax, ay, z_), (bx, by, z_), YAW[side], end=70.0)
+    _laundry_houses.add(t["house"])
+    t["used"] = True
+    _n_laundry["street"] += 1
+
+# Under a second-floor window's sill, as wide as the window and a bit, over the wall below.
+for t in _win_tiles:
+    if _n_laundry["window"] >= WINDOW_RACKS:
+        break
+    if t["house"] in _laundry_houses or t.get("used"):
+        continue
+    side = t["side"]
+    w_r = min(t["w"] - 16.0, LAUNDRY_RNG.uniform(140.0, 190.0))
+    s0 = max(8.0, min(t["w"] - w_r - 8.0, 111.0 * t["sx"] - w_r / 2))
+    z_ = t["z"] + 78.0
+    if not _pipe_free(t, s0, s0 + w_r) or not all(_ground_open(t, s_, 90.0) and _reach_clear(t, s_, 90.0, z_ + 60.0) for s_ in (s0, s0 + w_r)):
+        continue
+    if any(_in_room(*at(t["x"], t["y"], side, s_, 40.0)) for s_ in (s0, s0 + w_r)):
+        continue
+    _laundry_rack("Rack_" + t["label"], t, s0, w_r, z_, False)
+    _laundry_houses.add(t["house"])
+    _n_laundry["window"] += 1
+
+# Beside a ground door: the tiles chosen before the patches.
+for t, s0, w_r, z_ in _door_racks:
+    _laundry_rack("Rack_" + t["label"], t, s0, w_r, z_, True)
+    _n_laundry["door"] += 1
+
+# Over the gallery rail: its top bar, on the south side, 1.2 m apart at least. These meshes are draped, so they straddle the bar.
+_rail_ys = []
+for _ in range(60):
+    y_ = LAUNDRY_RNG.uniform(Yw + 70.0, Yeast - 70.0)
+    if len(_rail_ys) < RAIL_CLOTHES and all(abs(y_ - o) > 120.0 for o in _rail_ys):
+        _rail_ys.append(y_)
+for j_, y_ in enumerate(_rail_ys):
+    _cloth("Rail_Cloth_%d" % j_, Xs + 6.0, y_, 503.0, 0.0, True)
+    _n_laundry["rail"] += 1
+
+# Door steps. User: "door steps". The building floor lifts a door 18 cm; a step halves that riser. A concrete block, wider than the
+# door and proud of the floor, in three forms and sometimes none: plain, topped with AsiaSlum's tiled threshold (SM_Front_A_001: X
+# -31.2..115.9, Y -59.5..16.2, 2.6 thick), or two risers. Ground doors and door end walls, and the doors onto the deck. Pack concrete
+# (MI_Concrete_01): the world-mapped wall material streaks on a level top. They keep collision, so people and bullets meet them.
+STEP_MAT = FM + "MI_Concrete_01"
+STEP_TILE = "/Game/AsiaSlum/Material/MI_OuterWallTile_A_002"
+STEP_RNG = random.Random(173)
+_draw_step = shuffle_bag(STEP_RNG, ("plain", "plain", "plain", "tile", "tile", "tile", "double", "double", "none"))
+_n_steps = {"plain": 0, "tile": 0, "double": 0, "none": 0, "blocked": 0}
+
+
+def _step_box(label, side, x0, y0, s0, n0, wid, dep, z0, z1):
+    c0, c1 = at(x0, y0, side, s0, n0), at(x0, y0, side, s0 + wid, n0 + dep)
+    put(label, CUBE, min(c0[0], c1[0]), min(c0[1], c1[1]), z0, 0, (abs(c1[0] - c0[0]) / 100.0, abs(c1[1] - c0[1]) / 100.0,
+                                                                   (z1 - z0) / 100.0), folder=DR_STEP, mats=[STEP_MAT])
+
+
+for p in list(items):
+    if p["asset"].split("/")[-1] != "SM_WallDoor_01" or p["folder"] not in (BLK, "BackAlleys/SpawnDoors"):
+        continue
+    side = _yaw_side[round(p["rot"][1]) % 360]
+    x0_, y0_, z_ = p["loc"]
+    sx_ = p["scale"][0]
+    lx, ly = _lay(*at(x0_, y0_, side, 111.0 * sx_, FLOOR_OUT + 30.0))
+    dk_ = L["deck"]
+    on_deck = dk_["x0"] < lx < dk_["x1"] and dk_["y0"] < ly < dk_["y1"]
+    if on_deck and abs(z_ - (400.0 + FLOOR_H)) < 1.0:
+        base, n0 = 400.0, -2.0
+    elif abs(z_ - FLOOR_H) < 1.0:
+        base, n0 = 0.0, FLOOR_OUT - 4.0
+        parts = p["label"].split("_")
+        me = BLOCKS.get(parts[0])
+        if not (0 < lx < W and 0 < ly < H) or cover_top(lx, ly, me) > 0 or \
+                any(g["x0"] - 0.2 < lx < g["x1"] + 0.2 and g["y0"] - 2.2 < ly < g["y1"] + 0.2 for g in L["stairs"]):
+            _n_steps["blocked"] += 1
+            continue
+    else:
+        continue
+    kind = _draw_step()
+    _n_steps[kind] += 1
+    if kind == "none":
+        continue
+    wid, dep = 110.0 * sx_ + STEP_RNG.uniform(22.0, 44.0), STEP_RNG.uniform(32.0, 50.0)
+    s0 = 111.0 * sx_ - wid / 2
+    label = "Step_" + p["label"]
+    if kind == "double":
+        _step_box(label + "_Low", side, x0_, y0_, s0 - 9.0, n0, wid + 18.0, dep + 24.0, base - 5.0, base + 6.0)
+        _step_box(label, side, x0_, y0_, s0, n0, wid, dep, base - 5.0, base + 12.0)
+    else:
+        _step_box(label, side, x0_, y0_, s0, n0, wid, dep, base - 5.0, base + 9.0)
+    if kind == "tile":
+        sa, sd = wid / 147.1, (dep - 2.0) / 75.7
+        x_, y_ = at(x0_, y0_, side, s0 + 31.2 * sa, n0 + 59.5 * sd)
+        put(label + "_Tile", AS + "Interior/SM_Front_A_001", x_, y_, base + 8.8, YAW[side], (sa, sd, 1), folder=DR_STEP,
+            nocoll=True, mats=[STEP_MAT, STEP_TILE])
+
+# --- Street dressing: overhead, rooftops, lights, fronts, small details ------------------------------------------------------------
+# User 2026-11-05: "whats else can we add?", then "do all that and add it to the tool". Wires and meter boxes, rooftop tanks and aerials,
+# bulbs and lamps with real lights, shutters, gates, tarps, blank signs, window sills, rebar, peeling paint. Every kind has its own switch,
+# folder and random sequence, and this pass runs last, so nothing placed above moves and a kind can be taken back out. They keep the
+# building dressing's rules: hollow-block faces and thin walls stay empty, nothing on the stair walls, nothing across a pipe, and picks from
+# bags with exceptions, one lot to a house, so no street repeats. Shapes: analysis/street_shape_ue.py.
+STREET_WIRES, STREET_ROOFTOPS, STREET_LIGHTS, STREET_FRONTS, STREET_DETAILS = True, True, True, True, True
+DR_WIRES, DR_METERS, DR_TANKS, DR_AERIALS, DR_LIGHTS, DR_SHUTTERS, DR_GATES, DR_TARPS, DR_SIGNS, DR_SILLS, DR_REBAR, DR_PEEL = (
+    "BackAlleys/" + k for k in ("Wires", "Meters", "Tanks", "Aerials", "Lights", "Shutters", "Gates", "Tarps", "Signs", "Sills", "Rebar", "Peel"))
+CULL_NEAR, CULL_MID, CULL_FAR = 3500.0, 5000.0, 8000.0
+AM = "/Game/AsiaSlum/Material/"
+WIRE_MAT, LIGHT_ON, ANT_MAT = AM + "MI_Rubber_A_001", AM + "MI_Light_A_001", AM + "MI_Antenna_A_001"
+RUST_MAT = BM + "MI_BackAlleys_MetalSheet_Rust"
+_street_n = {}
+
+
+def _cheap(draw, n=1, noshadow=False):
+    """The last n items: culled at draw, no lightmap of their own (the last bake ran out of video memory), and no shadow if thin."""
+    for p in items[-n:]:
+        p["draw"] = draw
+        p["vol"] = True
+        if noshadow:
+            p["noshadow"] = True
+
+
+def _count(kind, k=1):
+    _street_n[kind] = _street_n.get(kind, 0) + k
+
+
+def _house_of(bid):
+    return bid[:-1] if bid.endswith("b") and bid[:-1] in BLOCKS else bid
+
+
+# Every wall tile that shows, of any kind, so the openings can be seen too.
+_wall_tiles, _run_tiles, _face_runs = [], {}, {}
+for r in wall_runs:
+    q = r["name"].split("_")
+    if q[0] not in BLOCKS or q[0] in _thin_blocks or len(q) < 2 or not q[1][1:].isdigit():
+        continue
+    off_ = 0.0
+    for i, w_ in enumerate(r["widths"]):
+        p = _by_label.get("%s_%d" % (r["name"], i))
+        if p is not None:
+            t = {"label": p["label"], "house": _house_of(q[0]), "bid": q[0], "side": r["side"], "letter": q[1][0], "s": int(q[1][1:]),
+                 "x": p["loc"][0], "y": p["loc"][1], "z": p["loc"][2], "w": w_, "sx": abs(p["scale"][0]), "kind": p["asset"].split("/")[-1],
+                 "run": r["name"], "off": off_, "dress": _dress_labels.get(p["label"])}
+            _wall_tiles.append(t)
+            _run_tiles.setdefault(r["name"], []).append(t)
+        off_ += w_
+    _face_runs.setdefault((q[0], q[1]), []).append(r["name"])
+_has_awn = {p["label"][:-4] for p in items if p["label"].endswith("_Awn")}
+_hollow_face = lambda t: (t["house"], t["letter"]) in _hset
+
+
+def _occ_of(p):
+    """A world box round a piece already on a wall, by the shapes measured for the building dressing. None if it isn't one of those."""
+    a_ = p["asset"].split("/")[-1]
+    x, y, z = p["loc"]
+    yaw = math.radians(p["rot"][1])
+    c, s_ = math.cos(yaw), math.sin(yaw)
+    sc = p["scale"]
+    if a_ == "Plane":
+        pts, lo, hi = [(x - c * abs(sc[0]) * 50, y - s_ * abs(sc[0]) * 50), (x + c * abs(sc[0]) * 50, y + s_ * abs(sc[0]) * 50)], z - abs(sc[1]) * 50, z + abs(sc[1]) * 50
+    elif a_.startswith("SM_MetalPlate"):
+        pts, lo, hi = [(x - c * abs(sc[0]) * 81, y - s_ * abs(sc[0]) * 81), (x + c * abs(sc[0]) * 81, y + s_ * abs(sc[0]) * 81)], z - abs(sc[2]) * 165, z
+    elif a_ == "SM_Rain_Pipe_01":
+        cx, cy = x - s_ * 15.4, y + c * 15.4
+        pts, lo, hi = [(cx - 14, cy - 14), (cx + 14, cy + 14)], z - abs(sc[2]) * 105, z + abs(sc[2]) * 105
+    elif a_ == "SM_DryingRack_A_002":
+        ex, ey = x + c * 271 * sc[0], y + s_ * 271 * sc[0]
+        pts, lo, hi = [(x, y), (ex, ey), (x + s_ * 63, y - c * 63), (ex + s_ * 63, ey - c * 63)], z - 110, z + 8
+    elif a_ == "SM_Windows_04":
+        ex, ey = x - s_ * 106.4 * sc[1], y + c * 106.4 * sc[1]
+        pts, lo, hi = [(x, y), (ex, ey), (x - c * 60, y - s_ * 60), (ex - c * 60, ey - s_ * 60)], z - 12, z + 151 * sc[2]
+    elif a_.startswith("SM_Air_Conditioning"):
+        hw_ = 46.5 * sc[1]
+        pts, lo, hi = [(x + s_ * hw_, y - c * hw_), (x - s_ * hw_, y + c * hw_), (x + s_ * hw_ - c * 60, y - c * hw_ - s_ * 60)], z - 47 * sc[2], z + 47 * sc[2]
+    else:
+        return None
+    return (min(q_[0] for q_ in pts), min(q_[1] for q_ in pts), lo, max(q_[0] for q_ in pts), max(q_[1] for q_ in pts), hi)
+
+
+_occ = [b_ for b_ in (_occ_of(p) for p in items if p["folder"] in (DR_PATCH, DR_VENT, DR_ACS, DR_PIPES, DR_LAUNDRY)) if b_]
+_occ += [(o[0], o[1], 0.0, o[2], o[3], 3000.0) for o in _room_rects]
+
+
+def _wbox(t, s0, s1, z0, z1, n1=30.0):
+    a_, b_ = at(t["x"], t["y"], t["side"], s0, -2.0), at(t["x"], t["y"], t["side"], s1, n1)
+    return (min(a_[0], b_[0]), min(a_[1], b_[1]), z0, max(a_[0], b_[0]), max(a_[1], b_[1]), z1)
+
+
+def _free(box, pad=6.0):
+    return not any(box[0] - pad < o[3] and o[0] < box[3] + pad and box[1] - pad < o[4] and o[1] < box[4] + pad and
+                   box[2] - pad < o[5] and o[2] < box[5] + pad for o in _occ)
+
+
+def _claim(box):
+    _occ.append(box)
+
+
+def _tile_above(t, s_local, st):
+    """The tile of storey st over a point s_local along tile t, and how far along it that point is. None if no wall shows there."""
+    X_, Y_ = at(t["x"], t["y"], t["side"], s_local, 0.0)
+    rx, ry = RUN[t["side"]]
+    nx, ny = NORMAL[t["side"]]
+    for name in _face_runs.get((t["bid"], "%s%d" % (t["letter"], st)), ()):
+        for u in _run_tiles.get(name, ()):
+            a_ = (X_ - u["x"]) * rx + (Y_ - u["y"]) * ry
+            if 0.0 <= a_ < u["w"] and abs((X_ - u["x"]) * nx + (Y_ - u["y"]) * ny) < 3.0:
+                return u, a_
+    return None
+
+
+def _edge_ok(u, s_local, half=0.0):
+    """Clear of an opening and of its awning, which keeps 37 cm from a tile's edge; plain walls are clear everywhere."""
+    if u["kind"] in ("SM_Wall_Windows_01", "SM_WallDoor_01"):
+        return s_local + half < 30.0 * u["sx"] or s_local - half > 195.0 * u["sx"]
+    return u["kind"] in _plain_tile
+
+
+def _band_out(t):
+    """How far the band between the floors stands off this wall."""
+    return BAND_OUT if (t["house"], t["letter"]) in _proud and t["s"] < BLOCKS[t["house"]]["storeys"] - 1 else 0.0
+
+
+FACE_EDGE = 40.0        # user: "some of your placements are too close to the edge of the face". A corner column alone takes 20
+
+
+def _inside_face(u, s0, s1):
+    """s0..s1 along tile u, cut back to FACE_EDGE from the ends of its wall."""
+    ts_ = _run_tiles[u["run"]]
+    return max(s0, ts_[0]["off"] + FACE_EDGE - u["off"]), min(s1, ts_[-1]["off"] + ts_[-1]["w"] - FACE_EDGE - u["off"])
+
+
+def _wall_cube(label, t, s0, s1, n0, n1, z0, z1, folder, mat, nocoll=True):
+    c0, c1 = at(t["x"], t["y"], t["side"], s0, n0), at(t["x"], t["y"], t["side"], s1, n1)
+    put(label, CUBE, min(c0[0], c1[0]), min(c0[1], c1[1]), z0, 0, (abs(c1[0] - c0[0]) / 100.0, abs(c1[1] - c0[1]) / 100.0, (z1 - z0) / 100.0),
+        folder=folder, mats=[mat], nocoll=nocoll)
+
+
+def _rod(label, a3, b3, thick, mat, folder, draw):
+    """A thin box from a3 to b3: a span of wire, a conduit, a bar of rebar. Twelve triangles."""
+    d3 = (b3[0] - a3[0], b3[1] - a3[1], b3[2] - a3[2])
+    len_ = math.sqrt(sum(c * c for c in d3))
+    X3 = (d3[0] / len_, d3[1] / len_, d3[2] / len_)
+    h_ = math.hypot(X3[0], X3[1])
+    Y3 = (-X3[1] / h_, X3[0] / h_, 0.0) if h_ > 1e-4 else (1.0, 0.0, 0.0)
+    put_board(label, CUBE, ((a3[0] + b3[0]) / 2, (a3[1] + b3[1]) / 2, (a3[2] + b3[2]) / 2), X3, Y3, v_cross(X3, Y3), (len_ + 0.3, thick, thick),
+              mats=[mat], nocoll=True)
+    items[-1]["folder"] = folder
+    _cheap(draw, 1, True)
+
+
+# Shop fronts: closed roll-up shutters, each with a blank sign over it; steel gates; tarps over a wall or half across a door. On ground-floor
+# tiles nothing else has taken. A good share stays bare, and one to a house, so a street doesn't read as a row of shops.
+FRONT_RNG = random.Random(181)
+SHUTTERS, GATES, WALL_TARPS, EXTRA_SIGNS = 8, 4, 4, 5
+SIGN_LONG = 2.6       # a sign's width to its height, at least
+ROLL_MATS = (AM + "MI_RollUp_A_001", AM + "MI_RollUp_A_002")
+TARP_MATS = (AM + "MI_TarpCover_A_001_Blue", AM + "MI_TarpCover_A_001_Blue", AM + "MI_TarpCover_A_001_White")
+SIGN_MATS = tuple(BM + "MI_BackAlleys_Sign_" + k for k in ("Red", "Yellow", "White", "Blue"))
+_draw_sign = shuffle_bag(FRONT_RNG, SIGN_MATS)
+_draw_roll = shuffle_bag(FRONT_RNG, ROLL_MATS)
+_draw_tarp = shuffle_bag(FRONT_RNG, TARP_MATS)
+_shops = []
+_front_houses = set()
+
+
+def _sign_board(label, t, s_mid, width, z_low, kind_h):
+    """SM_Sign_A_001: centred pivot, 300 x 84, 13 thick. Over the trim, and over a protruding band if there is one. Always long: user, "square
+    signage may fit chinese characters but not alphanumerics"."""
+    nat_w, nat_h = 300.0, 84.0
+    kind_h = min(kind_h, width / SIGN_LONG)
+    x_, y_ = at(t["x"], t["y"], t["side"], s_mid, 14.0 + _band_out(t))
+    put(label, AS + "SM_Sign_A_001", x_, y_, z_low + kind_h / 2, YAW[t["side"]], (width / nat_w, 1.0, kind_h / nat_h), folder=DR_SIGNS, nocoll=True,
+        mats=[_draw_sign(), AM + "MI_MetalFrame_A_001_Black"])
+    _cheap(CULL_MID)
+
+
+if STREET_FRONTS:
+    _front_ts = [u for u in _wall_tiles if u["s"] == 0 and u["dress"] is not None and u["w"] >= 125.0 and not [k for k in u["dress"]["has"] if k != "vent"]]
+    FRONT_RNG.shuffle(_front_ts)
+    _n_sh, _n_ga, _n_ta = 0, 0, 0
+    _draw_front = shuffle_bag(FRONT_RNG, ("shutter", "shutter", "shutter", "gate", "tarp"))
+    FRONT_TOP = {"shutter": 375.0, "gate": 246.0, "tarp": 232.0}     # how much wall each takes, a shutter's sign included
+    for u in _front_ts:
+        if (u["house"], u["letter"]) in _front_houses:
+            continue
+        if not all(_ground_open(u, s_, 110.0) for s_ in (10.0, u["w"] / 2, u["w"] - 10.0)) or not _stair_clear(u, 0.0, u["w"], u["z"]) or \
+                not _pipe_free(u, 0.0, u["w"]):
+            continue
+        kind = _draw_front()
+        in0, in1 = _inside_face(u, 0.0, u["w"])
+        room_ = in1 - in0
+        FRONT_MIN = {"shutter": 122.0, "gate": 110.0, "tarp": 98.0}
+        for _try in range(3):
+            if room_ < FRONT_MIN[kind] or not _free(_wbox(u, 0.0, u["w"], u["z"], u["z"] + FRONT_TOP[kind])) or \
+                    (kind == "shutter" and _n_sh >= SHUTTERS) or (kind == "gate" and _n_ga >= GATES) or (kind == "tarp" and _n_ta >= WALL_TARPS):
+                kind = {"shutter": "gate", "gate": "tarp", "tarp": "shutter"}[kind]
+            else:
+                break
+        else:
+            continue
+        side, w_ = u["side"], u["w"]
+        if kind == "shutter":
+            # SM_RollupDoor_A_001: X 0..191 along the wall, Z -277..0 from its top, a lip 11 cm either side of Y 0. Local Y is out.
+            wid = min(room_ - 14.0, w_ - 24.0, FRONT_RNG.uniform(180.0, 205.0))        # 7 a side: its rails, its box and the sign over it
+            s0 = in0 + 7.0 + FRONT_RNG.uniform(0.0, room_ - 14.0 - wid)
+            top = u["z"] + 268.0
+            x_, y_ = at(u["x"], u["y"], side, s0, 6.0)
+            put("Shutter_" + u["label"], AS + "SM_RollupDoor_A_001", x_, y_, top, YAW[side], (wid / 190.9, 1.0, (268.0 - 5.0) / 277.0), folder=DR_SHUTTERS,
+                mats=[_draw_roll()])
+            _cheap(CULL_FAR)
+            _wall_cube("Shutter_%s_Box" % u["label"], u, s0 - 6.0, s0 + wid + 6.0, -2.0, 15.0, top - 4.0, top + 20.0, DR_SHUTTERS, FLASH_MAT)
+            _cheap(CULL_FAR)
+            for e_, s_ in enumerate((s0 - 5.0, s0 + wid)):
+                _wall_cube("Shutter_%s_Rail%d" % (u["label"], e_), u, s_, s_ + 5.0, -2.0, 9.0, u["z"] + 3.0, top, DR_SHUTTERS, FLASH_MAT)
+                _cheap(CULL_MID, 1, True)
+            sign_h = FRONT_RNG.choice((58.0, 66.0, 72.0))
+            _sign_board("Sign_" + u["label"], u, s0 + wid / 2, wid + FRONT_RNG.uniform(-8.0, 12.0), u["z"] + 290.0, sign_h)
+            _shops.append((u, s0, wid))
+            _n_sh += 1
+            _count("shutters")
+        elif kind == "gate":
+            # SM_Metal_Gate_01: X -1.7..164 along the wall, Y -7.6..4.2, Z 0..241.
+            sa = min(1.0, (room_ - 4.0) / 165.8, (w_ - 30.0) / 165.8)
+            s0 = (in0 + in1 - 165.8 * sa) / 2
+            x_, y_ = at(u["x"], u["y"], side, s0 + 1.7 * sa, 8.0)
+            put("Gate_" + u["label"], FV + "SM_Metal_Gate_01", x_, y_, u["z"] + 2.0, YAW[side], (sa, 1.0, 1.0), folder=DR_GATES)
+            _cheap(CULL_FAR)
+            _n_ga += 1
+            _count("gates")
+        else:
+            # SM_TarpCover_A_002: 223 wide, hanging 183 from its rod. Blue plastic mostly, the way Manila uses it.
+            sa = min(w_ - 40.0, room_ - 4.0) / 223.0
+            x_, y_ = at(u["x"], u["y"], side, (in0 + in1) / 2, 12.0)
+            put("Tarp_" + u["label"], AS + "SM_TarpCover_A_002", x_, y_, u["z"] + FRONT_RNG.uniform(218.0, 228.0), YAW[side], (sa, 1.0, FRONT_RNG.uniform(0.9, 1.15)),
+                folder=DR_TARPS, nocoll=True, mats=[_draw_tarp(), AM + "MI_RollUp_A_001"])
+            _cheap(CULL_MID)
+            _n_ta += 1
+            _count("wall tarps")
+        u["dress"]["has"].append(kind)
+        _front_houses.add((u["house"], u["letter"]))
+        _claim(_wbox(u, 0.0, w_, u["z"], u["z"] + FRONT_TOP[kind]))
+    # A steel gate in front of a door, covering it and a little of the wall either side. Ground doors with no awning.
+    _door_ts2 = [u for u in _wall_tiles if u["s"] == 0 and u["kind"] == "SM_WallDoor_01" and u["label"] not in _has_awn]
+    FRONT_RNG.shuffle(_door_ts2)
+    def _door_inside(u, half):
+        in0_, in1_ = _inside_face(u, 0.0, u["w"])
+        return in0_ <= 111.0 * u["sx"] - half and 111.0 * u["sx"] + half <= in1_
+
+    for u in _door_ts2:
+        if _n_ga >= GATES or (u["house"], u["letter"]) in _front_houses or not _ground_open(u, 111.0 * u["sx"], 60.0) or not _door_inside(u, 55.0 * u["sx"] + 11.0):
+            continue
+        sa = (110.0 * u["sx"] + 22.0) / 165.8
+        x_, y_ = at(u["x"], u["y"], u["side"], 111.0 * u["sx"] - 82.9 * sa + 1.7 * sa, 8.0)
+        put("Gate_" + u["label"], FV + "SM_Metal_Gate_01", x_, y_, u["z"] + 2.0, YAW[u["side"]], (sa, 1.0, 232.0 / 240.7), folder=DR_GATES)
+        _cheap(CULL_FAR)
+        _front_houses.add((u["house"], u["letter"]))
+        _n_ga += 1
+        _count("gates")
+    # No tarps on doors. User 2026-11-06: "dont put a tarp on the doors". Tarps go on plain wall only, above. The four doors that had one keep their draws and their place in
+    # _front_houses, so that nothing else in the level moves: taking them out reshuffled every wire, poster and lamp after this point.
+    _door_slots = 4
+    for u in _door_ts2:
+        if _door_slots <= 0 or (u["house"], u["letter"]) in _front_houses or not _ground_open(u, 111.0 * u["sx"], 60.0) or not _door_inside(u, 55.0 * u["sx"] + 12.0):
+            continue
+        FRONT_RNG.uniform(0.85, 1.0)
+        _draw_tarp()
+        _front_houses.add((u["house"], u["letter"]))
+        _door_slots -= 1
+    # A few signs with no shop under them: long boards over a door or a window, where a shop's would go. Blank walls stay free for the meters.
+    _sign_ts = [u for u in _wall_tiles if u["s"] == 0 and u["w"] >= 190.0 and not _hollow_face(u) and (u["house"], u["letter"]) not in _front_houses and
+                u["kind"] in ("SM_WallDoor_01", "SM_Wall_Windows_01")]
+    FRONT_RNG.shuffle(_sign_ts)
+    _sign_xy = []
+    for u in _sign_ts:
+        if _street_n.get("wall signs", 0) >= EXTRA_SIGNS:
+            break
+        in0, in1 = _inside_face(u, 0.0, u["w"])
+        wid = min(u["w"] - 16.0, in1 - in0, FRONT_RNG.uniform(185.0, 280.0))
+        h_ = FRONT_RNG.choice((58.0, 66.0, 72.0))
+        if wid < 150.0:
+            continue
+        s_mid = (in0 + in1) / 2
+        s0, s1 = s_mid - wid / 2, s_mid + wid / 2
+        z_ = u["z"] + 290.0
+        x_, y_ = at(u["x"], u["y"], u["side"], u["w"] / 2, 0.0)
+        box = _wbox(u, s0, s1, z_, z_ + h_)
+        if not all(_ground_open(u, s_, 90.0) and _reach_clear(u, s_, 30.0, z_) for s_ in (s0, u["w"] / 2, s1)) or not _pipe_free(u, s0, s1) or                 not _stair_clear(u, s0, s1, z_) or any(math.hypot(x_ - o[0], y_ - o[1]) < 900.0 for o in _sign_xy) or not _free(box):
+            continue
+        _sign_board("WallSign_" + u["label"], u, s_mid, wid, z_, h_)
+        _sign_xy.append((x_, y_))
+        _claim(box)
+        _front_houses.add((u["house"], u["letter"]))
+        _count("wall signs")
+
+
+# Wires. A span leaves a junction box on the band at the top of a second storey, crosses the alley on a slant and ends in a box on the wall
+# opposite, a storey up, so everything overhead sits above the laundry and over the gallery's headroom. Bundles of one to three, each with its
+# own sag. Never through a house, a room or over a roof too low to clear. Meter boxes low on a ground-floor wall feed their conduit up to one of
+# these boxes, so a wire always arrives at a house for a reason. Others run along a wall from box to box. Thin boxes, three or four to a span,
+# culled at CULL_FAR: they're the outline against the sky, so they stay on longer than the laundry.
+WIRE_RNG = random.Random(191)
+METERS_WANTED, SPANS_WANTED, ALONG_WANTED = 13, 30, 16
+WIRE_GAP_MIN, WIRE_GAP_MAX, WIRE_LOW = 250.0, 900.0, 560.0
+SPAN_SPACING = 140.0      # between the middles of two spans. User: "power lines are a big identity show for the philippines"
+_draw_wires = shuffle_bag(WIRE_RNG, (2, 2, 3, 3, 3, 4, 4, 5, 6))
+_span_mids = []
+_wire_lows = []
+_wire_runs, _wire_nodes = [], []        # every wire and junction box, for the chains below
+
+
+def _wire(label, a3, b3, sag, segs, thick, draw=None):
+    """One wire from a3 to b3, a parabola of thin boxes."""
+    pts = []
+    for k in range(segs + 1):
+        u_ = k / float(segs)
+        pts.append((a3[0] + (b3[0] - a3[0]) * u_, a3[1] + (b3[1] - a3[1]) * u_, a3[2] + (b3[2] - a3[2]) * u_ - 4.0 * sag * u_ * (1.0 - u_)))
+    for k in range(segs):
+        _rod("%s_%d" % (label, k), pts[k], pts[k + 1], thick, WIRE_MAT, DR_WIRES, draw or CULL_FAR)
+    _wire_lows.append(min(p_[2] for p_ in pts))
+    _wire_runs.append((label, a3, b3))
+
+
+def _box_on_wall(label, X_, Y_, z_, yaw_):
+    """SM_ElectricBox_C_002: 28 x 12 x 10, back on the wall, twelve triangles."""
+    k = WIRE_RNG.uniform(0.7, 1.0)
+    put(label, AS + "SM_ElectricBox_C_002", X_, Y_, z_ - 4.8 * k, yaw_, (k, k, k), folder=DR_WIRES, nocoll=True)
+    _cheap(CULL_MID, 1, True)
+    _wire_nodes.append({"label": label, "x": X_, "y": Y_, "z": z_, "side": next(s_ for s_, y_ in YAW.items() if y_ == yaw_)})
+
+
+def _path_clear(a3, b3, me, other):
+    """Nothing in a wire's way: no house it would pass through, a roof it would touch, a room or a door's end wall."""
+    for k in range(1, 12):
+        u_ = k / 12.0
+        X_, Y_, Z_ = a3[0] + (b3[0] - a3[0]) * u_, a3[1] + (b3[1] - a3[1]) * u_, a3[2] + (b3[2] - a3[2]) * u_
+        lx, ly = _lay(X_, Y_)
+        if not (0 < lx < W and 0 < ly < H) or _in_room(X_, Y_) or not _clear_of_end_walls(lx, ly, 0.3):
+            return False
+        for o in BLOCKS.values():
+            if o["x0"] < lx < o["x1"] and o["y0"] < ly < o["y1"]:
+                if o is me or o is other:
+                    return False
+                top_ = o["storeys"] * o["sh"] + FLOOR_H
+                if top_ + {"terrace": 330.0, "metal": 260.0}.get(o["roof"], 70.0) > Z_:
+                    return False
+    return True
+
+
+def _band_z(b, st):
+    return FLOOR_H + st * b["sh"] + 300.0 + WIRE_RNG.uniform(0.3, 0.7) * (b["sh"] - 300.0)
+
+
+def _try_span(t, s_local, z_a, n_a, label):
+    """A bundle from a point on tile t to the wall across the alley. False if no way across is clear."""
+    side = t["side"]
+    me = BLOCKS[t["bid"]]
+    slopes = [-0.55, -0.35, -0.18, 0.0, 0.18, 0.35, 0.55]
+    WIRE_RNG.shuffle(slopes)
+    letter_o = OPP[side][0].upper()
+    for slope in slopes:
+        hit, o = None, None
+        for n_ in range(120, int(WIRE_GAP_MAX) + 10, 5):
+            lx, ly = _lay(*at(t["x"], t["y"], side, s_local + slope * n_, float(n_)))
+            if not (0 < lx < W and 0 < ly < H):
+                break
+            o = next((b_ for b_ in BLOCKS.values() if b_["x0"] < lx < b_["x1"] and b_["y0"] < ly < b_["y1"] and b_["storeys"] > 1), None)
+            if o is not None:
+                hit = float(n_)
+                break
+        if hit is None or o is me or not WIRE_GAP_MIN <= hit <= WIRE_GAP_MAX:
+            continue
+        ho = _house_of(o["id"])
+        if o["id"] in _thin_blocks or o.get("balcony") or (ho, letter_o) in _hset:
+            continue
+        # It has to meet the face opposite, not come in along a side wall.
+        lx0, ly0 = _lay(*at(t["x"], t["y"], side, s_local + slope * (hit - 6.0), hit - 6.0))
+        if side in ("east", "west"):
+            if not o["y0"] + 0.25 < ly0 < o["y1"] - 0.25:
+                continue
+        elif not o["x0"] + 0.25 < lx0 < o["x1"] - 0.25:
+            continue
+        n_b = hit - 10.0 - (BAND_OUT if (ho, letter_o) in _proud and o["storeys"] > 2 else 0.0)
+        X0, Y0 = at(t["x"], t["y"], side, s_local, n_a)
+        X1, Y1 = at(t["x"], t["y"], side, s_local + slope * n_b, n_b)
+        z_b = _band_z(o, 1)
+        if abs(z_b - z_a) > 170.0:
+            continue
+        a3, b3 = (X0, Y0, z_a), (X1, Y1, z_b)
+        mid = ((X0 + X1) / 2, (Y0 + Y1) / 2)
+        if not _path_clear(a3, b3, me, o) or any(math.hypot(mid[0] - m[0], mid[1] - m[1]) < SPAN_SPACING for m in _span_mids):
+            continue
+        box_b = (X1 - 34.0, Y1 - 34.0, z_b - 12.0, X1 + 34.0, Y1 + 34.0, z_b + 12.0)
+        if not _free(box_b, 2.0):
+            continue
+        gap = math.hypot(X1 - X0, Y1 - Y0)
+        segs = 3 if gap < 420.0 else 4
+        rx, ry = RUN[side]
+        for j in range(_draw_wires()):
+            wob = WIRE_RNG.uniform(-20.0, 20.0) if j else 0.0
+            wz = WIRE_RNG.uniform(-5.0, 5.0) if j else 0.0
+            a_ = (X0 + rx * wob, Y0 + ry * wob, z_a + wz)
+            b_ = (X1 + rx * wob * WIRE_RNG.uniform(0.4, 1.6), Y1 + ry * wob * WIRE_RNG.uniform(0.4, 1.6), z_b + wz)
+            _wire("%s_W%d" % (label, j), a_, b_, WIRE_RNG.uniform(10.0, 24.0) * gap / 400.0, segs, WIRE_RNG.uniform(1.5, 2.2))
+            _count("wires")
+        nx, ny = NORMAL[side]
+        _box_on_wall(label + "_BoxB", X1 - nx * (-10.0), Y1 - ny * (-10.0), z_b, YAW[OPP[side]])
+        _claim(box_b)
+        _span_mids.append(mid)
+        return True
+    return False
+
+
+if STREET_WIRES:
+    # Meter boxes first: they need the most room.
+    _meter_ts = [u for u in _wall_tiles if u["s"] == 0 and u["dress"] is not None and u["w"] >= 100.0 and not [k for k in u["dress"]["has"] if k != "vent"]]
+    WIRE_RNG.shuffle(_meter_ts)
+    _meter_houses = set()
+    for u in _meter_ts * 2:     # twice: a tile can fail on its random end, and each house should get a fair go
+        if _street_n.get("meters", 0) >= METERS_WANTED:
+            break
+        if u["house"] in _meter_houses or u["house"] in _laundry_houses and WIRE_RNG.random() < 0.3:
+            continue
+        side = u["side"]
+        s_ = WIRE_RNG.choice((WIRE_RNG.uniform(15.0, 26.0), u["w"] - WIRE_RNG.uniform(15.0, 26.0)))
+        in0, in1 = _inside_face(u, 0.0, u["w"])
+        if s_ - 13.0 < in0 or s_ + 13.0 > in1:
+            continue
+        b_ = BLOCKS[u["bid"]]
+        two = b_["storeys"] >= 2 and not b_.get("balcony")
+        up = _tile_above(u, s_, 1) if two else None
+        if two and (up is None or not _edge_ok(up[0], up[1], 4.0) or _hollow_face(up[0])):
+            continue
+        z_m = u["z"] + WIRE_RNG.uniform(165.0, 195.0)
+        z_b = _band_z(b_, 1) if two else FLOOR_H + b_["sh"] + 2.0
+        st_ = _style.get(u["house"], "border")
+        n_c = ({"proud": 17.0, "border": 9.0}.get(st_, 4.0)) if two else 9.0
+        if not _ground_open(u, s_, 70.0) or not _pipe_free(u, s_ - 20.0, s_ + 20.0) or not _stair_clear(u, s_ - 20.0, s_ + 20.0, u["z"]) or \
+                not _free(_wbox(u, s_ - 18.0, s_ + 18.0, z_m, z_b + 12.0)):
+            continue
+        X_, Y_ = at(u["x"], u["y"], side, s_, 0.0)
+        label = "Meter_" + u["label"]
+        fed = two and _try_span(u, s_, z_b, n_c + 8.0, "Span_" + u["label"])
+        if two and not fed:
+            # Along the wall from its box, to a box further down the same run, on a stretch that's clear.
+            ts_ = _run_tiles.get(up[0]["run"], ())
+            a_at = up[0]["off"] + up[1]
+            total = ts_[-1]["off"] + ts_[-1]["w"] - ts_[0]["off"] if ts_ else 0.0
+            for dir_ in WIRE_RNG.sample((-1.0, 1.0), 2):
+                len_ = WIRE_RNG.uniform(240.0, 520.0)
+                end_ = a_at + dir_ * len_
+                if end_ < 20.0 or end_ > total - 20.0:
+                    continue
+                t0 = ts_[0]
+                lo_, hi_ = min(a_at, end_), max(a_at, end_)
+                if not _pipe_free(t0, lo_ - 8.0, hi_ + 8.0) or not _free(_wbox(t0, lo_ + 18.0, hi_ + 18.0 if dir_ > 0 else hi_ - 18.0, z_b - 12.0, z_b + 12.0), 2.0) or \
+                        not all(_ground_open(t0, lo_ + (hi_ - lo_) * k_ / 4.0, 40.0) for k_ in range(5)):
+                    continue
+                a3 = tuple(at(t0["x"], t0["y"], side, a_at, n_c + 8.0)) + (z_b,)
+                b3 = tuple(at(t0["x"], t0["y"], side, end_, n_c + 8.0)) + (z_b + WIRE_RNG.uniform(-5.0, 5.0),)
+                _wire("Along_%s_W0" % u["label"], a3, b3, WIRE_RNG.uniform(2.0, 5.0) * len_ / 300.0, 3, 1.7)
+                Xb, Yb = at(t0["x"], t0["y"], side, end_, _band_out(up[0]))
+                _box_on_wall("Along_%s_Box" % u["label"], Xb, Yb, z_b, YAW[side])
+                _claim(_wbox(t0, lo_ - 14.0, hi_ + 14.0, z_b - 12.0, z_b + 12.0))
+                _count("along walls")
+                fed = True
+                break
+        put(label, AS + "SM_ElectricBox_C_003", X_, Y_, z_m, YAW[side], (1, 1, 1), folder=DR_METERS)
+        _cheap(CULL_MID)
+        d_ = 34.0 if s_ < u["w"] / 2 else -34.0
+        if WIRE_RNG.random() < 0.3 and u["w"] >= 130.0 and _free(_wbox(u, s_ + d_ - 16.0, s_ + d_ + 16.0, z_m, z_m + 38.0)):    # now and then two side by side
+            X2, Y2 = at(u["x"], u["y"], side, s_ + d_, 0.0)
+            put(label + "_2", AS + "SM_ElectricBox_C_003", X2, Y2, z_m, YAW[side], (1, 1, 1), folder=DR_METERS)
+            _cheap(CULL_MID)
+        Xc, Yc = at(u["x"], u["y"], side, s_, n_c)
+        _rod(label + "_Conduit", (Xc, Yc, z_m + 34.0), (Xc, Yc, z_b), 3.2, FLASH_MAT, DR_METERS, CULL_MID)
+        if two:
+            Xb, Yb = at(u["x"], u["y"], side, s_, max(n_c - 7.0, 0.0))
+            _box_on_wall(label + "_Box", Xb, Yb, z_b, YAW[side])
+        _claim(_wbox(u, s_ - 18.0, s_ + 18.0, z_m, z_b + 12.0))
+        u["dress"]["has"].append("meter")
+        _meter_houses.add(u["house"])
+        _count("meters")
+    # Spans with no meter of their own, for the tangle overhead.
+    _span_ts = [u for u in _wall_tiles if u["s"] == 1 and BLOCKS[u["bid"]]["storeys"] >= 2 and not BLOCKS[u["bid"]].get("balcony") and not _hollow_face(u)
+                and u["w"] >= 100.0]
+    WIRE_RNG.shuffle(_span_ts)
+    _n_extra = 0
+    for u in _span_ts:
+        if _n_extra >= SPANS_WANTED:
+            break
+        s_ = WIRE_RNG.uniform(24.0, u["w"] - 24.0)
+        z_a = _band_z(BLOCKS[u["bid"]], 1)
+        n_a = _band_out(u) + 10.0
+        if not _ground_open(u, s_, 70.0) or not _pipe_free(u, s_ - 16.0, s_ + 16.0) or not _free(_wbox(u, s_ - 16.0, s_ + 16.0, z_a - 12.0, z_a + 12.0), 2.0):
+            continue
+        if not _try_span(u, s_, z_a, n_a, "Span_" + u["label"]):
+            continue
+        Xb, Yb = at(u["x"], u["y"], u["side"], s_, _band_out(u))
+        _box_on_wall("Span_%s_Box" % u["label"], Xb, Yb, z_a, YAW[u["side"]])
+        _claim(_wbox(u, s_ - 16.0, s_ + 16.0, z_a - 12.0, z_a + 12.0))
+        _n_extra += 1
+        _count("spans")
+    # Along a wall, box to box, on one straight run.
+    _along_runs = [k for k in _run_tiles if _run_tiles[k][0]["s"] == 1 and BLOCKS[_run_tiles[k][0]["bid"]]["storeys"] >= 2 and
+                   not BLOCKS[_run_tiles[k][0]["bid"]].get("balcony") and not _hollow_face(_run_tiles[k][0])]
+    WIRE_RNG.shuffle(_along_runs)
+    for name in _along_runs:
+        if _street_n.get("along walls", 0) >= ALONG_WANTED:
+            break
+        ts = _run_tiles[name]
+        t0 = ts[0]
+        total = ts[-1]["off"] - t0["off"] + ts[-1]["w"]
+        if total < 330.0:
+            continue
+        len_ = WIRE_RNG.uniform(260.0, min(total - 50.0, 620.0))
+        s0 = WIRE_RNG.uniform(25.0, total - len_ - 25.0)
+        z_a = _band_z(BLOCKS[t0["bid"]], 1)
+        n_a = _band_out(t0) + 10.0
+        if not _pipe_free(t0, s0 - 10.0, s0 + len_ + 10.0) or not _free(_wbox(t0, s0 - 16.0, s0 + len_ + 16.0, z_a - 12.0, z_a + 12.0), 2.0) or \
+                not all(_ground_open(t0, s0 + len_ * k_ / 4.0, 40.0) for k_ in range(5)):
+            continue
+        a3 = tuple(at(t0["x"], t0["y"], t0["side"], s0, n_a)) + (z_a,)
+        b3 = tuple(at(t0["x"], t0["y"], t0["side"], s0 + len_, n_a)) + (z_a + WIRE_RNG.uniform(-6.0, 6.0),)
+        label = "Along_%s" % name
+        for j in range(WIRE_RNG.choice((1, 2, 2, 3, 3, 4))):
+            _wire("%s_W%d" % (label, j), (a3[0], a3[1], a3[2] - 3.5 * j), (b3[0], b3[1], b3[2] - 3.5 * j), WIRE_RNG.uniform(2.0, 5.0) * len_ / 300.0, 3, 1.6)
+        for e_, s_ in enumerate((s0, s0 + len_)):
+            Xb, Yb = at(t0["x"], t0["y"], t0["side"], s_, _band_out(t0))
+            _box_on_wall("%s_Box%d" % (label, e_), Xb, Yb, z_a, YAW[t0["side"]])
+        _claim(_wbox(t0, s0 - 16.0, s0 + len_ + 16.0, z_a - 12.0, z_a + 12.0))
+        _count("along walls")
+    assert not _wire_lows or min(_wire_lows) >= WIRE_LOW, "a wire hangs at %.0f" % min(_wire_lows)      # second floor, above the laundry
+
+
+# Rooftops. Favela's water tank: the tub on its plank stand, on four legs where it stands clear of a roof. Low under the terraces' roofs, tall on
+# the flat roofs and over the metal ones, whose legs go through the sheets, as they do. The tub keeps its collision. TV aerials stand near a
+# corner of the roof, leaning a little, all pointing about the same way, as they would at one transmitter, and a plain mast here and there.
+TANK_RNG = random.Random(193)
+TANK_METAL, AERIALS_WANTED = 6, 12
+TANK_COLOURS = (FM + "MI_Barrel_01", FM + "MI_Barrel_01", FM + "MI_Barrel_Color_01", FM + "MI_Barrel_Color_02")
+_draw_tank_colour = shuffle_bag(TANK_RNG, TANK_COLOURS)
+_roof_z = {}
+for p in items:
+    if p["folder"] == RF and p["label"].startswith("Roof_"):
+        k_ = p["label"].split("_")[1]
+        _roof_z[k_] = max(_roof_z.get(k_, 0.0), p["loc"][2])
+_roof_things = []
+
+
+def _tank(label, x_, y_, z_floor, tall, k, over=None):
+    yaw_ = TANK_RNG.uniform(0.0, 360.0)
+    c, s_ = math.cos(math.radians(yaw_)), math.sin(math.radians(yaw_))
+    stand_z = z_floor
+    n_ = 0
+    if tall:
+        stand_z = max(z_floor + TANK_RNG.uniform(112.0, 130.0), (over or 0.0) + 22.0)
+        for j, (dx, dy) in enumerate(((-57.0, -30.0), (57.0, -30.0), (-57.0, 30.0), (57.0, 30.0))):
+            put("%s_Leg%d" % (label, j), FV + "SM_Fencing_03", x_ + (c * dx - s_ * dy) * k, y_ + (s_ * dx + c * dy) * k, z_floor, yaw_,
+                (0.55, 0.55, (stand_z - z_floor) / 117.6), folder=DR_TANKS, nocoll=True)
+            n_ += 1
+    put(label + "_Stand", FV + "SM_Stand_01", x_, y_, stand_z, yaw_, (k, k, k), folder=DR_TANKS, nocoll=True)
+    put(label, FV + "SM_Barrel_01", x_, y_, stand_z + 59.5 * k, TANK_RNG.uniform(0.0, 360.0), (k, k, k), folder=DR_TANKS, mats=[_draw_tank_colour()])
+    put(label + "_Cap", FV + TANK_RNG.choice(("SM_Barrel_Cap_01", "SM_Barrel_Cap_2")), x_, y_, stand_z + (59.5 + 85.2) * k, TANK_RNG.uniform(0.0, 360.0), (k, k, k),
+        folder=DR_TANKS, nocoll=True)
+    _cheap(CULL_FAR, n_ + 3)
+    _roof_things.append((x_, y_))
+    _count("tanks")
+
+
+def _roof_spot(rng, b, inset, tries=40, avoid=()):
+    """A point on house b at least inset (m) in from its edges and away from avoid, in UE."""
+    x0, y0, x1, y1 = b["x0"] + inset, b["y0"] + inset, b["x1"] - inset, b["y1"] - inset
+    if x0 >= x1 or y0 >= y1:
+        return None
+    for _ in range(tries):
+        X_, Y_ = ue(rng.uniform(x0, x1), rng.uniform(y0, y1))
+        if all(math.hypot(X_ - o[0], Y_ - o[1]) > 190.0 for o in _roof_things) and all(math.hypot(X_ - o[0], Y_ - o[1]) > 95.0 for o in avoid):
+            return X_, Y_
+    return None
+
+
+if STREET_ROOFTOPS:
+    _posts = [(p["loc"][0], p["loc"][1]) for p in items if p["folder"] == TER and p["label"].startswith(("Post_", "AwnPost_"))]
+    _up_doors = [at(u["x"], u["y"], u["side"], 111.0 * u["sx"], 60.0) for u in _wall_tiles if u["kind"] == "SM_WallDoor_01" and u["s"] >= 1]
+    # Terraces: the wide ones have room to walk round a tank, and a roof over them, so it stands low.
+    for bid, b in sorted(BLOCKS.items()):
+        if b["roof"] == "terrace" and min(b["x1"] - b["x0"], b["y1"] - b["y0"]) >= 2.4:
+            spot = _roof_spot(TANK_RNG, b, 0.72, avoid=_posts + _up_doors)
+            if spot:
+                _tank("Tank_" + bid, spot[0], spot[1], b["sh"] - 5.0 + FLOOR_H, False, 0.85)
+    for bid, b in sorted(BLOCKS.items()):
+        if b["roof"] == "flat":
+            spot = _roof_spot(TANK_RNG, b, 1.0)
+            if spot:
+                _tank("Tank_" + bid, spot[0], spot[1], b["storeys"] * b["sh"] + FLOOR_H - 5.0, True, TANK_RNG.uniform(0.85, 1.0))
+    _metal_ids = [k for k, b in sorted(BLOCKS.items()) if k in _roof_z and min(b["x1"] - b["x0"], b["y1"] - b["y0"]) >= 3.0]
+    TANK_RNG.shuffle(_metal_ids)
+    _n_mt = 0
+    for bid in _metal_ids:
+        if _n_mt >= TANK_METAL:
+            break
+        b = BLOCKS[bid]
+        spot = _roof_spot(TANK_RNG, b, 1.1)
+        if spot:
+            _tank("Tank_" + bid, spot[0], spot[1], b["storeys"] * b["sh"] + FLOOR_H - 5.0, True, TANK_RNG.uniform(0.8, 0.95), over=_roof_z[bid])
+            _n_mt += 1
+    # Aerials: AsiaSlum's, with their four LODs; A_001 at 11k stays rare. SM_Antenna_01 is a plain mast, 244 triangles.
+    AER_DIR = TANK_RNG.uniform(0.0, 360.0)
+    _draw_aerial = shuffle_bag(TANK_RNG, (AS + "SM_Antenna_A_002", AS + "SM_Antenna_A_002", AS + "SM_Antenna_A_002", AS + "SM_Antenna_A_003",
+                                          AS + "SM_Antenna_A_003", AS + "SM_Antenna_A_003", AS + "SM_Antenna_A_001", ME + "MiddleEast/SM_Antenna_01"))
+    _aer_ids = [k for k, b in sorted(BLOCKS.items()) if b["roof"] in ("metal", "flat") and k not in _thin_blocks and not b.get("balcony")]
+    TANK_RNG.shuffle(_aer_ids)
+    _aer_xy = []
+    for bid in _aer_ids:
+        if _street_n.get("aerials", 0) >= AERIALS_WANTED:
+            break
+        b = BLOCKS[bid]
+        T_ = b["storeys"] * b["sh"] + FLOOR_H
+        cx, cy = TANK_RNG.choice((b["x0"] + 0.55, b["x1"] - 0.55)), TANK_RNG.choice((b["y0"] + 0.55, b["y1"] - 0.55))
+        X_, Y_ = ue(cx, cy)
+        if any(cover_top(cx + dx, cy + dy, b) + FLOOR_H > T_ - 20.0 for dx in (-1.6, 1.6) for dy in (-1.6, 1.6)):
+            continue                                    # a taller neighbour would stand in its arms
+        if any(math.hypot(X_ - o[0], Y_ - o[1]) < 260.0 for o in _roof_things) or any(math.hypot(X_ - o[0], Y_ - o[1]) < 700.0 for o in _aer_xy):
+            continue
+        mesh = _draw_aerial()
+        whip = mesh.endswith("SM_Antenna_01")
+        k = TANK_RNG.uniform(0.6, 0.72) if whip else TANK_RNG.uniform(1.05, 1.3)
+        put("Aerial_" + bid, mesh, X_, Y_, T_ - 8.0, AER_DIR + TANK_RNG.uniform(-22.0, 22.0), (k, k, k), folder=DR_AERIALS, roll=TANK_RNG.uniform(-3.0, 3.0), nocoll=True,
+            mats=None if whip else [ANT_MAT])
+        _cheap(CULL_FAR, 1, True)
+        _aer_xy.append((X_, Y_))
+        _count("aerials")
+
+
+# Lights. Real ones, with their fittings: bare bulbs over doors, fluorescent tubes over shop fronts and under door awnings, cobra lamps on wall arms
+# over the alleys. Static, so the bake carries them and they cost nothing at run time (the spec: baked world, dynamic per case). Warm tungsten, a
+# greener tube, orange sodium: three colours to read in the dark. One to a house, lamps at least LAMP_GAP apart. The pack's bulb is hung by its
+# whole cord: scaled 0.7, the cord's top meets a bracket on the band and the bulb sits above the door's head.
+LIGHT_RNG = random.Random(197)
+BULBS_WANTED, TUBES_WANTED, LAMPS_WANTED, LAMP_GAP = 9, 10, 8, 1000.0
+COL_BULB, COL_TUBE, COL_LAMP = [1.0, 0.72, 0.44], [0.86, 1.0, 0.9], [1.0, 0.62, 0.3]
+
+
+STREET_LIGHTS_ON = False    # user: "I will keep this level on daylight so the lights should be off". The fittings stay, unlit, with no light actors. True for a night version.
+
+
+def _light(label, kind, x_, y_, z_, intensity, radius, colour, src=4.0, pitch=0.0, outer=60.0, length=0.0):
+    if not STREET_LIGHTS_ON:
+        return
+    put(label, "/Script/Engine.%s" % kind, x_, y_, z_, 0.0, (1, 1, 1), folder=DR_LIGHTS)
+    items[-1]["rot"][0] = pitch
+    items[-1]["light"] = {"kind": kind, "intensity": intensity, "radius": radius, "colour": colour, "source": src, "outer": outer, "length": length}
+
+
+_light_houses = set()
+
+
+def _tube(u, s0, z_, n0=1.0):
+    """Favela's fitting and tube, as the map pairs them, 120 cm long. Base on the wall."""
+    side = u["side"]
+    run3, out3 = (float(RUN[side][0]), float(RUN[side][1]), 0.0), (float(NORMAL[side][0]), float(NORMAL[side][1]), 0.0)
+    Y3 = v_cross(out3, run3)
+    k = 0.504
+    x_, y_ = at(u["x"], u["y"], side, s0, n0)
+    label = "Tube_" + u["label"]
+    put_axes(label, FV + "SM_StreetLamp_05", run3, Y3, out3, (k, k, k), (0.0, 0.0, 0.0), (x_, y_, z_), nocoll=True, mats=None if STREET_LIGHTS_ON else [FLASH_MAT])
+    items[-1]["folder"] = DR_LIGHTS
+    _cheap(CULL_MID, 1, True)
+    centre = (x_ + run3[0] * 6.7 * k + Y3[0] * 11.9 * k + out3[0] * 7.9 * k, y_ + run3[1] * 6.7 * k + Y3[1] * 11.9 * k + out3[1] * 7.9 * k,
+              z_ + Y3[2] * 11.9 * k)
+    put_axes(label + "_Glow", FV + "SM_StreetLamp_06", run3, Y3, out3, (k, k, k), (0.0, 0.0, 0.0), centre, nocoll=True,
+             mats=[FM + "MI_StopSupport_03" if STREET_LIGHTS_ON else FLASH_MAT])    # the pack's tube glows whatever the hour: off, a plain grey one
+    items[-1]["folder"] = DR_LIGHTS
+    _cheap(CULL_MID, 1, True)
+    x2, y2 = at(u["x"], u["y"], side, s0 + 60.0, n0 + 20.0)
+    _light("Light_" + label, "PointLight", x2, y2, z_ - 8.0, 6.0, 520.0, COL_TUBE, src=3.0, length=110.0)
+    _count("tubes")
+
+
+if STREET_LIGHTS:
+    # Tubes over the shop fronts, under the sign, on the shutter's box.
+    LIGHT_RNG.shuffle(_shops)
+    for u, s0, wid in _shops:
+        if _street_n.get("tubes", 0) >= TUBES_WANTED - 3 or LIGHT_RNG.random() < 0.3:
+            continue
+        _tube(u, s0 + (wid - 120.0) * LIGHT_RNG.uniform(0.3, 0.7), u["z"] + 286.0, 15.5)
+        _light_houses.add(u["house"])
+    # Bulbs and tubes at doors.
+    _door_ts3 = [u for u in _wall_tiles if u["kind"] == "SM_WallDoor_01"]
+    LIGHT_RNG.shuffle(_door_ts3)
+    for u in _door_ts3:
+        if u["house"] in _light_houses:
+            continue
+        lx, ly = _lay(*at(u["x"], u["y"], u["side"], 111.0 * u["sx"], 45.0))
+        dk_ = L["deck"]
+        on_deck = dk_["x0"] < lx < dk_["x1"] and dk_["y0"] < ly < dk_["y1"]
+        if u["s"] == 0 and not _ground_open(u, 111.0 * u["sx"], 45.0):
+            continue
+        if u["label"] in _has_awn or (u["s"] != 0 and not on_deck):
+            if _street_n.get("tubes", 0) >= TUBES_WANTED:
+                continue
+            # Under the awning, on the bit of wall between the door's head and the awning's front.
+            _tube(u, 111.0 * u["sx"] - 60.0, u["z"] + 234.0)
+            _light_houses.add(u["house"])
+            continue
+        if _street_n.get("bulbs", 0) >= BULBS_WANTED:
+            continue
+        s_ = 111.0 * u["sx"] + LIGHT_RNG.choice((0.0, -72.0, 72.0)) * u["sx"]
+        top = u["z"] + 338.0
+        if not _free(_wbox(u, s_ - 10.0, s_ + 10.0, top - 110.0, top + 5.0)) or not _pipe_free(u, s_ - 10.0, s_ + 10.0):
+            continue
+        k = 0.7
+        n_ = 26.0 + _band_out(u)
+        x_, y_ = at(u["x"], u["y"], u["side"], s_, n_)
+        put("Bulb_" + u["label"], AS + "SM_Light_A_002", x_, y_, top, LIGHT_RNG.uniform(0.0, 360.0), (k, k, k), folder=DR_LIGHTS, nocoll=True, mats=[LIGHT_ON] if STREET_LIGHTS_ON else None)
+        _cheap(CULL_MID, 1, True)
+        x0, y0 = at(u["x"], u["y"], u["side"], s_, -1.0)
+        x1, y1 = at(u["x"], u["y"], u["side"], s_, n_ + 1.0)
+        _rod("Bulb_%s_Arm" % u["label"], (x0, y0, top + 1.0), (x1, y1, top + 1.0), 2.2, RUST_MAT, DR_LIGHTS, CULL_MID)
+        _light("Light_Bulb_" + u["label"], "PointLight", x_, y_, top - 124.0 * k, 4.5, 460.0, COL_BULB, src=3.0)
+        _claim(_wbox(u, s_ - 10.0, s_ + 10.0, top - 110.0, top + 5.0))
+        _light_houses.add(u["house"])
+        _count("bulbs")
+    # Cobra lamps on wall arms, second storey. SM_StreetLamp_02: wall at local X 0, the arm out along -X for 299 cm, Z -61..114. Scaled to reach about 2 m.
+    _lamp_ts = [u for u in _wall_tiles if u["s"] == 1 and BLOCKS[u["bid"]]["storeys"] >= 2 and not BLOCKS[u["bid"]].get("balcony") and not _hollow_face(u)]
+    LIGHT_RNG.shuffle(_lamp_ts)
+    _lamp_xy = []
+    for u in _lamp_ts:
+        if _street_n.get("lamps", 0) >= LAMPS_WANTED:
+            break
+        k = LIGHT_RNG.uniform(0.62, 0.72)
+        if u["kind"] in _plain_tile:
+            s_ = LIGHT_RNG.uniform(30.0, max(30.0, u["w"] - 30.0))
+        else:
+            s_ = LIGHT_RNG.choice((LIGHT_RNG.uniform(14.0, 17.0) * u["sx"], u["w"] - LIGHT_RNG.uniform(14.0, 17.0) * u["sx"]))
+        z_ = u["z"] + LIGHT_RNG.uniform(175.0, 205.0)
+        reach = 299.0 * k
+        x_, y_ = at(u["x"], u["y"], u["side"], s_, 1.0)
+        if not _edge_ok(u, s_, 12.0) or any(math.hypot(x_ - o[0], y_ - o[1]) < LAMP_GAP for o in _lamp_xy) or not _pipe_free(u, s_ - 16.0, s_ + 16.0) or \
+                not all(_ground_open(u, s_, n_) and _reach_clear(u, s_, n_, z_ + 60.0) and not _in_room(*at(u["x"], u["y"], u["side"], s_, n_))
+                        for n_ in (60.0, reach * 0.5, reach, reach + 100.0)) or \
+                not _free(_wbox(u, s_ - 18.0, s_ + 18.0, z_ - 45.0, z_ + 85.0, 60.0)):
+            continue
+        # The pack's lamp material glows whatever the hour (EmissiveMultiply 3). Off, our plain galvanised metal: a child of the pack's would break "nothing we make has a pack parent".
+        put("Lamp_" + u["label"], FV + "SM_StreetLamp_02", x_, y_, z_, YAW[u["side"]] - 90.0, (k, k, k), folder=DR_LIGHTS, nocoll=True, mats=None if STREET_LIGHTS_ON else [FLASH_MAT])
+        _cheap(CULL_FAR)
+        hx, hy = at(u["x"], u["y"], u["side"], s_, 280.0 * k)
+        _light("Light_Lamp_" + u["label"], "SpotLight", hx, hy, z_ + 20.0 * k, 40.0, 1200.0, COL_LAMP, src=8.0, pitch=-90.0, outer=66.0)
+        _claim(_wbox(u, s_ - 18.0, s_ + 18.0, z_ - 45.0, z_ + 85.0, 60.0))
+        _lamp_xy.append((x_, y_))
+        _count("lamps")
+
+
+# Small details. Concrete sills under windows, in the band's material so a painted face stays one colour; a face has them or doesn't, one in ten
+# missing. Rebar: a stub of column at a roof's corner with bars left for the next floor, as houses built a storey at a time have. Peeling paint:
+# our decal, bare render through painted faces only, low on the wall and beside corners, never on a tile with something on it.
+DETAIL_RNG = random.Random(199)
+P_SILL_FACE, P_SILL_MISS, P_REBAR = 0.55, 0.1, 0.65
+PEEL_MATS = (BM + "MI_BackAlleys_Peel_A", BM + "MI_BackAlleys_Peel_B")
+_draw_peel = shuffle_bag(DETAIL_RNG, PEEL_MATS)
+_draw_peels = shuffle_bag(DETAIL_RNG, (0, 1, 1, 2, 2, 3))
+
+if STREET_DETAILS:
+    _rack_tiles = {p["label"][5:] for p in items if p["label"].startswith("Rack_")}
+    _sill_faces = {}
+    for u in _wall_tiles:
+        if u["kind"] != "SM_Wall_Windows_01" or u["label"] in _rack_tiles:
+            continue
+        f = (u["house"], u["letter"])
+        if f not in _sill_faces:
+            _sill_faces[f] = DETAIL_RNG.choice(("slab", "slab", "deep")) if DETAIL_RNG.random() < P_SILL_FACE else None
+        kind = _sill_faces[f]
+        if kind is None or DETAIL_RNG.random() < P_SILL_MISS:
+            continue
+        band = _by_label.get(u["label"] + "_Band")
+        mat = band["mats"][0] if band and band.get("mats") else BM + "MI_BackAlleys_Concrete"
+        hi = 86.0 if u["s"] == 0 else 91.0                  # a ground window's grille comes 5 cm lower
+        out_, thick = (6.0, 5.0) if kind == "slab" else (10.0, 9.0)
+        w_s = 112.0 * u["sx"] + 12.0
+        _wall_cube("Sill_" + u["label"], u, 112.0 * u["sx"] - w_s / 2, 112.0 * u["sx"] + w_s / 2, -3.0, out_, u["z"] + hi - thick, u["z"] + hi, DR_SILLS, mat)
+        _cheap(CULL_MID)
+        _count("sills")
+    # Rebar.
+    _rebar_ids = [k for k, b in sorted(BLOCKS.items()) if b["roof"] == "flat" or (b["roof"] == "terrace" and min(b["x1"] - b["x0"], b["y1"] - b["y0"]) >= 2.4)]
+    for bid in _rebar_ids:
+        b = BLOCKS[bid]
+        corners = [(x_, y_) for x_ in (b["x0"] + 0.32, b["x1"] - 0.32) for y_ in (b["y0"] + 0.32, b["y1"] - 0.32)]
+        DETAIL_RNG.shuffle(corners)
+        floor_ = (b["storeys"] * b["sh"] if b["roof"] == "flat" else b["sh"]) + FLOOR_H - 5.0
+        for j, (cx, cy) in enumerate(corners[:2]):
+            out_x, out_y = -0.6 if cx < (b["x0"] + b["x1"]) / 2 else 0.6, -0.6 if cy < (b["y0"] + b["y1"]) / 2 else 0.6
+            if DETAIL_RNG.random() > P_REBAR or cover_top(cx + out_x, cy, b) > floor_ or cover_top(cx, cy + out_y, b) > floor_:
+                continue
+            X_, Y_ = ue(cx, cy)
+            if any(math.hypot(X_ - o[0], Y_ - o[1]) < 120.0 for o in _roof_things):
+                continue
+            label = "Rebar_%s_%d" % (bid, j)
+            stub = DETAIL_RNG.uniform(115.0, 150.0) if b["roof"] == "terrace" else DETAIL_RNG.uniform(25.0, 70.0)
+            put(label, CUBE, X_ - 11.0, Y_ - 11.0, floor_ - 4.0, 0, (0.22, 0.22, (stub + 4.0) / 100.0), folder=DR_REBAR, nocoll=True, mats=[BM + "MI_BackAlleys_Concrete"])
+            _cheap(CULL_MID)
+            for r_, (dx, dy) in enumerate(((-7.0, -7.0), (7.0, -7.0), (-7.0, 7.0), (7.0, 7.0))):
+                if DETAIL_RNG.random() < 0.15:
+                    continue                                # one's been cut
+                hgt_ = DETAIL_RNG.uniform(25.0, 70.0) if b["roof"] == "terrace" else DETAIL_RNG.uniform(40.0, 105.0)
+                base = (X_ + dx, Y_ + dy, floor_ + stub - 2.0)
+                lean = (DETAIL_RNG.uniform(-5.0, 5.0), DETAIL_RNG.uniform(-5.0, 5.0))
+                tip = (base[0] + lean[0], base[1] + lean[1], base[2] + hgt_)
+                _rod("%s_Bar%d" % (label, r_), base, tip, 1.3, RUST_MAT, DR_REBAR, CULL_NEAR)
+                if DETAIL_RNG.random() < 0.3:              # the top bent over
+                    _rod("%s_Bar%d_Hook" % (label, r_), tip, (tip[0] + DETAIL_RNG.uniform(-13.0, 13.0), tip[1] + DETAIL_RNG.uniform(-13.0, 13.0), tip[2] + DETAIL_RNG.uniform(-5.0, 3.0)),
+                         1.3, RUST_MAT, DR_REBAR, CULL_NEAR)
+            _count("rebar stubs")
+    # Peeling paint.
+    _peel_by_face = {}
+    for u in _wall_tiles:
+        if (u["house"], u["letter"]) in _paint and u["kind"] != "SM_WallDoor_01" and (u["dress"] is None or "room" not in u["dress"]["has"]):
+            _peel_by_face.setdefault((u["house"], u["letter"]), []).append(u)
+    for f in sorted(_peel_by_face):
+        ts = _peel_by_face[f]
+        DETAIL_RNG.shuffle(ts)
+        for u in ts[:_draw_peels()]:
+            low = u["kind"] == "SM_Wall_Windows_01" or DETAIL_RNG.random() < 0.6
+            w_p, h_p = DETAIL_RNG.uniform(70.0, 170.0), DETAIL_RNG.uniform(45.0, 62.0) if u["kind"] == "SM_Wall_Windows_01" else DETAIL_RNG.uniform(60.0, 150.0)
+            s_ = DETAIL_RNG.uniform(w_p / 2 + 6.0, max(w_p / 2 + 6.0, u["w"] - w_p / 2 - 6.0))
+            z_ = u["z"] + (DETAIL_RNG.uniform(14.0, 20.0) + h_p / 2 if low else DETAIL_RNG.uniform(120.0, 200.0))
+            if w_p > u["w"] - 12.0 or not _free(_wbox(u, s_ - w_p / 2, s_ + w_p / 2, z_ - h_p / 2, z_ + h_p / 2), 2.0) or \
+                    not _stair_clear(u, s_ - w_p / 2, s_ + w_p / 2, z_ - h_p / 2):
+                continue
+            nx, ny = NORMAL[u["side"]]
+            x_, y_ = at(u["x"], u["y"], u["side"], s_, 2.0)
+            put("Peel_" + u["label"], _draw_peel(), x_, y_, z_, math.degrees(math.atan2(-ny, -nx)), (0.03, h_p / 512.0, w_p / 512.0), folder=DR_PEEL,
+                roll=DETAIL_RNG.choice((90.0, -90.0)), decal=True)
+            _claim(_wbox(u, s_ - w_p / 2, s_ + w_p / 2, z_ - h_p / 2, z_ + h_p / 2, 3.0))
+            _count("peels")
+
+# Low wires. User 2026-11-05: "add more power lines, power lines are a big identity show for the philippines", with a photo of a Manila alley: bundles
+# hanging low across it, slanting down over the walls. The spans above sit at the second floor, and from the ground, in three shots at the busiest
+# spots, looking 22 degrees up, none was in frame. So a second layer: across the alley at the top of the ground floor, some climbing to the second
+# floor opposite, and bundles slanting down a wall from a box up high to a box low down. Never under LOW_FLOOR, clear of awnings, signs and doors
+# below it, and only over the gallery or its stairs if high enough to walk under. Its own random sequence, so nothing above moves.
+STREET_LOW_WIRES = True
+LOW_RNG = random.Random(223)
+LOW_SPANS, LOW_DRAPES = 28, 16
+LOW_FLOOR, DECK_CLEAR, P_LOW_CLIMB = 300.0, 620.0, 0.35
+LOW_CULL = 5000.0                                      # thin and low: walls hide them long before this anyway
+_draw_low = shuffle_bag(LOW_RNG, (2, 2, 3, 3, 3, 4, 5))
+_low_mids = []
+_n_low_house = {}
+_soft_boxes = set()                                    # claimed, but a poster may go under them
+
+
+def _over_deck(lx, ly):
+    d = L["deck"]
+    if d["x0"] - 0.3 < lx < d["x1"] + 0.3 and d["y0"] - 0.3 < ly < d["y1"] + 0.3:
+        return True
+    return any(g["x0"] - 0.3 < lx < g["x1"] + 0.3 and g["y0"] - 2.3 < ly < g["y1"] + 0.3 for g in L["stairs"])
+
+
+def _low_path_clear(a3, b3, me, other):
+    for k in range(1, 12):
+        u_ = k / 12.0
+        X_, Y_, Z_ = a3[0] + (b3[0] - a3[0]) * u_, a3[1] + (b3[1] - a3[1]) * u_, a3[2] + (b3[2] - a3[2]) * u_
+        lx, ly = _lay(X_, Y_)
+        if not (0 < lx < W and 0 < ly < H) or _in_room(X_, Y_) or not _clear_of_end_walls(lx, ly, 0.3) or (Z_ < DECK_CLEAR and _over_deck(lx, ly)):
+            return False
+        for o in BLOCKS.values():
+            if o["x0"] < lx < o["x1"] and o["y0"] < ly < o["y1"]:
+                if o is me or o is other or o["storeys"] * o["sh"] + FLOOR_H + {"terrace": 330.0, "metal": 260.0}.get(o["roof"], 70.0) > Z_:
+                    return False
+    return True
+
+
+def _ground_band_z(b):
+    return FLOOR_H + 300.0 + LOW_RNG.uniform(0.25, 0.75) * (b["sh"] - 300.0)
+
+
+def _low_span(u, s_, z_a, n_a, label):
+    side = u["side"]
+    me = BLOCKS[u["bid"]]
+    letter_o = OPP[side][0].upper()
+    slopes = [-0.7, -0.45, -0.2, 0.0, 0.2, 0.45, 0.7]
+    LOW_RNG.shuffle(slopes)
+    for slope in slopes:
+        hit, o = None, None
+        for n_ in range(120, int(WIRE_GAP_MAX) + 10, 5):
+            lx, ly = _lay(*at(u["x"], u["y"], side, s_ + slope * n_, float(n_)))
+            if not (0 < lx < W and 0 < ly < H):
+                break
+            o = next((b_ for b_ in BLOCKS.values() if b_["x0"] < lx < b_["x1"] and b_["y0"] < ly < b_["y1"]), None)
+            if o is not None:
+                hit = float(n_)
+                break
+        if hit is None or o is me or not 200.0 <= hit <= WIRE_GAP_MAX:
+            continue
+        ho = _house_of(o["id"])
+        if o["id"] in _thin_blocks or (ho, letter_o) in _hset:
+            continue
+        lx0, ly0 = _lay(*at(u["x"], u["y"], side, s_ + slope * (hit - 6.0), hit - 6.0))
+        if side in ("east", "west"):
+            if not o["y0"] + 0.25 < ly0 < o["y1"] - 0.25:
+                continue
+        elif not o["x0"] + 0.25 < lx0 < o["x1"] - 0.25:
+            continue
+        climb = o["storeys"] >= 2 and not o.get("balcony") and LOW_RNG.random() < P_LOW_CLIMB
+        z_b = _band_z(o, 1) if climb else _ground_band_z(o)
+        proud = (ho, letter_o) in _proud and o["storeys"] > (2 if climb else 1)
+        n_b = hit - 10.0 - (BAND_OUT if proud else 0.0)
+        X0, Y0 = at(u["x"], u["y"], side, s_, n_a)
+        X1, Y1 = at(u["x"], u["y"], side, s_ + slope * n_b, n_b)
+        a3, b3 = (X0, Y0, z_a), (X1, Y1, z_b)
+        mid = ((X0 + X1) / 2, (Y0 + Y1) / 2)
+        if not _low_path_clear(a3, b3, me, o) or any(math.hypot(mid[0] - m[0], mid[1] - m[1]) < 170.0 for m in _low_mids):
+            continue
+        box_b = (X1 - 34.0, Y1 - 34.0, z_b - 12.0, X1 + 34.0, Y1 + 34.0, z_b + 12.0)
+        if not _free(box_b, 2.0):
+            continue
+        gap = math.hypot(X1 - X0, Y1 - Y0)
+        segs = 3 if gap < 420.0 else 4
+        rx, ry = RUN[side]
+        lowest = min(z_a, z_b)
+        for j in range(_draw_low()):
+            wob = LOW_RNG.uniform(-26.0, 26.0) if j else 0.0
+            wz = LOW_RNG.uniform(-6.0, 6.0) if j else 0.0
+            a_ = (X0 + rx * wob, Y0 + ry * wob, z_a + wz)
+            b_ = (X1 + rx * wob * LOW_RNG.uniform(0.4, 1.8), Y1 + ry * wob * LOW_RNG.uniform(0.4, 1.8), z_b + wz)
+            sag = min(LOW_RNG.uniform(14.0, 34.0) * gap / 400.0, lowest - LOW_FLOOR - 8.0)
+            _wire("%s_W%d" % (label, j), a_, b_, max(2.0, sag), segs, LOW_RNG.uniform(1.5, 2.3), LOW_CULL)
+            _count("low wires")
+        nx, ny = NORMAL[side]
+        _box_on_wall(label + "_BoxB", X1 + nx * 10.0, Y1 + ny * 10.0, z_b, YAW[OPP[side]])
+        _claim(box_b)
+        _low_mids.append(mid)
+        return True
+    return False
+
+
+if STREET_LOW_WIRES:
+    _low_ts = [u for u in _wall_tiles if u["s"] == 0 and not _hollow_face(u) and u["w"] >= 90.0]
+    LOW_RNG.shuffle(_low_ts)
+    for u in _low_ts:
+        if _street_n.get("low spans", 0) >= LOW_SPANS:
+            break
+        if _n_low_house.get(u["house"], 0) >= 2:
+            continue
+        s_ = LOW_RNG.uniform(22.0, u["w"] - 22.0)
+        z_a = _ground_band_z(BLOCKS[u["bid"]])
+        n_b0 = _band_out(u)
+        if not _ground_open(u, s_, 70.0) or not _pipe_free(u, s_ - 14.0, s_ + 14.0) or not _free(_wbox(u, s_ - 16.0, s_ + 16.0, z_a - 12.0, z_a + 12.0), 2.0):
+            continue
+        if not _low_span(u, s_, z_a, n_b0 + 10.0, "LowSpan_" + u["label"]):
+            continue
+        Xb, Yb = at(u["x"], u["y"], u["side"], s_, n_b0)
+        _box_on_wall("LowSpan_%s_Box" % u["label"], Xb, Yb, z_a, YAW[u["side"]])
+        _claim(_wbox(u, s_ - 16.0, s_ + 16.0, z_a - 12.0, z_a + 12.0))
+        _n_low_house[u["house"]] = _n_low_house.get(u["house"], 0) + 1
+        _count("low spans")
+    # Slanting down a wall, box to box: a bundle that came in high and goes to somebody's ground floor. Over a plain stretch, never across an opening.
+    _drape_runs = [k for k in _run_tiles if _run_tiles[k][0]["s"] == 1 and BLOCKS[_run_tiles[k][0]["bid"]]["storeys"] >= 2 and
+                   not BLOCKS[_run_tiles[k][0]["bid"]].get("balcony") and not _hollow_face(_run_tiles[k][0])]
+    LOW_RNG.shuffle(_drape_runs)
+    _drape_houses = set()
+
+    def _drape_clear(t0, s_, z_, n_):
+        b_ = BLOCKS[t0["bid"]]
+        st = int((z_ - FLOOR_H) // b_["sh"])
+        hit_ = _tile_above(t0, s_, st)
+        if hit_ is None:
+            return False
+        u_, a_ = hit_
+        if (u_["kind"] == "SM_WallDoor_01" or u_["label"] in _has_awn) and z_ < u_["z"] + 280.0 and 30.0 * u_["sx"] < a_ < 195.0 * u_["sx"]:
+            return False                                # past a window is fine, as in the photo; not over a door or through an awning
+        x_, y_ = at(t0["x"], t0["y"], t0["side"], s_, n_)
+        if z_ < DECK_CLEAR and _over_deck(*_lay(x_, y_)):
+            return False
+        return _free((x_ - 8.0, y_ - 8.0, z_ - 8.0, x_ + 8.0, y_ + 8.0, z_ + 8.0), 2.0)
+
+    for name in _drape_runs:
+        if _street_n.get("drapes", 0) >= LOW_DRAPES:
+            break
+        ts = _run_tiles[name]
+        t0 = ts[0]
+        if t0["house"] in _drape_houses:
+            continue
+        total = ts[-1]["off"] - t0["off"] + ts[-1]["w"]
+        if total < 260.0:
+            continue
+        b_ = BLOCKS[t0["bid"]]
+        n_ = 17.0 if (t0["house"], t0["letter"]) in _proud else 9.5
+        found = None
+        for _try in range(8):
+            len_ = LOW_RNG.uniform(200.0, min(total - 40.0, 520.0))
+            s0 = LOW_RNG.uniform(20.0, total - len_ - 20.0)
+            s_hi, s_lo = (s0, s0 + len_) if LOW_RNG.random() < 0.5 else (s0 + len_, s0)
+            z_hi, z_lo = _band_z(b_, 1), _ground_band_z(b_)
+            if _pipe_free(t0, s0 - 8.0, s0 + len_ + 8.0) and _stair_clear(t0, s0, s0 + len_, z_lo) and \
+                    all(_ground_open(t0, s0 + len_ * k_ / 4.0, 40.0) for k_ in range(5)) and \
+                    all(_drape_clear(t0, s_hi + (s_lo - s_hi) * k_ / 8.0, z_hi + (z_lo - z_hi) * k_ / 8.0, n_) for k_ in range(9)):
+                found = (s_hi, s_lo, z_hi, z_lo)
+                break
+        if found is None:
+            continue
+        s_hi, s_lo, z_hi, z_lo = found
+        label = "Drape_" + name
+        for j in range(LOW_RNG.choice((2, 2, 3, 3, 4))):
+            dz, dn = LOW_RNG.uniform(-7.0, 7.0) if j else 0.0, LOW_RNG.uniform(-1.5, 3.0) if j else 0.0
+            a3 = tuple(at(t0["x"], t0["y"], t0["side"], s_hi + LOW_RNG.uniform(-5.0, 5.0), n_ + dn)) + (z_hi + dz,)
+            b3 = tuple(at(t0["x"], t0["y"], t0["side"], s_lo + LOW_RNG.uniform(-5.0, 5.0), n_ + dn)) + (z_lo + dz,)
+            _wire("%s_W%d" % (label, j), a3, b3, LOW_RNG.uniform(5.0, 16.0), 3, LOW_RNG.uniform(1.4, 2.0), LOW_CULL)
+            _count("low wires")
+        for e_, (s_, z_) in enumerate(((s_hi, z_hi), (s_lo, z_lo))):
+            Xb, Yb = at(t0["x"], t0["y"], t0["side"], s_, max(n_ - 9.5, 0.0))
+            _box_on_wall("%s_Box%d" % (label, e_), Xb, Yb, z_, YAW[t0["side"]])
+        for k_ in range(9):
+            x_, y_ = at(t0["x"], t0["y"], t0["side"], s_hi + (s_lo - s_hi) * k_ / 8.0, n_)
+            z_ = z_hi + (z_lo - z_hi) * k_ / 8.0
+            _claim((x_ - 10.0, y_ - 10.0, z_ - 10.0, x_ + 10.0, y_ + 10.0, z_ + 10.0))
+            _soft_boxes.add(_occ[-1])
+        _drape_houses.add(t0["house"])
+        _count("drapes")
+    assert not _wire_lows or min(_wire_lows) >= LOW_FLOOR, "a wire hangs at %.0f" % min(_wire_lows)     # above a head, whatever is on the wall
+
+
+# The shop stalls. User 2026-11-06: "the wall if open". SM_Shop_A_001 is only a counter and an open bar frame, with the block's core 1.5 m behind it, so it read as a hole in the
+# wall. Closed for the night: the kit's solid wall in the same module, just behind the frame, and a roll-up shutter down inside the frame to the counter. Frame X 0..300, Z 0..400;
+# SM_RollupDoor_A_002 X -283.6..270.6, Z -333..0. A stall buried behind a house comes out of the plan at the end, so nothing else moves: B2_S0_1_1 stood 60 cm past B6h2's end wall, right on
+# the next stall's frame. User 2026-11-06: "Shop A 001, overlapping surfaces with wall".
+STALL_RNG = random.Random(229)
+_stalls = [p for p in items if p["asset"].endswith("/SM_Shop_A_001")]
+_buried_stalls = set()
+for k_, p in enumerate(sorted(_stalls, key=lambda q_: q_["label"])):
+    side = _yaw_side[round(p["rot"][1]) % 360]
+    x0_, y0_, z_ = p["loc"]
+    roll_ = STALL_RNG.choice(ROLL_MATS)
+    lx_, ly_ = _lay(*at(x0_, y0_, side, 150.0, 60.0))
+    if any(b_["x0"] < lx_ < b_["x1"] and b_["y0"] < ly_ < b_["y1"] for b_ in L["blocks"]):      # B2_S0_1_1, mostly behind B6h2
+        _buried_stalls.add(p["label"])
+        continue
+    # Always behind the frame: the stall's frame and this wall share the planes local Y 0 and -20, and the first stall's wall sat exactly on them. User 2026-11-06: "Shop A 001, overlapping surfaces with wall".
+    x_, y_ = at(x0_, y0_, side, 0.0, -1.3 * (k_ + 1))
+    put(p["label"] + "_Back", AS + "SM_HouseWall_A_001", x_, y_, z_, YAW[side], (1, 1, 1), folder=DR_SHUTTERS)
+    sa_ = 272.0 / 554.2
+    x_, y_ = at(x0_, y0_, side, 150.0 + 6.5 * sa_, 3.0 + 1.3 * k_)
+    put("Shutter_" + p["label"], AS + "SM_RollupDoor_A_002", x_, y_, z_ + 378.0, YAW[side], (sa_, 1.0, 290.0 / 333.1), folder=DR_SHUTTERS,
+        mats=[roll_])
+    _cheap(CULL_FAR)
+    _count("closed stalls")
+
+
+# Posters and ads. User 2026-11-05: "I can have gpt make product ads and movie posters, as well as election campaign posters", then "Added the Ads, btw, these
+# ads are AI generated, they are currently placeholder labeled. I might decide to use them but we will see. Now see what you can do with it". So: 24 images
+# in /Game/Project_Bopis_Posters, untouched, one switch, one folder, one material instance each (create_poster_materials_ue.py), easy to take out.
+# The scale is from the user's photo ("look at this scale, use this for the poster"): a Manila wall with a man cycling past. Each sheet is about 61 x 91 cm, and they're
+# pasted edge to edge in blocks, one candidate to a block, from just above the ground to over his head. So POSTER_AREA is that sheet's area, whatever an image's shape, and
+# never smaller ("use your original size and make bigger variations"). Election posters fill walls, the same one over and over. Movie posters and ads go side by side, but
+# never the same one twice: "only put together indentical posters for candidates type posters, you can put movie posters together side by side but not the same over and over,
+# same goes for product ads".
+# On the clear stretches of a whole wall, across tile joints, FACE_EDGE from its ends ("too close to the edge of the face"), never over a door or window. Hollow-block faces take
+# them too, and nothing else ("Try to not have any first floor walls featureless, except hollow block, which yu can put posters on"). So do the shop row's plain stretches and
+# the door end walls, which aren't wall tiles. A movie poster or ad only comes round again POSTER_GAP on, so two don't share a view; election posters may, as campaigns do.
+STREET_POSTERS = True
+DR_POSTERS = "BackAlleys/Posters"
+POSTER_RNG = random.Random(227)
+POSTER_GAP = 1000.0
+POSTER_AREA = 61.0 * 91.0
+POSTER_TALL, POSTER_LOW, POSTER_MID = (18.0, 294.0), (18.0, 240.0), (76.0, 234.0)   # floor to the trim, floor to under the highest vent blocks, and eye level
+# Vent blocks stand at several heights, and most came down since those bands were set: their bottoms are 173 to 240 cm off the floor. User 2026-11-06, of a wall with vents
+# and nothing under them: "even this is bare, it has vents but needs something". So two more bands: under one row of vents, and under two.
+POSTER_UNDER, POSTER_SHORT = (18.0, 209.0), (60.0, 168.0)
+P_POSTER_TALL, P_POSTER_MID, P_POSTER_SHUTTER, P_POSTER_GONE = 0.92, 0.75, 0.8, 0.07
+POSTER_MOVIES = {"Ang_Tagapaslang": (592, 887), "Dugo_sa_Lansangan": (591, 887), "Hatinggabing_Takas": (512, 1024), "Huli_Ka_Kuya": (512, 1024),
+                 "Huling_Biyahe_sa_Maynila": (887, 887), "May_Bukas_Pa_Kuya": (591, 887), "Sa_Huling_Sakay": (512, 1024), "Suntok_sa_Pier": (887, 887)}
+POSTER_ADS = {"Bayani_Baterya": (724, 724), "Gising_Kape": (542, 724), "Kanto_Cola": (1024, 1536), "Presko_Mint": (724, 724), "Sabaw_Sarap": (544, 724),
+              "Sinag_VCD": (544, 724), "TextKanto": (1024, 1536), "Tibay_Selyas": (724, 724), "Tulay_Sanglaan": (1024, 1536)}     # Puting_Araw: imported as a normal map, so it can't be used yet
+POSTER_ELECTION = {"Arturo_Villareal": {"Arturo_Villareal_01": (768, 1024), "Arturo_Villareal_02": (887, 887)},
+                   "Benjamin_Mercado": {"Benjamin_Mercado_01": (768, 1024), "Benjamin_Mercado_02": (887, 887)},
+                   "Teresa_de_Vera": {"Teresa_de_Vera_01": (887, 887), "Teresa_de_Vera_02": (887, 887)}}
+_poster_px = dict(POSTER_MOVIES)
+_poster_px.update(POSTER_ADS)
+for _d in POSTER_ELECTION.values():
+    _poster_px.update(_d)
+_draw_movie = shuffle_bag(POSTER_RNG, tuple(POSTER_MOVIES))
+_draw_ad = shuffle_bag(POSTER_RNG, tuple(POSTER_ADS))
+_draw_candidate = shuffle_bag(POSTER_RNG, tuple(POSTER_ELECTION))
+_draw_tall = shuffle_bag(POSTER_RNG, ("election", "election", "election", "election", "election", "movie", "movie", "ad"))
+_draw_mid = shuffle_bag(POSTER_RNG, ("movie", "ad", "ad", "ad", "election"))
+_draw_big = shuffle_bag(POSTER_RNG, (1.0, 1.0, 1.0, 1.0, 1.15, 1.3))      # movie posters and ads; a block of election posters is one print run
+_poster_at = {}
+_poster_n = {"movie": 0, "ad": 0, "election": 0}
+_poster_lots = [0]
+
+
+def _far_enough(name, X_, Y_):
+    return all(math.hypot(X_ - o[0], Y_ - o[1]) >= POSTER_GAP for o in _poster_at.get(name, ()))
+
+
+def _pick_design(draw, X_, Y_, pool=(), exclude=()):
+    unseen = sorted(k for k in pool if k not in _poster_at and k not in exclude)    # every design has its turn before any comes round again
+    if unseen:
+        return POSTER_RNG.choice(unseen)
+    for _ in range(12):
+        name = draw()
+        if name not in exclude and _far_enough(name, X_, Y_):
+            return name
+    return None
+
+
+def _side_by_side(first, draw, pool, X_, Y_, n):
+    """A row of different movie posters or ads, as many of n as can be found: never the same one twice."""
+    names = [first]
+    while len(names) < n:
+        other = _pick_design(draw, X_, Y_, pool, names)
+        if other is None:
+            break
+        names.append(other)
+    return names
+
+
+def _sheet_w(name, k=1.0):
+    """A sheet's width: the photo's area at this image's shape. A movie one-sheet is a little bigger."""
+    w_, h_ = _poster_px[name]
+    return math.sqrt(POSTER_AREA * (1.3 if name in POSTER_MOVIES else 1.0) * w_ / float(h_)) * k
+
+
+def _paste(label, u, name, s_c, z_c, wid, n_, swing):
+    """One sheet, centred s_c along tile u and z_c up. As the plywood sheets: X along the wall, local Y down, so the image reads right way round."""
+    hgt = wid * _poster_px[name][1] / float(_poster_px[name][0])
+    side = u["side"]
+    run3 = (float(RUN[side][0]), float(RUN[side][1]), 0.0)
+    out3 = (float(NORMAL[side][0]), float(NORMAL[side][1]), 0.0)
+    tilt = POSTER_RNG.uniform(-swing, swing)
+    X3, up3 = v_rot(run3, out3, tilt), v_rot((0.0, 0.0, 1.0), out3, tilt)
+    x_, y_ = at(u["x"], u["y"], side, s_c, n_)
+    put_axes(label, PLANE, X3, (-up3[0], -up3[1], -up3[2]), out3, (wid / 100.0, hgt / 100.0, 1.0), (0.0, 0.0, 0.0), (x_, y_, z_c),
+             mats=[BM + "MI_BackAlleys_Poster_" + name])
+    items[-1]["folder"] = DR_POSTERS
+    items[-1]["draw"] = CULL_MID
+    items[-1]["noshadow"] = True
+    items[-1]["coll"] = "PosterPaper"       # ignored by everything but the Paper trace: shots hit the wall behind, and throw paper
+
+
+def _block(t0, s0, s1, base, columns, rows, band, n0, k=1.0, own_size=False):
+    """Sheets edge to edge: columns is the image of each column, rows how many high, as many columns as fit in s0..s1. Laps and misses by a centimetre, as pasted by hand,
+    and here and there one has been torn off. Returns (sheets, the columns that went up, where they start and end)."""
+    # A block has every column one height, so the rows line up and nothing shows between them, as in the photo. Images of another shape come out wider or narrower.
+    # own_size: a row of different movie posters or ads, each its own full size, centred on one line. Sharing a height there made a tall image's sheet too narrow.
+    first_ = columns[0]
+    row_h = _sheet_w(first_, k) * _poster_px[first_][1] / float(_poster_px[first_][0])
+    widths, kept = [], []
+    for name in columns:
+        w_ = _sheet_w(name, k) if own_size else row_h * _poster_px[name][0] / float(_poster_px[name][1])
+        if sum(widths) + w_ > s1 - s0:
+            break
+        widths.append(w_)
+        kept.append(name)
+    if not kept:
+        return 0, [], 0.0, 0.0
+    tall_ = max(w_ * _poster_px[n_][1] / float(_poster_px[n_][0]) for w_, n_ in zip(widths, kept)) if own_size else row_h
+    if tall_ > band[1] - band[0]:                       # a long sheet in a short band would run into the vents above it
+        return 0, [], 0.0, 0.0
+    _poster_lots[0] += 1
+    lot = "Poster_%s_L%d" % (t0["label"], _poster_lots[0])
+    total = sum(widths)
+    start = s0 + POSTER_RNG.uniform(0.0, min(30.0, s1 - s0 - total))
+    rows = max(1, min(rows, int((band[1] - band[0]) / tall_)))
+    if rows == 1:
+        bottom = max(band[0], min(band[1] - tall_, POSTER_RNG.uniform(148.0, 172.0) - tall_ / 2))
+    else:
+        bottom = band[0] + POSTER_RNG.uniform(0.0, max(0.0, band[1] - band[0] - rows * tall_) * 0.5)
+    placed = 0
+    s_ = start
+    for c_, (name, w_) in enumerate(zip(kept, widths)):
+        h_ = w_ * _poster_px[name][1] / float(_poster_px[name][0]) if own_size else row_h
+        for r_ in range(rows):
+            if rows * len(kept) >= 4 and POSTER_RNG.random() < P_POSTER_GONE:
+                continue
+            z_c = base + bottom + tall_ * (r_ + 0.5) if own_size else base + bottom + tall_ * r_ + h_ / 2
+            _paste("%s_%d_%d" % (lot, c_, r_), t0, name, s_ + w_ / 2 + POSTER_RNG.uniform(-1.2, 1.2), z_c + POSTER_RNG.uniform(-1.2, 1.2), w_,
+                   n0 + 0.15 * ((c_ + r_) % 2), 0.7 if rows * len(kept) > 1 else 1.4)
+            placed += 1
+        s_ += w_
+    return placed, kept, start, start + total
+
+
+def _poster_clear(box):
+    return not any(o not in _soft_boxes and box[0] - 1.0 < o[3] and o[0] < box[3] + 1.0 and box[1] - 1.0 < o[4] and o[1] < box[4] + 1.0 and box[2] - 1.0 < o[5] and o[2] < box[5] + 1.0
+                   for o in _occ)
+
+
+def _poster_free(ts, a_, e_, band):
+    """Nothing on a stretch of this wall between the band's heights, and somewhere to stand in front of it."""
+    t0 = ts[0]
+    mid = (a_ + e_) / 2
+    u = next((q_ for q_ in ts if q_["off"] - t0["off"] <= mid < q_["off"] - t0["off"] + q_["w"]), None)
+    if u is None:
+        return False
+    local = mid - (u["off"] - t0["off"])
+    if u["kind"] in ("SM_Wall_Windows_01", "SM_WallDoor_01"):
+        if 30.0 * u["sx"] - 5.0 < local < 195.0 * u["sx"] + 5.0:
+            return False
+    elif u["kind"] not in _plain_tile:
+        return False
+    if t0["s"] == 0:
+        if not _ground_open(t0, mid, 60.0):
+            return False
+    else:
+        lx, ly = _lay(*at(t0["x"], t0["y"], t0["side"], mid, 45.0))
+        dk_ = L["deck"]
+        if not (dk_["x0"] < lx < dk_["x1"] and dk_["y0"] < ly < dk_["y1"]):
+            return False
+    box = _wbox(t0, a_, e_, t0["z"] + band[0], t0["z"] + band[1], 10.0)
+    return _pipe_free(t0, a_, e_) and _stair_clear(t0, a_, e_, t0["z"]) and _poster_clear(box)
+
+
+def _stretches(ts, band):
+    """The clear stretches of a whole wall, FACE_EDGE from its ends."""
+    t0 = ts[0]
+    total = ts[-1]["off"] - t0["off"] + ts[-1]["w"]
+    out, cur, a_ = [], None, FACE_EDGE
+    while a_ < total - FACE_EDGE:
+        e_ = min(a_ + 8.0, total - FACE_EDGE)
+        if _poster_free(ts, a_, e_, band):
+            cur = a_ if cur is None else cur
+        elif cur is not None:
+            out.append((cur, a_))
+            cur = None
+        a_ = e_
+    if cur is not None:
+        out.append((cur, total - FACE_EDGE))
+    return out
+
+
+if STREET_POSTERS:
+    _soft_boxes |= {_occ_of(p) for p in items if p["folder"] == DR_PATCH and p["asset"] == PLANE}
+    # A room claims the whole height of its rectangle, to keep pipes and air conditioners off it, but the wall under it is still a wall that shows ("Try to not have any first
+    # floor walls featureless"). So posters go under a room, and only the struts landing on the wall stop them.
+    _soft_boxes |= {(o[0], o[1], 0.0, o[2], o[3], 3000.0) for o in _room_rects}
+    _occ += [_wbox(t_, s_ - 8.0, s_ + 8.0, t_["z"] - 120.0, t_["z"], 30.0) for t_, s_ in _room_struts]
+    _spots = []
+
+    def _minus(a_, b_, taken):
+        """a_..b_ with the stretches already taken cut out."""
+        out, at_ = [], a_
+        for c0, c1 in sorted(taken):
+            if c1 <= at_ or c0 >= b_:
+                continue
+            if c0 > at_:
+                out.append((at_, c0))
+            at_ = max(at_, c1)
+        if at_ < b_:
+            out.append((at_, b_))
+        return out
+
+    for name in sorted(_run_tiles):
+        ts = _run_tiles[name]
+        t0 = ts[0]
+        if not (t0["s"] == 0 or (t0["s"] == 1 and abs(t0["z"] - (400.0 + FLOOR_H)) < 1.0)):
+            continue
+        taken = []
+        for how, band in (("tall", POSTER_TALL), ("low", POSTER_LOW), ("mid", POSTER_MID), ("under", POSTER_UNDER), ("short", POSTER_SHORT)):
+            found = []
+            for a_, b_ in _stretches(ts, band):
+                for p_, q_ in _minus(a_, b_, taken):
+                    if q_ - p_ >= 62.0:
+                        _spots.append((how, ts, p_, q_))
+                    found.append((p_, q_))
+            taken += found
+
+    def _extra_wall(label, x_, y_, z_, side, a_, b_):
+        """A clear stretch of a wall that isn't made of wall tiles."""
+        t = {"x": x_, "y": y_, "z": z_, "side": side, "label": label}
+        if b_ - a_ >= 62.0 and _pipe_free(t, a_, b_) and _poster_clear(_wbox(t, a_, b_, z_ + POSTER_TALL[0], z_ + POSTER_TALL[1], 10.0)):
+            _spots.append(("tall", [t], a_, b_))
+
+    for p in items:
+        if p["label"] == "B2_S0_2_1":       # the door frame module: its door is at 92-207, and the half wall carries on to 450, the wall's end
+            _extra_wall(p["label"], p["loc"][0], p["loc"][1], p["loc"][2], "south", 4.0, 88.0)
+            _extra_wall(p["label"], p["loc"][0], p["loc"][1], p["loc"][2], "south", 212.0, 450.0 - FACE_EDGE)
+        elif p["label"] == "B2_S0_0_half":
+            _extra_wall(p["label"], p["loc"][0], p["loc"][1], p["loc"][2], "south", 4.0, 110.0)
+    for d in L["doors"]:                    # a door end wall: 450 across its alley, the door in the middle, 56 either side
+        n_ = FACE[d["face"]]
+        cx_, cy_ = ue(d["x"], d["y"])
+        rx_, ry_ = RUN[n_]
+        x0_, y0_ = cx_ - rx_ * 225.0, cy_ - ry_ * 225.0
+        _extra_wall(d["id"] + "_S0_0", x0_, y0_, FLOOR_H, n_, FACE_EDGE, 165.0)
+        _extra_wall(d["id"] + "_S0_2", x0_, y0_, FLOOR_H, n_, 285.0, 450.0 - FACE_EDGE)
+    POSTER_RNG.shuffle(_spots)
+    POSTER_BANDS = {"tall": POSTER_TALL, "low": POSTER_LOW, "mid": POSTER_MID, "under": POSTER_UNDER, "short": POSTER_SHORT}
+    for how, ts, a_, b_ in _spots:
+        # A long stretch takes several lots side by side, as in the photo, with a little wall between.
+        while b_ - a_ >= 62.0:
+            if POSTER_RNG.random() > (P_POSTER_TALL if how != "mid" else P_POSTER_MID):
+                break
+            t0 = ts[0]
+            base = t0["z"]
+            room_s = b_ - a_
+            band = POSTER_BANDS[how]
+            Xc, Yc = at(t0["x"], t0["y"], t0["side"], (a_ + b_) / 2, 2.0)
+            if how != "mid" and room_s >= 190.0:
+                kind = _draw_tall()                     # the long walls go mostly to the campaigns
+            elif room_s >= 76.0 and any(k not in _poster_at for k in POSTER_MOVIES):
+                kind = "movie"
+            elif any(k not in _poster_at for k in POSTER_ADS):
+                kind = "ad"
+            else:
+                kind = _draw_tall() if how != "mid" else _draw_mid()
+            k_ = 1.0
+            if kind == "movie":
+                name = _pick_design(_draw_movie, Xc, Yc, POSTER_MOVIES)
+                if name is None:
+                    kind = "election"
+                else:
+                    k_ = _draw_big() if how != "short" else 1.0
+                    columns = _side_by_side(name, _draw_movie, POSTER_MOVIES, Xc, Yc, POSTER_RNG.choice((1, 2, 2, 3)))
+                    rows = 1
+            elif kind == "ad":
+                name = _pick_design(_draw_ad, Xc, Yc, POSTER_ADS)
+                if name is None:
+                    kind = "election"
+                else:
+                    k_ = _draw_big() if how != "short" else 1.0
+                    columns = _side_by_side(name, _draw_ad, POSTER_ADS, Xc, Yc, POSTER_RNG.choice((1, 1, 2, 2, 3)))
+                    rows = 1
+            if kind == "election":
+                cand = POSTER_ELECTION[_draw_candidate()]
+                first, second = POSTER_RNG.sample(sorted(cand), 2)
+                n_c = POSTER_RNG.choice((2, 3, 3, 4, 5, 6))
+                # A block of one design, or two designs of one candidate in alternate columns, as in the photo.
+                columns = [first] * n_c if POSTER_RNG.random() < 0.6 else [first if c_ % 2 == 0 else second for c_ in range(n_c)]
+                rows = {"tall": 3, "low": 2, "mid": 1, "under": 2, "short": 1}[how]
+            n_s, kept, s_a, s_b = _block(t0, a_, b_, base, columns, rows, band, POSTER_RNG.uniform(2.0, 2.3), k_, kind != "election")
+            if not n_s and kind != "election":         # no room for what it drew: one election poster, the smallest sheet
+                kind = "election"
+                n_s, kept, s_a, s_b = _block(t0, a_, b_, base, [POSTER_RNG.choice(sorted(POSTER_ELECTION[_draw_candidate()]))], 1, band, POSTER_RNG.uniform(2.0, 2.3))
+            if not n_s:
+                break
+            _poster_n[kind] += n_s
+            for k in set(kept):
+                _poster_at.setdefault(k, []).append((Xc, Yc))
+            _claim(_wbox(t0, s_a, s_b, base + band[0], base + band[1], 3.0))
+            a_ = s_b + POSTER_RNG.uniform(8.0, 70.0)
+    # On closed shutters, kept to the shutter.
+    for u, s0, wid in _shops:
+        if POSTER_RNG.random() > P_POSTER_SHUTTER:
+            continue
+        kind = POSTER_RNG.choice(("movie", "ad", "election", "election"))
+        Xc, Yc = at(u["x"], u["y"], u["side"], s0 + wid / 2, 8.0)
+        if kind == "election":
+            columns = [POSTER_RNG.choice(sorted(POSTER_ELECTION[_draw_candidate()]))] * 3
+            rows = 3
+        else:
+            draw_ = _draw_movie if kind == "movie" else _draw_ad
+            name = _pick_design(draw_, Xc, Yc)
+            if name is None:
+                continue
+            columns = _side_by_side(name, draw_, (), Xc, Yc, 2)
+            rows = 1
+        s_a_, s_b_ = _inside_face(u, s0 + 3.0, s0 + wid - 3.0)
+        first_ = len(items)
+        n_s, kept, _sa, _sb = _block(u, s_a_, s_b_, u["z"], columns, rows, (8.0, 262.0), 9.2, 1.0, kind != "election")      # the shutter's face is 8.8 off the wall: at 8.5 they were hidden behind it, and still threw paper
+        for p_ in items[first_:]:
+            p_["vol"] = True        # no lightmap: the two in the level were baked while hidden, and their lightmaps came out in black patches
+        if n_s:
+            _poster_n[kind] += n_s
+            for k in set(kept):
+                _poster_at.setdefault(k, []).append((Xc, Yc))
+    _count("posters", sum(_poster_n.values()))
+    print("  posters", _poster_n, "in", _poster_lots[0], "lots, of", len(_spots), "stretches;", len(_poster_at), "designs used")
+
+# Chained power lines. User 2026-11-06: "try to chain connect powerlines". Every span and run ended at a box of its own, so the lines read as separate hops. Now a line carries on from house
+# to house: back across the alley further along, round an inside corner, along a wall, or down a wall to join the upper wires to the low ones. First it links the boxes already there. Then a chain's
+# end grows towards the nearest other chain, with a new box on the wall it can reach, and links up when it can. A box takes two lines at most, three where a branch ties in, and nothing closes a loop, so these are chains, not stars.
+# Whatever is still on its own then ties into a box part way along another chain, as a service line does. Last of the passes, so no other piece moves. Off with the switch; the pieces are Chain*_ in BackAlleys/Wires.
+STREET_CHAIN_WIRES = True
+CHAIN_RNG = random.Random(229)
+CHAIN_LINKS, CHAIN_PASSES = 90, 6
+CHAIN_MIN, CHAIN_ACROSS, CHAIN_ALONG = 180.0, 1000.0, 800.0     # cm: a link's length, across an alley or along a wall
+CHAIN_DZ, CHAIN_ALONG_DZ = 220.0, 60.0                          # how much a link may climb, across and along
+CHAIN_DROP_MIN, CHAIN_DROP_DZ = 40.0, 480.0                     # a drop down one wall, joining the upper wires to the low ones
+CHAIN_FACING = 0.30                                             # a wall has to face the link: up to about 70 degrees off square
+CHAIN_TURN = 15.0                                               # degrees between two lines leaving one box, or they read as one
+CHAIN_MID_GAP = 40.0                                            # between the middles of any two links or spans
+CHAIN_REACH = 2200.0                                            # how far a chain's end looks for another chain to grow towards
+CHAIN_TARGETS, CHAIN_CLOSER = 5, 80.0                           # how many chains it looks at, and how much nearer a new box has to bring it
+CHAIN_SLOPES = (0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.85, -0.85, 1.1, -1.1, 1.4, -1.4)
+_chain_n = {"links": 0, "wires": 0, "new boxes": 0}
+
+
+def _chain_links():
+    nodes = _wire_nodes
+    n0 = len(nodes)
+    root, deg, bundle, dirs = list(range(n0)), [0] * n0, [1] * n0, [[] for _ in nodes]
+    cos_turn = math.cos(math.radians(CHAIN_TURN))
+    mids = list(_span_mids) + list(_low_mids)
+
+    def find(i):
+        while root[i] != i:
+            root[i] = root[root[i]]
+            i = root[i]
+        return i
+
+    def prep(n_):
+        """Where a wire leaves this box, as the spans do; its block; its wall tile."""
+        nx, ny = NORMAL[n_["side"]]
+        rx, ry = RUN[n_["side"]]
+        n_["p"] = (n_["x"] + nx * 10.0, n_["y"] + ny * 10.0, n_["z"])
+        lx, ly = _lay(n_["x"] - nx * 25.0, n_["y"] - ny * 25.0)
+        n_["block"] = next((b_ for b_ in BLOCKS.values() if b_["x0"] < lx < b_["x1"] and b_["y0"] < ly < b_["y1"]), None)
+        n_["tile"], n_["s"] = None, 0.0
+        for u in _wall_tiles:
+            a0 = (n_["x"] - u["x"]) * rx + (n_["y"] - u["y"]) * ry
+            if u["side"] == n_["side"] and -1.0 <= a0 < u["w"] + 1.0 and abs((n_["x"] - u["x"]) * nx + (n_["y"] - u["y"]) * ny) < 40.0 and \
+                    u["z"] <= n_["z"] < u["z"] + BLOCKS[u["bid"]]["sh"]:
+                n_["tile"], n_["s"] = u, a0
+                break
+
+    for n_ in nodes:
+        prep(n_)
+
+    def gap(a_, b_):
+        return math.hypot(a_["x"] - b_["x"], a_["y"] - b_["y"])
+
+    def nearest(p3):
+        best = min(range(n0), key=lambda i: math.dist(nodes[i]["p"], p3))
+        return best if math.dist(nodes[best]["p"], p3) < 70.0 else None
+
+    # The lines already there.
+    groups = {}
+    for label, a3, b3 in _wire_runs:
+        groups.setdefault(label.rsplit("_W", 1)[0], []).append((a3, b3))
+    for wires in groups.values():
+        a_, b_ = nearest(wires[0][0]), nearest(wires[0][1])
+        if a_ is None or b_ is None or a_ == b_:
+            continue
+        root[find(a_)] = find(b_)
+        for i, j in ((a_, b_), (b_, a_)):
+            deg[i] += 1
+            bundle[i] = max(bundle[i], len(wires))
+            d_ = gap(nodes[i], nodes[j])
+            dirs[i].append(((nodes[j]["x"] - nodes[i]["x"]) / d_, (nodes[j]["y"] - nodes[i]["y"]) / d_))
+    _chain_n["hops before"] = len(set(find(i) for i in range(n0)))
+
+    def kind_of(a_, b_):
+        """How these two boxes could join, and what it costs, or None."""
+        na, nb = NORMAL[a_["side"]], NORMAL[b_["side"]]
+        dx, dy = b_["p"][0] - a_["p"][0], b_["p"][1] - a_["p"][1]
+        len_, dz = math.hypot(dx, dy), abs(b_["z"] - a_["z"])
+        if a_["side"] == b_["side"] and abs(dx * na[0] + dy * na[1]) <= 40.0:
+            if dz <= CHAIN_ALONG_DZ and CHAIN_MIN <= len_ <= CHAIN_ALONG:
+                return "along", len_ * 1.15
+            if CHAIN_ALONG_DZ < dz <= CHAIN_DROP_DZ and CHAIN_DROP_MIN <= len_ <= CHAIN_ALONG:
+                return "drop", (len_ + dz) * 1.1
+            return None
+        if CHAIN_MIN <= len_ <= CHAIN_ACROSS and dz <= CHAIN_DZ and dx * na[0] + dy * na[1] >= CHAIN_FACING * len_ and -(dx * nb[0] + dy * nb[1]) >= CHAIN_FACING * len_:
+            return "across", len_
+        return None
+
+    def stretch_ok(a_, b_):
+        """Along a wall: nothing in the way, no pipe, not over a hollow-block face or the stairs' wall."""
+        side = a_["side"]
+        rx, ry = RUN[side]
+        nx, ny = NORMAL[side]
+        s_ = (b_["x"] - a_["x"]) * rx + (b_["y"] - a_["y"]) * ry
+        lo, hi = min(0.0, s_), max(0.0, s_)
+        t_ = {"x": a_["x"], "y": a_["y"], "side": side}
+        if not _pipe_free(t_, lo - 6.0, hi + 6.0) or not _stair_clear(t_, lo, hi, min(a_["z"], b_["z"]) - 20.0):
+            return False
+        c0, c1 = at(a_["x"], a_["y"], side, lo + 30.0, -2.0), at(a_["x"], a_["y"], side, hi - 30.0, 25.0)
+        if not _free((min(c0[0], c1[0]), min(c0[1], c1[1]), min(a_["z"], b_["z"]) - 8.0, max(c0[0], c1[0]), max(c0[1], c1[1]), max(a_["z"], b_["z"]) + 8.0), 0.0):
+            return False
+        for u in _wall_tiles:
+            if u["side"] == side and abs((a_["x"] - u["x"]) * nx + (a_["y"] - u["y"]) * ny) < 40.0 and u["z"] <= a_["z"] < u["z"] + BLOCKS[u["bid"]]["sh"]:
+                a0 = (a_["x"] - u["x"]) * rx + (a_["y"] - u["y"]) * ry
+                if a0 + lo < u["w"] and a0 + hi > 0.0 and _hollow_face(u):
+                    return False
+        return True
+
+    def drop_ends(a_, b_):
+        """A drop down one wall, past windows but not doors or awnings, as the drapes do. Its two ends off the wall, or None if it won't go."""
+        t_, t2 = a_["tile"], b_["tile"]
+        if t_ is None or t2 is None or _hollow_face(t_) or _hollow_face(t2):
+            return None
+        s0, s1 = a_["s"], a_["s"] + (b_["x"] - a_["x"]) * RUN[t_["side"]][0] + (b_["y"] - a_["y"]) * RUN[t_["side"]][1]
+        n_ = 17.0 if (t_["house"], t_["letter"]) in _proud or (t2["house"], t2["letter"]) in _proud else 10.0
+        if not _pipe_free(t_, min(s0, s1) - 6.0, max(s0, s1) + 6.0) or not _stair_clear(t_, min(s0, s1), max(s0, s1), min(a_["z"], b_["z"])):
+            return None
+        for k in range(1, 8):
+            s_, z_ = s0 + (s1 - s0) * k / 8.0, a_["z"] + (b_["z"] - a_["z"]) * k / 8.0
+            if math.hypot(s_ - s0, z_ - a_["z"]) >= 34.0 and math.hypot(s_ - s1, z_ - b_["z"]) >= 34.0 and not _drape_clear(t_, s_, z_, n_):
+                return None
+        return tuple(at(t_["x"], t_["y"], t_["side"], s0, n_)) + (a_["z"],), tuple(at(t_["x"], t_["y"], t_["side"], s1, n_)) + (b_["z"],)
+
+    def plan_link(a_, b_, kind, dirs_a, dirs_b):
+        """The shape of a link, or None if something's in its way."""
+        pa, pb = a_["p"], b_["p"]
+        len_ = math.hypot(pb[0] - pa[0], pb[1] - pa[1])
+        ux, uy = (pb[0] - pa[0]) / len_, (pb[1] - pa[1]) / len_
+        if any(ux * d_[0] + uy * d_[1] > cos_turn for d_ in dirs_a) or any(-ux * d_[0] - uy * d_[1] > cos_turn for d_ in dirs_b):
+            return None
+        mid = ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2)
+        if kind != "drop" and any(math.hypot(mid[0] - m[0], mid[1] - m[1]) < CHAIN_MID_GAP for m in mids):
+            return None
+        if kind == "along" and not stretch_ok(a_, b_):
+            return None
+        if kind == "drop":
+            ends = drop_ends(a_, b_)
+            if ends is None:
+                return None
+            pa, pb = ends
+        lowest = min(pa[2], pb[2])
+        high = lowest >= WIRE_LOW + 20.0
+        rate = {"along": CHAIN_RNG.uniform(2.0, 5.0) * len_ / 300.0, "drop": CHAIN_RNG.uniform(3.0, 10.0)}.get(kind, CHAIN_RNG.uniform(10.0, 24.0 if high else 34.0) * len_ / 400.0)
+        sag = max(1.5, min(rate, lowest - (WIRE_LOW if high else LOW_FLOOR) - 14.0))
+        segs = 3 if len_ < 420.0 else 4
+        pts = [(pa[0] + (pb[0] - pa[0]) * k / segs, pa[1] + (pb[1] - pa[1]) * k / segs, pa[2] + (pb[2] - pa[2]) * k / segs - 4.0 * sag * (k / segs) * (1.0 - k / segs))
+               for k in range(segs + 1)]
+        me, other = (a_["block"], b_["block"]) if kind == "across" else (None, None)
+        if not all(_low_path_clear(pts[k], pts[k + 1], me, other) for k in range(segs)):
+            return None
+        return pa, pb, sag, segs, high, mid, (ux, uy)
+
+    def lay_link(i, j, kind, shape, most):
+        pa, pb, sag, segs, high, mid, (ux, uy) = shape
+        a_, b_ = nodes[i], nodes[j]
+        label = "%s_%d" % ("Chain" if high else "ChainLow", _chain_n["links"])
+        rax, ray = RUN[a_["side"]]
+        rbx, rby = RUN[b_["side"]]
+        for w_ in range(max(1, min(bundle[i], bundle[j], most))):
+            wob = CHAIN_RNG.uniform(-9.0, 9.0) if w_ else 0.0
+            wz = CHAIN_RNG.uniform(-4.0, 4.0) if w_ else 0.0
+            a3 = (pa[0] + rax * wob, pa[1] + ray * wob, pa[2] + wz)
+            b3 = (pb[0] + rbx * wob * CHAIN_RNG.uniform(0.5, 1.5), pb[1] + rby * wob * CHAIN_RNG.uniform(0.5, 1.5), pb[2] + wz)
+            _wire("%s_W%d" % (label, w_), a3, b3, sag * CHAIN_RNG.uniform(0.85, 1.0), segs, CHAIN_RNG.uniform(1.5, 2.2), CULL_FAR if high else LOW_CULL)
+            _chain_n["wires"] += 1
+        root[find(i)] = find(j)
+        deg[i] += 1
+        deg[j] += 1
+        dirs[i].append((ux, uy))
+        dirs[j].append((-ux, -uy))
+        if kind != "drop":
+            mids.append(mid)
+        _chain_n["links"] += 1
+        _chain_n[kind] = _chain_n.get(kind, 0) + 1
+
+    def link_up(only=None, branch=False):
+        """Join chain ends that can reach each other, the shortest first, with some give so it isn't always the nearest. With branch, an end may tie into a box part way along another chain."""
+        cands = []
+        j_max = 3 if branch else 2
+        for i in (range(len(nodes)) if only is None else (only,)):
+            for j in range(len(nodes)):
+                if (only is None and not branch and j <= i) or j == i or deg[i] >= 2 or deg[j] >= j_max or find(i) == find(j):
+                    continue
+                k_ = kind_of(nodes[i], nodes[j])
+                if k_:
+                    cands.append((k_[1] * CHAIN_RNG.uniform(0.8, 1.2), i, j, k_[0]))
+        for _c, i, j, kind in sorted(cands):
+            if _chain_n["links"] >= CHAIN_LINKS:
+                return
+            if deg[i] < 2 and deg[j] < j_max and find(i) != find(j):
+                shape = plan_link(nodes[i], nodes[j], kind, dirs[i], dirs[j])
+                if shape:
+                    lay_link(i, j, kind, shape, 2 if kind == "drop" else 3)
+
+    def clear_spot(X_, Y_, z_):
+        return _free((X_ - 34.0, Y_ - 34.0, z_ - 12.0, X_ + 34.0, Y_ + 34.0, z_ + 12.0), 2.0) and all(math.hypot(X_ - o["x"], Y_ - o["y"]) >= 60.0 or abs(z_ - o["z"]) > 40.0 for o in nodes)
+
+    why = {}
+
+    def no(reason):
+        why[reason] = why.get(reason, 0) + 1
+
+    def grow(i):
+        """Carry a chain's end on towards the nearest other chain, with a new box where it can reach: across the alley, or along its wall if it can't cross. The new box's index, or None."""
+        a_ = nodes[i]
+        ends = [j for j in range(len(nodes)) if j != i and deg[j] < 2 and find(j) != find(i)]
+        if not ends:
+            return None
+        # The nearest few other chains: the very nearest is often just round a corner, with no way to it.
+        targets = [nodes[j] for j in sorted(ends, key=lambda j: gap(a_, nodes[j]) + abs(nodes[j]["z"] - a_["z"]))[:CHAIN_TARGETS] if gap(a_, nodes[j]) <= CHAIN_REACH]
+        if not targets:
+            no("too far")
+            return None
+
+        def closer(c_):
+            return max(gap(a_, t_) - gap(c_, t_) for t_ in targets)
+
+        side = a_["side"]
+        letter_o = OPP[side][0].upper()
+        high = a_["z"] >= WIRE_LOW + 20.0
+        best = None
+        for slope in CHAIN_SLOPES:
+            hit, o = None, None
+            for n_ in range(150, int(CHAIN_ACROSS) + 5, 5):
+                lx, ly = _lay(*at(a_["x"], a_["y"], side, slope * n_, float(n_)))
+                if not (0 < lx < W and 0 < ly < H):
+                    break
+                o = next((b_ for b_ in BLOCKS.values() if b_["x0"] < lx < b_["x1"] and b_["y0"] < ly < b_["y1"]), None)
+                if o is not None:
+                    hit = float(n_)
+                    break
+            if hit is None or o is a_["block"]:
+                no("no wall")
+                continue
+            ho = _house_of(o["id"])
+            if o["id"] in _thin_blocks or (ho, letter_o) in _hset or (high and (o["storeys"] < 2 or o.get("balcony"))):
+                no("wrong wall")
+                continue
+            lx0, ly0 = _lay(*at(a_["x"], a_["y"], side, slope * (hit - 6.0), hit - 6.0))
+            if side in ("east", "west"):
+                if not o["y0"] + 0.4 < ly0 < o["y1"] - 0.4:
+                    no("wall edge")
+                    continue
+            elif not o["x0"] + 0.4 < lx0 < o["x1"] - 0.4:
+                no("wall edge")
+                continue
+            z_b = _band_z(o, 1) if high else _ground_band_z(o)
+            n_b = hit - (BAND_OUT if (ho, letter_o) in _proud and o["storeys"] > (2 if high else 1) else 0.0)
+            X1, Y1 = at(a_["x"], a_["y"], side, slope * n_b, n_b)
+            c = {"x": X1, "y": Y1, "z": z_b, "side": OPP[side]}
+            prep(c)
+            if closer(c) < CHAIN_CLOSER:
+                no("no closer")
+                continue
+            if c["tile"] is None or c["block"] is not o:
+                no("no tile")
+                continue
+            if not clear_spot(X1, Y1, z_b):
+                no("spot taken")
+                continue
+            shape = plan_link(a_, c, "across", dirs[i], [])
+            if not shape:
+                no("link blocked")
+            if shape and (best is None or closer(c) > best[0]):
+                best = (closer(c), c, shape, "across")
+        if best is None and a_["tile"] is not None:
+            t0 = a_["tile"]
+            ts = _run_tiles[t0["run"]]
+            base = ts[0]
+            total = ts[-1]["off"] + ts[-1]["w"] - base["off"]
+            here = t0["off"] - base["off"] + a_["s"]
+            rx, ry = RUN[side]
+            for len_ in (620.0, -620.0, 500.0, -500.0, 380.0, -380.0, 260.0, -260.0):
+                end_ = here + len_
+                if end_ < 40.0 or end_ > total - 40.0:
+                    continue
+                X1, Y1 = at(base["x"], base["y"], side, end_, _band_out(t0))
+                c = {"x": X1, "y": Y1, "z": a_["z"] + CHAIN_RNG.uniform(-8.0, 8.0), "side": side}
+                prep(c)
+                if closer(c) < CHAIN_CLOSER or c["tile"] is None or not clear_spot(X1, Y1, c["z"]):
+                    continue
+                shape = plan_link(a_, c, "along", dirs[i], [])
+                if shape:
+                    best = (closer(c), c, shape, "along")
+                    break
+        if best is None:
+            return None
+        _d, c, shape, kind = best
+        _box_on_wall("ChainBox_%s_%d" % (c["tile"]["label"], _chain_n["new boxes"]), c["x"], c["y"], c["z"], YAW[c["side"]])
+        new = len(nodes) - 1
+        nodes[new].update(p=c["p"], block=c["block"], tile=c["tile"], s=c["s"])
+        root.append(new)
+        deg.append(0)
+        bundle.append(bundle[i])
+        dirs.append([])
+        lay_link(i, new, kind, shape, 2)
+        _chain_n["new boxes"] += 1
+        return new
+
+    link_up()
+    for _pass in range(CHAIN_PASSES):
+        ends = [i for i in range(len(nodes)) if deg[i] < 2]
+        CHAIN_RNG.shuffle(ends)
+        for i in ends:
+            if _chain_n["links"] >= CHAIN_LINKS or deg[i] >= 2:
+                continue
+            new = grow(i)
+            if new is not None:
+                link_up(new)
+    # What's still on its own ties into the nearest chain, as a service line does.
+    link_up(branch=True)
+    sizes = {}
+    for i in range(len(nodes)):
+        sizes[find(i)] = sizes.get(find(i), 0) + 1
+    _chain_n["chains"] = len(sizes)
+    _chain_n["boxes in chains"] = sorted(sizes.values(), reverse=True)[:12]
+    _chain_n["ends left"] = sum(1 for k in deg if k < 2)
+    _chain_n["boxes"] = len(nodes)
+    _chain_n["grow"] = why
+
+
+if STREET_WIRES and STREET_LOW_WIRES and STREET_CHAIN_WIRES:
+    _chain_links()
+    assert min(_wire_lows) >= LOW_FLOOR, "a chain wire hangs at %.0f" % min(_wire_lows)
+    print("chains:", _chain_n)
+
+# Power poles, roof tyres and water meters. User 2026-11-06: "do the building centric ones first". The last pass, each kind with its own random sequence, so that nothing
+# above moves. Shapes: analysis/pole_shape_ue.py and pole_profile_ue.py.
+STREET_POLES, STREET_TYRES, STREET_WATER_METERS = True, True, True
+DR_POLES, DR_TYRES, DR_WATER = "BackAlleys/Poles", "BackAlleys/Tyres", "BackAlleys/WaterMeters"
+MEAST = ME + "MiddleEast/"
+WATER_MESH = "/Game/Philippines_Markets/Props/Water_Meters_Set_01/SM_Water_Meter_Single_0%d"
+
+
+def _rot_axes(rot):
+    """FRotationMatrix's local axes, from [pitch, yaw, roll]."""
+    pi, ya, ro = (math.radians(a) for a in rot)
+    cp, sp, cy, sy, cr, sr = math.cos(pi), math.sin(pi), math.cos(ya), math.sin(ya), math.cos(ro), math.sin(ro)
+    return ((cp * cy, cp * sy, sp), (sr * sp * cy - cr * sy, sr * sp * sy + cr * cy, -sr * cp), (-(cr * sp * cy + sr * sy), cy * sr - cr * sp * sy, cr * cp))
+
+
+def _rod_line(p):
+    """A thin SM_Cube's two ends: its pivot is a corner, and its length is along local X."""
+    X, Y, Z = _rot_axes(p["rot"])
+    sx, sy, sz = (s_ * 100.0 for s_ in p["scale"])
+    c_ = tuple(p["loc"][i] + X[i] * sx / 2 + Y[i] * sy / 2 + Z[i] * sz / 2 for i in range(3))
+    return tuple(c_[i] - X[i] * sx / 2 for i in range(3)), tuple(c_[i] + X[i] * sx / 2 for i in range(3))
+
+
+def _seg2(a, b, c, d):
+    """How close two segments come, on the ground plan."""
+    def pt(p_, q0, q1):
+        vx, vy = q1[0] - q0[0], q1[1] - q0[1]
+        k_ = max(0.0, min(1.0, ((p_[0] - q0[0]) * vx + (p_[1] - q0[1]) * vy) / max(vx * vx + vy * vy, 1e-6)))
+        return math.hypot(p_[0] - q0[0] - vx * k_, p_[1] - q0[1] - vy * k_)
+
+    def side_(p_, q0, q1):
+        return (q1[0] - q0[0]) * (p_[1] - q0[1]) - (q1[1] - q0[1]) * (p_[0] - q0[0])
+    if side_(a, c, d) * side_(b, c, d) < 0.0 and side_(c, a, b) * side_(d, a, b) < 0.0:
+        return 0.0
+    return min(pt(a, c, d), pt(b, c, d), pt(c, a, b), pt(d, a, b))
+
+
+# Power poles. "Power lines are a big identity show for the philippines", and until now there wasn't one pole: every wire ran wall to wall. They stand clear of the wall, at the
+# side of a lane wide enough to keep walking room. Own measures, from their vertices: n: how far off the wall; low: x0, x1, y0, y1, z0, z1 of the lower arms or transformers;
+# head: the same of the top crossarm; tops: where the insulators are. With local X along the wall, +Y points out into the lane, or in if the pole is turned round. Pole 02's
+# transformers hang off its -Y, so it's always turned round, to hang them over the lane.
+POLE_RNG = random.Random(251)
+POLE_ORDER = ("02", "04", "01", "03", "04", "02", "01")
+POLE_GAP, POLE_LINK_MIN, POLE_LINK_MAX = 1100.0, 700.0, 2800.0
+POLE_LANE, POLE_DOOR, POLE_KEEP, POLE_SERVICE = 380.0, 135.0, 220.0, 4
+POLE_KINDS = {
+    "01": {"n": 66.0, "low": (-48.0, 48.0, -48.0, 48.0, 440.0, 740.0), "head": (-40.0, 292.0, -24.0, 14.0, 840.0, 975.0),
+           "tops": ((199.0, -9.5, 968.0), (270.0, -9.0, 912.0), (-30.0, -9.0, 880.0))},
+    "02": {"n": 42.0, "low": (-122.0, 124.0, -72.0, 13.0, 600.0, 760.0), "head": (-162.0, 165.0, -25.0, 13.0, 760.0, 925.0), "turned": True,
+           "tops": ((-130.0, -12.0, 915.0), (70.0, -12.0, 915.0), (125.0, -12.0, 915.0))},
+    "03": {"n": 34.0, "low": (-13.0, 35.0, -13.0, 13.0, 0.0, 245.0), "head": (-13.0, 13.0, -13.0, 13.0, 880.0, 955.0),
+           "tops": ((0.0, 0.0, 890.0), (0.0, 0.0, 865.0))},
+    "04": {"n": 66.0, "low": (-48.0, 48.0, -48.0, 48.0, 600.0, 780.0), "head": (-110.0, 108.0, -23.0, 11.0, 800.0, 900.0),
+           "tops": ((-95.0, -13.0, 903.0), (70.0, -13.0, 903.0), (-95.0, -13.0, 848.0))},
+}
+_pole_n = {"poles": 0, "lines": 0, "line wires": 0, "drops": 0, "drop wires": 0, "boxes": 0}
+_poles = []
+
+if STREET_POLES and STREET_WIRES and STREET_LOW_WIRES and STREET_CHAIN_WIRES:
+    # Awnings reach out from the wall, and nothing else lists them.
+    for p in items:
+        if p["folder"] == "BackAlleys/Awnings" and "SM_MetalPlate" in p["asset"]:
+            X_a, _y, Z_a = _rot_axes(p["rot"])
+            hw_, len_ = 81.0 * abs(p["scale"][0]), 164.9 * abs(p["scale"][2])
+            pts_ = [(p["loc"][0] + X_a[0] * k_ - Z_a[0] * m_, p["loc"][1] + X_a[1] * k_ - Z_a[1] * m_, p["loc"][2] - Z_a[2] * m_) for k_ in (-hw_, hw_) for m_ in (0.0, len_)]
+            _claim((min(q_[0] for q_ in pts_), min(q_[1] for q_ in pts_), min(q_[2] for q_ in pts_), max(q_[0] for q_ in pts_), max(q_[1] for q_ in pts_), max(q_[2] for q_ in pts_)))
+    _pole_rods = [_rod_line(p) for p in items if p["folder"] in (DR_WIRES, DR_LAUNDRY) and p["asset"] == CUBE]
+    _pole_keep = [(s_["loc"][0], s_["loc"][1]) for s_ in gameplay["spawns"]] + [(w_["loc"][0], w_["loc"][1]) for w_ in gameplay["wander"]] + [tuple(gameplay["player_start"][:2])] + \
+        [tuple(ue(k_["x"], k_["y"])) for k_ in L["pickups"] if not k_.get("z")]
+    _start_xy = tuple(gameplay["player_start"][:2])
+
+    def _pole_rect(x_, y_, side, turned, r_):
+        """The four corners and the middles of a pole's rectangle (x0, x1, y0, y1), on the ground plan."""
+        sgn = -1.0 if turned else 1.0
+        rx, ry = RUN[side]
+        nx, ny = NORMAL[side]
+        return [(x_ + sgn * (rx * a_ + nx * b_), y_ + sgn * (ry * a_ + ny * b_)) for a_ in (r_[0], (r_[0] + r_[1]) / 2, r_[1]) for b_ in (r_[2], r_[3])]
+
+    def _in_lane(pts, z_):
+        for X_, Y_ in pts:
+            lx, ly = _lay(X_, Y_)
+            if not (0 < lx < W and 0 < ly < H):
+                return False
+            for o in BLOCKS.values():
+                if o["x0"] - 0.1 < lx < o["x1"] + 0.1 and o["y0"] - 0.1 < ly < o["y1"] + 0.1 and \
+                        o["storeys"] * o["sh"] + FLOOR_H + {"terrace": 330.0, "metal": 120.0}.get(o["roof"], 70.0) > z_:
+                    return False
+        return True
+
+    def _pole_fit(u, s_, kind, turned):
+        k_ = POLE_KINDS[kind]
+        side, n_ = u["side"], k_["n"]
+        x_, y_ = at(u["x"], u["y"], side, s_, n_)
+        lx, ly = _lay(x_, y_)
+        if not (0 < lx < W and 0 < ly < H) or cover_top(lx, ly) > 0 or not _clear_of_end_walls(lx, ly, 1.5) or _over_deck(lx, ly):
+            return False
+        if any(g["x0"] - 0.6 < lx < g["x1"] + 0.6 and g["y0"] - g.get("clear_ahead_m", 2.3) < ly < g["y1"] + 0.6 for g in L["stairs"]):
+            return False
+        if any(c_["x0"] - 0.6 < lx < c_["x1"] + 0.6 and c_["y0"] - 0.6 < ly < c_["y1"] + 0.6 for c_ in L["cover"]):
+            return False
+        if any(math.hypot(x_ - o[0], y_ - o[1]) < POLE_KEEP for o in _pole_keep):
+            return False
+        a_ = u["off"] + s_
+        if any(t_["kind"] == "SM_WallDoor_01" and abs(t_["off"] + 111.0 * t_["sx"] - a_) < POLE_DOOR for t_ in _run_tiles[u["run"]]):
+            return False
+        # Walking room: the width of the lane across from here.
+        for m_ in range(40, 1200, 10):
+            lx2, ly2 = _lay(*at(u["x"], u["y"], side, s_, float(m_)))
+            if not (0 < lx2 < W and 0 < ly2 < H) or cover_top(lx2, ly2) > 0 or not _clear_of_end_walls(lx2, ly2, 0.1):
+                if m_ < POLE_LANE:
+                    return False
+                break
+        low, head = k_["low"], k_["head"]
+        pts_l, pts_h = _pole_rect(x_, y_, side, turned, low), _pole_rect(x_, y_, side, turned, head)
+        if not _in_lane(pts_l, max(low[4], 300.0)) or not _in_lane(pts_h, head[4]) or any(_over_deck(*_lay(*q_)) for q_ in pts_l) and low[4] < 520.0:
+            return False
+        shaft = (x_ - 14.0, y_ - 14.0, 0.0, x_ + 14.0, y_ + 14.0, 980.0)
+        low_box = (min(q_[0] for q_ in pts_l), min(q_[1] for q_ in pts_l), low[4], max(q_[0] for q_ in pts_l), max(q_[1] for q_ in pts_l), low[5])
+        head_box = (min(q_[0] for q_ in pts_h), min(q_[1] for q_ in pts_h), head[4], max(q_[0] for q_ in pts_h), max(q_[1] for q_ in pts_h), head[5])
+        if not _free(shaft, 3.0) or not _free(low_box, 3.0) or not _free(head_box, 3.0):
+            return False
+        arm0, arm1 = (min(q_[0] for q_ in pts_h), min(q_[1] for q_ in pts_h)), (max(q_[0] for q_ in pts_h), max(q_[1] for q_ in pts_h))
+        for r0, r1 in _pole_rods:
+            near = abs(r0[0] - x_) < 400.0 and abs(r0[1] - y_) < 400.0 or abs(r1[0] - x_) < 400.0 and abs(r1[1] - y_) < 400.0
+            if near and _seg2((x_, y_), (x_, y_), r0, r1) < 18.0:
+                return False
+            if near and max(r0[2], r1[2]) > head[4] - 10.0 and _seg2(arm0, arm1, r0, r1) < 14.0:
+                return False
+        return True
+
+    def _lane_view(u, s_, n_):
+        """How far you can see along the lane from here: a pole at the end of a long view is worth more than one in a corner."""
+        seen = 0.0
+        for sgn in (-1.0, 1.0):
+            for d_ in range(50, 2550, 50):
+                lx, ly = _lay(*at(u["x"], u["y"], u["side"], s_ + sgn * d_, n_))
+                if not (0 < lx < W and 0 < ly < H) or cover_top(lx, ly) > 0:
+                    break
+                seen += 50.0
+        return seen
+
+    def _pole_points(c_):
+        return tuple(tuple(c_["base"][i] + c_["X"][i] * l_[0] + c_["Y"][i] * l_[1] + c_["Z"][i] * l_[2] for i in range(3)) for l_ in POLE_KINDS[c_["kind"]]["tops"])
+
+    def _pole_can_link(a_, b_):
+        d_ = math.hypot(a_["x"] - b_["x"], a_["y"] - b_["y"])
+        return POLE_LINK_MIN <= d_ <= POLE_LINK_MAX and _path_clear((a_["x"], a_["y"], 880.0), (b_["x"], b_["y"], 880.0), None, None)
+
+    _ground_ts = [u for u in _wall_tiles if u["s"] == 0]
+    _pole_cands = {}
+    for kind_ in POLE_KINDS:
+        out_ = []
+        for u in _ground_ts:
+            s_ = 30.0
+            while s_ < u["w"] - 20.0:
+                for turned_ in ((True,) if POLE_KINDS[kind_].get("turned") else (False, True)):
+                    if _pole_fit(u, s_, kind_, turned_):
+                        x_, y_ = at(u["x"], u["y"], u["side"], s_, POLE_KINDS[kind_]["n"])
+                        out_.append({"u": u, "s": s_, "kind": kind_, "turned": turned_, "x": x_, "y": y_, "view": _lane_view(u, s_, POLE_KINDS[kind_]["n"])})
+                s_ += 55.0
+        _pole_cands[kind_] = out_
+    print("pole spots:", {k_: len(v_) for k_, v_ in sorted(_pole_cands.items())})
+
+    for kind_ in POLE_ORDER:
+        cands = [c_ for c_ in _pole_cands[kind_] if all(math.hypot(c_["x"] - o["x"], c_["y"] - o["y"]) >= POLE_GAP for o in _poles)]
+        if not cands:
+            continue
+        if not _poles:
+            # The first stands where the player sees it from the start.
+            def _seen_from_start(c_):
+                d_ = math.hypot(c_["x"] - _start_xy[0], c_["y"] - _start_xy[1])
+                return 450.0 <= d_ <= 1800.0 and all(cover_top(*_lay(_start_xy[0] + (c_["x"] - _start_xy[0]) * k_ / 24.0, _start_xy[1] + (c_["y"] - _start_xy[1]) * k_ / 24.0)) <= 0 for k_ in range(1, 24))
+            near_ = [c_ for c_ in cands if _seen_from_start(c_)]
+            cands = near_ or cands
+        best = max(cands, key=lambda c_: c_["view"] * POLE_RNG.uniform(0.6, 1.4) + (1500.0 if any(_pole_can_link(c_, o) for o in _poles) else 0.0))
+        _poles.append(best)
+
+    for i, c_ in enumerate(_poles):
+        u, k_ = c_["u"], POLE_KINDS[c_["kind"]]
+        side = u["side"]
+        rx, ry = RUN[side]
+        sgn = -1.0 if c_["turned"] else 1.0
+        lean, dir_ = math.radians(POLE_RNG.uniform(0.0, 1.3)), math.radians(POLE_RNG.uniform(0.0, 360.0))
+        Z_p = (math.sin(lean) * math.cos(dir_), math.sin(lean) * math.sin(dir_), math.cos(lean))
+        X_p = (sgn * rx, sgn * ry, 0.0)
+        dot_ = v_dot(X_p, Z_p)
+        X_p = (X_p[0] - Z_p[0] * dot_, X_p[1] - Z_p[1] * dot_, X_p[2] - Z_p[2] * dot_)
+        len_ = math.sqrt(v_dot(X_p, X_p))
+        X_p = (X_p[0] / len_, X_p[1] / len_, X_p[2] / len_)
+        Y_p = v_cross(Z_p, X_p)
+        c_.update(base=(c_["x"], c_["y"], -2.0), X=X_p, Y=Y_p, Z=Z_p)
+        put("Pole_%d" % i, MEAST + "SM_Electric_Pole_" + c_["kind"], c_["x"], c_["y"], -2.0, 0.0, (1, 1, 1), folder=DR_POLES)
+        items[-1]["rot"] = axes_rot(X_p, Y_p, Z_p)
+        items[-1]["phys"] = PHYS + "Concrete"
+        _cheap(CULL_FAR)
+        _claim((c_["x"] - 14.0, c_["y"] - 14.0, 0.0, c_["x"] + 14.0, c_["y"] + 14.0, 980.0))
+        _pole_n["poles"] += 1
+
+    # Pole to pole, crossarm to crossarm: the primary line, a shortest tree of it. The lines keep to their sides, so they don't cross on the way.
+    _root = list(range(len(_poles)))
+
+    def _pole_find(i):
+        while _root[i] != i:
+            _root[i] = _root[_root[i]]
+            i = _root[i]
+        return i
+
+    _pairs = sorted((math.hypot(a_["x"] - b_["x"], a_["y"] - b_["y"]), i, j) for i, a_ in enumerate(_poles) for j, b_ in enumerate(_poles) if i < j)
+    for d_, i, j in _pairs:
+        if _pole_find(i) == _pole_find(j) or not _pole_can_link(_poles[i], _poles[j]):
+            continue
+        a_, b_ = _poles[i], _poles[j]
+        ux, uy = (b_["x"] - a_["x"]) / d_, (b_["y"] - a_["y"]) / d_
+        pa_, pb_ = sorted(_pole_points(a_), key=lambda q_: -uy * q_[0] + ux * q_[1]), sorted(_pole_points(b_), key=lambda q_: -uy * q_[0] + ux * q_[1])
+        n_w = min(len(pa_), len(pb_))
+        if not all(_path_clear(pa_[w_], pb_[w_], None, None) for w_ in range(n_w)):
+            continue
+        segs = max(4, int(d_ / 340.0))
+        sag = POLE_RNG.uniform(22.0, 42.0) * d_ / 1000.0
+        for w_ in range(n_w):
+            _wire("PoleLine_%d_%d_W%d" % (i, j, w_), pa_[w_], pb_[w_], sag * POLE_RNG.uniform(0.92, 1.0), segs, 2.2)
+            _pole_n["line wires"] += 1
+        _root[_pole_find(i)] = _pole_find(j)
+        _pole_n["lines"] += 1
+
+    # From the pole down to the boxes on the houses round it: the bundles that make the tangle. A box takes one, and has to face the pole.
+    _taken = set()
+    for i, c_ in enumerate(_poles):
+        cands = []
+        for n_i, n_ in enumerate(_wire_nodes):
+            if n_i in _taken or "p" not in n_:
+                continue
+            dx, dy = c_["x"] - n_["p"][0], c_["y"] - n_["p"][1]
+            len_ = math.hypot(dx, dy)
+            nx, ny = NORMAL[n_["side"]]
+            if 250.0 <= len_ <= 1150.0 and dx * nx + dy * ny >= 0.3 * len_:
+                cands.append((len_ * POLE_RNG.uniform(0.75, 1.25), n_i))
+        cands.sort()
+        made, low_made = 0, 0
+        for _c, n_i in cands:
+            if made >= POLE_SERVICE:
+                break
+            n_ = _wire_nodes[n_i]
+            low_ = n_["z"] < WIRE_LOW
+            if low_ and low_made >= 2:
+                continue
+            z_s = min(POLE_RNG.uniform(n_["z"] + 50.0, n_["z"] + 240.0), 800.0)
+            z_s = max(z_s, 440.0)
+            if abs(z_s - n_["z"]) > 330.0:
+                continue
+            a3 = tuple(c_["base"][m_] + c_["Z"][m_] * z_s for m_ in range(3))
+            b3 = n_["p"]
+            len_ = math.hypot(a3[0] - b3[0], a3[1] - b3[1])
+            lowest = min(a3[2], b3[2])
+            floor_ = WIRE_LOW if lowest >= WIRE_LOW + 20.0 else LOW_FLOOR
+            sag = max(1.5, min(POLE_RNG.uniform(8.0, 22.0) * len_ / 400.0, lowest - floor_ - 14.0))
+            segs = 3 if len_ < 500.0 else 4
+            pts_ = [(a3[0] + (b3[0] - a3[0]) * k_ / segs, a3[1] + (b3[1] - a3[1]) * k_ / segs, a3[2] + (b3[2] - a3[2]) * k_ / segs - 4.0 * sag * (k_ / segs) * (1.0 - k_ / segs)) for k_ in range(segs + 1)]
+            if not all(_low_path_clear(pts_[k_], pts_[k_ + 1], None, None) for k_ in range(segs)):
+                continue
+            label = "%s_%d_%d" % ("PoleDrop" if floor_ == WIRE_LOW else "PoleDropLow", i, made)
+            rx, ry = RUN[n_["side"]]
+            for w_ in range(POLE_RNG.choice((2, 2, 3))):
+                wob = POLE_RNG.uniform(-7.0, 7.0) if w_ else 0.0
+                wz = POLE_RNG.uniform(-4.0, 4.0) if w_ else 0.0
+                _wire("%s_W%d" % (label, w_), (a3[0], a3[1], a3[2] + wz), (b3[0] + rx * wob, b3[1] + ry * wob, b3[2] + wz), sag * POLE_RNG.uniform(0.85, 1.0), segs, POLE_RNG.uniform(1.5, 2.2),
+                      CULL_FAR if floor_ == WIRE_LOW else LOW_CULL)
+                _pole_n["drop wires"] += 1
+            _taken.add(n_i)
+            made += 1
+            low_made += 1 if low_ else 0
+            _pole_n["drops"] += 1
+            if made <= 2:
+                # A junction box strapped to the pole, where the bundle leaves it.
+                k_ = POLE_RNG.uniform(0.8, 1.0)
+                nx, ny = NORMAL[c_["u"]["side"]]
+                put("PoleBox_%d_%d" % (i, made), AS + "SM_ElectricBox_C_002", a3[0] + nx * 11.0, a3[1] + ny * 11.0, a3[2] - 4.8 * k_, YAW[c_["u"]["side"]], (k_, k_, k_), folder=DR_POLES, nocoll=True)
+                _cheap(CULL_MID, 1, True)
+                _pole_n["boxes"] += 1
+    assert min(_wire_lows) >= LOW_FLOOR, "a pole's wire hangs at %.0f" % min(_wire_lows)
+    print("poles:", _pole_n, [(c_["kind"], c_["u"]["label"], round(c_["view"])) for c_ in _poles])
+
+# Tyres on the roofs: what holds a corrugated sheet down in the user's shanty photo. A truck tyre at 95 cm in the pack, so scaled to a car's. Lying flat on a sheet, away from its
+# laps and from what stands on the roof. All the one-storey roofs, which the gallery looks down on, and a third of the rest. Now and then one on another. No collision.
+TYRE_RNG = random.Random(257)
+TYRES_WANTED, P_TYRE_ROOF, P_TYRE_STACK = 30, 0.35, 0.18
+TYRE_R, TYRE_HALF = 47.8, 15.4
+_tyre_n = {"tyres": 0, "roofs": 0, "stacks": 0}
+if STREET_TYRES:
+    _sheets = {}
+    for p in items:
+        if p["folder"] == RF and p["label"].startswith("Roof_") and "SM_MetalPlate_A" in p["asset"]:
+            bid = p["label"].split("_")[1]
+            if bid in BLOCKS:
+                _sheets.setdefault(bid, []).append(p)
+    _on_roofs = [(p["loc"][0], p["loc"][1]) for p in items if p["folder"] in (DR_TANKS, DR_AERIALS, DR_REBAR)]
+    _roof_ids = sorted(_sheets, key=lambda k_: (BLOCKS[k_]["storeys"] > 1, TYRE_RNG.random()))
+    _draw_tyres = shuffle_bag(TYRE_RNG, (1, 1, 2, 2, 2, 3, 3, 4))
+    for bid in _roof_ids:
+        if _tyre_n["tyres"] >= TYRES_WANTED:
+            break
+        if BLOCKS[bid]["storeys"] > 1 and TYRE_RNG.random() > P_TYRE_ROOF:
+            continue
+        want_, here_ = _draw_tyres(), []
+        for _try in range(want_ * 14):
+            if len(here_) >= want_:
+                break
+            p = TYRE_RNG.choice(_sheets[bid])
+            X_s, Y_s, Z_s = _rot_axes(p["rot"])
+            if Y_s[2] <= 0.0:
+                X_s, Y_s = (-X_s[0], -X_s[1], -X_s[2]), (-Y_s[0], -Y_s[1], -Y_s[2])
+            k_ = TYRE_RNG.uniform(0.58, 0.72)
+            r_ = TYRE_R * k_
+            hw_ = 81.2 * abs(p["scale"][0]) - r_ - 3.0
+            len_ = (164.9 if p["asset"].endswith(("_003", "_004")) else 324.9) * abs(p["scale"][2])
+            if hw_ <= 0.0 or len_ - 2.0 * (r_ + 18.0) <= 0.0:
+                continue
+            a_, m_ = TYRE_RNG.uniform(-hw_, hw_), TYRE_RNG.uniform(r_ + 18.0, len_ - r_ - 18.0)
+            spot = tuple(p["loc"][i] + X_s[i] * a_ - Z_s[i] * m_ for i in range(3))
+            if any(math.hypot(spot[0] - o[0], spot[1] - o[1]) < 130.0 for o in _on_roofs) or any(math.hypot(spot[0] - o[0], spot[1] - o[1]) < 2.0 * TYRE_R * 0.72 + 10.0 for o in here_):
+                continue
+            ang = TYRE_RNG.uniform(0.0, 360.0)
+            A_t = v_rot(X_s, Y_s, ang)
+            C_t = v_cross(Y_s, A_t)
+            lift_ = 2.4 + 1.5 + TYRE_HALF * k_
+            centre = tuple(spot[i] + Y_s[i] * lift_ for i in range(3))
+            label = "Tyre_%s_%d" % (bid, len(here_))
+            put(label, MEAST + "SM_wheel_01", centre[0], centre[1], centre[2], 0.0, (k_, k_, k_), folder=DR_TYRES, nocoll=True, mats=[BM + "MI_BackAlleys_Tyre"])
+            items[-1]["rot"] = axes_rot(Y_s, A_t, C_t)
+            _cheap(CULL_MID)
+            _tyre_n["tyres"] += 1
+            if TYRE_RNG.random() < P_TYRE_STACK:
+                c2 = tuple(centre[i] + Y_s[i] * (2.0 * TYRE_HALF * k_ + 0.4) for i in range(3))
+                put(label + "_Top", MEAST + "SM_wheel_01", c2[0] + TYRE_RNG.uniform(-5.0, 5.0), c2[1] + TYRE_RNG.uniform(-5.0, 5.0), c2[2], 0.0, (k_, k_, k_), folder=DR_TYRES, nocoll=True, mats=[BM + "MI_BackAlleys_Tyre"])
+                items[-1]["rot"] = axes_rot(Y_s, A_t, C_t)
+                _cheap(CULL_MID)
+                _tyre_n["tyres"] += 1
+                _tyre_n["stacks"] += 1
+            here_.append(spot)
+        if here_:
+            _tyre_n["roofs"] += 1
+    print("tyres:", _tyre_n)
+
+# Water meters at the foot of a wall, as a house's feed comes up out of the ground. One to four in a row, on their own legs, with a pipe along the ground under a row. Faces that take dressing
+# only; not on the stairs' walls, nor across a pipe or a door. One lot to a house. No collision: nobody should trip on a 30 cm pipe. User 2026-11-06: "the water meter needs to be distributed more":
+# they had bunched in the east, with one lot in the whole west half. So each lot now goes where it's furthest from the others, with enough give that the spacing doesn't read as a grid, and
+# never nearer than WATER_GAP. A door nearby counts for a little. The claim stops at 45 cm, under the graffiti's lowest band, so moving a meter can't move a tag.
+WATER_RNG = random.Random(263)
+WATER_LOTS, WATER_GAP = 20, 550.0
+_water_n = {"lots": 0, "meters": 0}
+if STREET_WATER_METERS:
+    _draw_water_n = shuffle_bag(WATER_RNG, (1, 1, 1, 2, 2, 3, 3, 4))
+    N_WATER = FLOOR_OUT + 8.0
+    _water_spots = []
+    for u in sorted(_wall_tiles, key=lambda t_: t_["label"]):
+        if u["s"] != 0 or _hollow_face(u) or u["kind"] not in _plain_tile + ("SM_Wall_Windows_01", "SM_WallDoor_01"):
+            continue
+        in0, in1 = _inside_face(u, 0.0, u["w"])
+        # On a door's tile, only what's left beside the door.
+        spans_ = [(in0, min(in1, 30.0 * u["sx"])), (max(in0, 195.0 * u["sx"]), in1)] if u["kind"] == "SM_WallDoor_01" else [(in0, in1)]
+        for lo_, hi_ in spans_:
+            s_ = lo_
+            while s_ + 40.0 <= hi_:
+                x_, y_ = at(u["x"], u["y"], u["side"], s_ + 20.0, N_WATER)
+                _water_spots.append({"u": u, "lo": s_, "hi": hi_, "x": x_, "y": y_, "door": u["kind"] == "SM_WallDoor_01"})
+                s_ += 45.0
+    _water_lots, _water_houses = [], set()
+    while _water_n["lots"] < WATER_LOTS:
+        best, best_score = None, -1.0
+        for c_ in _water_spots:
+            if c_["u"]["house"] in _water_houses:
+                continue
+            near = min((math.hypot(c_["x"] - o[0], c_["y"] - o[1]) for o in _water_lots), default=5000.0)
+            if near < WATER_GAP:
+                continue
+            score = near * WATER_RNG.uniform(0.55, 1.45) * (1.15 if c_["door"] else 1.0)
+            if score > best_score:
+                best, best_score = c_, score
+        if best is None:
+            break
+        _water_spots.remove(best)
+        u = best["u"]
+        n_m = _draw_water_n()
+        gap_ = WATER_RNG.uniform(38.0, 46.0)
+        while (n_m - 1) * gap_ + 40.0 > best["hi"] - best["lo"]:
+            n_m -= 1
+        w_ = (n_m - 1) * gap_ + 40.0
+        s0 = best["lo"]
+        s1 = s0 + w_
+        a_, b_ = at(u["x"], u["y"], u["side"], s0, 5.0), at(u["x"], u["y"], u["side"], s1, 28.0)
+        box_ = (min(a_[0], b_[0]), min(a_[1], b_[1]), 0.0, max(a_[0], b_[0]), max(a_[1], b_[1]), 45.0)
+        if not _free(box_, 1.0) or not _pipe_free(u, s0 - 6.0, s1 + 6.0) or not _stair_clear(u, s0, s1, 0.0) or not all(_ground_open(u, s_, 40.0) for s_ in (s0, s1)):
+            continue
+        rx, ry = RUN[u["side"]]
+        yaw_ = YAW[u["side"]] + 90.0
+        h_base = WATER_RNG.uniform(5.0, 11.0)
+        for j in range(n_m):
+            s_ = s0 + 20.0 + j * gap_
+            h_ = h_base + WATER_RNG.uniform(-1.5, 1.5)
+            x_, y_ = at(u["x"], u["y"], u["side"], s_, N_WATER)
+            label = "WaterMeter_%s_%d" % (u["label"], j)
+            put(label, WATER_MESH % WATER_RNG.choice((1, 2)), x_, y_, h_ + 2.4, yaw_ + WATER_RNG.uniform(-3.0, 3.0), (1, 1, 1), folder=DR_WATER, nocoll=True, mats=[BM + "MI_BackAlleys_WaterMeter"])
+            _cheap(CULL_NEAR)
+            for e_, off_ in enumerate((-16.0, 15.2)):       # local +Y points back along the run
+                _rod("%s_Leg%d" % (label, e_), (x_ + rx * off_, y_ + ry * off_, 0.0), (x_ + rx * off_, y_ + ry * off_, h_ + 1.0), 2.6, FLASH_MAT, DR_WATER, CULL_NEAR)
+            _water_n["meters"] += 1
+        if n_m > 1:
+            p0, p1 = at(u["x"], u["y"], u["side"], s0 + 2.0, N_WATER), at(u["x"], u["y"], u["side"], s1 - 2.0, N_WATER)
+            _rod("WaterMeter_%s_Feed" % u["label"], (p0[0], p0[1], 2.5), (p1[0], p1[1], 2.5), 2.6, FLASH_MAT, DR_WATER, CULL_NEAR)
+        _claim(box_)
+        _water_lots.append((best["x"], best["y"]))
+        _water_houses.add(u["house"])
+        _water_n["lots"] += 1
+    print("water meters:", _water_n)
+
+# Graffiti. User 2026-11-06: "added 10 graffitits": five crew tags and five painted warnings, white-on-black masks in /Game/Project_Bopis_Graffiti_Decals, which stay as supplied. Decals, with the
+# paint in the material (create_graffiti_materials_ue.py). On the clear stretches of ground-floor walls, at hand height, and on closed shutters with no poster on them, where "Bawal Pumarada" and
+# "Huwag Harangan ang Daan" belong. Never on a hollow-block face or a thin wall, which keep their own rules. One to a house, the same image not twice in a view. Tags lean a little; warnings less.
+STREET_GRAFFITI = True
+DR_GRAFFITI = "BackAlleys/Graffiti"
+GRAF_RNG = random.Random(271)
+GRAF_WALLS, GRAF_SHUTTERS = 13, 3
+GRAF_GAP, GRAF_SAME_GAP = 350.0, 1100.0
+GRAF_ROLL = 90.0
+GRAF_TAGS = {"Bakod_7": ("Black", "Red"), "Eskinita_13": ("White", "Blue"), "Kanto_Boys": ("Black", "Blue"), "Loob_Crew": ("Black", "White"), "Siksik": ("Red", "Black")}
+GRAF_SIGNS = {"Bawal_Magtapon_ng_Basura": ("Black", "Red"), "Bawal_Pumarada": ("White", "Red"), "Bawal_Pumasok": ("Red", "White"), "Bawal_Umihi_Dito": ("Black", "Red"),
+              "Huwag_Harangan_ang_Daan": ("Black", "White")}
+GRAF_ON_SHUTTERS = ("Bawal_Pumarada", "Huwag_Harangan_ang_Daan", "Kanto_Boys", "Siksik", "Bakod_7")
+GRAF_BANDS = ((70.0, 200.0), (85.0, 215.0), (60.0, 180.0), (70.0, 170.0))      # what shows of the image, up the wall. The masks' ink fills about 80% of the square
+GRAF_INK = 0.8
+GRAF_LIGHT = ("White", "Cream", "Yellow", "Mint", "Peach")
+_graf_n = {"walls": 0, "shutters": 0}
+_graf_done = []
+
+
+def _graffiti(label, x_, y_, z_, side, name, w_, light=False):
+    table = GRAF_TAGS if name in GRAF_TAGS else GRAF_SIGNS
+    paints = [c_ for c_ in table[name] if not (light and c_ == "White")] or list(table[name])
+    tilt = GRAF_RNG.uniform(-4.0, 4.0) if name in GRAF_TAGS else GRAF_RNG.uniform(-1.2, 1.2)
+    nx, ny = NORMAL[side]
+    put(label, BM + "MI_BackAlleys_Spray_%s_%s" % (name, GRAF_RNG.choice(paints)), x_, y_, z_, math.degrees(math.atan2(-ny, -nx)), (0.03, w_ / 512.0, w_ / 512.0), folder=DR_GRAFFITI,
+        roll=GRAF_ROLL + tilt, decal=True)
+    _graf_done.append((x_, y_, name))
+
+
+def _graf_room(x_, y_, name):
+    return all(math.hypot(x_ - o[0], y_ - o[1]) >= (GRAF_SAME_GAP if o[2] == name else GRAF_GAP) for o in _graf_done)
+
+
+if STREET_GRAFFITI and STREET_POSTERS:
+    _posters_now = [p for p in items if p["folder"] == DR_POSTERS]
+    _bare_shops = []
+    for u, s0, wid in _shops:
+        Xc, Yc = at(u["x"], u["y"], u["side"], s0 + wid / 2, 8.8)
+        rx, ry = RUN[u["side"]]
+        nx, ny = NORMAL[u["side"]]
+        if not any(abs((p["loc"][0] - Xc) * nx + (p["loc"][1] - Yc) * ny) < 16.0 and abs((p["loc"][0] - Xc) * rx + (p["loc"][1] - Yc) * ry) < wid / 2 + 40.0 for p in _posters_now):
+            _bare_shops.append((u, s0, wid))
+    GRAF_RNG.shuffle(_bare_shops)
+    _graf_houses = set()
+    _draw_shutter_graf = shuffle_bag(GRAF_RNG, GRAF_ON_SHUTTERS)
+    for u, s0, wid in _bare_shops[:GRAF_SHUTTERS]:
+        name = _draw_shutter_graf()
+        w_ = min(GRAF_RNG.uniform(135.0, 165.0), wid * 0.98)
+        x_, y_ = at(u["x"], u["y"], u["side"], s0 + wid / 2 + GRAF_RNG.uniform(-8.0, 8.0), 8.8)
+        _graffiti("Graffiti_%s_Shutter" % u["label"], x_, y_, u["z"] + GRAF_RNG.uniform(120.0, 170.0), u["side"], name, w_)
+        _graf_houses.add(u["house"])
+        _graf_n["shutters"] += 1
+    # Where there's room: the longest clear wall goes first, as it's the one that reads as bare.
+    _graf_spots = []
+    for name_, ts in _run_tiles.items():
+        t0 = ts[0]
+        if t0["s"] != 0 or _hollow_face(t0) or ts[-1]["off"] + ts[-1]["w"] - t0["off"] < 200.0:
+            continue
+        for band in GRAF_BANDS:
+            for a_, e_ in _stretches(ts, band):
+                _graf_spots.append((e_ - a_, GRAF_RNG.random(), name_, band, a_, e_))
+    _graf_spots.sort(key=lambda g_: -g_[0] * GRAF_RNG.uniform(0.75, 1.25))
+    _draw_graf = shuffle_bag(GRAF_RNG, tuple(sorted(GRAF_TAGS)) + tuple(sorted(GRAF_SIGNS)))
+    for _len, _r, name_, band, a_, e_ in _graf_spots:
+        if _graf_n["walls"] >= GRAF_WALLS:
+            break
+        ts = _run_tiles[name_]
+        t0 = ts[0]
+        if t0["house"] in _graf_houses:
+            continue
+        w_ = min(GRAF_RNG.uniform(125.0, 185.0), (e_ - a_) / 0.92, (band[1] - band[0]) / GRAF_INK)
+        if w_ < 95.0:
+            continue
+        s_ = GRAF_RNG.uniform(a_ + 0.46 * w_, e_ - 0.46 * w_)
+        x_, y_ = at(t0["x"], t0["y"], t0["side"], s_, 2.0)
+        z_ = t0["z"] + (band[0] + band[1]) / 2
+        for _try in range(10):
+            name = _draw_graf()
+            if _graf_room(x_, y_, name):
+                break
+        else:
+            continue
+        light_ = any(k_ in str(_paint.get((t0["house"], t0["letter"]), "")) for k_ in GRAF_LIGHT)
+        _graffiti("Graffiti_%s_%d" % (t0["label"], _graf_n["walls"]), x_, y_, z_, t0["side"], name, w_, light_)
+        _claim(_wbox(t0, s_ - 0.46 * w_, s_ + 0.46 * w_, z_ - w_ * GRAF_INK / 2, z_ + w_ * GRAF_INK / 2, 3.0))
+        _graf_houses.add(t0["house"])
+        _graf_n["walls"] += 1
+    print("graffiti:", _graf_n, sorted(o[2] for o in _graf_done))
+
+print("street:", dict(sorted(_street_n.items())))
+print("  bare ground tiles left:", sum(1 for t in _dress_tiles if t["s"] == 0 and not t["has"]))
+
+_bare = [t for t in _dress_tiles if not t["has"]]
+print("dressing: %d blank tiles (no hollow blocks), %d now have something, %d stay bare" % (
+    len(_dress_tiles), len(_dress_tiles) - len(_bare), len(_bare)))
+print("  rooms %d, downpipes %d, air conditioners %d, patches %s, vents on %d tiles, steps %s, laundry %s" % (
+    _n_rooms, _n_pipes, _n_acs, _n_patch, _n_vents, _n_steps, _n_laundry))
+items[:] = [p for p in items if p["label"] not in _buried_stalls]
 for p in items:
     p.pop("band", None)
 chunks = [items[i:i + 140] for i in range(0, len(items), 140)]

@@ -1,0 +1,220 @@
+Using bundled DotNet SDK version: 10.0 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" -Mode=ValidatePlatforms -OutputSDKs  -AllPlatforms  -project="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/ProjectBopis.uproject" -log="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Saved/Logs/AutoSDKInfo.txt" -verbose -timestamps
+Log file: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Saved\Logs\AutoSDKInfo.txt
+##PlatformValidate: Win64 VALID 10.0.22621.0
+##PlatformValidate: Mac INVALID 26.1.1
+##PlatformValidate: IOS INVALID 26.1.1
+##PlatformValidate: Android INVALID r27c
+##PlatformValidate: Linux INVALID v26_clang-20.1.8-rockylinux8
+##PlatformValidate: LinuxArm64 INVALID <UNKNOWN>
+##PlatformValidate: TVOS INVALID 26.1.1
+##PlatformValidate: VisionOS INVALID <UNKNOWN>
+Unable to find required SDK version 'MainVersion' for platform LinuxArm64. Check your SDK.json files
+Unable to find required SDK version 'MainVersion' for platform VisionOS. Check your SDK.json files
+Trace written to file C:\Users\kevin\AppData\Local\UnrealBuildTool\Trace.uba with size 314b
+[2026.11.06-18.34.46:559][  0]LogInit: Display: Running engine for game: ProjectBopis
+[2026.11.06-18.34.46:559][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.11.06-18.34.46:559][  0]LogTrace: Display: Control listening on port 35181
+[2026.11.06-18.34.46:559][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.11.06-18.34.46:559][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.8-CL-56702186"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.8.2-56702186+++UE5+Release-5.8"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.8.2"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.9711] "
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|12th Gen Intel(R) Core(TM) i5-12600K"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : compacttset="0"
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : commandline="" "C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\ProjectBopis.uproject" -run=pythonscript -script="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_shape_ue.py" -unattended -nosplash -nop4 -abslog="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_shape_ue_log.txt" -nullrhi -NoShaderCompile""
+[2026.11.06-18.34.46:560][  0]LogCsvProfiler: Display: Metadata set : loginid="64fa6c7d4316c6cf5db437a7e0c7890c"
+[2026.11.06-18.34.46:562][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.11.06-18.34.46:562][  0]LogCsvProfiler: Display: Metadata set : zenstreaming="0"
+[2026.11.06-18.34.46:562][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.11.06-18.34.46:562][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.11.06-18.34.46:562][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.11.06-18.34.46:562][  0]LogConfig: Display: Loading VulkanPC ini files took 0.06 seconds
+[2026.11.06-18.34.46:562][  0]LogConfig: Display: Loading Mac ini files took 0.06 seconds
+[2026.11.06-18.34.46:562][  0]LogConfig: Display: Loading IOS ini files took 0.07 seconds
+[2026.11.06-18.34.46:562][  0]LogConfig: Display: Loading Android ini files took 0.07 seconds
+[2026.11.06-18.34.46:563][  0]LogConfig: Display: Loading Unix ini files took 0.08 seconds
+[2026.11.06-18.34.46:563][  0]LogConfig: Display: Loading Windows ini files took 0.08 seconds
+[2026.11.06-18.34.46:563][  0]LogConfig: Display: Loading TVOS ini files took 0.08 seconds
+[2026.11.06-18.34.46:563][  0]LogConfig: Display: Loading VisionOS ini files took 0.08 seconds
+[2026.11.06-18.34.46:563][  0]LogConfig: Display: Loading Linux ini files took 0.09 seconds
+[2026.11.06-18.34.46:563][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.11.06-18.34.46:563][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.06-18.34.46:563][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.06-18.34.46:563][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.06-18.34.46:563][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.06-18.34.46:563][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.06-18.34.46:564][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.06-18.34.46:564][  0]LogAsyncCompilation: Display: MemorySharingInfo: UsedMemory=366MiB, MaxMemoryAvailable=56107MiB
+[2026.11.06-18.34.46:564][  0]LogStreaming: Display: AsyncLoading2 - Created: Async Loading Thread: false, Async Post Load: false, Multithreaded: false
+[2026.11.06-18.34.46:564][  0]LogHAL: Display: Platform has ~ 32 GB [34137300992 / 34359738368 / 32], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.11.06-18.34.46:564][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.11.06-18.34.46:564][  0]LogObj: Display: Attempting to load config data for Default__DownlinkBandwidthManagerConfig before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.06-18.34.47:016][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.06-18.34.47:144][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.11.06-18.34.47:144][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.11.06-18.34.47:144][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.11.06-18.34.47:144][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.11.06-18.34.47:144][  0]LogCsvProfiler: Display: Metadata set : gpu=""
+[2026.11.06-18.34.47:145][  0]LogCsvProfiler: Display: Metadata set : gpudriver=""
+[2026.11.06-18.34.47:150][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.11.06-18.34.47:152][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.11.06-18.34.47:152][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.11.06-18.34.47:152][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.11.06-18.34.47:152][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.11.06-18.34.47:152][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.16
+[2026.11.06-18.34.47:152][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.16.dll
+[2026.11.06-18.34.47:153][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.11.06-18.34.47:153][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.11.06-18.34.47:192][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Android'
+[2026.11.06-18.34.47:218][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'IOS'
+[2026.11.06-18.34.47:245][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Linux'
+[2026.11.06-18.34.47:278][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Mac'
+[2026.11.06-18.34.47:279][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'TVOS'
+[2026.11.06-18.34.47:305][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.11.06-18.34.47:306][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.11.06-18.34.47:306][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.11.06-18.34.47:306][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.11.06-18.34.47:306][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.11.06-18.34.47:310][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.11.06-18.34.47:656][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1679 MiB)
+[2026.11.06-18.34.47:657][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/zen.exe service status'.
+[2026.11.06-18.34.47:865][  0]LogZenServiceInstance: Display: Writing plugin version info to 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen_plugin_versions.json'
+[2026.11.06-18.34.47:866][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/5.8/Saved/Zen/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.06-18.34.47:867][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.06-18.34.47:867][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.11.06-18.34.48:071][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.11.06-18.34.48:073][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc. Status: OK!.
+[2026.11.06-18.34.48:082][  0]LogDerivedDataCache: Display: C:/Users/kevin/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.04ms. RandomReadSpeed=631.28MBs, RandomWriteSpeed=139.43MBs. Assigned SpeedClass 'Local'
+[2026.11.06-18.34.48:088][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.11.06-18.34.48:363][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64Editor not found.
+[2026.11.06-18.34.48:364][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64 not found.
+[2026.11.06-18.34.48:407][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.11.06-18.34.48:409][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.11.06-18.34.48:426][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.11.06-18.34.48:426][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.11.06-18.34.48:426][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.11.06-18.34.48:447][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.11.06-18.34.48:448][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.11.06-18.34.48:448][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.11.06-18.34.48:448][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.11.06-18.34.48:583][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.11.06-18.34.48:583][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.11.06-18.34.48:656][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.11.06-18.34.48:658][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 1.855 ms
+[2026.11.06-18.34.49:090][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.11.06-18.34.49:093][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.11.06-18.34.49:582][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.06-18.34.49:583][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.06-18.34.49:745][  0]LogToolsetRegistry: Display: Registering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.06-18.34.49:893][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PreLoad): 1 .ref files found, 1 referenced binaries
+[2026.11.06-18.34.49:893][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)
+[2026.11.06-18.34.49:893][  0]LogAssetRegistry: Display: FindShardedCacheFiles: 1 via .ref, 0 via migration fallback, 1 total
+[2026.11.06-18.34.49:894][  0]LogAssetRegistry: Display: LoadCacheFiles: loading 1 cache files, memory-mapping=enabled
+[2026.11.06-18.34.50:148][  0]LogAssetRegistry: Display: Asset registry cache read as 179.3 MiB from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_249657614E9D3C31C6D5EEA85A8E3A8B.bin (memory-mapped=yes)
+[2026.11.06-18.34.50:154][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.261s loading caches from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry.
+[2026.11.06-18.34.50:541][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.11.06-18.34.50:545][  0]LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.06-18.34.50:546][  0]LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.06-18.34.50:595][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.11.06-18.34.50:931][  0]LogCsvProfiler: Display: Metadata set : raytracing="0"
+[2026.11.06-18.34.51:050][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.EditorAppToolset
+[2026.11.06-18.34.51:050][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.LogsToolset
+[2026.11.06-18.34.51:075][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... started...
+[2026.11.06-18.34.51:183][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.actor.ActorTools
+[2026.11.06-18.34.51:184][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.asset.AssetTools
+[2026.11.06-18.34.51:187][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.blueprint.BlueprintTools
+[2026.11.06-18.34.51:188][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.curve_table.CurveTableTools
+[2026.11.06-18.34.51:188][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_asset.DataAssetTools
+[2026.11.06-18.34.51:188][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_table.DataTableTools
+[2026.11.06-18.34.51:189][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material.MaterialTools
+[2026.11.06-18.34.51:189][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material_instance.MaterialInstanceTools
+[2026.11.06-18.34.51:191][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.object.ObjectTools
+[2026.11.06-18.34.51:192][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.primitive.PrimitiveTools
+[2026.11.06-18.34.51:193][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.scene.SceneTools
+[2026.11.06-18.34.51:194][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools
+[2026.11.06-18.34.51:195][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.static_mesh.StaticMeshTools
+[2026.11.06-18.34.51:195][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.string_table.StringTableTools
+[2026.11.06-18.34.51:195][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.programmatic.ProgrammaticToolset
+[2026.11.06-18.34.51:195][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.texture.TextureTools
+[2026.11.06-18.34.51:196][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... took 119.670 ms
+[2026.11.06-18.34.51:196][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... started...
+[2026.11.06-18.34.51:208][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... took 12.756 ms (total: 132.426 ms)
+[2026.11.06-18.34.51:208][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.11.06-18.34.51:211][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 2.915 ms (total: 135.342 ms)
+[2026.11.06-18.34.51:211][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.11.06-18.34.51:236][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 24.606 ms (total: 159.948 ms)
+[2026.11.06-18.34.51:236][  0]LogPythonScriptCommandlet: Display: Running Python script: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_shape_ue.py
+[2026.11.06-18.34.51:251][  0]LogPython: Warning: [POLE] SM_Electric_Pole_01 lods 4 tris [3788, 1894, 946, 378] min (-49.8, -46.6, -0.0) max (288.2, 47.6, 970.9) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:261][  0]LogPython: Warning: [POLE] SM_Electric_Pole_02 lods 4 tris [4146, 2072, 1037, 414] min (-160.7, -75.8, -0.4) max (164.3, 12.9, 954.8) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:267][  0]LogPython: Warning: [POLE] SM_Electric_Pole_03 lods 1 tris [1296] min (-12.9, -12.9, 0.0) max (34.3, 12.9, 953.8) coll CTF_USE_DEFAULT prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:272][  0]LogPython: Warning: [POLE] SM_Electric_Pole_04 lods 1 tris [1690] min (-108.6, -46.6, 0.0) max (107.1, 47.6, 900.1) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)', 'MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:284][  0]LogPython: Warning: [POLE] SM_Electric_Pole_05 lods 4 tris [5116, 2557, 1278, 512] min (-139.5, -24.9, -0.0) max (138.0, 186.2, 918.5) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)', 'MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:288][  0]LogPython: Warning: [POLE] SM_electrical_contact_01 lods 1 tris [530] min (-6.0, -8.5, -5.1) max (203.7, 8.5, 33.4) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:294][  0]LogPython: Warning: [POLE] SM_wheel_01 lods 1 tris [1428] min (-15.4, -47.6, -47.8) max (15.4, 47.6, 47.8) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_wheel_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:319][  0]LogPython: Warning: [POLE] SM_Water_Meter_Single_01 lods 4 tris [2260, 1130, 565, 283] min (-5.3, -15.4, -2.4) max (5.3, 16.7, 20.5) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:326][  0]LogPython: Warning: [POLE] SM_Water_Meter_Single_02 lods 4 tris [2340, 1170, 585, 292] min (-5.3, -15.4, -2.4) max (5.3, 16.7, 20.4) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:336][  0]LogPython: Warning: [POLE] SM_Water_Meter_Cage_01 lods 4 tris [9800, 4899, 2449, 1224] min (-20.2, -23.9, -5.0) max (20.2, 23.7, 30.1) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Cages(BLEND_OPAQUE,1side)', 'MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:348][  0]LogPython: Warning: [POLE] SM_Water_Meter_Cage_02 lods 4 tris [22448, 11224, 5611, 2805] min (-58.6, -23.8, -5.0) max (57.4, 23.8, 27.6) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Cages(BLEND_OPAQUE,1side)', 'MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:370][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_00 lods 1 tris [2] min (-29.3, -7.0, 0.0) max (29.3, 7.0, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:371][  0]LogPython: Warning: C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Tools/LevelGen/analysis/pole_shape_ue.py:59: DeprecationWarning: MaterialEditingLibrary: Function 'get_used_textures' on 'MaterialEditingLibrary' is deprecated: Use GetMaterialUsedTextures instead since it works with Material Instances.
+  for t in unreal.MaterialEditingLibrary.get_used_textures(mi):
+
+[2026.11.06-18.34.51:381][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_01 lods 1 tris [2] min (-18.6, -8.5, 0.0) max (18.6, 8.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:389][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_02 lods 1 tris [2] min (-16.5, -7.5, 0.0) max (16.5, 7.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:398][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_03 lods 1 tris [2] min (-16.5, -8.7, 0.0) max (16.5, 8.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:406][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_04 lods 1 tris [2] min (-20.7, -11.7, 0.0) max (20.7, 11.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:414][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_05 lods 1 tris [2] min (-33.4, -8.5, 0.0) max (33.4, 8.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:421][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_06 lods 1 tris [2] min (-20.7, -11.5, 0.0) max (20.7, 11.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:431][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_07 lods 1 tris [2] min (-14.8, -8.7, 0.0) max (14.8, 8.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:440][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_08 lods 1 tris [2] min (-8.1, -7.4, 0.0) max (8.1, 7.4, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:447][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_09 lods 1 tris [2] min (-33.4, -7.3, 0.0) max (33.4, 4.2, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:456][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_10 lods 1 tris [2] min (-16.5, -9.6, 0.0) max (16.5, 9.6, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:464][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_11 lods 1 tris [2] min (-14.8, -9.6, 0.0) max (14.8, 9.6, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:474][  0]LogPython: Warning: [POLE] SM_Graffiti_Decal_12 lods 1 tris [2] min (-16.5, -10.3, 0.0) max (16.5, 10.3, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:475][  0]LogPythonScriptCommandlet: Display: Python script executed successfully
+[2026.11.06-18.34.51:475][  0]LogInit: Display: 
+[2026.11.06-18.34.51:475][  0]LogInit: Display: Warning/Error Summary (Unique only)
+[2026.11.06-18.34.51:475][  0]LogInit: Display: -----------------------------------
+[2026.11.06-18.34.51:475][  0]LogInit: Display: LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.06-18.34.51:475][  0]LogInit: Display: LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.06-18.34.51:475][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Electric_Pole_01 lods 4 tris [3788, 1894, 946, 378] min (-49.8, -46.6, -0.0) max (288.2, 47.6, 970.9) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:475][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Electric_Pole_02 lods 4 tris [4146, 2072, 1037, 414] min (-160.7, -75.8, -0.4) max (164.3, 12.9, 954.8) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:476][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Electric_Pole_03 lods 1 tris [1296] min (-12.9, -12.9, 0.0) max (34.3, 12.9, 953.8) coll CTF_USE_DEFAULT prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:476][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Electric_Pole_04 lods 1 tris [1690] min (-108.6, -46.6, 0.0) max (107.1, 47.6, 900.1) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)', 'MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:476][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Electric_Pole_05 lods 4 tris [5116, 2557, 1278, 512] min (-139.5, -24.9, -0.0) max (138.0, 186.2, 918.5) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_02(BLEND_OPAQUE,1side)', 'MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:476][  0]LogInit: Display: LogPython: Warning: [POLE] SM_electrical_contact_01 lods 1 tris [530] min (-6.0, -8.5, -5.1) max (203.7, 8.5, 33.4) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_Electric_Pole_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:476][  0]LogInit: Display: LogPython: Warning: [POLE] SM_wheel_01 lods 1 tris [1428] min (-15.4, -47.6, -47.8) max (15.4, 47.6, 47.8) coll CTF_USE_COMPLEX_AS_SIMPLE prims 1 mats ['MI_wheel_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Water_Meter_Single_01 lods 4 tris [2260, 1130, 565, 283] min (-5.3, -15.4, -2.4) max (5.3, 16.7, 20.5) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Water_Meter_Single_02 lods 4 tris [2340, 1170, 585, 292] min (-5.3, -15.4, -2.4) max (5.3, 16.7, 20.4) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Water_Meter_Cage_01 lods 4 tris [9800, 4899, 2449, 1224] min (-20.2, -23.9, -5.0) max (20.2, 23.7, 30.1) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Cages(BLEND_OPAQUE,1side)', 'MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Water_Meter_Cage_02 lods 4 tris [22448, 11224, 5611, 2805] min (-58.6, -23.8, -5.0) max (57.4, 23.8, 27.6) coll CTF_USE_DEFAULT prims 1 mats ['MI_Water_Meter_Cages(BLEND_OPAQUE,1side)', 'MI_Water_Meter_Single_01(BLEND_OPAQUE,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_00 lods 1 tris [2] min (-29.3, -7.0, 0.0) max (29.3, 7.0, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Tools/LevelGen/analysis/pole_shape_ue.py:59: DeprecationWarning: MaterialEditingLibrary: Function 'get_used_textures' on 'MaterialEditingLibrary' is deprecated: Use GetMaterialUsedTextures instead since it works with Material Instances.
+  for t in unreal.MaterialEditingLibrary.get_used_textures(mi):
+
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_01 lods 1 tris [2] min (-18.6, -8.5, 0.0) max (18.6, 8.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_02 lods 1 tris [2] min (-16.5, -7.5, 0.0) max (16.5, 7.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:477][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_03 lods 1 tris [2] min (-16.5, -8.7, 0.0) max (16.5, 8.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_04 lods 1 tris [2] min (-20.7, -11.7, 0.0) max (20.7, 11.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_05 lods 1 tris [2] min (-33.4, -8.5, 0.0) max (33.4, 8.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_06 lods 1 tris [2] min (-20.7, -11.5, 0.0) max (20.7, 11.5, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_07 lods 1 tris [2] min (-14.8, -8.7, 0.0) max (14.8, 8.7, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_08 lods 1 tris [2] min (-8.1, -7.4, 0.0) max (8.1, 7.4, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:478][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_09 lods 1 tris [2] min (-33.4, -7.3, 0.0) max (33.4, 4.2, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:479][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_10 lods 1 tris [2] min (-16.5, -9.6, 0.0) max (16.5, 9.6, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_01(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:479][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_11 lods 1 tris [2] min (-14.8, -9.6, 0.0) max (14.8, 9.6, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:479][  0]LogInit: Display: LogPython: Warning: [POLE] SM_Graffiti_Decal_12 lods 1 tris [2] min (-16.5, -10.3, 0.0) max (16.5, 10.3, 0.0) coll CTF_USE_DEFAULT prims 0 mats ['M_graffiti_02(BLEND_TRANSLUCENT,1side)']
+[2026.11.06-18.34.51:479][  0]LogInit: Display: 
+[2026.11.06-18.34.51:480][  0]LogInit: Display: Failure - 1 error(s), 26 warning(s)
+[2026.11.06-18.34.51:480][  0]LogInit: Display: 
+Execution of commandlet took:  0.40 seconds, PeakPhysMemoryMB=1924 MB, PeakVirtMemoryMB=1749 MB
+[2026.11.06-18.34.51:592][  0]LogToolsetRegistry: Display: Unregistering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.06-18.34.51:832][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PostWrite): 1 .ref files found, 1 referenced binaries
+[2026.11.06-18.34.51:833][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)

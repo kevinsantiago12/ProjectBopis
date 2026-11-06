@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Weapons/ImpactEffectsData.h"
+#include "ProjectBopis.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
@@ -76,6 +77,21 @@ void UImpactEffectsData::SpawnImpact(const UObject* WorldContext, const FHitResu
 	}
 
 	const bool bOnCharacter = Hit.GetActor() && Hit.GetActor()->IsA<ACharacter>();
+
+	// A poster is paper pasted on the wall: the shot goes through and the wall answers as usual, and
+	// the poster only adds the falling paper. The probe goes just 2 cm into the wall, so a poster
+	// on the far side of a thin wall doesn't count. A time ahead of Now is from an earlier world (PIE).
+	if (PaperBurst && World && !bOnCharacter && (Now - LastPaperTime >= PaperMinInterval || LastPaperTime > Now))
+	{
+		FHitResult PosterHit;
+		if (World->LineTraceSingleByChannel(PosterHit, Hit.ImpactPoint + Hit.ImpactNormal * 10.0f,
+			Hit.ImpactPoint - Hit.ImpactNormal * 2.0f, ECC_Paper))
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, PaperBurst, PosterHit.ImpactPoint,
+				SurfaceRotation, BurstScale, true, true, ENCPoolMethod::AutoRelease);
+			LastPaperTime = Now;
+		}
+	}
 
 	// A head takes its own sound; anything else, one of its surface's clips.
 	USoundBase* Sound = nullptr;

@@ -1,0 +1,305 @@
+Using bundled DotNet SDK version: 10.0 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" -Mode=ValidatePlatforms -OutputSDKs  -AllPlatforms  -project="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/ProjectBopis.uproject" -log="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Saved/Logs/AutoSDKInfo.txt" -verbose -timestamps
+Log file: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Saved\Logs\AutoSDKInfo.txt
+##PlatformValidate: Win64 VALID 10.0.22621.0
+##PlatformValidate: Mac INVALID 26.1.1
+##PlatformValidate: IOS INVALID 26.1.1
+##PlatformValidate: Android INVALID r27c
+##PlatformValidate: Linux INVALID v26_clang-20.1.8-rockylinux8
+##PlatformValidate: LinuxArm64 INVALID <UNKNOWN>
+##PlatformValidate: TVOS INVALID 26.1.1
+##PlatformValidate: VisionOS INVALID <UNKNOWN>
+Unable to find required SDK version 'MainVersion' for platform LinuxArm64. Check your SDK.json files
+Unable to find required SDK version 'MainVersion' for platform VisionOS. Check your SDK.json files
+Trace written to file C:\Users\kevin\AppData\Local\UnrealBuildTool\Trace.uba with size 314b
+[2026.11.06-18.38.57:719][  0]LogInit: Display: Running engine for game: ProjectBopis
+[2026.11.06-18.38.57:719][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.11.06-18.38.57:719][  0]LogTrace: Display: Control listening on port 37482
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.8-CL-56702186"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.8.2-56702186+++UE5+Release-5.8"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.8.2"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.9711] "
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|12th Gen Intel(R) Core(TM) i5-12600K"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : compacttset="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : commandline="" "C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\ProjectBopis.uproject" -run=pythonscript -script="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_profile_ue.py" -unattended -nosplash -nop4 -abslog="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_profile_ue_log.txt" -nullrhi -NoShaderCompile""
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : loginid="64fa6c7d4316c6cf5db437a7e0c7890c"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : zenstreaming="0"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.11.06-18.38.57:720][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.11.06-18.38.57:720][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.11.06-18.38.57:720][  0]LogConfig: Display: Loading Android ini files took 0.07 seconds
+[2026.11.06-18.38.57:720][  0]LogConfig: Display: Loading Mac ini files took 0.07 seconds
+[2026.11.06-18.38.57:720][  0]LogConfig: Display: Loading IOS ini files took 0.07 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading VulkanPC ini files took 0.07 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading Windows ini files took 0.09 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading VisionOS ini files took 0.09 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading Unix ini files took 0.09 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading TVOS ini files took 0.09 seconds
+[2026.11.06-18.38.57:721][  0]LogConfig: Display: Loading Linux ini files took 0.10 seconds
+[2026.11.06-18.38.57:721][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.06-18.38.57:721][  0]LogAsyncCompilation: Display: MemorySharingInfo: UsedMemory=366MiB, MaxMemoryAvailable=56107MiB
+[2026.11.06-18.38.57:722][  0]LogStreaming: Display: AsyncLoading2 - Created: Async Loading Thread: false, Async Post Load: false, Multithreaded: false
+[2026.11.06-18.38.57:722][  0]LogHAL: Display: Platform has ~ 32 GB [34137300992 / 34359738368 / 32], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.11.06-18.38.57:722][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.11.06-18.38.57:722][  0]LogObj: Display: Attempting to load config data for Default__DownlinkBandwidthManagerConfig before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.06-18.38.58:204][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.06-18.38.58:326][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.11.06-18.38.58:326][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.11.06-18.38.58:326][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.11.06-18.38.58:327][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.11.06-18.38.58:327][  0]LogCsvProfiler: Display: Metadata set : gpu=""
+[2026.11.06-18.38.58:327][  0]LogCsvProfiler: Display: Metadata set : gpudriver=""
+[2026.11.06-18.38.58:332][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.11.06-18.38.58:332][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.11.06-18.38.58:332][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.11.06-18.38.58:332][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.11.06-18.38.58:332][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.11.06-18.38.58:334][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.16
+[2026.11.06-18.38.58:334][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.16.dll
+[2026.11.06-18.38.58:334][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.11.06-18.38.58:334][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.11.06-18.38.58:381][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Android'
+[2026.11.06-18.38.58:404][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'IOS'
+[2026.11.06-18.38.58:428][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Linux'
+[2026.11.06-18.38.58:457][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Mac'
+[2026.11.06-18.38.58:458][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'TVOS'
+[2026.11.06-18.38.58:484][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.11.06-18.38.58:484][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.11.06-18.38.58:484][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.11.06-18.38.58:484][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.11.06-18.38.58:484][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.11.06-18.38.58:487][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.11.06-18.38.58:805][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1679 MiB)
+[2026.11.06-18.38.58:808][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/zen.exe service status'.
+[2026.11.06-18.38.59:015][  0]LogZenServiceInstance: Display: Writing plugin version info to 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen_plugin_versions.json'
+[2026.11.06-18.38.59:016][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/5.8/Saved/Zen/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.06-18.38.59:017][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.06-18.38.59:017][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.11.06-18.38.59:323][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.11.06-18.38.59:324][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc. Status: OK!.
+[2026.11.06-18.38.59:333][  0]LogDerivedDataCache: Display: C:/Users/kevin/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.05ms. RandomReadSpeed=673.74MBs, RandomWriteSpeed=139.32MBs. Assigned SpeedClass 'Local'
+[2026.11.06-18.38.59:338][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.11.06-18.38.59:629][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64Editor not found.
+[2026.11.06-18.38.59:630][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64 not found.
+[2026.11.06-18.38.59:672][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.11.06-18.38.59:675][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.11.06-18.38.59:693][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.11.06-18.38.59:693][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.11.06-18.38.59:693][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.11.06-18.38.59:710][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.11.06-18.38.59:710][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.11.06-18.38.59:711][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.11.06-18.38.59:711][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.11.06-18.38.59:863][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.11.06-18.38.59:863][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.11.06-18.38.59:950][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.11.06-18.38.59:952][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 2.556 ms
+[2026.11.06-18.39.00:424][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.11.06-18.39.00:427][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.11.06-18.39.00:952][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.06-18.39.00:953][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.06-18.39.01:105][  0]LogToolsetRegistry: Display: Registering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.06-18.39.01:255][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PreLoad): 1 .ref files found, 1 referenced binaries
+[2026.11.06-18.39.01:255][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)
+[2026.11.06-18.39.01:255][  0]LogAssetRegistry: Display: FindShardedCacheFiles: 1 via .ref, 0 via migration fallback, 1 total
+[2026.11.06-18.39.01:256][  0]LogAssetRegistry: Display: LoadCacheFiles: loading 1 cache files, memory-mapping=enabled
+[2026.11.06-18.39.01:498][  0]LogAssetRegistry: Display: Asset registry cache read as 179.3 MiB from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_249657614E9D3C31C6D5EEA85A8E3A8B.bin (memory-mapped=yes)
+[2026.11.06-18.39.01:505][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.250s loading caches from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry.
+[2026.11.06-18.39.01:886][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.11.06-18.39.01:892][  0]LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.06-18.39.01:892][  0]LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.06-18.39.01:937][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.11.06-18.39.02:278][  0]LogCsvProfiler: Display: Metadata set : raytracing="0"
+[2026.11.06-18.39.02:396][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.EditorAppToolset
+[2026.11.06-18.39.02:396][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.LogsToolset
+[2026.11.06-18.39.02:421][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... started...
+[2026.11.06-18.39.02:529][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.actor.ActorTools
+[2026.11.06-18.39.02:530][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.asset.AssetTools
+[2026.11.06-18.39.02:534][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.blueprint.BlueprintTools
+[2026.11.06-18.39.02:534][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.curve_table.CurveTableTools
+[2026.11.06-18.39.02:536][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_asset.DataAssetTools
+[2026.11.06-18.39.02:536][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_table.DataTableTools
+[2026.11.06-18.39.02:537][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material.MaterialTools
+[2026.11.06-18.39.02:538][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material_instance.MaterialInstanceTools
+[2026.11.06-18.39.02:538][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.object.ObjectTools
+[2026.11.06-18.39.02:539][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.primitive.PrimitiveTools
+[2026.11.06-18.39.02:540][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.scene.SceneTools
+[2026.11.06-18.39.02:541][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools
+[2026.11.06-18.39.02:543][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.static_mesh.StaticMeshTools
+[2026.11.06-18.39.02:543][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.string_table.StringTableTools
+[2026.11.06-18.39.02:544][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.programmatic.ProgrammaticToolset
+[2026.11.06-18.39.02:544][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.texture.TextureTools
+[2026.11.06-18.39.02:544][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... took 121.835 ms
+[2026.11.06-18.39.02:544][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... started...
+[2026.11.06-18.39.02:556][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... took 12.500 ms (total: 134.335 ms)
+[2026.11.06-18.39.02:556][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.11.06-18.39.02:559][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 3.055 ms (total: 137.390 ms)
+[2026.11.06-18.39.02:560][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.11.06-18.39.02:580][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 21.446 ms (total: 158.837 ms)
+[2026.11.06-18.39.02:580][  0]LogPythonScriptCommandlet: Display: Running Python script: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\pole_profile_ue.py
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF] SM_Electric_Pole_01 verts 2186
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z    0.0 n   16 x   -10.8..   10.8 y   -10.8..   10.8
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z  440.0 n  120 x   -47.4..   46.7 y   -16.8..   12.1
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z  480.0 n  120 x   -16.8..   12.0 y   -46.6..   47.6
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z  520.0 n  174 x   -47.7..   46.5 y   -16.9..   12.0
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z  560.0 n  242 x   -46.9..   46.8 y   -21.9..   -4.9
+[2026.11.06-18.39.02:603][  0]LogPython: Warning: [PROF]   z  600.0 n  396 x   -47.7..   46.8 y   -21.9..   12.0
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  640.0 n  324 x   -47.7..   46.5 y   -21.9..   12.0
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  680.0 n  212 x   -45.9..   82.9 y   -21.9..   12.0
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  720.0 n   20 x   -30.6..   77.9 y   -16.9..   12.0
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  840.0 n  155 x   -36.8..  288.2 y   -19.3..   12.0
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  880.0 n  221 x   -36.8..  288.2 y   -21.9..   12.9
+[2026.11.06-18.39.02:604][  0]LogPython: Warning: [PROF]   z  920.0 n  149 x    -1.0..  207.6 y   -18.0..    0.6
+[2026.11.06-18.39.02:605][  0]LogPython: Warning: [PROF]   z  960.0 n   37 x   190.9..  207.6 y   -18.0..   -1.0
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF] SM_Electric_Pole_02 verts 2312
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z    0.0 n   16 x   -10.8..   10.8 y   -10.8..   10.8
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z  600.0 n  494 x  -117.3..  122.9 y   -70.8..   12.0
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z  720.0 n  666 x   -86.6..   88.1 y   -70.8..   -1.4
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z  760.0 n  519 x  -160.7..  164.3 y   -24.4..   12.0
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z  800.0 n   57 x  -130.9..  125.9 y   -20.0..  -11.7
+[2026.11.06-18.39.02:621][  0]LogPython: Warning: [PROF]   z  840.0 n   89 x  -160.7..  164.3 y   -19.2..  -11.9
+[2026.11.06-18.39.02:622][  0]LogPython: Warning: [PROF]   z  880.0 n  439 x  -160.7..  164.3 y   -24.4..   12.9
+[2026.11.06-18.39.02:622][  0]LogPython: Warning: [PROF]   z  920.0 n   32 x    -1.0..    0.8 y    -0.5..    0.6
+[2026.11.06-18.39.02:630][  0]LogPython: Warning: [PROF] SM_Electric_Pole_03 verts 664
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z    0.0 n   32 x   -10.8..   32.5 y   -10.8..   10.8
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z   40.0 n  256 x   -12.6..   34.3 y   -12.5..   12.5
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z  200.0 n  256 x   -12.6..   34.3 y   -12.5..   12.5
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z  240.0 n   16 x    10.9..   32.5 y   -10.8..   10.8
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z  880.0 n   72 x   -12.9..   12.8 y   -12.9..   12.9
+[2026.11.06-18.39.02:631][  0]LogPython: Warning: [PROF]   z  920.0 n   32 x    -1.0..    0.9 y    -0.5..    0.6
+[2026.11.06-18.39.02:640][  0]LogPython: Warning: [PROF] SM_Electric_Pole_04 verts 980
+[2026.11.06-18.39.02:640][  0]LogPython: Warning: [PROF]   z    0.0 n   16 x   -10.8..   10.8 y   -10.8..   10.8
+[2026.11.06-18.39.02:640][  0]LogPython: Warning: [PROF]   z  600.0 n   12 x   -47.5..   46.7 y   -16.8..  -10.6
+[2026.11.06-18.39.02:641][  0]LogPython: Warning: [PROF]   z  640.0 n    4 x   -11.9..  -10.7 y   -46.6..   47.6
+[2026.11.06-18.39.02:641][  0]LogPython: Warning: [PROF]   z  680.0 n    8 x   -16.9..  -10.7 y   -46.6..   47.6
+[2026.11.06-18.39.02:641][  0]LogPython: Warning: [PROF]   z  720.0 n    4 x   -47.8..   46.4 y   -11.9..  -10.7
+[2026.11.06-18.39.02:641][  0]LogPython: Warning: [PROF]   z  760.0 n  304 x   -47.8..   46.4 y   -21.8..   -4.8
+[2026.11.06-18.39.02:641][  0]LogPython: Warning: [PROF]   z  800.0 n  270 x  -108.6..  107.1 y   -22.0..   -5.0
+[2026.11.06-18.39.02:642][  0]LogPython: Warning: [PROF]   z  840.0 n  178 x  -106.6..  105.7 y   -22.0..   -5.0
+[2026.11.06-18.39.02:642][  0]LogPython: Warning: [PROF]   z  880.0 n  184 x   -93.4..   87.0 y   -22.0..   10.8
+[2026.11.06-18.39.02:652][  0]LogPython: Warning: [PROF] SM_wheel_01 verts 716
+[2026.11.06-18.39.02:652][  0]LogPython: Warning: [PROF]   z  -60.0 n   40 x   -15.4..   15.4 y   -25.1..   25.1
+[2026.11.06-18.39.02:653][  0]LogPython: Warning: [PROF]   z  -40.0 n  135 x   -15.4..   15.4 y   -42.7..   42.7
+[2026.11.06-18.39.02:653][  0]LogPython: Warning: [PROF]   z  -20.0 n  182 x   -15.4..   15.4 y   -47.6..   47.6
+[2026.11.06-18.39.02:653][  0]LogPython: Warning: [PROF]   z    0.0 n  184 x   -15.4..   15.4 y   -47.6..   47.6
+[2026.11.06-18.39.02:653][  0]LogPython: Warning: [PROF]   z   20.0 n  135 x   -15.4..   15.4 y   -42.7..   42.7
+[2026.11.06-18.39.02:654][  0]LogPython: Warning: [PROF]   z   40.0 n   40 x   -15.4..   15.4 y   -25.1..   25.1
+[2026.11.06-18.39.02:684][  0]LogPython: Warning: [PROF] SM_Water_Meter_Single_01 verts 1211
+[2026.11.06-18.39.02:684][  0]LogPython: Warning: [PROF]   z   -3.0 n   26 x    -1.2..    1.2 y   -15.2..   16.4
+[2026.11.06-18.39.02:684][  0]LogPython: Warning: [PROF]   z    6.0 n   90 x    -4.5..    4.5 y    -4.5..   16.7
+[2026.11.06-18.39.02:685][  0]LogPython: Warning: [PROF]   z    9.0 n  335 x    -5.0..    5.0 y   -15.4..   16.7
+[2026.11.06-18.39.02:685][  0]LogPython: Warning: [PROF]   z   12.0 n  375 x    -2.8..    2.8 y   -14.7..   16.7
+[2026.11.06-18.39.02:685][  0]LogPython: Warning: [PROF]   z   15.0 n  187 x    -5.3..    5.3 y   -10.0..   16.0
+[2026.11.06-18.39.02:685][  0]LogPython: Warning: [PROF]   z   18.0 n  198 x    -4.7..    4.7 y    -6.0..    4.8
+[2026.11.06-18.39.02:695][  0]LogPython: Warning: [PROF] SM_Water_Meter_Single_02 verts 1244
+[2026.11.06-18.39.02:695][  0]LogPython: Warning: [PROF]   z   -3.0 n   26 x    -1.2..    1.2 y   -15.2..   16.4
+[2026.11.06-18.39.02:695][  0]LogPython: Warning: [PROF]   z    6.0 n   90 x    -4.5..    4.5 y    -4.5..   16.7
+[2026.11.06-18.39.02:697][  0]LogPython: Warning: [PROF]   z    9.0 n  335 x    -5.0..    5.0 y   -15.4..   16.7
+[2026.11.06-18.39.02:697][  0]LogPython: Warning: [PROF]   z   12.0 n  399 x    -3.3..    3.3 y   -14.7..   16.7
+[2026.11.06-18.39.02:697][  0]LogPython: Warning: [PROF]   z   15.0 n  209 x    -5.3..    5.3 y   -11.3..   16.0
+[2026.11.06-18.39.02:697][  0]LogPython: Warning: [PROF]   z   18.0 n  185 x    -4.7..    4.7 y    -7.2..    4.7
+[2026.11.06-18.39.02:704][  0]LogPython: Warning: [PROF] head 1 z 860: [(-40, 2), (-20, 20), (0, 20), (160, 2), (180, 2), (200, 6), (280, 2)]
+[2026.11.06-18.39.02:704][  0]LogPython: Warning: [PROF] head 1 z 875: [(-40, 4), (-20, 34), (0, 34), (160, 8), (180, 2), (220, 4), (240, 4), (260, 60), (280, 4)]
+[2026.11.06-18.39.02:705][  0]LogPython: Warning: [PROF] head 1 z 890: [(-20, 28), (0, 28), (180, 2), (200, 2), (240, 8), (260, 66)]
+[2026.11.06-18.39.02:705][  0]LogPython: Warning: [PROF] head 1 z 905: [(-20, 8), (0, 8), (180, 4), (200, 4), (260, 10)]
+[2026.11.06-18.39.02:706][  0]LogPython: Warning: [PROF] head 1 z 935: [(-20, 8), (0, 8), (180, 41), (200, 29)]
+[2026.11.06-18.39.02:706][  0]LogPython: Warning: [PROF] head 1 z 950: [(-20, 8), (0, 8), (180, 42), (200, 32)]
+[2026.11.06-18.39.02:707][  0]LogPython: Warning: [PROF] head 1 z 965: [(180, 7), (200, 3)]
+[2026.11.06-18.39.02:714][  0]LogPython: Warning: [PROF] head 2 z 740: [(-80, 57), (-60, 4), (-40, 53), (20, 51), (40, 6), (60, 57)]
+[2026.11.06-18.39.02:714][  0]LogPython: Warning: [PROF] head 2 z 755: [(-180, 2), (-20, 16), (0, 16), (160, 2)]
+[2026.11.06-18.39.02:714][  0]LogPython: Warning: [PROF] head 2 z 770: [(-180, 4), (-140, 54), (-120, 1), (-40, 2), (-20, 42), (0, 42), (20, 2), (60, 49), (80, 6), (100, 8), (120, 47), (160, 4)]
+[2026.11.06-18.39.02:715][  0]LogPython: Warning: [PROF] head 2 z 785: [(-140, 72), (-120, 2), (60, 60), (80, 14), (100, 28), (120, 46)]
+[2026.11.06-18.39.02:715][  0]LogPython: Warning: [PROF] head 2 z 800: [(-140, 19), (60, 18), (80, 1), (100, 6), (120, 13)]
+[2026.11.06-18.39.02:717][  0]LogPython: Warning: [PROF] head 2 z 860: [(-180, 2), (160, 2)]
+[2026.11.06-18.39.02:717][  0]LogPython: Warning: [PROF] head 2 z 875: [(-180, 4), (-140, 63), (-120, 1), (60, 57), (80, 7), (100, 12), (120, 52), (160, 4)]
+[2026.11.06-18.39.02:717][  0]LogPython: Warning: [PROF] head 2 z 890: [(-140, 72), (-120, 2), (-20, 28), (0, 28), (60, 60), (80, 14), (100, 28), (120, 46)]
+[2026.11.06-18.39.02:719][  0]LogPython: Warning: [PROF] head 2 z 905: [(-140, 10), (-20, 8), (0, 8), (60, 10), (100, 2), (120, 8)]
+[2026.11.06-18.39.02:719][  0]LogPython: Warning: [PROF] head 2 z 935: [(-20, 12), (0, 4)]
+[2026.11.06-18.39.02:719][  0]LogPython: Warning: [PROF] head 2 z 950: [(-20, 12), (0, 4)]
+[2026.11.06-18.39.02:722][  0]LogPython: Warning: [PROF] head 4 z 755: [(-60, 8), (-40, 44), (20, 45), (40, 7)]
+[2026.11.06-18.39.02:723][  0]LogPython: Warning: [PROF] head 4 z 770: [(-60, 8), (-40, 57), (20, 57), (40, 8)]
+[2026.11.06-18.39.02:723][  0]LogPython: Warning: [PROF] head 4 z 785: [(-60, 2), (-40, 35), (20, 34), (40, 3)]
+[2026.11.06-18.39.02:723][  0]LogPython: Warning: [PROF] head 4 z 800: [(-120, 2), (-100, 9), (60, 4), (80, 5), (100, 2)]
+[2026.11.06-18.39.02:723][  0]LogPython: Warning: [PROF] head 4 z 815: [(-120, 4), (-100, 60), (-80, 5), (60, 28), (80, 37), (100, 4)]
+[2026.11.06-18.39.02:724][  0]LogPython: Warning: [PROF] head 4 z 830: [(-100, 57), (-80, 7), (60, 28), (80, 36)]
+[2026.11.06-18.39.02:724][  0]LogPython: Warning: [PROF] head 4 z 845: [(-100, 10), (60, 4), (80, 6)]
+[2026.11.06-18.39.02:724][  0]LogPython: Warning: [PROF] head 4 z 860: [(-120, 6), (-100, 36), (-80, 1), (60, 32), (80, 5), (100, 6)]
+[2026.11.06-18.39.02:724][  0]LogPython: Warning: [PROF] head 4 z 875: [(-100, 66), (-80, 8), (60, 53), (80, 21)]
+[2026.11.06-18.39.02:724][  0]LogPython: Warning: [PROF] head 4 z 890: [(-100, 34), (-80, 3), (-20, 8), (0, 8), (60, 25), (80, 12)]
+[2026.11.06-18.39.02:726][  0]LogPythonScriptCommandlet: Display: Python script executed successfully
+[2026.11.06-18.39.02:726][  0]LogInit: Display: 
+[2026.11.06-18.39.02:726][  0]LogInit: Display: Warning/Error Summary (Unique only)
+[2026.11.06-18.39.02:726][  0]LogInit: Display: -----------------------------------
+[2026.11.06-18.39.02:726][  0]LogInit: Display: LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.06-18.39.02:726][  0]LogInit: Display: LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.06-18.39.02:726][  0]LogInit: Display: LogPython: Warning: [PROF] SM_Electric_Pole_01 verts 2186
+[2026.11.06-18.39.02:726][  0]LogInit: Display: LogPython: Warning: [PROF]   z    0.0 n   16 x   -10.8..   10.8 y   -10.8..   10.8
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  440.0 n  120 x   -47.4..   46.7 y   -16.8..   12.1
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  480.0 n  120 x   -16.8..   12.0 y   -46.6..   47.6
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  520.0 n  174 x   -47.7..   46.5 y   -16.9..   12.0
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  560.0 n  242 x   -46.9..   46.8 y   -21.9..   -4.9
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  600.0 n  396 x   -47.7..   46.8 y   -21.9..   12.0
+[2026.11.06-18.39.02:727][  0]LogInit: Display: LogPython: Warning: [PROF]   z  640.0 n  324 x   -47.7..   46.5 y   -21.9..   12.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  680.0 n  212 x   -45.9..   82.9 y   -21.9..   12.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  720.0 n   20 x   -30.6..   77.9 y   -16.9..   12.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  840.0 n  155 x   -36.8..  288.2 y   -19.3..   12.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  880.0 n  221 x   -36.8..  288.2 y   -21.9..   12.9
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  920.0 n  149 x    -1.0..  207.6 y   -18.0..    0.6
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  960.0 n   37 x   190.9..  207.6 y   -18.0..   -1.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF] SM_Electric_Pole_02 verts 2312
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  600.0 n  494 x  -117.3..  122.9 y   -70.8..   12.0
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  720.0 n  666 x   -86.6..   88.1 y   -70.8..   -1.4
+[2026.11.06-18.39.02:728][  0]LogInit: Display: LogPython: Warning: [PROF]   z  760.0 n  519 x  -160.7..  164.3 y   -24.4..   12.0
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z  800.0 n   57 x  -130.9..  125.9 y   -20.0..  -11.7
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z  840.0 n   89 x  -160.7..  164.3 y   -19.2..  -11.9
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z  880.0 n  439 x  -160.7..  164.3 y   -24.4..   12.9
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z  920.0 n   32 x    -1.0..    0.8 y    -0.5..    0.6
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF] SM_Electric_Pole_03 verts 664
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z    0.0 n   32 x   -10.8..   32.5 y   -10.8..   10.8
+[2026.11.06-18.39.02:730][  0]LogInit: Display: LogPython: Warning: [PROF]   z   40.0 n  256 x   -12.6..   34.3 y   -12.5..   12.5
+[2026.11.06-18.39.02:731][  0]LogInit: Display: LogPython: Warning: [PROF]   z  200.0 n  256 x   -12.6..   34.3 y   -12.5..   12.5
+[2026.11.06-18.39.02:731][  0]LogInit: Display: LogPython: Warning: [PROF]   z  240.0 n   16 x    10.9..   32.5 y   -10.8..   10.8
+[2026.11.06-18.39.02:731][  0]LogInit: Display: LogPython: Warning: [PROF]   z  880.0 n   72 x   -12.9..   12.8 y   -12.9..   12.9
+[2026.11.06-18.39.02:731][  0]LogInit: Display: LogPython: Warning: [PROF]   z  920.0 n   32 x    -1.0..    0.9 y    -0.5..    0.6
+[2026.11.06-18.39.02:731][  0]LogInit: Display: LogPython: Warning: [PROF] SM_Electric_Pole_04 verts 980
+[2026.11.06-18.39.02:732][  0]LogInit: Display: LogPython: Warning: [PROF]   z  600.0 n   12 x   -47.5..   46.7 y   -16.8..  -10.6
+[2026.11.06-18.39.02:732][  0]LogInit: Display: LogPython: Warning: [PROF]   z  640.0 n    4 x   -11.9..  -10.7 y   -46.6..   47.6
+[2026.11.06-18.39.02:732][  0]LogInit: Display: LogPython: Warning: [PROF]   z  680.0 n    8 x   -16.9..  -10.7 y   -46.6..   47.6
+[2026.11.06-18.39.02:732][  0]LogInit: Display: LogPython: Warning: [PROF]   z  720.0 n    4 x   -47.8..   46.4 y   -11.9..  -10.7
+[2026.11.06-18.39.02:732][  0]LogInit: Display: LogPython: Warning: [PROF]   z  760.0 n  304 x   -47.8..   46.4 y   -21.8..   -4.8
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF]   z  800.0 n  270 x  -108.6..  107.1 y   -22.0..   -5.0
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF]   z  840.0 n  178 x  -106.6..  105.7 y   -22.0..   -5.0
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF]   z  880.0 n  184 x   -93.4..   87.0 y   -22.0..   10.8
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF] SM_wheel_01 verts 716
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF]   z  -60.0 n   40 x   -15.4..   15.4 y   -25.1..   25.1
+[2026.11.06-18.39.02:733][  0]LogInit: Display: LogPython: Warning: [PROF]   z  -40.0 n  135 x   -15.4..   15.4 y   -42.7..   42.7
+[2026.11.06-18.39.02:734][  0]LogInit: Display: LogPython: Warning: [PROF]   z  -20.0 n  182 x   -15.4..   15.4 y   -47.6..   47.6
+[2026.11.06-18.39.02:734][  0]LogInit: Display: LogPython: Warning: [PROF]   z    0.0 n  184 x   -15.4..   15.4 y   -47.6..   47.6
+[2026.11.06-18.39.02:734][  0]LogInit: Display: LogPython: Warning: [PROF]   z   20.0 n  135 x   -15.4..   15.4 y   -42.7..   42.7
+[2026.11.06-18.39.02:734][  0]LogInit: Display: LogPython: Warning: [PROF]   z   40.0 n   40 x   -15.4..   15.4 y   -25.1..   25.1
+[2026.11.06-18.39.02:735][  0]LogInit: Display: LogPython: Warning: [PROF] SM_Water_Meter_Single_01 verts 1211
+[2026.11.06-18.39.02:735][  0]LogInit: Display: LogPython: Warning: [PROF]   z   -3.0 n   26 x    -1.2..    1.2 y   -15.2..   16.4
+[2026.11.06-18.39.02:735][  0]LogInit: Display: LogPython: Warning: [PROF]   z    6.0 n   90 x    -4.5..    4.5 y    -4.5..   16.7
+[2026.11.06-18.39.02:735][  0]LogInit: Display: LogPython: Warning: [PROF]   z    9.0 n  335 x    -5.0..    5.0 y   -15.4..   16.7
+[2026.11.06-18.39.02:735][  0]LogInit: Display: NOTE: Only first 50 warnings displayed.
+[2026.11.06-18.39.02:735][  0]LogInit: Display: 
+[2026.11.06-18.39.02:736][  0]LogInit: Display: Failure - 1 error(s), 90 warning(s)
+[2026.11.06-18.39.02:736][  0]LogInit: Display: 
+Execution of commandlet took:  0.30 seconds, PeakPhysMemoryMB=1912 MB, PeakVirtMemoryMB=1726 MB
+[2026.11.06-18.39.02:841][  0]LogToolsetRegistry: Display: Unregistering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.06-18.39.03:081][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PostWrite): 1 .ref files found, 1 referenced binaries
+[2026.11.06-18.39.03:082][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)

@@ -1,0 +1,22 @@
+﻿LogPython: Warning: [LAUNDRY] SM_clothes_A_01 lods 1 tris [395] min (-1, -29, -81) max (1, 29, 3)
+LogPython: Warning: [LAUNDRY] SM_clothes_A_02 lods 4 tris [2026, 1012, 506, 202] min (-4, -41, -51) max (9, 41, 2)
+LogPython: Warning: [LAUNDRY] SM_clothes_A_03 lods 4 tris [2946, 1472, 736, 295] min (-12, -31, -65) max (11, 31, 2)
+LogPython: Warning: [LAUNDRY] SM_clothes_A_04 lods 4 tris [2902, 1450, 726, 290] min (-9, -55, -69) max (13, 55, 4)
+LogPython: Warning: [LAUNDRY] SM_clothes_A_05 lods 4 tris [3486, 1742, 871, 348] min (-11, -35, -47) max (11, 35, 7)
+LogPython: Warning: [LAUNDRY] SM_clothes_B_01 lods 4 tris [2045, 1022, 512, 205] min (-6, -23, -73) max (7, 23, 3)
+LogPython: Warning: [LAUNDRY] SM_clothes_B_02 lods 4 tris [5786, 2893, 1446, 579] min (-27, -89, -43) max (26, 89, 11)
+LogPython: Warning: [LAUNDRY] SM_clothes_B_03 lods 4 tris [2732, 1365, 683, 273] min (-8, -47, -32) max (9, 46, 6)
+LogPython: Warning: [LAUNDRY] SM_Cloth_B_001 lods 1 tris [1224] min (-2, -45, -241) max (15, 45, 0)
+LogPython: Warning: [LAUNDRY] SM_Cloth_B_002 lods 4 tris [4096, 2047, 1024, 410] min (-10, -128, -161) max (9, 128, 0)
+LogPython: Warning: [LAUNDRY] SM_DryingRack_A_001 lods 1 tris [60] min (-2, -7, -9) max (283, 7, 9)
+LogPython: Warning: [LAUNDRY] SM_DryingRack_A_002 lods 1 tris [108] min (-1, -63, -9) max (271, 7, 9)
+LogPython: Warning: [LAUNDRY] SM_DryingRack_A_003 lods 1 tris [384] min (-92, -5, -9) max (92, 67, 9)
+LogPython: Warning: [LAUNDRY] SM_Rope_A_001 lods 1 tris [1208] min (-0, -1, -1) max (125, 1, 1)
+LogPython: Warning: [LAUNDRY] SM_Rope_A_002 lods 1 tris [970] min (-64, -6, -2) max (1, 7, 2)
+LogPython: Warning: [LAUNDRY] SM_Dryer_01 lods 4 tris [2472, 1236, 618, 248] min (-1, -211, -21) max (134, 211, 5)
+LogPython: Warning: C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Tools/LevelGen/analysis/laundry_shape_ue.py:23: DeprecationWarning: EditorStaticMeshLibrary: Function 'get_lod_screen_sizes' on 'EditorStaticMeshLibrary' is deprecated: The Editor Scripting Utilities Plugin is deprecated - Use the function in Static Mesh Editor Subsystem
+LogPython: Warning: [LAUNDRY] SM_clothes_A_02 screen sizes []
+LogPython: Warning: [LAUNDRY] SM_clothes_B_01 screen sizes []
+LogPython: Warning: [LAUNDRY] SM_clothes_A_05 screen sizes []
+Exit code 1. Full log: C:\Users\kevin\Documents\Unreal 
+Projects\ProjectBopis\Tools\LevelGen\analysis\laundry_shape_ue_log.txt

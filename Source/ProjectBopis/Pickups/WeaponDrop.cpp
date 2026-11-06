@@ -25,6 +25,8 @@ AWeaponDrop::AWeaponDrop()
 	// Never rests on a corpse: ragdolls move and get cleaned up, which would leave the
 	// pickup hanging in the air.
 	Body->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
+	// Physics moves it, and every move would make the navmesh rebuild around it, on the game thread.
+	Body->SetCanEverAffectNavigation(false);
 	Body->SetSimulatePhysics(true);
 	RootComponent = Body;
 

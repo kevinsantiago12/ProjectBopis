@@ -1057,6 +1057,344 @@ tall balcony's), inset 6 cm from the deck edge on the south, west and east sides
   that times the scale (`RAIL_X0`, `RAIL_Z0`). `set_properties` can't change a mesh:
   remove and re-place.
 
+**Building dressing** (user, 2026-11-04: "do downpipes and window air conditioning. and
+the overhang rooms, ply patches", "door steps and vent blocks too", "There are alot of
+blank face tiles so I want them to see more", "The hollow block faces can remain empty").
+A pass in `gen_level.py` just before the chunks. Each kind has its own RNG, so tuning one
+moves nothing placed before it. 149 of 235 blank tiles carry something; 86 stay bare on
+purpose (hidden patterns). `analysis/check_dressing.py` tests the rules below that can be
+measured: run it after every change to this pass.
+- **Thin walls get nothing** (user: "this wall section needs no vents, its just a wall
+  divider", "That bit is a thin wall, not a house"). `_thin_blocks`: 1.5 m blocks with no
+  door or window (B10, B17, B19, B21h1, B21h2, B22). `THIN_RUN`: any run under 2 m, such
+  as a balcony strip's end. They aren't dressing tiles at all.
+- **Rooms** (11, `BackAlleys/Rooms`): `SM_Balcony_A_003` squashed to 1.2-1.5 m deep, on
+  upper storeys over open ground, 1 m clear of the opposite wall, deck, stairs and end
+  walls, one per house. Brown beam joists and knee struts, lowest at 268 cm. White or
+  blue `MI_Balcony_A_001_*`. Open windows, no glass.
+- **Room doors** (user: "put a doorr texture on the overhang balcony wall, looks like
+  nothing leads to their right now"): one of the user's five plane doors on the wall
+  behind, 110 x 218 cm, standing on the room's floor, which traced 33 cm up before the
+  room's Z scale. Seen through the windows.
+- **Downpipes** (11): stacked `SM_Rain_Pipe_01` near a face's end, only on faces with a
+  metal roof's eave (`b["eaves"]`), pack dark red or galvanised. Never two on a house (user:
+  "for pipes, never 2 on the same house"), and never within 70 cm of another pipe on any block
+  (user: "theres also a pipe that overlaps with another pipe": two blocks' pipes at a corner).
+  If one end of a face won't do, the other gets a try.
+- **Pipe clearance:** `_pipe_free` looks at every block's pipes, not just this face's. A
+  neighbour's pipe at a corner stands in front of this wall: an air conditioner sat across one.
+  A pipe's centre is 23 cm off its wall and its pivot 7.6, so measure from the centre. The
+  first version of the check measured from the pivot and passed that air conditioner.
+- **Nothing on the walls the stairs run against** (user: "some of your patch placements and vent
+  placements go into the stairs"). The gallery stairs stand against B11's sides. `_stair_clear`
+  turns away patches, vents and air conditioners on that stretch below 520 cm, the top of the
+  stairs' rails. Higher up, on the second storey, is fine.
+- **Wall air conditioners** (20): MiddleEast `SM_Windows_04` (cooler in a window frame,
+  with a glass plane) or the `SM_Air_Conditioning_*` box. They need no window hole. Ground
+  ones have their bottom at 186-192 cm above the tile, so a 192 cm capsule walks under.
+  The thin rod below the box is in the pack mesh and reads as a bracket.
+- **Patches** (52 plywood sheets in 25 groups, 15 tin). User: "the patches look out of place,
+  maybe if you scale them bigger". Small boards floating mid-wall read as stickers, so they're
+  real sheets now: plywood up to 1.24 x 2.5 m, tin a whole `SM_MetalPlate_A_003/004` at about
+  true width. On the ground they start just above the plinth (8-26 cm), upstairs at 58-78 cm,
+  and all stop by 262 cm (`PATCH_TOP`).
+- **Plywood comes in twos or more; tin stays single** (user: "if you are gonna place patches,
+  place atleast 2 beside each other", "except the roof type, the wood one, yes do 2"). Two
+  sheets, now and then three, same finish, lapping 2 cm, each its own height and tilt, across
+  as many blank tiles in a row as it takes. Sheets shrink to fit but never under 78 cm wide; a
+  stretch too short for that gets none.
+- **Vent blocks** (48 tiles): 80 x 40 cm planes, 4 x 2 blocks, set high in the wall, one
+  pattern per house, more on faces with no window (`P_VENT_BLANK`, `P_VENT_OPEN`). User:
+  "align them if they are on the same face", "atleast the same height". A face (house and
+  side, every storey) has one height and one row count, so tops and bottoms line up. A tile
+  whose sheet reaches that height skips its vent rather than break the line. Under 110 cm
+  takes none.
+- **Door steps** (plain 7, tiled 8, double 4, none 3): concrete boxes 6-12 cm high, on
+  ground and deck doors. Tiled ones add `SM_Front_A_001`.
+- **Collision, by trace:** rooms' floor and solid panel stop shots; shots pass through
+  their window openings. ACs stop shots 41 cm off the wall. Patches, vents, pipes and
+  laundry have none: shots reach the wall behind.
+- **Textures are ours:** `make_dress_textures.py` draws them with no libraries. First
+  plywood was too dark and the green read as camouflage, so natural ply is now pale and the
+  paint flakes only in patches.
+
+**Laundry** (user, 2026-11-04: "start adding laundry hang, but keep it cheap if its far
+away", then "keep the laundry stuff on balconies , or near reach of a window on the second
+floor. or near the doors. never out across the street, if it crosses the street, then make
+sure its on the second floor"). `BackAlleys/Laundry`, 104 pieces, 69 of them clothes. The
+test: could somebody reach it? `DRESSING`'s old laundry stays off.
+- **Balcony strips (4):** a line between two of the frame's posts, 18 cm in from them, 180-200
+  cm over the floor, above the parapet and under the roof.
+- **Overhanging rooms (5):** a line side to side, past mid-depth, about 190 cm over the room's
+  floor, in front of the door. Seen through the windows.
+- **Gallery rail (5):** draped clothes on the south rail's top bar, irregularly spaced.
+- **Second-floor windows (6):** a rack under the sill (78 cm above the tile), centred on the
+  window. Storey index 1 only: the user's "second floor".
+- **Ground doors (5):** a rack on the bare tile next to a door, at the door's end, 255-272 cm
+  up, short clothes only, so they stay above a head. These tiles are claimed before patches
+  and vents run: afterwards nearly every tile beside a door was full.
+- **Over the street (3 of 6 asked):** only from beside a second-floor window, at a height
+  reachable from it (165-205 cm above the tile), tied to a second-floor wall opposite. Alleys
+  2.5-6.5 m wide, open ground the whole way, 4.5 m between lines. Nothing crosses lower.
+- **One lot to a house,** so no street of the same thing.
+- **Cheap:** every piece culls at 35 m (`LAUNDRY_CULL`, the plan's `draw`, set as
+  `LDMaxDrawDistance`). Clothes are `SM_clothes_A_02..05`, `B_01`, `B_03`, which have four
+  LODs (2,026 tris down to 202), plus `A_01` at 395 with none. `SM_clothes_B_02` (5.8k)
+  stays out, and so does `SM_Rope_A_001` (1,208 tris, no LODs): a line is two engine cubes
+  meeting in a slight sag. Racks are 108 tris. All drawn at LOD 0 would be 156k tris, which
+  can't happen in these alleys. The LOD switch sizes couldn't be read: the headless call
+  returned an empty list.
+- **Rack fit:** `SM_DryingRack_A_002` runs 271 cm along local X and 7 behind to 63 out on
+  -Y: turned 180, pivot at the run's far end, 7 cm out. Clothes hang at 62 cm out.
+- **No collision** on any of it.
+
+**Street dressing** (user, 2026-11-05: "whats else can we add?", then "do all that and add it to
+the tool"). A last pass in `gen_level.py`, with a switch per group (`STREET_WIRES`, `_ROOFTOPS`,
+`_LIGHTS`, `_FRONTS`, `_DETAILS`), its own folder and RNG per kind. Being last, it moved none of the
+4,109 pieces before it (compared piece by piece). 475 new actors. It keeps the building dressing's
+rules: hollow faces and thin walls stay empty, nothing on stair walls, nothing across a pipe. Shapes:
+`analysis/street_shape_ue.py`. `analysis/check_dressing.py` tests it; faults planted in the plan are
+all caught.
+- **Wires** (`BackAlleys/Wires`; since 2026-11-05 22 spans and 13 runs along walls, 84 wires across the
+  alleys, in bundles of two to six: "power lines are a big identity show for the philippines"; up from
+  11 spans, 7 runs and 23 wires. 493 pieces, each its own actor, so they are the thing to watch on the
+  Deck; not traced yet): a span goes box to box
+  on the bands at second-floor height, slanting across the alley. Never under 5.6 m (`WIRE_LOW`, an
+  assert), so above the laundry and the gallery's headroom. Never through a house, room or end wall,
+  or over a roof too low to clear. Thin `SM_Cube`s, 3-4 per span, as a parabola. Junctions are
+  `SM_ElectricBox_C_002` (12 tris). `SM_Cable_B` at 5k each stays out, and so do the flat
+  `SM_Cable_A` cards: untested, one-sided, and the pack's own map leaves them without a material.
+- **Meters** (10, `BackAlleys/Meters`): `SM_ElectricBox_C_003` (132 tris) low on a ground tile, with a
+  conduit climbing to a box on the band. It feeds a span if one can cross, else a wire along the wall,
+  else it just rises to the roofline. Near a tile's end, so upstairs openings and awnings stay clear.
+  The conduit clears the trim or protruding band by `_style`.
+- **Tanks** (15, `BackAlleys/Tanks`): Favela's stack from its dump: stand, tub at +59.5, cap at +85.2.
+  Low on the wide terraces, whose roofs are above; on four 12 cm legs on flat roofs and over metal
+  ones, where the legs go through the sheets. The tub alone keeps collision. 6.5k tris at most, all
+  LODded.
+- **Aerials** (10, `BackAlleys/Aerials`): AsiaSlum's `SM_Antenna_A_*` need `MI_Antenna_A_001` (their
+  own slot is WorldGrid), near a roof corner, leaning up to 3 degrees, all facing about one way, as at
+  one transmitter. `SM_Antenna_01` in MiddleEast is a bare mast; in Favela it's a satellite dish with
+  branding, left out. A taller neighbour within 1.6 m turns one away.
+- **Lights are off** (user, later the same day: "I will keep this level on daylight so the lights should be off"). `STREET_LIGHTS_ON` False: the
+  fittings stay, unlit, with no light actors: bulbs in the mesh's own `MI_Light_A_001_Off`; lamps and tubes in plain galvanised metal, as the pack's lamp
+  material glows whatever the hour (`EmissiveMultiply` 3), and a child of it would give us a pack parent. The rest of this entry is how they work with it
+  True, for a night version.
+- **Lights** (`BackAlleys/Lights`): real Static lights plus their fittings, so the bake carries them
+  and they cost nothing at run time. 5 bare bulbs (`SM_Light_A_002` in `MI_Light_A_001`, the "on" one;
+  `_Off` is the default), 10 fluorescent tubes (Favela's pair: `SM_StreetLamp_05` + `_06` at 0.504 is
+  a 120 cm tube, with `_06` at local (6.7, 11.9, 7.9)), 8 cobra lamps on wall arms (`SM_StreetLamp_02`
+  at about 0.67, reaching 2 m). Warm bulb, greener tube, orange sodium. A plan item's `light` holds
+  the settings; both placers read it.
+- **Fronts:** 4 shutters with a blank sign, 4 gates (on a wall or in front of a door), 8 tarps (blue
+  mostly, on a wall or half across a door), 5 long signs over a door or window with no shop under them
+  (`WallSign_*`; were square `SM_Sign_B_005` blade signs until 2026-11-05: "square signage may fit
+  chinese charachers but not alpha numberics"). Every sign is `SM_Sign_A_001`, at least 2.6 times as wide
+  as it is tall (`SIGN_LONG`, checked by `check_dressing.py`). Few because few tiles were left:
+  the earlier dressing has most of the ground floor. One to a face.
+- **Signs are blank on purpose:** `MI_BackAlleys_Sign_*` are faded paint and rust with no lettering.
+  What a sign says is design's call, so they wait for wording.
+- **Sills** (57): a slab or a deeper one, in the band's material so a painted face stays one colour. A
+  face has them or doesn't, one window in ten missing. Not above a drying rack.
+- **Rebar** (5 stubs): a concrete stub at a roof corner with bars left for the next floor, on flat
+  roofs and wide terraces, never against a taller wall.
+- **Peeling paint** (20, `BackAlleys/Peel`): our decal, painted faces only. Colour and opacity come
+  from one texture, drawn by `make_street_textures.py`. On a window tile, only under the sill.
+- **Bake cost:** wires, rods, fittings, tanks, sills and the rest carry `vol` (`ForceVolumetric`, no
+  lightmap), and thin ones `noshadow`. The last bake ran out of video memory; this adds no lightmaps
+  to that.
+- **Not used:** `SM_DamageWall_A` (red interior flakes), the meter banks (23k). Poles and transformers went in on 2026-11-06, below.
+- **Placed and saved (2026-11-05):** 475 of 475, no failures; folder counts match the plan. Seen in
+  captures: shutters, signs, gates on walls and doors, tarps, meters and conduits, wires, tanks, aerials,
+  a lamp, bulbs, tubes, rebar, a peel. Not walked in PIE, not baked.
+
+**Low wires** (user, 2026-11-05: "power lines are a big identity show for the philippines", with a photo of a
+Manila alley; `STREET_LOW_WIRES`). At the three spots with the most wires overhead, shots from the ground looking
+22 degrees up showed none: the spans sit at 7-8 m. So a second layer: 28 spans across the alley at the top of the
+ground floor, a third of them climbing to the second floor opposite, and 10 bundles slanting down a wall, past
+windows but not doors or awnings. 116 wires. Never under 3 m (`LOW_FLOOR`, an assert), and over the
+gallery or its stairs only above 6.2 m (`DECK_CLEAR`; the check caught a drape on B11's gallery wall). Culled at
+50 m. The Wires folder is now 969 actors: not traced on the Deck. They could be merged or instanced.
+
+**Chained power lines** (user, 2026-11-06: "try to chain connect powerlines"; `STREET_CHAIN_WIRES`, `Chain_*`, `ChainLow_*`, `ChainBox_*`). Every span and run had ended at a box of its own: 73 separate hops. The last pass of the generator, so no other piece moved (`plan_delta.py`: 0 removed, 561 added).
+- **Three stages:** link boxes that can already reach each other, shortest first; grow a chain's end towards one of the 5 nearest other chains with a new box; tie what's left into a box part way along another chain. A box takes two lines, three at a branch, and nothing closes a loop.
+- **Result:** 64 links (51 across, 11 along a wall, 2 drops down a wall), 142 wires, 21 new boxes. 73 hops became 30 groups, the biggest with 18 boxes. Seen from the ground in one capture (`Saved/BackAlleys/captures/2026-11-06_chains/`), where it reads as one tangle. Not walked in PIE. The Wires folder is now 1,530 actors, so the Deck trace matters more: merging them is the next step if they cost too much.
+- **What limited it:** the links stay in their layer unless a drop joins them, and few drops pass the door and awning rule. Growth rarely merges chains by itself. Most of its tries fail on open ground, on hollow-block or thin walls, or on a spot already taken. The branch stage did the most for the group count (38 to 30).
+- **Check with a picture:** I drew the wires from above to judge this (bright lines for chains). My first drawing was wrong: an `SM_Cube` rod's pivot is its corner, so its line starts at the location rather than centring on it. Use `rod_ends` in `check_dressing.py`.
+
+**Posters and ads** (user, 2026-11-05: "Added the Ads, btw, these ads are AI generated, they are currently
+placeholder labeled. I might decide to use them but we will see. Now see what you can do with it"; `STREET_POSTERS`,
+`BackAlleys/Posters`). 101 sheets in 32 lots, all 23 usable images; the biggest block is 15. Take them out with the switch and the folder.
+- **The images aren't touched.** `/Game/Project_Bopis_Posters` stays as supplied. `M_BackAlleys_PosterPaper`
+  (`create_poster_materials_ue.py`) does the wear: each copy reads its own patch of `T_BackAlleys_PosterWear`,
+  from where it stands, so one image tears and fades differently on each wall. Fade 0.3: at 0.55 a poster could
+  lose most of its colour. All four wear settings at 0 show the image as supplied.
+- **Scale, from the user's photo** ("look at this scale, use this for the poster", "the posters are tiny atm"): a Manila wall of
+  campaign posters with a man cycling past. By him, each sheet is about 61 x 91 cm, pasted edge to edge in blocks of one candidate, from
+  just above the ground to over his head, with a concrete column between two blocks. `POSTER_AREA` is that sheet's area at each image's
+  own shape, 1.3 times for a movie one-sheet, so 60-97 cm wide and 75-156 tall.
+  - **How I got this wrong first:** 44-50 cm sheets at eye level, then "use varying sizes" read as smaller too ("I meant bigger, not
+    smaller"). Check a size against a person before placing it. Bigger variations stay for movie posters and ads (1.15, 1.3); a block of
+    election posters is one print run.
+- **Only candidates repeat** (user: "only put together indentical posters for candidates type posters, you can put movie posters together side by
+  side but not the same over and over, same goes for product ads"). Election posters: three rows up to the trim where the wall is clear (`POSTER_TALL`
+  18-294), two under the vent blocks (`POSTER_LOW` 18-240), one at eye level (`POSTER_MID` 76-234), in 2-6 columns of one design, or two designs of one
+  candidate in alternate columns; a centimetre of lap or miss, 7% torn off. Movie posters and ads: a single row of one to three different ones.
+  They run across tile joints, on the clear stretches of a whole wall, and a long stretch takes several lots with a little wall between, as in the photo.
+  Every column of a candidate's block is one height, so rows line up: at first a square image's column left gaps beside a 3:4 one. A row of different
+  movie posters or ads keeps each at its own size, centred on one line: sharing a height made a tall image's sheet too narrow.
+- **On closed shutters:** 9.2 cm off the wall. The shutter's face is at 8.8. They went in at 8.5, buried 0.1-0.3 cm behind the metal, so two shutters carried 8 sheets nobody could see, and
+  those still threw paper (user, 2026-11-06: "one of the rollups are throwing paper even without a poster"). A poster's check can't tell a hidden sheet from a visible one, so any sheet
+  placed on something else needs that thing's real face. Traced at 648 points after the move: all of them 0.4-0.5 cm in front.
+  - **Moving a baked piece keeps its lightmap.** They came out in black patches, the bake from when they were buried. Switching one column to `ForceVolumetric` cleared it at once in a
+    capture, which proved the cause. All 8 stay volumetric (`vol`), so they don't wait on a bake. `set_actor_transform` doesn't invalidate the old lighting here.
+  - **A capture right after the editor opens shows nothing useful:** "Sky Light waiting on Meshes, Textures". Wait, or take it again.
+- **Over plywood and under wires:** plywood is what posters get pasted on, so plywood patches don't stop them (`_soft_boxes`), nor do the
+  wire drapes in front. 2 cm off the wall, clear of the sheets at 1-1.8. Tin stops them: its ribs stand out.
+- **Brightness** (user: "the material is bright even in shade"). The images reach full white and the wall paints stop at about 0.55, so
+  `M_BackAlleys_PosterPaper` has `Brightness` 0.55. In shade they now sit with the walls in captures. Part of it was likely the
+  missing bake as well: look again after one.
+- **On hollow-block faces too** (user, 2026-11-06: "except hollow block, which yu can put posters on"). Nothing else goes on them.
+- **Too near the ends of a wall** (user: "some of your placements are too close to the edge of the face", then "Yes, apply it"). `FACE_EDGE` 40 cm
+  from the ends of a run, for posters, shutters, signs, meters, tarps and gates; a corner column alone takes 20. `check_dressing.py` tests all of
+  them: it caught 31 sheets before the fix, and I'd counted 22 of the others. A front that can't fit becomes the next kind or nothing; a door too
+  near the end goes without a gate or tarp.
+- **Planes with lightmaps,** like the patches, so a sun shadow crosses the wall and the poster together. No shadow.
+- **Collision: the `PosterPaper` preset** (user, 2026-11-06: "do an overlap on the poster to throw the paper impact but retain the material and
+  decal on the surface underneath"). `coll` in the plan. Everything ignores it except the `Paper` trace, which `UImpactEffectsData::SpawnImpact` runs
+  at a hit. Traced at 900 points on the 300 sheets: shots reach the wall 2-2.4 cm behind, or a plywood patch at 0.4-1.4, all inside the probe (2 in, 10 out).
+  At two points something else sits 16 and 43 cm in front, so a shot there hits that and throws no paper.
+- **Flaws in the supplied art, left as they are; the user decides:**
+  - `Puting_Araw` imported as a normal map (blue image, so the importer guessed). It can't feed the material: skipped.
+  - Most have no mipmaps, and 10 of the 24 are uncompressed (`TC_EditorIcon`): they can shimmer at a distance and take
+    about twice the memory. Settings only; the images wouldn't change.
+  - The election posters say 2004 and Tibay Selyas says "Manila 2003". The game is set in 2002.
+  - Hatinggabing Takas, Huli Ka Kuya and Sa Huling Sakay are 512 x 1024 in the PNGs themselves, and look a little tall.
+    They're shown at that shape.
+
+Learned on the way:
+- **`nocoll` didn't work until 2026-11-06.** A placed `StaticMeshActor` has `bUseDefaultCollision` on, which makes the component use the mesh's own collision and
+  ignore the preset set on it. The placers only set `BodyInstance.collisionProfileName`, so a `nocoll` piece read `NoCollision` but stayed `QueryAndPhysics`, and
+  traces stopped on the patches. A preset takes only with `bUseDefaultCollision` off too, then a save and a level reload: the name alone changes nothing in the open
+  level, and `collisionEnabled` is what tells the truth. The placers now set both. Fixed on 2,209 pieces, wires included. User: "fix them all, but keep the awnings
+  solid, wires stay no collision", so the 112 awning pieces are no longer `nocoll`.
+- **The surface pass of 2026-11-03 mostly did nothing.** It set `phys_material` on instances without `bOverridePhysMaterial` (see the rule above), so a piece reported its
+  parent's surface: Favela's `M_Bricks_01` made terrace planks and window frames Brick, AsiaSlum's masters made metal doors and glass Concrete. Fixed for what this level
+  uses (45 instances). `get_physical_material()` is the only honest check.
+  - **Look at the texture before trusting a name, and use the exact path.** The pass named `MI_Window_02` and `MI_Windows_02` Glass, and they're painted steel; balconies and the stall
+    front were Concrete, and they're metal. I then read the wrong pack's `T_Windows_02_BC`, a wood one with the same name, and nearly set gates to Wood.
+  - **A surface for one piece:** `phys` in the plan sets `BodyInstance.physMaterialOverride`, honoured on complex-as-simple meshes too. The gallery pillars use it: they're concrete,
+    and their material is shared with the street lamps.
+  - **Audits must resolve the plan's `mat` keyword.** `mat: "interior"` means `MI_BackAlleys_Interior` on 61 pieces, and my first audit read the mesh's default instead. `get_referencers` caught
+    that, and the ground, which is one actor outside the plan.
+- **`SceneTools.save_actor` fails on World Partition actors** ("Asset does not exist"). Use `save_assets` with an empty list.
+- **Don't change a material instance's parent through the bridge.** `set_properties` with `Parent`, on 23 instances in use in the open level, and the editor
+  crashed within seconds: an access violation in `UnrealEditor-D3D12RHI`, in the render thread. The level had been saved just before. With the editor closed, a
+  headless script does it safely (`create_poster_materials_ue.py` moves existing instances to its master).
+- **A generator change ripples.** Moving one meter moved every wire after it: 1,043 pieces out and 1,035 in, for an edge rule. `plan_delta.py` compares against
+  the plan last placed (`Saved/BackAlleys/plan_applied/`) and `apply_delta_ue.py` touches only what changed. Copy the plan there after each apply.
+- **Look from where the player stands.** The power lines passed every count and check, and from the ground none was in
+  frame. A capture from eye level at the busiest spot takes a minute.
+- **Bridge texture settings:** `get_properties` reads `CompressionSettings`, `MipGenSettings`, `SRGB`; `ImportedSize` can't be
+  read. The source PNG's path is in the `.uasset`, and its header gives the true size.
+- **Read a light back.** `LightColor` takes lowercase `r g b a`, 0 to 1. With capitals `set_properties`
+  returned True and the light stayed white; only reading it back showed that. Now fixed in both placers.
+- **Brightness (Candelas, Static):** bulb 4.5, tube 6, lamp 40. The first numbers (16, 26, 70) blew a wall
+  in shade out to white. These are judged in the daytime exposure and unbaked, so they'll need another
+  look after a bake, and more so in any night version.
+- **Signs have a flat normal** (`/Engine/EngineMaterials/DefaultNormal`). The drawn one made a board look
+  hammered at this stretch. `T_BackAlleys_Sign_N` is unused now.
+- **Check which level is open before placing:** `find_actors` for `PlayerStart` and read its path. It costs
+  nothing, while asking about a folder the open level hasn't got stops the whole script.
+- **Gate colour:** `SM_Metal_Gate_01` is the same green with tan edges every time. Two can show in one
+  view; a colour mask would need a new material.
+- **`MI_Light_A_001_Off` is the lights' default;** the pack's map overrides it to get them lit. Read
+  `dump_Demomap_AsiaSlum.json` for a mesh's overrides before guessing: WorldGrid in a slot usually
+  means the map sets it.
+- **Judge new pieces after a bake.** In shade, an unbaked plane has no bounced light and
+  reads far darker than the baked wall beside it.
+- **AsiaSlum's materials are in `/Game/AsiaSlum/Material/`, not under `FBX/`.** A wrong
+  material path doesn't stop the placer: the piece lands with its default look. Before
+  placing, check every plan path against `Content/`.
+- **A headless run can't replace an asset the open editor has loaded,** and the file is
+  locked against deleting until the editor closes. Import under a new name and swap
+  (`T_BackAlleys_Ply_*`, not `_Plywood_*`).
+- **The white curled sheet in captures is the decal actor's editor icon,** not a mesh.
+- **Captures at yaw 45-90 can lose whole buildings** to stale culling, again here. Change
+  the view direction before believing an empty alley.
+
+### Closed stalls and bare ground walls (2026-11-06)
+User, with a screenshot from PIE: "look at the place behind the player, that need fixing, the wall if open. Try to not have any first floor
+walls featureless, except hollow block, which yu can put posters on."
+- **`SM_Shop_A_001` is only a counter and an open bar frame.** The block's core stands 1.5 m behind it, so it read as a hole in the wall. Each
+  stall now has `SM_HouseWall_A_001` on the module's line (`<label>_Back`) and `SM_RollupDoor_A_002` down inside the frame to the counter
+  (`Shutter_<label>`), in `BackAlleys/Shutters`. Frame X 0..300, Z 0..400; shutter X -283.6..270.6, Z -333..0 (`analysis/stall_shape_ue.py`).
+- **Overlapping surfaces, fixed later the same day** (user: "Shop A 001, overlapping surfaces with wall"). I had written that no faces shared a plane and that `B2_S0_1_1` couldn't be seen. Both were wrong:
+  - **The wall sat on the frame.** `SM_Shop_A_001`'s frame and `SM_HouseWall_A_001` both have faces at local Y 0 and -20. Each stall's `_Back` wall stood 1.3 cm further back per stall, and for the first
+    stall that was 0. Now `-1.3 * (k + 1)`, always behind.
+  - **Two stalls lapped.** `B2_S0_1_1` runs Y 150-450 and the next stall starts at 390, on the same plane. B6's footprint in the layout ends at 450, but the house `B6h2` ends at 390, so those 60 cm were in the
+    open, with a second counter end showing. A test against layout blocks says nothing about the houses. That stall comes out of the plan at the end (`_buried_stalls`), so nothing else moved.
+  - **The check couldn't see it:** `check_overlaps.py` only knew the wall tiles, bands and trims. It now also fails a stall's wall on its frame, and two stalls lapping on one plane; it caught both before the fixes.
+    `analysis/stall_faces_ue.py` lists a mesh's flat faces by plane, which is how to settle what shares a plane.
+- **Posters on walls that aren't wall tiles** (`_extra_wall`): B2's plain stretches and the door end walls. `_run_tiles` doesn't hold these.
+- **A room claims its rectangle from the ground to 30 m,** to keep pipes and air conditioners off it. That left the wall below bare, and it hid from
+  my blank-wall measure too. Posters may go under a room (`_soft_boxes`); only the struts stop them (`_room_struts`, 1.2 m down the wall from the
+  floor). Other dressing still treats the rectangle as taken.
+- **Stair walls stay empty:** B11's two, about 7 m each, under the stairs rule.
+- **258 sheets stay** (101 before this). Asked whether to thin them, the user said "Keep them". The Deck cost is still to be traced. Then 300, below.
+- **No tarps on doors** (user: "dont put a tarp on the doors"). The four door tarps are gone; the three on plain wall stay. `check_dressing.py` tests it, and it caught all four
+  in the plan before the fix. Just deleting the loop reshuffled 1,800 pieces, every wire, poster and lamp after it, because the street pass shares `FRONT_RNG` and
+  `_front_houses`. So the loop still makes its draws and places nothing. To take something out of a pass, keep its draws, and read the delta before placing.
+- **A wall with vents still reads as bare** (user: "even this is bare, it has vents but needs something", of `B18_S0`). Vent blocks stand with their bottoms 173 to
+  240 cm off the floor, but `POSTER_LOW` and `POSTER_MID` top out at 240 and 234, so posters only fitted under the highest. Two more bands, `POSTER_UNDER`
+  (18-209, under one row) and `POSTER_SHORT` (60-168, under two). A sheet too tall for its band now gives way to a smaller one: a 120 cm movie poster ran 8 cm into
+  a vent. `check_dressing.py` tests posters against vents; it caught that one. 300 sheets in 95 lots (240 election, 35 movie, 25 ad).
+- **My measure missed this.** It tested 40-280 cm up the wall, so one vent made the whole height count as dressed, and it reported 1.6 and 2.2 m as the longest bare
+  stretches when two walls of over 4 m were empty. Test 40-190 cm, eye level, where the player looks. On that: 20 stretches of 1.2 m or more, 29 m of 351 m, the
+  longest 2.3 m. Most are the thin returns of 1.4 m.
+- **`check_dressing.py` assumed 225 cm tiles,** so B2's AsiaSlum wall read as too short and failed three good posters. It now knows 300 and 150.
+- **A black capture can mean the camera is inside a block.** I took three inside B6 and blamed exposure. `SceneTools.trace_world` up and sideways
+  from the camera settles it: a hit 2 m overhead and on all sides is a room.
+
+### Power poles, roof tyres, water meters, graffiti (2026-11-06)
+User: "any other dressing?", then "do the building centric ones first" and "added 10 graffitits". Last passes of the generator, each with its own random sequence: the delta removed nothing and
+added 420 pieces, then 49 more when the water meters spread out, so the level is 6,707 actors. Placed and saved, no failures, seen in captures (`Saved/BackAlleys/captures/2026-11-06_poles/`). Not walked in PIE, not baked. Check with
+`check_dressing.py`, which now tests all four; shapes in `analysis/pole_shape_ue.py` and `pole_profile_ue.py`.
+- **Poles** (`STREET_POLES`, `BackAlleys/Poles`): 7, from `SM_Electric_Pole_01`, `02` (transformers), `03` (plain) and `04`. The first stands in view of the player's start. They keep to a lane
+  at least 3.8 m wide, 135 cm from a door, 220 cm from a gameplay point, clear of awnings, rooms, the gallery and the clear run ahead of its stairs. Up to 1.3 degrees of lean.
+  - **How they stand:** with local X along the wall, +Y is out, or in if turned round. 02's transformers hang off -Y, so it's always turned, to hang them over the lane. 01 and 04 have lower arms
+    reaching 48 cm both ways, so they stand 66 cm off the wall; 02 stands 42 and 03 34.
+  - **Lines:** 5 pole-to-pole lines of 2 or 3 wires, crossarm to crossarm, a shortest tree. They can't cross over a roof, so 7 poles make 2 groups. 24 bundles of 2-3 wires drop from the pole to
+    existing boxes on the houses, one to a box, the box facing the pole; a junction box is strapped to the pole at the first two of them. 298 more wire rods: the Wires folder is 1,828 actors.
+  - **Surface:** the pack's pole material is Metal, so each pole has `phys` Concrete.
+- **Tyres** (`STREET_TYRES`, `BackAlleys/Tyres`): 30 on 10 roofs, 8 of them on another tyre. All the one-storey metal roofs and a third of the rest, away from laps, tanks and aerials. No collision.
+  - **Pale in the sun.** The pack's dusty brown read as plaster and its parent has no tint. `M_BackAlleys_Tyre` samples the same textures with `Brightness` 0.35, so the pack is untouched.
+- **Water meters** (`STREET_WATER_METERS`, `BackAlleys/WaterMeters`): 32 in 20 lots of 1-4, on short legs, off door openings, one lot to a house. No collision.
+  - **Spread** (user: "the water meter needs to be distributed more"). The first pass took tiles in a random order and stopped at 9 lots: they bunched in the east, 2.8 m apart in places, with one
+    lot in the whole west half. A random order doesn't spread anything. Now each lot goes where it's furthest from the others, times a random 0.55-1.45 so it doesn't read as a grid, and never within
+    `WATER_GAP` 5.5 m. Nearest neighbours are 7.6-11.3 m, and `check_dressing.py` wants all four quarters of the arena covered. To judge a spread, draw it: a text grid of blocks and lots took a few lines.
+  - **Keeping the tags still:** the meters' claim stops at 45 cm, under the graffiti's lowest band. The first time, a claim up to 70 cm could reach the graffiti's stretches, and any change there would
+    have reshuffled every tag. Only `WaterMeters` changed in the delta.
+  - **Bright blue.** The body is `Tint 01 Color`, and the stored thumbnail (beige) is out of date, so look at the material's parameters. `MI_BackAlleys_WaterMeter` turns it to old brass.
+- **Graffiti** (`STREET_GRAFFITI`, `BackAlleys/Graffiti`): 16 decals, 13 on clear walls (longest first, as they read as bare) and 3 on closed shutters with no poster. 102-185 cm square. One to a house, the
+  same image not twice within 11 m. Hollow-block faces and thin walls stay off under their rules.
+  - **The images aren't touched.** They're white-on-black masks, 512 square. `M_BackAlleys_SprayDecal` holds the paint and fades each copy a little from `T_BackAlleys_PosterWear`'s sun channel by where it
+    stands. `MI_BackAlleys_Spray_<name>_<paint>`: 20 pairs, two paints each. Solid 1, Strength 1 and Wear 0 show the mask as supplied.
+  - **Too faded at first** (user: "the warning and tag decals are to faded"). Three things stacked: the masks' ink reads only 0.75-0.95 once sampled (they're sRGB, medians 224-249), Strength was 0.92, and
+    Wear 0.55 took up to half of what was left, so a word could drop to about 0.35. Now `Solid` 1.35 holds the ink at full, with its soft edges kept, Strength is 1 and Wear 0.12. Paint is stronger too:
+    white 0.75 (it was capped at 0.5 like the wall paints), red 0.42, blue 0.34, black 0.008. Measure a mask before judging its wear: decode the PNG and read its values.
+  - **New names, not edits.** The open editor had the first material loaded, and a headless run can't change that. `M_BackAlleys_GraffitiDecal` and its 20 `MI_BackAlleys_Graffiti_*` are unused now: delete them once the editor has closed.
+  - **Orientation:** roll 90 with the decal's X into the wall reads upright and unmirrored, tested in captures, and it has to: these have words. Tags lean up to 4 degrees, warnings 1.2.
+  - **The pack's own were no use:** `T_graffiti_01` is Arabic with "IRAQ", `T_Graffiti_09/10` name a Ukrainian district, and the rest are a skull, a bolt and unreadable tags.
+  - **First capture looks blurred:** the texture is still streaming in. A second capture a little later is sharp.
+
+Learned on the way:
+- **`\t` in a script's path reaches Unreal as a tab.** `analysis\tyre_material_ue.py` failed to load as `analysis<tab>yre_material_ue.py`, so name a script so that nothing after a backslash makes an escape.
+- **`set_material_instance_vector_parameter_value` returned False and still took.** Read the value back with `get_material_instance_vector_parameter_value` and trust that.
+- **`MaterialExpressionWorldPosition` has no X or Y outputs.** Connecting by those names fails and leaves the node's input at its default: read the "couldn't connect" lines. Use `ComponentMask`s.
+- **A capture can land inside a terrace** when a camera is set from the plan alone. The terrace's roof also hid where one line meets its box, which looked like a wire ending in mid-air: all 24
+  bundles end within 11 cm of a box, by numbers.
+
 ### Not decided (the user's call)
 - **Wall material: hollow blocks only on faces with no door or window
   (2026-11-03).** The user's rules, latest first:

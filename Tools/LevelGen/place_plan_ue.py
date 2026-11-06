@@ -47,7 +47,27 @@ def xform(p):
             'scale': v(p['scale'])}
 
 
+def place_light(p):
+    """A static light: the plan's "light" holds its settings. Static so the bake carries it and it costs nothing at run time."""
+    li = p['light']
+    a = call(S + 'add_to_scene_from_class', {'actor_type': {'refPath': '/Script/Engine.' + li['kind']}, 'name': p['label'], 'xform': xform(p)})
+    call(A + 'set_label', {'actor': a, 'label': p['label']})
+    call(S + 'set_actor_folder', {'actor': a, 'folder_path': p['folder']})
+    comp = [c for c in call(A + 'get_components', {'actor': a}) if 'LightComponent' in c['refPath']][0]
+    vals = {'Mobility': 'Static', 'Intensity': li['intensity'], 'AttenuationRadius': li['radius'], 'SourceRadius': li['source'],
+            'LightColor': {'r': li['colour'][0], 'g': li['colour'][1], 'b': li['colour'][2], 'a': 1.0}}    # lowercase, 0..1: capitals are ignored silently
+    if li.get('length'):
+        vals['SourceLength'] = li['length']
+    if li['kind'] == 'SpotLight':
+        vals['OuterConeAngle'] = li['outer']
+        vals['InnerConeAngle'] = li['outer'] * 0.55
+    call(O + 'set_properties', {'instance': comp, 'values': json.dumps(vals)})
+
+
 def place(p):
+    if p.get('light'):
+        place_light(p)
+        return
     if p['decal']:
         a = call(S + 'add_to_scene_from_class', {'actor_type': {'refPath': '/Script/Engine.DecalActor'},
                                                   'name': p['label'], 'xform': xform(p)})
@@ -59,7 +79,7 @@ def place(p):
         comp = [c for c in call(A + 'get_components', {'actor': a}) if 'Decal' in c['refPath']][0]
         call(O + 'set_properties', {'instance': comp, 'values': json.dumps({'DecalMaterial': obj(p['asset'])})})
         return
-    if p['nocoll'] or p['mat'] or p['vol'] or p['mats']:
+    if p['nocoll'] or p.get('coll') or p.get('phys') or p['mat'] or p['vol'] or p['mats'] or p.get('draw') or p.get('noshadow'):
         comp = [c for c in call(A + 'get_components', {'actor': a}) if 'StaticMesh' in c['refPath']][0]
         vals = {}
         if p['mats']:
@@ -70,8 +90,18 @@ def place(p):
             vals.update({'bVisible': False, 'bHiddenInGame': True, 'CastShadow': False})
         if p['nocoll']:
             vals['BodyInstance'] = {'collisionProfileName': 'NoCollision'}
+            vals['bUseDefaultCollision'] = False     # left on, the component keeps the mesh's own collision and ignores the preset
+        if p.get('coll'):
+            vals['BodyInstance'] = {'collisionProfileName': p['coll']}
+            vals['bUseDefaultCollision'] = False
+        if p.get('phys'):
+            vals.setdefault('BodyInstance', {})['physMaterialOverride'] = obj(p['phys'])     # a surface for this piece alone, when its material is shared
         if p['vol']:
             vals['LightmapType'] = 'ForceVolumetric'
+        if p.get('noshadow'):
+            vals['CastShadow'] = False
+        if p.get('draw'):
+            vals['LDMaxDrawDistance'] = p['draw']      # cull distance: laundry, street dressing
         call(O + 'set_properties', {'instance': comp, 'values': json.dumps(vals)})
 
 

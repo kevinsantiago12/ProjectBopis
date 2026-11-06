@@ -174,6 +174,67 @@ list, not just chat.
 - **Drips (2026-11-04):** a dirt decal's hard top edge must hide behind a ledge
   (a border or a protruding band), never show on a clean wall ("reevaluate the
   placements of Dirt decals, becuase of the new border and band rules").
+- **Building dressing (2026-11-04):** these now count as building: downpipes, wall
+  air conditioners, overhanging rooms, plywood and tin patches, door steps and vent
+  blocks ("There are alot of blank face tiles so I want them to see more"). "The
+  hollow block faces can remain empty." Everything else stays out until asked for.
+- **Patches (2026-11-04):** real sheet size, not small boards ("the patches look out of
+  place, maybe if you scale them bigger"). Wood goes at least two side by side, tin can be
+  single ("place atleast 2 beside each other", "except the roof type, the wood one, yes do 2").
+- **Pipes (2026-11-04):** "for pipes, never 2 on the same house". Never overlapping another
+  pipe ("theres also a pipe that overlaps with another pipe").
+- **Stairs (2026-11-04):** no dressing on the walls the stairs run against ("some of your patch
+  placements and vent placements go into the stairs").
+- **Vents (2026-11-04):** same height across a face ("align them if they are on the same
+  face", "atleast the same height").
+- **Thin walls (2026-11-04):** no vents or air conditioners on them, and no other dressing
+  ("this wall section needs no vents, its just a wall divider", "That bit is a thin wall,
+  not a house").
+- **Overhanging rooms (2026-11-04):** a door on the wall behind ("looks like nothing leads to
+  their right now").
+- **Laundry (2026-11-04):** now counts as building, and must stay cheap at a distance ("start
+  adding laundry hang, but keep it cheap if its far away"). Only where somebody could reach it:
+  "keep the laundry stuff on balconies , or near reach of a window on the second floor. or near
+  the doors. never out across the street, if it crosses the street, then make sure its on the
+  second floor".
+- **Street dressing (2026-11-05):** now counts as building: wires, meter boxes, water tanks, aerials,
+  bulbs, tubes and street lamps with their lights, shutters, gates, tarps, signs, window sills, rebar
+  and peeling-paint decals ("do all that and add it to the tool"). The decal rule above now allows
+  peeling paint too. Signs stay blank until the user gives wording. Loose props (plants, LPG tanks)
+  stay out until asked for.
+- **Signs (2026-11-05):** long rectangular boards only. "dont use the square signage, use the longer
+  rectangular ones, square signage may fit chinese charachers but not alpha numberics".
+- **Power lines (2026-11-05):** lots of them, in heavy bundles ("add more power lines, power lines are a
+  big identity show for the philippines"; a photo of a Manila alley as the reference). They have to be seen
+  from the ground, so a low layer crosses at the top of the ground floor, never under 3 m.
+- **Daylight (2026-11-05):** "I will keep this level on daylight so the lights should be off". Bulbs, tubes and
+  street lamps stay as fittings, unlit, with no light actors (`STREET_LIGHTS_ON`).
+- **Posters (2026-11-05):** the user's 24 AI-generated images are placeholders ("I might decide to use them
+  but we will see"), so they stay on one switch and in one folder, and the images are never edited. Scale from
+  the user's photo of a Manila wall ("look at this scale, use this for the poster"; "the posters are tiny"):
+  sheets about 61 x 91 cm, edge to edge in blocks up to the trim, never smaller, a little bigger now and then.
+  "the material is bright even in shade": capped at the wall paints' brightness. Hollow-block faces take them
+  (2026-11-06, below). Only candidates repeat: "only put together indentical posters for candidates type posters, you
+  can put movie posters together side by side but not the same over and over, same goes for product ads".
+- **Face edges (2026-11-05):** posters, shutters, signs, meters, tarps and gates stay 40 cm from the ends of a
+  face ("some of your placements are too close to the edge of the face"; "Yes, apply it").
+- **Door tarps (2026-11-06):** "dont put a tarp on the doors". Tarps go on plain wall only.
+- **More building dressing (2026-11-06):** power poles and their lines, tyres on roofs and water meters at the foot of a wall now
+  count as building ("do the building centric ones first"). Ground dirt, variations and dressing come next.
+- **Water meters (2026-11-06):** spread across the whole level, not bunched ("the water meter needs to be distributed more").
+- **Graffiti (2026-11-06):** only the user's own 10, in `/Game/Project_Bopis_Graffiti_Decals`, with the images untouched ("added 10
+  graffitits"). The decal rule above now allows them. Not on hollow-block faces or thin walls, not over posters, doors or windows.
+  Solid paint, not faded ("the warning and tag decals are to faded").
+- **Ground-floor walls (2026-11-06):** "Try to not have any first floor walls featureless, except hollow block,
+  which yu can put posters on." Hollow-block faces still take no other dressing, and stair walls and thin walls
+  keep their own rules. No open shop fronts either ("the wall if open"). Vents up high don't count as dressing
+  the wall: "even this is bare, it has vents but needs something".
+- **Collision (2026-11-06):** "fix them all, but keep the awnings solid, wires stay no collision". Pieces marked
+  `nocoll` have no collision, and awnings are solid. Posters block only the `Paper` trace, so a shot hits the wall
+  behind ("use the wall's impact and sound").
+- **Surfaces (2026-11-06):** "do a physics material pass, some of them are using the wrong materials from what I can
+  see from sounds and impacts". A piece's surface follows what it looks like. Check what a material really reports, not
+  its name or its own setting, and look at its texture by exact path before deciding.
 - Read `Tools/LevelGen/LESSONS.md` before every level build. Run
   `Tools/LevelGen/analysis/check_overlaps.py` after every generator change
-  (no coincident faces).
+  (no coincident faces), and `analysis/check_dressing.py` after every dressing change.

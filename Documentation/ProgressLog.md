@@ -2691,6 +2691,28 @@
   - **Music in `Lvl_BackAlleys`** (user: "a bgm manager on the backalley too please"). A
     `Music_Start` trigger in `BackAlleys/Gameplay`: `DarkCrimes`, Play At Start, set like
     `Lvl_Linear`'s. In the plan too, so a rebuild keeps it. Saved; not heard in PIE yet.
+  - **Building dressing** (user: "do downpipes and window air conditioning. and the
+    overhang rooms, ply patches", "door steps and vent blocks too", "There are alot of
+    blank face tiles so I want them to see more"). 149 of 235 blank tiles carry something.
+    Rooms 11, downpipes 11, air conditioners 20, 52 plywood sheets in 25 groups and 15 single
+    tin, vents on 50 tiles, steps on 19 of 22 doors. Hollow-block faces stay empty. Plywood and vent textures
+    are our own, drawn by `make_dress_textures.py`. Traces: rooms' floor and panel and the air
+    conditioners stop shots, patches don't. After the first look: patches now real sheet
+    size (user: "scale them bigger"), vents one height per face (user: "atleast the same
+    height"), thin walls get nothing (user: "a thin wall, not a house"), rooms have a door on
+    the wall behind (user: "looks like nothing leads to their right now"). Then: nothing on the
+    walls the stairs run against (user: "go into the stairs"), no two pipes close together and
+    one per house (user: "never 2 on the same house"), wood sheets at least two side by side
+    with tin single (user: "except the roof type, the wood one, yes do 2"). New
+    `analysis/check_dressing.py` tests all of these.
+  - **Laundry** (user: "start adding laundry hang, but keep it cheap if its far away", then
+    "keep the laundry stuff on balconies , or near reach of a window on the second floor. or
+    near the doors. never out across the street, if it crosses the street, then make sure its
+    on the second floor"). Lines on 4 balcony strips and in 5 rooms, clothes on the gallery
+    rail, racks under 6 second-floor windows and beside 5 ground doors, 3 street lines from
+    second-floor windows only. Culled at 35 m, clothes with the pack's four LODs, lines as two
+    cubes. All dressing applied and saved; overlap check clean, no new nav joins. Lighting not
+    rebaked, not walked in PIE. Captures in `Saved/BackAlleys/captures/2026-11-04_dress/`.
   - **Window grilles (2026-11-04)** (user: "find an appropriate window grill and
     put it in the first floor windows", "more variation is appreciated"): 37
     ground-floor windows, five kinds dealt evenly per house. Applied: 37 placed,
@@ -2891,15 +2913,99 @@
   build"). Sweeping enemies try the Lost Sight bark every 8–15 s. `MuzzleLight`
   went to a quarter: 62.5 cm, 15 cd, read back on all 14 weapon Blueprints. Built
   clean 15:11; bridge checked; DLL newer than source. **Neither tested in PIE.**
+- **2026-11-04: muzzle light radius restored, dimmer again** (user: "revert the
+  changes to the muzzle light, only change the brightness, it need to be even
+  lower than now, but roll back the radius"; "apply and build"). `MuzzleLight`
+  is now 250 cm, 3 cd (was 62.5 cm, 15 cd; originally 250 cm, 60 cd). 3 cd because
+  the restored radius alone would have made 15 cd about 3x brighter at 50 cm.
+  Built clean 23:38; bridge checked; DLL newer than source; all 14 weapon
+  Blueprints read back at 250 cm, 3 cd. **Not tested in PIE.**
+- **2026-11-04: muzzle flash `Pop` sphere off** (user's screenshot of an orange
+  disc at the muzzle; "go"). It wasn't the light: all five flash assets have a
+  `Pop` emitter, a glowing sphere mesh. `DetailModeBitmask` 0 on each, saved
+  through the bridge, those five only. A headless export confirms only the `Pop`
+  emitters changed. **Not tested in PIE.** The sphere ignored the light settings,
+  so 3 cd may now be too dim; the user judges. The falloff and specular change
+  proposed for the light was dropped for now. Spec: *Muzzle flash*.
+- **2026-11-04: `Pop` sphere back on** (user: "revert flash back to the original
+  form", then "ok do it" to the option I recommended: `Pop` on, particle lights
+  still off). Mask reset on all five, saved through the bridge; a headless export
+  shows every emitter at its default. The disc is back. The five assets still show
+  as modified in git because they were re-saved: don't commit them, restore with
+  `git checkout` once the editor is closed. `MuzzleLight` stays 250 cm, 3 cd.
+- **2026-11-05: muzzle flash reverted to the last push** (user: "revert the
+  muzzleflash to the last push", `63cd3508`). The five flash assets already match
+  it byte for byte. `MuzzleLight` is back to 62.5 cm, 15 cd in source, so
+  `WeaponBase.cpp` matches the push. Built clean 01:39 ("run the script"); bridge
+  checked; DLL newer than source.
+
+- **2026-11-05: street dressing in the level generator.** User: "whats else can we add?", then "do
+  all that and add it to the tool". A last pass in `gen_level.py`, 475 new actors, none of the 4,109
+  before it moved: wires and meter boxes, water tanks and aerials, bulbs, tubes and street lamps with
+  real Static lights, shutters, gates, tarps, blank signs, window sills, rebar, peeling paint. Our own
+  sign and peel textures (`make_street_textures.py`, `create_street_materials_ue.py`). Checks clean,
+  and `check_dressing.py` catches faults planted in the plan. Details in `Tools/LevelGen/LESSONS.md`.
+  Placed and saved: 475 of 475, no failures. After the first captures: lights dimmed (they blew walls
+  out), signs given a flat normal (they looked hammered), light colours fixed (capital keys were
+  ignored). Captures in `Saved/BackAlleys/captures/2026-11-05_street/`. Not baked, not walked in PIE.
+
+## 2026-11-05 — Lvl_BackAlleys: long signs only, more power lines
+- **User:** "dont use the square signage, use the longer rectangular ones" and "add more power lines, power lines are a big identity show for the philippines" (with a Manila alley photo).
+- **Signs:** the 5 square `SM_Sign_B_005` blade signs became long `SM_Sign_A_001` boards over doors and windows (`WallSign_*`). Shop signs are `SM_Sign_A_001` too. `check_dressing.py` fails on any sign under 2.6:1.
+- **Power lines:** 84 wires in 22 spans and 13 wall runs (was 23, 11, 7), bundles of 2-6. The Wires folder went from 156 to 493 actors.
+- **Applied** through the bridge to the open level: 12 street folders cleared and re-placed, counts match the plan, saved. Not looked at in the viewport. Lighting not rebaked (the static street lights were re-placed). Not traced on the Deck.
+
+- **User, moved over from the Optimization thread:** "fetch those messages and work from here", on the power lines and the ads.
+- **Low wires:** 116 more in 28 spans and 10 wall drapes, because from the ground the high ones weren't in frame. The Wires folder is 969 actors. Placed and saved; an earlier layout seen in captures.
+- **Posters:** 101 sheets in 32 lots of the user's AI-generated placeholder images, 23 of 24, only candidates repeating ("only put together indentical posters for candidates type posters"), on `STREET_POSTERS`, with wear in a new material and the images untouched. Scale from the user's photo of a Manila wall: about 61 x 91 cm, in blocks up to the trim ("the posters are tiny atm"). Brightness capped ("bright even in shade"). Placed and saved; seen in captures in `Saved/BackAlleys/captures/2026-11-05_posters/`. Lighting not rebaked, not walked in PIE.
+- **Edge rule:** posters, shutters, signs, meters, tarps and gates stay 40 cm from the ends of a face. `check_dressing.py` tests it.
+- **The editor crashed** (21:55) as I changed the instances' parent through the bridge: a D3D12 access violation. Everything else had been saved. The change is done headless with the editor closed instead; see LESSONS.
+- **New tools:** `plan_delta.py` and `apply_delta_ue.py`, to re-place only what changed.
+- **Daylight:** user: "I will keep this level on daylight so the lights should be off". The light actors are gone; bulbs, tubes and street lamps stay as unlit fittings. `STREET_LIGHTS_ON` brings them back.
+
+- **2026-11-06: Deck build, `Lvl_BackAlleys`** (user: "make a deck build, backalley level"). Added the level to `MapsToCook`; the peer was idle. `BuildDeck.ps1`, 5 min, exit 0: 4,414 packages cooked, 0 errors, 20 warnings (the old resave notices, none from the level). 3.1 GB, was 2.3. Its lighting data is in the package, but it's the 11-05 02:48 bake: 1,382 of 5,587 actor files were saved after it. Start command: `ProjectBopis/Binaries/Win64/ProjectBopis.exe Lvl_BackAlleys -ExecCmds="stat fps,stat unit"`. **Not yet run on the Deck.**
+- **2026-11-06: power lines chained** (user: "try to chain connect powerlines"). A new last pass in `gen_level.py` (`STREET_CHAIN_WIRES`): 64 links, 142 wires, 21 new boxes; 73 separate hops became 30 groups, the biggest with 18 boxes. 561 actors placed and saved through the bridge, none moved or removed; the Wires folder is 1,530. `check_overlaps.py` and `check_dressing.py` are clean. Seen from the ground in one capture; not walked in PIE, not in the 00:30 Deck build. LESSONS: *Chained power lines*.
+- **2026-11-06: open stalls closed, ground walls filled** (user, from PIE: "the wall if open. Try to not have any first floor walls featureless, except hollow block, which yu can put posters on"). B2's two visible stalls got a solid wall and a roll-up shutter; the third stands inside B6, so it got nothing. Posters now go on hollow-block faces, door end walls, B2's plain stretches and the wall under rooms: 258 sheets in 83 lots (204 election, 30 movie, 24 ad), up from 101; asked whether to thin them, the user said "Keep them". The level is 6,200 actors. Placed and saved, no failures; `check_overlaps` and `check_dressing` clean; seen in captures, not walked in PIE or rebaked. Bare ground wall left: two stair walls (exempt), two stretches of 1.6 and 2.2 m, and short returns. Details in `Tools/LevelGen/LESSONS.md`.
+- **2026-11-06: posters under the vents** (user: "even this is bare, it has vents but needs something", of `B18`'s wall). Posters only fitted under the highest vents, so walls with vents stayed empty below them; my bare-wall measure missed it too, as one vent counted the whole wall as dressed. Two shorter poster bands; `check_dressing` now tests posters against vents. 300 sheets in 95 lots (240 election, 35 movie, 25 ad), and the level is 6,242 actors. Placed and saved, no failures, both checks clean, seen in captures. Longest bare stretch at eye level is now 2.3 m, apart from B11's stair walls.
+- **2026-11-06: poles, tyres, water meters, graffiti** (user: "do the building centric ones first", "added 10 graffitits"). 7 power poles with their lines, 30 tyres on roofs, water meters and 16 graffiti decals from the user's masks, on their own switches and folders. Nothing already in the level moved. Then the water meters were spread out (user: "the water meter needs to be distributed more"): from 17 in 9 lots, bunched in the east, to 32 in 20 lots over the whole level, 7.6-11.3 m from the nearest other lot. The level is 6,707 actors. Placed and saved, no failures, all checks clean, seen in captures. Not walked in PIE, not baked. The Wires folder is now 1,828 actors, not traced on the Deck. New materials darken the tyre and turn the meter to brass; the pack's assets and the user's images are untouched. Details in `Tools/LevelGen/LESSONS.md`.
+- **2026-11-06: graffiti made solid** (user: "the warning and tag decals are to faded"). Stacked fades: the masks' ink samples at 0.75-0.95, Strength 0.92 and Wear 0.55. A new material, `M_BackAlleys_SprayDecal`, holds the ink at full with only a little wear, and the paints are stronger. All 16 decals swapped and saved, nothing else moved, seen in captures of a black tag and a white one. The user's images are untouched.
+- **2026-11-06: stall overlaps fixed** (user: "Shop A 001, overlapping surfaces with wall"). Two causes, both mine: the first stall's closed wall sat exactly on its frame's plane, and a stall I'd called hidden stood 60 cm past `B6h2`, lapping the next stall. The wall now stands behind the frame, and that stall is out of the level (`B2_S0_1_1`). `check_overlaps.py` tests both, and caught both before the fix. Nothing else moved; the level is 6,706 actors. Seen in captures of both stalls.
+- **2026-11-06: no tarps on doors** (user: "dont put a tarp on the doors"). The four door tarps are out of the level, saved, and nothing else moved: the three on plain wall stay. `check_dressing` now tests it; both checks clean. The level is 6,238 actors.
+- **2026-11-06: the player's rounds fly 2x in Focus** (user: "can we 2x the bullet speed only for the player guns when in focus mode?", then "apply and build"; applied by Claude). `AProjectileBase::ApplyFocusSpeed` scales `MaxSpeed` and `Velocity` by `FocusSpeedMultiplier` (2, grenades 1), called from `FireProjectile`. Built clean 10:37; bridge checked; DLL newer than source; files read back; the round classes read back at 2, the two grenades at 1. **Not tested in PIE, not in the 00:30 Deck build.**
+- **2026-11-06: music keeps its voice; `Lvl_BackAlleys` is the default map** (user: "BGM cuts off, seems to do it because of max sound stuff, happens often when i pull out the Machine Pistol and start spraying", then "apply and build, also set backalley as the default map"; applied by Claude). `UMusicSubsystem` sets `bAlwaysPlay` on the track. `DefaultEngine.ini`: `EditorStartupMap` and `GameDefaultMap`. Built clean; DLL newer than source. **Not tested in PIE.**
+- **2026-11-06: dropped guns hold 1 to 1.5 magazines, tunable** (user: "change the drop rate, make it tunnable. For now set it to 1 mag + random(0, half mag)", then "change it so that extras dont stay on the ground", then "apply and build"; applied by Claude). `AWeaponPickup`: `BaseMagazines` 1, `RandomExtraMagazines` 0.5. A new gun takes a magazine and the rest goes to the pool; a gun already owned fills the pool and goes, leftovers lost. Built clean 12:53; bridge checked; DLL newer than source; all four pickup Blueprints read back at 1 and 0.5. No pickups are placed in the three levels, so only enemy drops use it. **Not tested in PIE.** The Deck build the user started was stopped first ("actually not yet"): not made.
+- **2026-11-06: M4 stock collapsed** (user: "could you make the M4 compact the stock, its super extended at the moment and its cutting into the shoulder on aiming"). New mesh `SK_AR4_CompactStock` on the same skeleton, 9 cm shorter in the mesh and about 10 in game, on `BP_AssaultRifle` (bridge, saved; `SK_AR4` untouched). Spec: *5.56 Assault Rifle*. **Not seen on the shoulder yet:** the user aims with it in PIE.
 
 ### ▶ RESUME HERE
+- **Paper off posters (2026-11-06):** built clean, 300 posters on the `PosterPaper` preset, saved; the wall keeps its burst, sound and hole. The user shoots a poster to judge it. The sheets were too big ("I want bits of the poster"), so `PaperBurst` on `DA_ImpactEffects` is now `NS_ImpactPosterBits`, with the user's values; not seen in play. `NS_ImpactPaper` stays for stacks of paper. The 8 sheets on two shutters, which sat hidden behind the metal and threw paper, now sit in front of it (`B3_W0_0_1`, `B24h1_E0_0_0`); they use volumetric lighting, because their old lightmaps came out in black patches.
+- **Collision and surfaces (2026-11-06):** `nocoll` really removes collision now, on 2,209 pieces including the wires; the 112 awning pieces stay solid by the user's choice. 45 material instances now report the right surface, the ground (Asphalt) among them. Verified by reload, traces and reading back from disk. Not played yet: the user checks hits and footsteps by ear, and that enemies still path. Offered, not done: the same override fix on the 374 pack instances this level doesn't use. `SM_HouseDoor_A_002` (6 doors) has an empty second slot on `WorldGridMaterial`: worth a look. Spec: *Impact effects*.
+- **Focus bullet speed (2026-11-06):** built; the user judges it in play. Spec: *Focus (slow motion)*.
+- **Music voice fix (2026-11-06):** the user sprays the Machine Pistol to confirm the music holds. Offered, not done: tick Looping on `DarkCrimes` (it ends at 4:50), and a limit of 8 on `M4_Single_Shot_Cue` and `Shotgun_Boom_101_Cue`.
+- **Lvl_BackAlleys Game ms, 2026-11-06:** shell-casing and magazine fixes compiled and traced on the Deck (trace 26 = `20261106_030058`, about 5 minutes): fights at 54-60 fps, world tick 13-14 ms (was 34-48), and 26 corpse trims with no rebuild. **Left:** a one-frame hitch of about 50 ms when the player picks up a gun (4 in the trace): `SetStaticMesh` in `FitMagazine` adds the magazine to the navmesh before the flag is set, and 4 tiles rebuild (about 35 ms). **Fix applied and compiled 2026-11-06, no Deck build yet, not tested on the Deck:** `Magazine->SetCanEverAffectNavigation(false)` moved above `SetStaticMesh`. Fallback if spikes remain: `RuntimeGeneration=DynamicModifiersOnly`, which needs a saved navmesh. Details: spec, *Shell casings and the navmesh*. Uncommitted: `ShellCasing.cpp`, `WeaponDrop.cpp`, `ProjectileBase.cpp`, `WeaponBase.cpp`.
+- **Lvl_BackAlleys, next (user, 2026-11-06):** ground dirt, variations and dressing. Proposed order: surfaces, then dirt decals, then litter; export the road textures and dirt decals first, as their stored previews are blank. Hold the rebake until the surfaces are in, as they change the bake.
+- **Lvl_BackAlleys, 2026-11-06:** rebake again: the closed stalls, all 300 posters and the poles went in after the 00:30 bake. Trace the Wires folder (1,828 actors) and the poster planes on the Deck; merge them if they cost too much.
+- **Ads, the user's call:** texture settings (no mipmaps, 10 uncompressed, `Puting_Araw` set up as a normal map, so skipped); the election posters say 2004 and Tibay Selyas 2003 in a 2002 game; three movie posters are 1:2 and look tall; whether posters and wires may go on hollow-block walls; whether the ads stay at all.
+- **Cleanup once the editor has closed:** `M_BackAlleys_Poster` is unused too, replaced by `M_BackAlleys_PosterPaper`. So are `M_BackAlleys_GraffitiDecal` and its 20 `MI_BackAlleys_Graffiti_*`, replaced by `M_BackAlleys_SprayDecal` and `MI_BackAlleys_Spray_*`.
 **A. Next up**
 000001. **Hair shine (2026-11-04):** the user judges the Default Lit hair in
     game, ideally after a rebake. Too dark or too light: adjust the material.
     Undo is in the spec.
 000000. **`Lvl_BackAlleys`, open from 2026-11-04:**
+    - **Street dressing:** placed; the user judges it after the rebake. Light brightness needs another
+      look then (bulb 4.5, tube 6, lamp 40 cd). Signs are blank until the user gives wording. In PIE,
+      check that shutters and gates (which keep collision) don't catch the player or enemies.
     - **First:** rebake the lighting (the building floors moved everything). The
       last bake ran out of video memory in GPU Lightmass; cause not found.
+    - **Building dressing and laundry:** the user judges them after the rebake: unbaked
+      planes read too dark in shade. 86 of 235 blank tiles stay bare; rates are `P_PATCH_*`
+      and `P_VENT_*`. Laundry's LOD switch sizes couldn't be read, and its 35 m cull isn't
+      watched in PIE yet.
+    - **Cleanup once the editor has closed:** delete six unused first-draft assets, locked
+      while it's open, and don't commit them: `MI_BackAlleys_Plywood_Natural`, `_Weathered`,
+      `_GreenPaint` in `BackAlleys/Materials`, and `T_BackAlleys_Plywood_Natural_BC`,
+      `_Weathered_BC`, `_GreenPaint_BC` in `BackAlleys/Textures`. Keep
+      `T_BackAlleys_Plywood_N`: the new plywood uses it. Also unused now:
+      `T_BackAlleys_Sign_N`.
     - Walk it in PIE: the 18 cm slabs and the new stairs, player and enemies.
     - `Wander_R2` is inside B20b's footprint; move it before wiring wander points.
     - The user shoots a hollow-block wall, a door and a jalousie window in PIE

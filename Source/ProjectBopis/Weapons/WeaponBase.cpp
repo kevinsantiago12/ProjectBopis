@@ -577,6 +577,14 @@ void AWeaponBase::FireProjectile(const FVector& TraceStart, const FVector& Sprea
 		{
 			Projectile->AddIgnoredActor(Friend);
 		}
+
+		// The player's rounds fly faster in Focus.
+		const APawn* Shooter = GetInstigator();
+		const UFocusComponent* Focus = Shooter ? Shooter->FindComponentByClass<UFocusComponent>() : nullptr;
+		if (Shooter && Shooter->IsPlayerControlled() && Focus && Focus->IsFocusActive())
+		{
+			Projectile->ApplyFocusSpeed();
+		}
 	}
 }
 
@@ -900,6 +908,8 @@ UStaticMeshComponent* AWeaponBase::FitMagazine(USkeletalMeshComponent* Mesh)
 
 	// Seated on the socket, so the loose one DropMagazine lets go starts exactly where this sat.
 	UStaticMeshComponent* Magazine = NewObject<UStaticMeshComponent>(this);
+	// First: setting the mesh already adds it to the navmesh, before it's attached anywhere.
+	Magazine->SetCanEverAffectNavigation(false);
 	Magazine->SetStaticMesh(MagazineMesh);
 	Magazine->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Magazine->SetupAttachment(Mesh, MagazineSocketName);

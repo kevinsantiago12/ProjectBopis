@@ -10,7 +10,7 @@ FOLDERS = ('BackAlleys/Blocks', 'BackAlleys/SpawnDoors')
 REMOVE = False              # delete actors in FOLDERS that the plan no longer has: check the plan first
 NEW_FOLDERS = ()            # folders not in the level yet: their pieces are just placed. Asking the bridge about a
 #                            missing folder stops the whole script, and try/except can't catch it.
-CHUNKS = 26                # the generator prints this: "N items in M chunks"
+CHUNKS = 40                # the generator prints this: "N items in M chunks"
 S = 'editor_toolset.toolsets.scene.SceneTools.'
 A = 'editor_toolset.toolsets.actor.ActorTools.'
 O = 'editor_toolset.toolsets.object.ObjectTools.'
@@ -38,6 +38,23 @@ def obj(p):
 def xform(p):
     return {'location': v(p['loc']), 'rotation': {'pitch': p['rot'][0], 'yaw': p['rot'][1], 'roll': p['rot'][2]},
             'scale': v(p['scale'])}
+
+
+def place_light(p):
+    """A static light: the plan's "light" holds its settings."""
+    li = p['light']
+    a = call(S + 'add_to_scene_from_class', {'actor_type': {'refPath': '/Script/Engine.' + li['kind']}, 'name': p['label'], 'xform': xform(p)})
+    call(A + 'set_label', {'actor': a, 'label': p['label']})
+    call(S + 'set_actor_folder', {'actor': a, 'folder_path': p['folder']})
+    comp = [c for c in call(A + 'get_components', {'actor': a}) if 'LightComponent' in c['refPath']][0]
+    vals = {'Mobility': 'Static', 'Intensity': li['intensity'], 'AttenuationRadius': li['radius'], 'SourceRadius': li['source'],
+            'LightColor': {'r': li['colour'][0], 'g': li['colour'][1], 'b': li['colour'][2], 'a': 1.0}}    # lowercase, 0..1: capitals are ignored silently
+    if li.get('length'):
+        vals['SourceLength'] = li['length']
+    if li['kind'] == 'SpotLight':
+        vals['OuterConeAngle'] = li['outer']
+        vals['InnerConeAngle'] = li['outer'] * 0.55
+    call(O + 'set_properties', {'instance': comp, 'values': json.dumps(vals)})
 
 
 def set_mats(a, p):
@@ -82,13 +99,29 @@ def run():
         if key in seen:
             continue
         try:
+            if p.get('light'):
+                place_light(p)
+                out['placed'] += 1
+                continue
             a = call(S + 'add_to_scene_from_asset', {'asset_path': p['asset'], 'name': p['label'], 'xform': xform(p)})
             call(A + 'set_label', {'actor': a, 'label': p['label']})
             call(S + 'set_actor_folder', {'actor': a, 'folder_path': p['folder']})
             set_mats(a, p)
-            if p['nocoll']:
+            if p['nocoll'] or p.get('coll') or p.get('phys') or p.get('draw') or p['vol'] or p.get('noshadow'):
+                vals = {'BodyInstance': {'collisionProfileName': 'NoCollision'}, 'bUseDefaultCollision': False} if p['nocoll'] else {}     # left on, the component ignores the preset
+                if p.get('coll'):
+                    vals['BodyInstance'] = {'collisionProfileName': p['coll']}
+                    vals['bUseDefaultCollision'] = False
+                if p.get('phys'):
+                    vals.setdefault('BodyInstance', {})['physMaterialOverride'] = obj(p['phys'])     # a surface for this piece alone, when its material is shared
+                if p['vol']:
+                    vals['LightmapType'] = 'ForceVolumetric'
+                if p.get('noshadow'):
+                    vals['CastShadow'] = False
+                if p.get('draw'):
+                    vals['LDMaxDrawDistance'] = p['draw']      # cull distance: laundry, street dressing
                 comp = [c for c in call(A + 'get_components', {'actor': a}) if 'StaticMesh' in c['refPath']][0]
-                call(O + 'set_properties', {'instance': comp, 'values': json.dumps({'BodyInstance': {'collisionProfileName': 'NoCollision'}})})
+                call(O + 'set_properties', {'instance': comp, 'values': json.dumps(vals)})
             out['placed'] += 1
         except Exception as e:
             out['fail'].append([p['label'], str(e)[:120]])

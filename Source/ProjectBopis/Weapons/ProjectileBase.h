@@ -25,6 +25,9 @@ public:
 	/** Launch speed (cm/s) — how fast the round travels, for shooters leading a target. */
 	float GetInitialSpeed() const;
 
+	/** Flies FocusSpeedMultiplier times as fast from now on: a shot the player fires in Focus. */
+	void ApplyFocusSpeed();
+
 	/** The weapon that fired this round. Damage at impact comes from its falloff curve,
 	    measured from where the round spawned — so shotgun pellets keep their falloff. */
 	void SetSourceWeapon(AWeaponBase* Weapon) { SourceWeapon = Weapon; }
@@ -47,6 +50,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+	/** How many times as fast this round flies when the player fires it in Focus. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile", meta = (ClampMin = "0.1"))
+	float FocusSpeedMultiplier = 2.0f;
 
 	/** Splash radius on impact. 0 = no splash: ordinary bullets leave this at 0. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile|Fragment", meta = (ClampMin = "0.0"))

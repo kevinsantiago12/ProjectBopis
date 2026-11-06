@@ -132,3 +132,30 @@ for label, (face, caps) in walls:
 print("end caps lying in another wall's face: %d" % len(cop))
 for c in cop[:60]:
     print(c)
+
+# A closed stall's wall has to stand behind the stall's frame: SM_Shop_A_001's frame and SM_HouseWall_A_001 share the planes local Y 0 and -20. User 2026-11-06: "Shop A 001, overlapping surfaces with wall".
+whole = []
+for f in sorted(glob.glob(os.path.join(ROOT, "Saved", "BackAlleys", "plan3_[0-9]*.json"))):
+    whole += json.load(open(f))
+by_label = {p["label"]: p for p in whole}
+stall_cop = []
+for p in whole:
+    if p["label"].endswith("_Back") and p["label"][:-5] in by_label:
+        shop = by_label[p["label"][:-5]]
+        yaw = math.radians(shop["rot"][1])
+        back = (p["loc"][0] - shop["loc"][0]) * -math.sin(yaw) + (p["loc"][1] - shop["loc"][1]) * math.cos(yaw)
+        if back > -0.5:
+            stall_cop.append((p["label"], round(back, 2)))
+print("stall walls sharing their frame's plane: %d %s" % (len(stall_cop), stall_cop))
+
+# Two stalls side by side must not lap: their frames share a plane.
+shops = sorted((p for p in whole if p["asset"].endswith("/SM_Shop_A_001")), key=lambda p: (p["rot"][1], p["loc"][0], p["loc"][1]))
+shop_cop = []
+for i, a in enumerate(shops):
+    yaw = math.radians(a["rot"][1])
+    for b in shops[i + 1:]:
+        along = (b["loc"][0] - a["loc"][0]) * math.cos(yaw) + (b["loc"][1] - a["loc"][1]) * math.sin(yaw)
+        off = (b["loc"][0] - a["loc"][0]) * -math.sin(yaw) + (b["loc"][1] - a["loc"][1]) * math.cos(yaw)
+        if a["rot"][1] == b["rot"][1] and abs(off) < 1.0 and abs(along) < 299.0:
+            shop_cop.append((a["label"], b["label"], round(300.0 - abs(along), 1)))
+print("stalls lapping on one plane: %d %s" % (len(shop_cop), shop_cop))

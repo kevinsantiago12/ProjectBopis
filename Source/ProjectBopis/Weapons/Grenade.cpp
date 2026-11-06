@@ -26,6 +26,7 @@ AGrenade::AGrenade()
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 0.35f;
 	ProjectileMovement->Friction = 0.4f;
+	FocusSpeedMultiplier = 1.0f;	// an arc: twice the speed would carry it much further
 
 	// Always seen, and never a near miss.
 	bShowOnlyInSlowMotion = false;
