@@ -104,6 +104,20 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (EditCondition = "bOverrideKillCamStyle"))
 	EKillCamStyle KillCamStyle = EKillCamStyle::Orbit;
 
+	/** A set fight that's done restarts the level: once the last kill's kill cam has played out
+	    and RestartDelay has passed, the screen fades to black and the level reloads. Off: a
+	    cleared fight stays cleared. */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (EditCondition = "TotalEnemies > 0"))
+	bool bRestartOnCleared = false;
+
+	/** Real seconds from the end of the last kill's kill cam (or the kill, if none plays) to the fade. */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (ClampMin = "0.0", EditCondition = "TotalEnemies > 0 && bRestartOnCleared"))
+	float RestartDelay = 1.0f;
+
+	/** Real seconds of fade to black before the level reloads. */
+	UPROPERTY(EditAnywhere, Category = "Encounter|Cleared", meta = (ClampMin = "0.0", EditCondition = "TotalEnemies > 0 && bRestartOnCleared"))
+	float RestartFadeTime = 1.5f;
+
 private:
 
 	/** Spawns one enemy at a suitable point. False if none is free (or the spawn failed). */
@@ -114,6 +128,12 @@ private:
 
 	/** Spawns an enemy at Where with a gun from the pool; asleep (no controller) for the reserve. */
 	AEnemyBase* BuildEnemy(const FTransform& Where, bool bAsleep);
+
+	/** The fight's done: waits out the kill cam and RestartDelay, then fades and reloads the level. */
+	void UpdateClearedRestart();
+
+	/** Real time the fight was first seen done with no kill cam playing; below 0, not yet. */
+	double ClearedAt = -1.0;
 
 	/** Built ahead, asleep; woken in turn by TrySpawnOne. */
 	TArray<TWeakObjectPtr<AEnemyBase>> Reserves;

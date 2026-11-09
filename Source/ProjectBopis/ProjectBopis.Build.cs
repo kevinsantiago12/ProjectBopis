@@ -22,7 +22,9 @@ public class ProjectBopis : ModuleRules
 			"Slate",
 			"Niagara",
 			"PhysicsCore",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"LevelSequence",
+			"MovieScene"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

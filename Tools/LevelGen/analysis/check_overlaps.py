@@ -5,6 +5,10 @@ import glob
 import json
 import math
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import plan_source  # noqa: E402   a level's plan: check_overlaps.py [level]
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 LOCAL = {"SM_MainBorder_04": (0, -13, -8, 150, 13, 8), "SM_Wall_14": (0, 0, 0, 20, 200, 106),
@@ -26,8 +30,8 @@ def box(p):
 
 
 items, columns = [], []
-for f in sorted(glob.glob(os.path.join(ROOT, "Saved", "BackAlleys", "plan3_[0-9]*.json"))):
-    plan = json.load(open(f))
+for f in sorted(glob.glob(plan_source.plan_glob())):
+    plan = plan_source.normalise(json.load(open(f)))
     items += [p for p in plan if p["asset"].split("/")[-1] in LOCAL]
     # Corner columns (SM_Cube, pivot at its min corner, unrotated): what lies inside one can't be seen.
     columns += [(p["loc"][0], p["loc"][1], p["loc"][2], p["loc"][0] + p["scale"][0] * 100,
@@ -135,8 +139,8 @@ for c in cop[:60]:
 
 # A closed stall's wall has to stand behind the stall's frame: SM_Shop_A_001's frame and SM_HouseWall_A_001 share the planes local Y 0 and -20. User 2026-11-06: "Shop A 001, overlapping surfaces with wall".
 whole = []
-for f in sorted(glob.glob(os.path.join(ROOT, "Saved", "BackAlleys", "plan3_[0-9]*.json"))):
-    whole += json.load(open(f))
+for f in sorted(glob.glob(plan_source.plan_glob())):
+    whole += plan_source.normalise(json.load(open(f)))
 by_label = {p["label"]: p for p in whole}
 stall_cop = []
 for p in whole:
@@ -159,3 +163,13 @@ for i, a in enumerate(shops):
         if a["rot"][1] == b["rot"][1] and abs(off) < 1.0 and abs(along) < 299.0:
             shop_cop.append((a["label"], b["label"], round(300.0 - abs(along), 1)))
 print("stalls lapping on one plane: %d %s" % (len(shop_cop), shop_cop))
+
+# Ground planes lie within a centimetre of each other, and the plan rounds heights to 1 mm: two that overlap shimmer. User 2026-11-06: "theres a shimering overlap here when moving the camera", "theres a couple of them actually".
+ground_ = [p for p in whole if p["folder"] == "BackAlleys/Ground"]
+ground_r = [(p["label"], p["loc"][0] - abs(p["scale"][0]) * 50.0, p["loc"][1] - abs(p["scale"][1]) * 50.0, p["loc"][0] + abs(p["scale"][0]) * 50.0, p["loc"][1] + abs(p["scale"][1]) * 50.0) for p in ground_]
+ground_lap = []
+for i, a in enumerate(ground_r):
+    for b in ground_r[i + 1:]:
+        if min(a[3], b[3]) - max(a[1], b[1]) > 0.0 and min(a[4], b[4]) - max(a[2], b[2]) > 0.0:
+            ground_lap.append((a[0], b[0]))
+print("ground planes overlapping each other: %d %s" % (len(ground_lap), ground_lap[:12]))

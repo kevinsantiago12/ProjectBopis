@@ -6,6 +6,7 @@
 #include "Gameplay/RollComponent.h"
 #include "Gameplay/GamepadAimComponent.h"
 #include "Gameplay/KillCamComponent.h"
+#include "Gameplay/InteractComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Weapons/WeaponHolderComponent.h"
 #include "Camera/CameraComponent.h"
@@ -22,10 +23,12 @@
 #include "Weapons/WeaponBase.h"
 #include "Weapons/Grenade.h"
 #include "Gameplay/HealthComponent.h"
+#include "Gameplay/LevelTravelSubsystem.h"
 #include "Gameplay/MeleeDamageType.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/Engine.h"
+#include "BopisGameUserSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/App.h"
 #include "EnhancedInputSubsystems.h"
@@ -46,6 +49,7 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	Roll = CreateDefaultSubobject<URollComponent>(TEXT("Roll"));
 	GamepadAim = CreateDefaultSubobject<UGamepadAimComponent>(TEXT("GamepadAim"));
 	KillCam = CreateDefaultSubobject<UKillCamComponent>(TEXT("KillCam"));
+	Interaction = CreateDefaultSubobject<UInteractComponent>(TEXT("Interaction"));
 
 	// The player never staggers: being rooted mid-fight (or mid-dive) is no fun. Hits stay
 	// light reactions.
@@ -99,6 +103,15 @@ AProjectBopisCharacter::AProjectBopisCharacter()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchedSpeed;
+
+	// Walking into a loose prop pushes it along at about walking pace, no faster
+	// (user 2026-11-07: "the chairs go flying when you walk to them. cap their velocity").
+	// The engine default pushes with 750000 whatever the mass: a 2.5 kg chair gained ~50 m/s a frame.
+	// Scaled to mass, these become speeds: 150 cm/s at first touch, then +1200 cm/s² while you keep
+	// walking into it, until it outruns you and the contact ends.
+	GetCharacterMovement()->bPushForceScaledToMass = true;
+	GetCharacterMovement()->InitialPushForceFactor = 150.0f;
+	GetCharacterMovement()->PushForceFactor = 1200.0f;
 }
 
 void AProjectBopisCharacter::BeginPlay()
@@ -219,6 +232,12 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 				&AProjectBopisCharacter::DoHeal);
 		}
 
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this,
+				&AProjectBopisCharacter::DoInteract);
+		}
+
 		if (WeaponWheelAction)
 		{
 			EnhancedInputComponent->BindAction(WeaponWheelAction, ETriggerEvent::Started, this,
@@ -275,6 +294,12 @@ void AProjectBopisCharacter::LookInput(const FInputActionValue& Value)
 			WeaponWheel->AddPointerDelta(LookAxisVector);
 		}
 		return;
+	}
+
+	// The player's mouse sensitivity, from Options. Not for the wheel above: it points, it doesn't turn.
+	if (const UBopisGameUserSettings* Settings = UBopisGameUserSettings::Get())
+	{
+		LookAxisVector *= Settings->GetMouseSensitivity();
 	}
 
 	// pass the axis values to the aim input
@@ -985,7 +1010,14 @@ void AProjectBopisCharacter::FollowBodyWithCamera(float DeltaSeconds)
 
 void AProjectBopisCharacter::RestartLevel()
 {
-	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
+	// A fade to black first. Called every tick once it's time; the subsystem ignores repeats.
+	if (UGameInstance* Game = GetGameInstance())
+	{
+		if (ULevelTravelSubsystem* Travel = Game->GetSubsystem<ULevelTravelSubsystem>())
+		{
+			Travel->FadeAndOpenLevel(TSoftObjectPtr<UWorld>(), RestartFadeTime);
+		}
+	}
 }
 
 bool AProjectBopisCharacter::LandsOnTheBody() const
@@ -1564,6 +1596,25 @@ void AProjectBopisCharacter::UpdateLowHealth(float RealDelta)
 void AProjectBopisCharacter::NoteCombat()
 {
 	LastCombatTime = GetWorld()->GetTimeSeconds();
+}
+
+void AProjectBopisCharacter::DoInteract()
+{
+	if (Interaction)
+	{
+		Interaction->Interact();
+	}
+}
+
+bool AProjectBopisCharacter::IsOutOfCombat() const
+{
+	return GetWorld()->GetTimeSeconds() - LastCombatTime >= OutOfCombatDelay;
+}
+
+bool AProjectBopisCharacter::GetHeadLookTarget(FVector& OutLocation) const
+{
+	// With the gun up he looks down the sights; otherwise at whatever's worth inspecting nearby.
+	return !IsWeaponRaised() && Interaction && Interaction->GetLookTarget(OutLocation);
 }
 
 void AProjectBopisCharacter::UpdateRecovery(float DeltaSeconds)

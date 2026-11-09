@@ -112,7 +112,8 @@
   - [Prep pass (applied 2026-11-02)](#prep-pass-applied-2026-11-02)
   - [AsiaSlum's building prefabs are high-rises](#asiaslums-building-prefabs-are-high-rises)
   - [Kit list for the slum arena (`Arena_Slums_Layout.html`)](#kit-list-for-the-slum-arena-arena_slums_layouthtml)
-  - [`Lvl_BackAlleys`: first build (2026-11-02)](#lvl_backalleys-first-build-2026-11-02)
+  - [`Lvl_BackAlleys_Arena`: first build (2026-11-02)](#lvl_backalleys_arena-first-build-2026-11-02)
+- [Arena mode: 3 maps × 5 levels (planned 2026-11-08)](#arena-mode-3-maps--5-levels-planned-2026-11-08)
 - [Build tooling](#build-tooling)
 - [Engineering gotchas](#engineering-gotchas)
   - [Full list (from ProjectPlan.md, 2026-10-24)](#full-list-from-projectplanmd-2026-10-24)
@@ -632,10 +633,13 @@ tuned against it.
 - **Packaging** (`DefaultGame.ini`, `ProjectPackagingSettings`):
   - Development (console and `stat` readouts; Shipping strips them);
   - pak + IoStore, compressed;
-  - **Default map:** `Lvl_BackAlleys` since 2026-11-06, for the game and the editor's
-    startup (`GameDefaultMap`, `EditorStartupMap`; was `Lvl_Sandbox`).
-  - **`MapsToCook`: `Lvl_Sandbox`, `Lvl_Linear`, `Lvl_BackAlleys` (added
-    2026-11-06) only**. Before, there were
+  - **Default map:** the game starts on `Lvl_MainMenu` since 2026-11-07 (`GameDefaultMap`); the
+    editor still opens `Lvl_BackAlleys_Arena` (`EditorStartupMap`). Before: `Lvl_BackAlleys_Arena`
+    for both from 2026-11-06, `Lvl_Sandbox` before that.
+  - **`MapsToCook`: `Lvl_Sandbox`, `Lvl_Linear`, `Lvl_BackAlleys_Arena` (added
+    2026-11-06), `Lvl_MainMenu` and `Lvl_MenuScene_BackAlley` (added 2026-11-07) only**. The menu
+    scene is loaded by soft reference as a level instance, and the menu's levels by name, so
+    every map the menu can reach is listed. Before, there were
     no settings, so all 16 maps, vendor demos included, were cooked.
   - The code loads nothing by path at runtime (only editor sprites), so
     cooking from the maps is safe. Add any map that's opened by name.
@@ -657,7 +661,8 @@ tuned against it.
   Devkit Client on the PC, paired over the network. Upload the build's
   `Windows` folder, Steam Play (Proton) on. **Start command
   `ProjectBopis/Binaries/Win64/ProjectBopis.exe Lvl_Linear
-  -ExecCmds="stat fps,stat unit"`**, the real game binary. The
+  -ExecCmds="stat fps,stat unit"`**, the real game binary. Leave the map out (or pass
+  `Lvl_MainMenu`) to start on the main menu, the default since 2026-11-07. The
   top-level `ProjectBopis.exe` is only a launcher that checks for the
   Visual C++ 2015–2022 runtime the Windows way and stops ("redistributable
   required") under Proton, which supplies those DLLs itself (2026-10-27).
@@ -1031,6 +1036,14 @@ dynamic characters.
     dead session, opened two fresh editor sessions per connect and then
     errored. Now only replies that mention a session count as expired;
     other errors pass straight through. Tested against a fake upstream.
+  - **Proxy fix (2026-11-07), "connected, 0 tools":** the client gives `tools/list` 30 s, and the proxy waited
+    on the editor before answering. A busy editor answered late, the client logged "Failed to fetch tools:
+    Request timed out" and then "a response for an unknown message ID" with the list, and the session sat
+    connected with no tools until a manual reconnect. Now `tools/list` answers from the snapshot at once
+    (`.claude/unreal-mcp-tools.json`, the three meta-tools) and refreshes it in the background; only with no
+    snapshot does it wait, up to 20 s. Tested against an upstream that never answers: 54 ms, 3 tools. The
+    client's log for a session is `%LOCALAPPDATA%/claude-cli-nodejs/Cache/<project>/mcp-logs-unreal-mcp/`,
+    one file per connect, with the session id on every line.
   - `find_actors` needs `name`, `tag` and `collision_channels`.
 - **First GPU bake: blocky checkerboard lightmaps** (user: "some artifacts
   on the ground", screenshot of the quarter-cylinder pit).
@@ -1274,6 +1287,16 @@ scratchpad's `t8/`.
     those surfaces in. The fix is Uniform Curve Scale 0.25 on the smoke
     emitters.
   - Data: the bridge session's scratchpad `audit3.txt`.
+- **Metal smoke, 2026-11-08** (user: "the smoke is absurdly large when
+  hitting metal"). The surfaces are in the levels now (wall patches,
+  shutters, gates report Metal since 2026-11-07). Checked in code and data,
+  read headless: `SpawnImpact` scales a burst only by the surface's `Scale`
+  × `EffectScale`, and for Metal both are 1.0, with no extra layers; the
+  smoke gate only decides how often a puff goes off. So the size is the
+  pack's own `MetalSmoke` emitter (125 cm). Every surface reads 1.0 except
+  Blood (0.25). The fix is the concrete one, on `MetalSmoke` (and
+  `WoodSmoke`, `GlassSmoke`, also 125 cm): Uniform Curve Scale 0.25, or
+  0.15 to match concrete.
 
 ### Forward + MSAA Deck trace (2026-11-01, 20:48)
 **The trace.** `20261101_204849.utrace`, 323 MB, `Lvl_Sandbox`, same start
@@ -1750,6 +1773,26 @@ Claude):**
 - **#4 movement** (`AEnemyBase` constructor): `bEnablePhysicsInteraction`
   false (enemies no longer shove corpses, casings or pickups), and
   `bAlwaysCheckFloor` false (no floor sweep when standing still).
+- **Player push on loose props (2026-11-07,** `AProjectBopisCharacter`
+  constructor): `bPushForceScaledToMass` true, `InitialPushForceFactor` 150,
+  `PushForceFactor` 1200.
+  - User: "the chairs go flying when you walk to them. cap their velocity".
+  - The engine default pushes with 750,000 whatever the mass, about
+    +50 m/s a frame on a 2.5 kg chair. Its velocity scaling
+    (`bScalePushForceToVelocity`) compares an unnormalised dot product
+    with 1, so it almost never applies.
+  - Scaled to mass, the factors become 150 cm/s at first touch and then
+    1,200 cm/s² while in contact, so a prop tops out at about the
+    player's speed.
+  - A body can't cap its own straight-line speed as a setting (only C++:
+    `FPhysicsInterface::SetMaxLinearVelocity_AssumesLocked`). The level's
+    physical props cap pop-out at 150 cm/s and spin at 720°/s
+    (`Tools/LevelGen/LESSONS.md`).
+- **Random prop colour on moving props (2026-11-07):**
+  - **The problem:** the Philippine Markets master `MM_BasicProp` picks a random colour by world position (`MF_PerInstanceColor`), so a physical prop changes colour as it moves.
+  - **The fix:** `MF_PerInstanceColor` now has `Colour From Spawn Seed?` (off by default). On, it reads the palette cell from custom primitive data 0 (`Spawn Seed`), set once per component.
+  - **Using it:** any prop on this master that becomes physical gets an instance with the switch on, plus a seed in `CustomPrimitiveData`.
+  - **Pieces spawned at runtime** would set it in code: `UPrimitiveComponent::SetCustomPrimitiveDataFloat(0, FMath::FRand())`.
 - ~~**#5 physical animation**: tick only while any body simulates.~~
   **Reverted 2026-11-02.** The player spazzed when hit: the reaction
   simulates and applies motors in the same frame, while the component's
@@ -1764,7 +1807,7 @@ Claude):**
   Pistol enemies hold their guns up all fight, so their arm is nearly
   always simulating. The body physics asset (`PA_CCMH_Bopis`) and the
   enemy Blueprints have no always-simulated bodies.
-**Shell casings and the navmesh (trace 24, `Lvl_BackAlleys`, Deck, 2026-11-06).** World tick 8.1 ms hidden, 34.0 ms spotted (42.0 ms at the worst stretch). The difference is `Nav Tick Time`: 0.03 ms hidden, 20.5 ms spotted, 29.4 ms at worst, nearly all of it `STAT_RecastNavMeshGenerator_GatherGeometry` on the game thread, about 6.7 ms a tile and 3-4 tiles a frame.
+**Shell casings and the navmesh (trace 24, `Lvl_BackAlleys_Arena`, Deck, 2026-11-06).** World tick 8.1 ms hidden, 34.0 ms spotted (42.0 ms at the worst stretch). The difference is `Nav Tick Time`: 0.03 ms hidden, 20.5 ms spotted, 29.4 ms at worst, nearly all of it `STAT_RecastNavMeshGenerator_GatherGeometry` on the game thread, about 6.7 ms a tile and 3-4 tiles a frame.
 - **Trigger:** in the spotted stretch `ShellCasing` (5,221), `UpdateOverlaps` (5,244) and `Component UpdateNavData` (5,232) match one to one; none of them run while hidden. So it scales with how many are shooting.
 - **Why:** `UShapeComponent` can affect navigation by default, and the casing's `PhysicsActor` box still blocks the Vehicle channel, so ignoring Pawn doesn't take it out. Each one moved by physics dirties the navmesh, and Dynamic generation rebuilds those tiles. Dense level collision is what makes a tile this expensive.
 - **Ruled out in the same trace (hidden, spotted, ms a frame):** `PhysicalAnimation` 0.22, 0.28; physics blend 0.07, 0.12; `Char Movement Total` 1.62, 1.54; `StateTree` 0.12, 0.13; `Recast: pathfinding` 0.07 spotted. The stat-event names need `-statnamedevents`, which traces before this one didn't have, and that hid it. The 2026-11-02 estimate that casings cost at most 0.05 ms was wrong for this reason.
@@ -2257,9 +2300,10 @@ decal chosen by the physical surface struck**. User-confirmed in PIE.
   A component override reaches every physics-asset body (engine:
   `FBodyInstance::GetSimplePhysicalMaterial` — body override > component
   override > body setup > material > default). So a hit on a person plays the
-  Blood entry (`NS_ImpactBlood`, no decal, no sound yet; **Scale 0.5**,
-  user 2026-10-24: "scale the blood particles down" — × the asset's
-  `EffectScale` 1.5, tune it there live in PIE). Before, no character
+  Blood entry (`NS_ImpactBlood`, no decal, no sound yet; **Scale 0.25**
+  as read from the asset 2026-11-08 (it was 0.5, user 2026-10-24: "scale
+  the blood particles down") × the asset's `EffectScale` 1.0; tune it there
+  live in PIE). Before, no character
   had a physical material: body hits got `Default` (concrete burst +
   `MI_Generic_1`), and the hole projected onto every CC piece (body, head,
   clothes all receive decals). Safety net in code: `SpawnImpact` never spawns a
@@ -2375,7 +2419,7 @@ material on a complex-as-simple mesh. A material instance's `PhysMaterial` count
 only with `bOverridePhysMaterial` on; otherwise it reports its parent's. Footsteps
 read the same surfaces.
 
-**`Lvl_BackAlleys` surfaces (2026-11-06):** 45 material instances corrected, read back
+**`Lvl_BackAlleys_Arena` surfaces (2026-11-06):** 45 material instances corrected, read back
 from disk. The earlier surface pass had not ticked the override.
 - **Override ticked, surface as already set:** `MI_wooden_part_01` (274 terrace
   planks), the `MI_wood*` and `MI_wooden_beam_01` roof beams and awning frames, metal
@@ -5405,7 +5449,7 @@ in a trigger" — "also does not get affected by time dilation". Code:
 - **Assets:** tracks in `/Game/Audio/BGM` (`DarkCrimes` so far); tick
   Looping on a wave for music that carries on. Planned: an `SC_Music` sound
   class as the overall music level, like `SC_Barks`.
-- **Placed in:** `Lvl_Linear`, `Lvl_BackAlleys` (`Music_Start`), both Play At Start with `DarkCrimes`.
+- **Placed in:** `Lvl_Linear`, `Lvl_BackAlleys_Arena` (`Music_Start`), both Play At Start with `DarkCrimes`.
 - **Later, if wanted:** a Play Music step for scripted events; combat /
   explore intensity layers; music that carries across level loads.
 - *User-tested 2026-10-25* (start track, fade-out trigger, unaffected by slow motion).
@@ -5435,10 +5479,196 @@ exit trigger. Dont drop it on the map, thats a test for later." Code:
   `OpenLevelBySoftObjectPtr(NextLevel)` — a `TSoftObjectPtr<UWorld>`, so
   the next level isn't loaded with this one — or, with none, this level
   again from the top.
-- **Later, if wanted:** an exit that waits for the room to be cleared; a
-  results card (time, kills); checkpoints (the brief: only if a restart
-  from the top proves too punishing).
+- **Later, if wanted:** an exit that waits for the room to be cleared (not
+  in arenas, below); a results card (time, kills); checkpoints (the brief:
+  only if a restart from the top proves too punishing).
 - *User-tested 2026-10-25.*
+
+**No exit in arenas (user, 2026-11-07):** "I dont want an exit trigger at all, the
+resets will be handled by the menu screen when it comes." Restarting an arena will be the
+menu screen's job (see *Main menu*). A cleared-fight exit (`AEncounterDirector::ExitOnCleared`,
+`ALevelExitTrigger::bWalkIn`) was built and placed in `Lvl_BackAlleys_Arena` the same day,
+then taken out again: that code is gone and `Exit_ArenaCleared` is deleted.
+`ALevelExitTrigger` itself stays, for story levels (`Lvl_Linear` has one).
+
+**The cleared-arena restart, until the menu (user, 2026-11-07: "Restart, no exit actor").**
+Built clean 21:50 (applied by Claude, "apply and build"). The director restarts the level
+itself; nothing is placed for it.
+- **`AEncounterDirector::bRestartOnCleared`** (default off, so `Lvl_Sandbox`'s director is
+  unchanged), **`RestartDelay`** 1 s, **`RestartFadeTime`** 1.5 s. When the set fight is
+  done (`IsFightDone`), it waits for the player's kill cam to end (`UKillCamComponent::IsPlaying`),
+  then `RestartDelay` real seconds (`UWorld::GetRealTimeSeconds`), then calls
+  `ULevelTravelSubsystem::FadeAndOpenLevel` with no level (this one again) and stops ticking.
+  That's the death restart's path, so a death in the same moment asks for the same reload
+  and the subsystem ignores the repeat.
+- **On in `Lvl_BackAlleys_Arena`'s director** (bridge, saved, read back from the file). From
+  the last kill: the kill cam (2–5 s), 1 s, a 1.5 s fade, then the reload.
+- **Not tested in Play by Claude:** the bridge can't run console commands, and won't remove
+  actors during Play, so it can't clear a fight. The user clears the 20 to check it.
+- **When the menu takes over:** turn `bRestartOnCleared` off on the director (or remove the
+  code).
+
+
+## Inspects (proposed 2026-11-08; step 1 built)
+
+**Step 1, built 2026-11-08** (applied by Claude, "apply and build"; compiled clean 16:52, DLL
+newer than the source; not yet tested in Play):
+- **`IInteractable`** (`Gameplay/Interactable.h`): a C++-only `UINTERFACE`
+  (`CannotImplementInterfaceInBlueprint`, pure virtuals): `GetInteractLocation`,
+  `GetInteractRange`, `CanInteract`, `GetInteractPrompt`, `Interact(Player)`.
+- **`UInteractSubsystem`** (world subsystem): interactables `Register` in BeginPlay and
+  `Unregister` in EndPlay; a list of weak pointers.
+- **`UInteractComponent`** on the player (`Interaction`, `GetInteraction()`): ticks at 10 Hz
+  and picks the registered one in range (3D distance from the pawn), within `MaxViewAngle`
+  35° of the camera's view, nearest the middle, with a Visibility trace from the eyes that
+  may hit the target's own actor or land within 30 cm of it. Only while alive, on the ground,
+  with no kill cam playing, and out of combat (`AProjectBopisCharacter::IsOutOfCombat`, new:
+  `LastCombatTime` older than `OutOfCombatDelay`). `Interact()` picks again on the press
+  rather than trusting the last tick.
+- **Input:** `InteractAction` on the character, bound on Started to `DoInteract`. The asset
+  `/Game/Input/Actions/IA_Interact` is a copy of `IA_Heal` (Boolean), set on
+  `BP_PlayerCharacter`; `BP_Player_CC` is its child and inherits it. **The keys are the
+  user's to map** in `IMC_Default` (the bridge reads its mappings as empty): E and the
+  gamepad's bottom face button, if free.
+- **`UInteractPromptWidget`** (`UI/`, a `UPlayerHUDElementWidget`): `GetPromptText`,
+  `HasPrompt`, and `GetPromptVisibility` (HitTestInvisible with a prompt, else Collapsed:
+  UMG binds Visibility to an `ESlateVisibility`, not a bool; added 2026-11-08, built 17:11).
+  The layout goes in a Blueprint child placed in `WBP_PlayerHUD` (the user's).
+- **`AInspectPoint`** (bare): a `USphereComponent` root as the marker (no collision, no
+  overlaps, no navigation, hidden in game); its radius is the range (200). `Prompt`
+  "Inspect". Once only; `Interact` logs "… inspected" and calls the Blueprint event
+  `OnInspected`. *User-tested 2026-11-08 ("Inspect logged").*
+
+**Step 2a (2026-11-08): the cutscene plays a double, not the player.** First built with the
+player bound into the sequence (compiled 18:28; `SetBindingByTag`, a snap onto the Mark). The
+user's concern: "the sequence fighting with ticking game code" (the player's Tick turns him
+toward the control rotation, the movement component walks and floor-snaps him, free-arm and
+leg physics, reload montages and auto-reload touch his mesh). Their fix: "Can you just replace
+the model with a BP_Player_Cutscene?" So:
+- **`BP_Player_Cutscene`** (`/Game/ThirdPerson/Blueprints/CC/`): a copy of `BP_Player_CC`
+  reparented to `Character` (bridge `BlueprintTools.set_parent`). His look comes from its
+  construction script (`BuildCCCharacter`), so it shows in Sequencer; no gameplay code.
+  Defaults: `AutoPossessAI` Disabled, `CharMoveComp.bAutoActivate` false, capsule and mesh
+  `NoCollision`, capsule 96 × 34 and mesh at (−20, 0, −96), yaw −90, copied from the player
+  (the reparent had dropped the native constructor's values: 88, and the mesh at 0 facing
+  sideways). **It's a copy:** a change to `BP_Player_CC`'s look doesn't reach it.
+- **`AInspectPoint`** (applied by Claude, "apply and build", 2026-11-08): on the press, the
+  real player is taken out of play (input off, `SetCanBeDamaged(false)`, Focus stopped, his
+  `InteractComponent` tick off) and hidden with his equipped gun; the inspect takes input and
+  binds `InteractAction` to skip. It ticks during the cutscene and records the transform of
+  the binding tagged `PlayerTag` ("Player"), via `GetBoundObjects`. Skip jumps to the last
+  frame first (`SetPlaybackPosition`, end − 1, Jump), records, then `Stop`. At the end (once,
+  for `OnFinished` and `OnStop`; only if the player was taken, `bTookPlayer`): the player goes
+  where the double last stood, facing its yaw (no double: on the Mark), is shown, gets damage,
+  the prompt and input back, with the control rotation set to that yaw; then `OnInspected`.
+  No binding override and nothing on the characters changes. `NavarroTag` and `bHideWeapon`
+  are gone; the gun always hides with him.
+- **The double is built ahead (2026-11-08, user: "he appears after the cut, half a second too
+  late", at the start).** A double the sequence spawns at the cut appears late: building the CC
+  character then takes a moment (blocking loads, added components, material instances), and
+  under the engine's default `r.PSOPrecache.ProxyCreationStrategy` 1 (`DelayUntilPSOPrecached`;
+  the ini only restates it) a new mesh isn't drawn until its shader pipelines are ready. So
+  `AInspectPoint::DoubleClass` (default `BP_Player_Cutscene`, by `ConstructorHelpers`) is spawned
+  in `BeginPlay`, on the floor under the Mark (a Visibility trace + capsule half-height), hidden
+  with its actor and skeletal-mesh ticks off (`SetDoubleActive(false)`). At the cut it's shown,
+  ticking, and given to the sequence in place of its own (`SetBindingByTag(PlayerTag, …)`); at the
+  end it's hidden and goes 0.5 s later. One hidden double per Inspect Point for the level's
+  length.
+  - **The real cause of the late pop (found 2026-11-08):** the Character Customizer component
+    async-loads its clothes and hair (`Async Load Apparel`) and keeps the pawn hidden until
+    nothing is left to load, then shows it (`UnhideCharacter`, `SetActorHiddenInGame` on the
+    owning pawn). That also undid the waiting double's hide (user: "the double is in there spawned
+    and A-posed": shown by the Customizer, mesh ticks off). **Fix:** after spawning it, the Inspect
+    Point ticks and watches it (`WatchDouble`); when the Customizer shows it, it's hidden again and
+    the watch stops (30 s at most). Any CC character spawned for a cutscene has this, so build
+    it ahead. Built clean 20:56 (applied by Claude, "apply and build"); a local `Double` in
+  `RecordDouble` was renamed `BoundActor` first (it would have shadowed the member, C4458).
+- **The glance (2026-11-08, user: "implement the neck turn (look at inspectable)").** The head
+  look already in `ABP_Player` (`UProjectBopisAnimInstance::UpdateHeadLook`, half on `neck_01`
+  and `head`, 70° / 30° limits, gives up past 130°, eased at 5) now has a target for the player:
+  `AProjectBopisCharacter::GetHeadLookTarget` returns `UInteractComponent::GetLookTarget` unless
+  the gun is raised. The component picks it at 10 Hz beside the prompt: the nearest usable
+  interactable within `LookRange` 400 cm and `LookAngle` 90° of the body's flat facing, in sight,
+  with the same calm rule (alive, grounded, no kill cam, out of combat). A done inspect isn't
+  looked at. `IsCalm` and `CanSee` are shared with the prompt's pick. No AnimBP change.
+- **Character:** `GetInteractAction()`. **Build.cs:** `LevelSequence`, `MovieScene`.
+- **Fix, first build:** `SetWeaponHidden(bool bHidden)` shadowed `AActor::bHidden` (C4458, an
+  error here); the parameter is `bHide`.
+- **Authoring a cutscene:** the double is a spawnable `BP_Player_Cutscene`, its binding tagged
+  and named `Player` (no character names in the build: `Claude-Rules.md` §7). It starts on the
+  inspect's Mark. A Transform track moves it; where it ends, the player comes back, so set that
+  section's When Finished to Keep State. Its animation goes on the **actor binding** (Sequencer
+  plays it on the actor's first skeletal mesh,
+  `UMovieSceneSkeletalAnimationSystem::ResolveSkeletalMeshComponentBinding`) with **Force
+  Custom Mode**. The first camera cut is hard. Blending back to gameplay is the camera cut
+  track's **Can Blend** plus an ease-out on its last section, both set in the editor:
+  Sequencer scripting can't (`bCanBlend` and `FMovieSceneEasingSettings` are plain
+  `UPROPERTY()`s).
+- **Guns in cutscenes (proposed, not built):** a gun is a prop the sequence owns, attached to
+  the double's `hand_r` (`hand_l` for the second of a pair) with an Attach track and the gameplay
+  gun's grip offset. To shoot: `ACutsceneGun`, pointed at a gun Blueprint (its mesh, grip,
+  `FireSound`, `MuzzleFlash`, `FireAnimation`, casing, `UImpactEffectsData`), with `Fire()` keyed
+  on an Event track: slide, flash, sound, casing, and a trace from the muzzle that spawns the real
+  impact; no damage or ammo. His recoil is in his clip; a shot enemy is an enemy double with a hit
+  clip or a ragdoll event; Sequencer's Time Dilation track gives slow motion. "His current gun"
+  is the same prop re-pointed at the equipped gun by the inspect. Hands are the clip's alone (no
+  off-hand grip code), so clips must suit the gun type. Built when a cutscene first needs to shoot.
+- **`LS_InspectTest`** (`/Game/ThirdPerson/Cinematics/`, built headless by
+  `Tools/Cinematics/make_inspect_test.py` from `inspect_test.json`; it recreates the asset, so
+  the open editor's copy is deleted through the bridge first): 4 s at 30 fps; the double on the
+  Mark, `MM_Unarmed_Crouch_Idle` (SK_Mannequin, compatible with `CCMH_Skeleton`); Shot A over
+  his right shoulder (35 mm, f/2.8, 0-2 s), Shot B low and close on the point (50 mm, 2-4 s).
+  Set as `Cutscene` on `Lvl_01_Slum`'s `InspectPoint_1` (bridge). The point sits on
+  `Sidewalk_2` (top z 15), 1.1 m up; scaled 0.47, so the Mark is 57 cm from it.
+- **Gotchas found doing it:** the bridge's `SceneTools.trace_world` reported a hit 15 cm below
+  every start height, here and in the editor world: don't trust it for floors. A headless
+  world has no collision, so traces there hit nothing; use actor bounds. On a spawnable's
+  template, `get_cine_camera_component()` and `get_components_by_class()` come back empty; read
+  the `camera_component` property.
+
+
+Story beats in story levels (lore *Inspects*). `Lvl_01_Slum` has 8 (layout I1-I8). Two are
+needed: the patrol car (I3) and the documents (I8).
+
+**The user's decisions (2026-11-08):**
+- **Voice and subtitles.** Voice always plays; subtitles follow a player setting. That
+  setting is assumed to cover every subtitle (enemy `SayLine`s too). The settings screen is
+  the menu work's; this side only reads the setting.
+- **A silent count for achievements.** Each inspect has a stable ID. Finding one is saved to
+  the player's profile at once (not to the checkpoint), so it counts even after a death or a
+  quit. Nothing shows the count: no HUD, menu or end screen. Achievements read it. There's
+  no Steam/achievement layer yet, so the first build keeps the count and a hook.
+- **Navarro moves.** He walks to the inspect's mark, turns to its facing and plays its
+  animation (crouch and look, reach, pick up) while the camera frames it. The project has
+  none of these animations; Lyra has crouch idles only. Authoring them (Tools/AnimAuthoring)
+  or a pack is open.
+
+**Proposed, not yet confirmed by the user:**
+- **Finding one:** no outlines or markers. A prompt ("Inspect" plus the button glyph) shows
+  within about 2 m, facing it within about ±35°, with a clear line, and only out of
+  combat (`LastCombatTime` / `OutOfCombatDelay`, as the health recovery uses).
+- **Button:** a new `IA_Interact`. The gamepad's bottom face button looks unused in
+  `IMC_Default`; keyboard E, to be confirmed in the editor.
+- **The look: a mini cutscene (user, 2026-11-08: "The inspect will be mini cutscenes
+  essentially").** Each inspect plays its own Level Sequence: camera cuts, Navarro's
+  animation (the player pawn bound into it), the voice, and subtitle cues on an event
+  track (shown only if the subtitle setting is on). **No walk-up (user, 2026-11-08: "cant
+  we just cut into the clip instead of moving"):** input locks, Focus ends, the gun hides,
+  and Navarro is put on the inspect's `Mark` under the first shot, so that shot must be a
+  hard cut (blending back out at the end is fine). Any walking is authored in the sequence
+  (a transform track on the Navarro binding). Pressing again skips. A close-up (the documents) is a shot in its sequence. This replaces the
+  camera-blend look first proposed. Needs the `LevelSequence` and `MovieScene` modules.
+- **Events, as the camera returns:** `AEncounterTrigger::Fire()` (I3 sets off F1),
+  `AEncounterEvent::StartEvent()`, `ALevelExitTrigger::Fire()` (I8), and a Blueprint
+  `OnInspected`. A checkpoint hook (I3 saves CP2) waits for checkpoints, which must record
+  the inspects done so a death doesn't replay one.
+- **Code shape:** `IInteractable` (UINTERFACE); `UInteractComponent` on the player,
+  picking from the inspects the level registers (no world traces); `AInspectPoint`. The
+  walk-around civilians can share the button and prompt later.
+- **Order:** the button, interface, component and prompt, with a bare `AInspectPoint` to
+  test them; then the walk-up and the cutscene; then its events and the count; then the
+  checkpoint hook. Inspects go into `Lvl_01_Slum` (one map, tagged by section) only on the
+  user's say, as the map is handcrafted.
 
 
 ## Kill cam (2026-10-30)
@@ -7441,7 +7671,7 @@ back to a calm patrol.
   `Transitions`, same JSON as `get_properties`. It can't compile them. Use the
   `StateTreeCompileAll` commandlet with the editor closed, or the tree editor's
   Compile.
-- **Not swept:** `Lvl_BackAlleys`'s `Wander_R1–3`, which aren't spawn points.
+- **Not swept:** `Lvl_BackAlleys_Arena`'s `Wander_R1–3`, which aren't spawn points.
 
 **Gunman behaviour v1 is complete.**
 
@@ -9452,6 +9682,267 @@ because the whole point is that the same room supports different playstyles.
 Spawn points and encounter pacing should be data placed by hand using a shared
 tool, not assumptions baked into game code.
 
+**Linear levels (2026-11-07).** The user asked for a level of 30-45 minutes without
+loading. The plan, taken up by the user ("take into account the section setup we were
+planning"):
+- **Structure.** One small persistent map, not World Partition. Each section is two
+  streamed sublevels, `_Art` and `_Gameplay`. The section you're in and the ones either
+  side are loaded. Whichever way you walk, crossing into a section loads the next one
+  beyond it and unloads the one furthest behind.
+  - **For now, one map (user, 2026-11-09):** "I would rather not have them as sublevels at
+    this point if you have to add them headless everytime", "only if we can still do
+    Sections 1-7 split even without sublevles". The editor bridge can only place into the
+    persistent level. `Lvl_01_Slum` is one map (`flatten_sections_ue.py`); each actor
+    carries its section as an actor tag, `S1`-`S7`, and keeps its folder. When streaming
+    is built, a script splits the map into `_Art` / `_Gameplay` sublevels by tag.
+- **Both ways, no drops (user, 2026-11-08: "We have doors now. The use of one way drops
+  in the current level, I do not like").** This replaces the first plan's one-way drops,
+  which kept section n−2 out of reach. Now every border is a swinging door
+  (`ASwingDoor`) or a bend, and you can walk back.
+  - A border door stays shut until the section behind it has loaded.
+  - Unloading waits until you're a few metres past a door, so stepping back and forth
+    reloads nothing.
+  - A section keeps what's done when it unloads: fights finished, pickups taken,
+    inspects seen. Walking back never brings the dead back. Guns dropped there aren't
+    kept.
+  - Nothing locks behind you; whether a door should for a story reason is the user's call.
+- **Checkpoints.** A death reloads only the current section's `_Gameplay` from its
+  last checkpoint, never the map.
+- **Borders.** Every section border is a door or a bend, so sections that aren't
+  neighbours can't see each other.
+- **Not built:** streaming, checkpoints and inspects.
+
+**First one: the missing patrolman (paper layout, 2026-11-07).** Built from the user's
+scenario (lore *LEVEL SCENARIO — THE MISSING PATROLMAN*).
+- **Files:** `Design Document/Linear_Slums_Layout.html` and `.json`, both written by
+  `Tools/LevelGen/layout_linear_slums.mjs`. The script is the source: edit it and run
+  `node Tools/LevelGen/layout_linear_slums.mjs`, never the outputs.
+- **Shape:** 7 sections, 12 fights, 49 gunmen (≤ 6 per fight), 8 inspects
+  (2 needed), 8 checkpoints, 34-48 minutes estimated.
+- **Sightlines:** the script rasterises each floor at 0.25 m and casts 1.2 m-wide lines
+  from every 0.75 m. The longest in a fight space is 25.3 m; the walk-around street's
+  is 25.8 m.
+- **Grid:** building faces on the 1.5 m grid; partitions and openings may sit off it.
+- **Revised 2026-11-08: doors and steps for the drops** (user: "only those bits", "try not
+  to resize the buildings when looking for a solution"). Nothing else in the layout
+  moved, and no building changed size.
+  - **2→3:** a 1.1 m door in the yard wall at the eskinita's level (+1.8), then a railed
+    landing (2 × 1.5 m) and steps down into the yard (2.5 m at the kit's 36°). The car is
+    in view from the landing. The garage roof's back edge has to clear it, at about
+    4.2 m at the wall.
+  - **H4 (inside section 4):** the floor hole is now a stair in H4's back room. Two 2 m
+    flights turn at a half landing at +2, and the foot faces the back door, which is the
+    4→5 border. F4's third gunman holds the stair head; CP4 is just outside the door.
+  - **5→6:** the bodega's back door, a 1.1 m landing, then steps down 1.8 m through the
+    passage. Their foot comes through a doorway without a door (`open`) into the guard
+    room. CP6 is at the foot.
+  - **Sightlines:** the yard wall shortens the lines through the old drop. The longest
+    in a fight space is now 24.8 m (it was 25.3); the street's is still 25.8 m.
+  - **New layout data** (the generator doesn't read these yet; it only matters if it
+    builds new pieces from this plan):
+    - the opening kind `open`, missing from `OPEN_H` in `story_interiors.py`;
+    - a stair's foot off the floor's datum (`z0`);
+    - `landings`;
+    - `wall` barriers.
+    - New stairs are appended, because `story_interiors.py` finds the mezzanine's stair
+      by index 2.
+- **Arms (user, 2026-11-07: "Remove ammo drop and weapon suggestions. For Level 1,
+  only .45 pistols and shotguns", then "and revolvers actually"):**
+  - Navarro and the gunmen carry .45 pistols, revolvers and shotguns only.
+  - No ammo, weapons or grenades are placed; first aid is the only pickup (3).
+  - Fights have no per-fight weapon lists (`ARMS` in the script).
+  - Enemy drops still work as they do everywhere (`AWeaponPickup`, 1-1.5 magazines).
+- **New gameplay it needs:**
+  - **Inspects** (the user: "interactable inspects for story beats"). The patrol car's
+    saves a checkpoint, then starts the first fight. The documents' ends the level
+    through `ALevelExitTrigger::Fire()`.
+  - A fight started by an event rather than a volume.
+  - Street civilians (≤ 12).
+  - Optionally, a scripted flee for "drives off".
+- **What `gen_level.py` has to learn:**
+  - levels as data (the deferred split; `Lvl_BackAlleys_Arena` must regenerate
+    identically);
+  - rooms per storey, with partitions and inside faces;
+  - openings: 1 m and 2.25 m doors, 3 m knock-throughs, a garage opening,
+    open-fronted rooms;
+  - slabs with stairwells, a double-height hall with a railed gallery, and a wooden top
+    storey (the one-way floor hole is gone, 2026-11-08);
+  - indoor stairs at least 1.8 m wide;
+  - ground heights per open area (+1.8 / −1.8);
+  - 3 m eskinitas (the arena is all 4.5 m);
+  - one `_Art` sublevel per section;
+  - night: lights on, plus interior bulbs and tubes.
+- **Checked (2026-11-08):** the Favela tiles and AsiaSlum wall pieces are closed boxes
+  with full inside faces. The jalousie window is a one-sided plane, so entered rooms
+  get a second one facing in.
+- **Storeys:** 4 m with 18 cm slabs leaves 3.8 m clear, above the dive camera's
+  3.5 m. The wooden storey is 3.6 m.
+
+**Built (2026-11-08): `Lvl_01_Slum`** (user: "LevelName is 01_Slum"; asked, the `Lvl_`
+prefix). See `Tools/LevelGen/README.md` and LESSONS, *Levels as data*.
+- **Generator, levels as data:** `gen_level.py <level>` runs a level's passes
+  (`Tools/LevelGen/passes/`) over its data (`levels/linear_slums.py`). The arena's plan is
+  byte-identical after the split, and must stay so.
+- **Maps:** the persistent map `/Game/ThirdPerson/Lvl_01_Slum` (not World Partition) and
+  `Lvl_01_Slum_S<n>_Art` / `_Gameplay` for sections 1-7 in `/Game/ThirdPerson/01_Slum/`, as
+  `LevelStreamingDynamic`, loaded and visible from the start until the streaming code
+  exists. Built headless by `Tools/LevelGen/build_story_ue.py`. Each piece goes into its
+  section's `_Art`. The player start goes into section 1's `_Gameplay`; the nav bounds
+  and the Lightmass volume into the persistent map. The `_Gameplay` sublevels are
+  otherwise empty.
+- **Coordinates:** layout (80, 60) at the world origin.
+- **Ground:** each area is a slab at its section's height (+1.8 the eskinita, −1.8 the
+  holding and trap houses; the bodega's back passage stays at 0 and drops into the guard
+  room). A street house stands on the lowest ground beside its block; its faces toward
+  higher ground show above it only.
+- **Street houses:** the layout's built-up mass, cut into blocks (thin strips merged
+  into the block beside them), then the arena's house passes: storeys, setbacks,
+  balconies, terraces, metal roofs, paint, bands, drips. The arena's dressing passes are
+  off here.
+- **Entered buildings:** walls are boxes in the world-mapped CHB, paint and board
+  materials, with the layout's openings at their exact size:
+  - doors 2.25 × 2.4 m, 1 m doors 2.2 m, knock-throughs 3 × 2.6 m, the garage 3 × 2.85 m,
+    open fronts 2.55 m, the drop 2.32 m;
+  - windows (jalousie, a grille on the ground floor) only on outside walls that can be
+    seen;
+  - plywood cells and rooms, a board-walled wooden storey, the metal roofs from the
+    street houses' roof builder;
+  - stairs: concrete steps of about 18.5 cm with a block balustrade on the open side,
+    and open wooden treads on stringers for the wooden stair;
+  - AsiaSlum bar rails round stairwells, the gallery and the mezzanine. The H4 floor
+    hole has none: it's the one-way exit.
+- **Night:** a bare bulb with a Static point light in each room (6 cd); cobra lamps (60
+  cd) and door bulbs (8 cd) on the street houses. Judged unbaked; look again after a bake.
+- **Not placed yet:** fights, inspects, checkpoints, first aid, civilians, cover props.
+- **After the user's first walk-through (2026-11-08):** stairs are the AsiaSlum kit's,
+  as `Demomap_AsiaSlum` builds them: three `SM_Stair_A_002` flights per storey, with
+  `SM_StairRail_C_002` balusters and the `SM_StairRail_A_001` pipe handrail on the open
+  side. The block balustrades are gone. Entered buildings are 3.5 m floor to floor (the
+  wooden storey 3.2 m, the holding house 4.3 m). Sections 3-7 are one compound (design
+  notes): street houses there are plain (unpainted, hollow block where windowless, few
+  barred openings, no balconies, two storeys at most, no street lamps). Box walls use the
+  user's hollow-block texture world-mapped (`MI_BackAlleys_HollowBlocks_World`). Open ground inside
+  the compound is walled: a one-storey hollow-block wall round the yard, the alleys and the
+  courtyard, 6 m of walled-off ground behind it and the buildings beyond (user: "push these
+  buildings back so they look like distant buildings"). Rebuilt into the map
+  2026-11-08 (8,201 pieces).
+- **Sections 1-2, the slum, dressed (2026-11-09; user: "first do passes on Sections 1
+  and 2. Dressings, also makes sure that each house is unaligned with the adjacent house.
+  Also we need a curb and actual street"):**
+  - **Street:** a concrete road in poured panels (3.6-4.6 m, 4 cm dark joints) and a
+    1.1 m sidewalk 15 cm up along the slum house fronts. Its road edges are a row of curb
+    stones (user: "cap the curb edge", then "you should be using the main border stone"):
+    Favela's `SM_MainBorder_04`, 26 cm wide, from 1 cm under the road to 1 cm over the
+    sidewalk, 3 cm proud of its face, 1 cm joints. It stops at the house corners where an
+    eskinita opens off the street. The eskinitas get a 30 cm
+    drain along one side.
+  - **Unaligned houses:** every slum house face on the slum's ground steps back 0, 30,
+    60 or 90 cm, at least 30 cm off each neighbour's (30 cm is the smallest return the
+    wall builder handles). Terrace strips step back too, staying at least 1.2 m deep.
+    Faces on the compound keep their own setbacks. Neighbours' storey heights differ by
+    20 cm or more.
+  - **Dressing:** the arena's building and street dressing, posters, wires, poles and
+    graffiti, on the slum's houses only (`dress_house`). Not yet: ground dirt, litter,
+    props. The street lights carry the arena's values (bulb 4.5, tube 6, lamp 40 cd),
+    unjudged at night.
+  - **AsiaSlum cables (user: "dont eliminate using the current ones, I just think those
+    fit better in some instances"):** alongside the thin wires, the pack's cable bundles
+    (`SM_Cable_B_001` / `B_003`) on ring brackets (`SM_Cable_C_001`) along a few top
+    storeys, one across the main street, and trunks from pole to pole
+    (`passes/asia_cables.py`). Brackets follow the wall-dressing rules (none on hollow
+    block), so they fit only a few houses here.
+  - **Main road clearance (user: "Trucks should be able to pass through"):** no wire or
+    cable lower than 5 m over section 1's road (`ROAD_CLEAR`, `passes/story_road_clear.py`).
+    The low layer stays over the sidewalks and in the eskinitas; over the road its crossings
+    were lifted where a wall allowed (one) and taken out elsewhere, as most ended on 1-storey
+    fronts.
+  - **Fill lights (user: "always put a point light that is shadowless, like ambient light
+    around the source"):** every spot light has a point light under its head, 12% of its
+    intensity, half its reach, a 40 cm source so its shadows are very soft and faint.
+  - **Even light (user: "need to add more lights to Section 1 and 2, light are unevenly
+    distributed"):** `passes/story_light_fill.py` (`LIGHT_FILL`) measures sections 1-2's open
+    ground on a 1 m grid, lit where a light's pool reaches it (lamp 5 m, tube 3 m, bulb 2.6 m,
+    and only what the light can see past the houses). It then places, one at a time, the
+    fitting that lights the most dark ground: a cobra lamp on a second storey (its arm may
+    cross a one-storey roof), a tube on a plain wall or over a window with no awning, a bulb
+    over an unlit door. It stops when none would light 6 m² more. It follows the street pass's
+    rules: no fittings on hollow-block, thin or stair walls, clear of pipes and placed
+    dressing, lamps 4 m apart if in sight of each other. Every lamp gets its fill. 8 lamps and
+    3 tubes (33 pieces) take the lit share from 51% to 89%. What stays dim is the wash
+    yard's north-west corner and an eskinita corner: their walls are hollow block or the
+    stairs', which take nothing. The pass only adds pieces; with it off, the plan is the same.
+  - **Section 4's fitted baseline (user: doors "only 1 door wide except for the broken down
+    wall", "sils or door frames ... we should be using what assets we have instead", stairs
+    to "conform" to the user's rebuilt section 7 stair):** for the buildings in `FITTED`
+    (the row houses), `story_interiors` makes each door one leaf wide (110 x 218 cm) in
+    Favela's wooden jamb, puts each window in Favela's wooden window (frame, outside sill,
+    inside board) around the two jalousie planes, and builds stairs the user's way: steep
+    kit flights (27 cm treads, 19.4 cm risers), each a step down the last, from the top.
+    Door slots go to `Saved/LinearSlums/doors.json`. Knocked-through walls (user: rubble
+    "around the door frame") get broken plaster down both sides and over the top on both
+    faces (Favela's broken-corner mesh decal) and a debris heap at the foot on each side.
+  - **Swinging doors (user: "Max Payne 1 system should work, it opens both ways, whichever
+    side anyone is pushing through"):** `ASwingDoor` (C++, the user types it). The actor's
+    origin is the doorway's centre on the floor, local X along the wall. A hinge component
+    at one jamb turns the leaf, whose mesh is scaled to `LeafWidth` x `LeafHeight` with its
+    edge on the hinge. Pawns in a trigger box (`PushDepth` either side) push it away from the
+    side they stand on. The direction is picked when it's nearly shut and kept while anyone
+    is in the box, kicked by their speed toward the doorway (`PushKick`). A spring
+    (`Stiffness`, `Damping`) swings it open, and back through shut after `CloseDelay`, with a
+    stop past `OpenAngle`. The leaf ignores pawns and the camera (it never traps anyone, the
+    camera doesn't snap) and doesn't affect navigation. It blocks shots. It ticks only
+    while someone's at it or it moves. Compiled 2026-11-09 (Claude wrote it, on the user's
+    one-time "Apply and build").
+    - `BP_SwingDoor` (`/Game/ThirdPerson/Blueprints`) gives the leaf Favela's `SM_Door_01`.
+      One child per door type in `Blueprints/SwingDoors/` (`BP_SwingDoor_<pack>_<mesh>`, 14 so
+      far) changes only the leaf mesh.
+    - **Sounds (stand-ins, user: "actually use the stand ins"):** the project has no door
+      sounds. Our own cues in `/Game/Audio/Doors/`, so real door sounds can replace their waves
+      later without touching the Blueprints: `SC_Door_Push` (a copy of CharacterCustomizer's
+      `Bump_Cue`, Bump_01/02) as `OpenSound`; `SC_Door_Shut_Wood` (Footstep_Casual
+      `LowWood_01`) and `SC_Door_Shut_Metal` (`LowMetal_01`) as `CloseSound`, metal on Favela
+      metal and AsiaSlum `A_002`, `A_004`, `A_005`. All three use `ATT_Footstep` (full volume to
+      3 m, silent 22 m further); the original `Bump_Cue` had no attenuation and would have
+      played at full volume everywhere.
+    - Placing one: centre on the doorway's floor, local X along the wall; `LeafWidth` x
+      `LeafHeight` = the jamb's clear opening less 1 cm a side and `FloorGap` (the row houses'
+      jambs: 105.8 x 215.7 clear, so 103.8 x 213.7). A door hinged on the right goes in turned
+      180 degrees and hinged left, so a handle modelled on the mesh's +X edge stays on the free
+      edge. The 6 row-house doors are in `Lvl_01_Slum`.
+    - `LeafQuarterTurns` (0-3): the leaf mesh is turned about Z before it's fitted, its box
+      taken once turned (`FBox::TransformBy`), and on a quarter turn the width scale goes on
+      the mesh's Y (a component scales before it rotates). 2 puts a handle modelled on the
+      mesh's -X edge on the free edge: set on the 9 variants that need it (Yakohama
+      `SM_GlassDoor_02`, every AsiaSlum `SM_HouseDoor_*`). 1 or 3 is for a mesh modelled along
+      Y; the MiddleEast doors that would use it were dropped (user: "forget the middle eastern
+      variants actually"). Compiled 2026-11-09 (Claude wrote it, on the user's one-time
+      "Apply and build").
+    - **Closing:** after the last pawn has been out of the push box for `CloseDelay`, the spring
+      swings it shut. Underdamped (`Damping` 6 against 2 x sqrt(`Stiffness` 60) = 15.5), it
+      swings about 25 degrees past shut, then about 7, and settles; `CloseSound` plays as it
+      passes through shut if it was open past 30 degrees.
+  - **Blockers fixed:** no parapet across the eskinita's mouth (parapets measure the
+    ground at the edge), the garage roof ends short of the drop.
+  - **Into the map:** headless, with the editor closed (`swap_sections_ue.py`): sections
+    1-2, every slum house wherever it went, the compound houses touching them and the
+    garage roof, with loose pieces near the seam matched by shape. The rest of the map,
+    the user's from here, isn't touched.
+
+**Level naming (user, 2026-11-07):** arena levels end in `_Arena`. "This naming
+convention is what we will use to split Story vs Arena levels." The first is
+`Lvl_BackAlleys_Arena` (was `Lvl_BackAlleys`). The name is for people and tools;
+no code reads it. An arena has no exit: resets will come from the menu screen, and
+until then a cleared arena's director restarts it (user, 2026-11-07; see *Level exit*).
+- **How it was renamed:** in the editor with the level open, so its 7,207 actor
+  files and 46 object files moved with it and `_BuiltData` was renamed too. No
+  redirector was left. The editor refuses while any editor setting names the level
+  (the "Source code, config INI… may need Find/Replace" prompt, cancelled when no one
+  can click it). Here they were `GameMapsSettings` (the default maps, set through the
+  bridge first) and two per-user maps in `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`,
+  `EditorViews` and `PerWorldEditorSettings`, whose entries were removed with the editor
+  closed. Then `DefaultEngine.ini`, `DefaultGame.ini` (`MapsToCook`) and the
+  `Tools/LevelGen` scripts were pointed at the new path.
+
 ---
 
 ## Narrative
@@ -9624,7 +10115,7 @@ treat them as read-only and reference them from our own Blueprints and data.
 
 User: "I now have the assets, analyze the models, see what we can use"; "also
 evaluate for performance". Three packs under `Content/`: `Philippines_Markets`,
-`Megapack` and `AsiaSlum`. They're for `Lvl_BackAlleys`, the back-alley arena
+`Megapack` and `AsiaSlum`. They're for `Lvl_BackAlleys_Arena`, the back-alley arena
 copied from the Sandbox.
 
 The numbers come from a headless read of every static mesh, texture and
@@ -9798,7 +10289,7 @@ component twice. The counts below are halved for that.)
     the Glass surface type.
   - All 22 meshes are usable.
 
-### `Lvl_BackAlleys`: first build (2026-11-02)
+### `Lvl_BackAlleys_Arena`: first build (2026-11-02)
 
 User: "blockout stand-ins for now, make the glass opaque, go build. The
 basketball court, I will add assets, hold on". The court is left bare until
@@ -10467,9 +10958,13 @@ level besides building blockouts as a rule."
     the ends of its face (`FACE_EDGE`). Visible `SM_Shop_A_001` stalls are closed with a wall just behind the frame and a roll-up
     shutter (`BackAlleys/Shutters`); the one buried behind `B6h2` is removed. 7 power poles (`BackAlleys/Poles`, Concrete surface) with 5 pole-to-pole lines and
     24 bundles down to the houses' boxes, 1,828 wire actors in all; 30 tyres on roofs; 32 water meters at wall feet, in 20 lots spread across the level; 16
-    graffiti decals from the user's masks on clear walls and shutters, not on hollow-block faces or thin walls. Tyres,
-    meters and graffiti have no collision. New materials:
-    `MI_BackAlleys_Sign_*` (Metal surface, no lettering), `M_BackAlleys_PeelDecal` and
+    graffiti decals from the user's masks on clear walls and shutters, not on thin walls, plus big crew tags (2-4 m) on the upper storeys of hollow-block walls. Tyres,
+    meters and graffiti have no collision. Posters are 1.8 times the 61 x 91 cm sheet where the wall allows, and nothing is pasted or painted within 90 cm behind a post. Ground: 138 world-mapped planes
+    (`BackAlleys/Ground`, `IgnoreOnlyPawn`, surface per piece, no nav) of poured concrete bays and repairs over the old asphalt; 140 ground decals (`BackAlleys/GroundDirt`, reaching about 1 cm above the road, wall-foot dirt and stains lined up with the floor lining's edge); 129 litter props with no collision
+    (`BackAlleys/Litter`); 188 props in `BackAlleys/Props`: monobloc chairs, stools and a bench, clean wooden tables, benches and stools (these stop shots, pawns walk through), buckets, potted plants on balconies and by doors, rice sacks on balconies. New materials: `M_BackAlleys_GroundPour`, `MI_BackAlleys_Ground_*`, and:
+    `MI_BackAlleys_Sign_*` (Metal surface, no lettering), `M_BackAlleys_SignBoard` and `MI_BackAlleys_SignBoard_<name>` (2026-11-07: the user's five lettered
+    boards cropped onto `SM_Sign_A_001`'s street-side panel, u 0.041-0.462 v 0.788-0.963 of slot 0, Wood surface; the sign is sized to the board's shape,
+    `SIGN_BOARDS`), `M_BackAlleys_PeelDecal` and
     `MI_BackAlleys_Peel_*`, `M_BackAlleys_Tyre` and its instance (`Brightness` 0.35), `MI_BackAlleys_WaterMeter` (brass),
     `M_BackAlleys_SprayDecal` and `MI_BackAlleys_Spray_<name>_<paint>` (one texture sample for the mask, one for wear).
   - **Awnings:** over windows and doors: `SM_awning_base_01` with a corrugated
@@ -10623,6 +11118,214 @@ and doesn't edit it.
   placed: `SM_MetalPlate_C_001`, `SM_Sign_A_001`, `SM_Cable_A_005`,
   `SM_AirConditioner_A_001`, `SM_HouseDoor_A_002` slot 1, and the engine
   Plane and Cube.
+
+## Arena mode: 3 maps × 5 levels (planned 2026-11-08)
+- **Design (user, 2026-11-08):** 3 arena maps, 5 levels each, all on the same map. Level 1 is 15 low-level
+  goons; level 5 is 50, from goons up to bulletproofed pros. Lore: *Arena mode: 3 maps × 5 levels*, which
+  also lists what's `[UNDECIDED]` (structure, failure, roster, armour, scoring). Nothing built yet.
+- **Counts are totals, not alive at once.** `AEncounterDirector::MaxAlive` is 6 for the Deck budget; a level's
+  count is the kills to clear it, topped up to the cap. Difficulty rises through the mix (tougher types,
+  armour), top-up pace and spawn directions before the cap, which is the expensive lever. Any cap above 6
+  needs a Deck trace.
+- **Likely shape (to confirm against the design answers):**
+  - An arena level as data: total count, alive cap, a mix that changes over the level (goons first, pros
+    late), optional waves with a breather between them. The director reads the level it's given.
+  - The arena kill cam on the last kill of a level (already the rule for fixed-count arena fights).
+  - The "no exit actor in arenas" rule stands; moving between levels or back to the menu goes through the
+    menu / director, not an exit.
+- **New work it needs:** an armoured ("bulletproofed") enemy, meaning armour on the damage path (torso
+  reduction; head and limbs as the counter), a look that reads at a glance (CC2 outfit) and its own hit
+  feedback (the `Body_armor` impact sound is already in the project, kept for this).
+
+## Main menu (2026-11-07)
+- **The idea (user):** a live scene behind the menu with a static camera. `Lvl_MainMenu` is the
+  menu's map; scenes are loaded into it and the menu switches cameras instead of maps. Later each scene
+  is trimmed to the section its camera shows; 3-5 scenes, one menu.
+- **Maps:** `Lvl_MainMenu` is the hub, a new empty map without World Partition. Scene 1,
+  `Lvl_MenuScene_BackAlley`, is a copy of `Lvl_BackAlleys_Arena`, made through the bridge and saved
+  (7,191 actor files after the strip). `Tools/LevelGen/menu_hub_ue.py` (headless) stripped it and made the
+  hub. It removes everything in `BackAlleys/Gameplay`, any `/Script/ProjectBopis` or
+  `/Game/ThirdPerson/Blueprints` actor, and `PlayerStart`, the navmesh volume and nav data. That came to 18:
+  8 spawns, 3 wander points, `EncounterDirector`, `Exit_ArenaCleared`, `Music_Start`, `PlayerStart`,
+  `NavMeshBoundsVolume`, `RecastNavMesh`, `AbstractNavData`. The buildings, dressing, physical props, decals,
+  sky and lights stay.
+- **Gotcha, copying and renaming these maps:** they keep one file per actor. Headless `rename_asset` and
+  `duplicate_asset` move or copy only the `.umap` and leave the actor files behind (2026-11-07: a scene of 8
+  actors). Copy and rename them in the editor (the bridge's `AssetTools.duplicate` / `move`, then save), which
+  carries the `__ExternalActors__` folder along. Headless edits to a map the editor has loaded leave the
+  editor's copy stale, so restart the editor before opening it there.
+- **Lighting:** the copy doesn't point at the arena's `BuiltData` and has none of its own, so it starts unbaked. The
+  user bakes it whole, with no cut-down (2026-11-07: "I'll bake the lights, but wont cut the level"): open
+  `Lvl_MenuScene_BackAlley` itself to bake. Whether baked lighting shows when it is loaded into the hub as a level
+  instance is still to check (it loads at the origin, so the lightmaps line up).
+- **Camera:** `BP_MainMenuCamera` (`/Game/ThirdPerson/Blueprints/MainMenu/`), parent `CineCameraActor`
+  (focal length, aperture and focus for a film look). The user places it in the map and frames the shot.
+- **Loading scenes: Level Instances (user, 2026-11-07).** `Lvl_BackAlleys_Arena` (and so the copy) is a World
+  Partition map with streaming off (from the template's Sandbox), so classic sublevels are out. Each scene
+  is its own map, loaded at run time with `ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr` and
+  unloaded when the menu moves on. Runtime Data Layers were the alternative (every scene in one map).
+  - **Layout (user, 2026-11-07):** `Lvl_MainMenu` is a small hub (menu game mode, no geometry);
+    `Lvl_MenuScene_BackAlley` is scene 1. Each scene map carries its own
+    `BP_MainMenuCamera`, so the angle travels with the scene; the menu finds it in the loaded level.
+  - **First PIE (2026-11-07):** the World Partition scene does load as a dynamic level instance (its own
+    World Partition initializes, ~250 ms, then `UWorldPartitionLevelStreamingDynamic::RequestLevel` loads one
+    cell). But its actors aren't in the instance's own level: they arrive in that **cell level, just after
+    `OnLevelShown`** (60 ms later, same frame). So the camera search on `GetLoadedLevel()->Actors` found none
+    ("has no camera") and the screen stayed black. Fix: look across the world's cameras after `OnLevelShown`,
+    retrying briefly. **Fixed and confirmed in PIE (2026-11-07):** `FindSceneCamera` walks the world's
+    `ACameraActor`s (`TActorIterator`), skipping the hub's own and the last scene's, and retries every 0.1 s for up
+    to `CameraSearchTimeout` (5 s). The shot shows with black bars left and right in a wide viewport: the
+    CineCamera's Constrain Aspect Ratio, likely. Baked lighting not checked yet (the scene is unbaked).
+- **Code (built 2026-11-07), `Source/ProjectBopis/MainMenu/`.** Blueprints (2026-11-07):
+  `BP_MainMenuGameMode` (`Scenes` = `Lvl_MenuScene_BackAlley`, `PlayerControllerClass` =
+  `BP_MainMenuPlayerController`) and `BP_MainMenuPlayerController` in `/Game/ThirdPerson/Blueprints/MainMenu/`;
+  `Lvl_MainMenu`'s GameMode Override = `BP_MainMenuGameMode`.
+  - `AMainMenuGameMode` (abstract): `Scenes` (`TArray<TSoftObjectPtr<UWorld>>`), `bRandomScene` (else the
+    first). BeginPlay → `ShowScene(Index)`: unloads the scene on show, then
+    `ULevelStreamingDynamic::LoadLevelInstanceBySoftObjectPtr` at the origin and binds `OnLevelShown`. Once shown,
+    the first `ACameraActor` in the loaded level is the shot, passed to the controller; none logs a warning.
+    No pawn: `DefaultPawnClass` null and `PlayerCanRestart` false.
+  - `AMainMenuPlayerController` (abstract): BeginPlay sets a black manual fade, the cursor and UI-only input,
+    and adds `MenuWidgetClass` if set (focused). `ViewSceneCamera` cuts to the camera (`SetViewTarget`, no blend)
+    and fades in over `FadeInTime` (1 s).
+  - Switching scenes later: the old scene's camera goes with its level, so a fade-out before `ShowScene` is
+    still to add.
+- **Menu widgets (built 2026-11-07), `Source/ProjectBopis/UI/`, shared by the main menu and the future pause menu.**
+  The user: "make sure the thing is reusable in the future Pause Menu. And also that it us using WBP", "not raw
+  slate". Everything on screen is UMG in Widget Blueprints; the C++ is logic bound by widget name.
+  - `UMenuButtonWidget` (base of `WBP_MenuButton`): a Button named `Button` (required) and an optional Text Block
+    `Label`. Per copy, in the designer: `Text` and `Action` (`EMenuButtonAction`: None = greyed out, OpenPage +
+    `Page` name, Back, OpenLevel + `Level` (greyed with none set), QuitGame, Custom = only `OnClicked`). The
+    label and greyed state show in the designer (`NativePreConstruct`). It finds its menu with
+    `GetTypedOuter<UMenuWidget>()`. Focusable, forwarding focus to its Button.
+  - `UMenuWidget` (base of `WBP_MainMenu`, later `WBP_PauseMenu`): optional Widget Switcher `Pages`, first
+    child = first page. `ShowPageNamed` keeps a page history; `GoBack` (Back buttons, Escape, gamepad B) pops it,
+    and on the first page calls `OnBackFromFirstPage` (main menu: nothing, so Escape still stops PIE; the pause
+    menu will resume). `OpenGameLevel` switches the input mode back to game-only before `OpenLevel`, because the
+    viewport keeps the UI-only mode (and its ignore-input) across maps and the game's controller sets none.
+  - **Focus:** the menu is focusable; its desired focus is the first usable `UMenuButtonWidget` on the page
+    showing (`UWidgetTree::ForEachWidgetAndChildrenUntil`), which forwards to its inner Button. The controller's
+    `SetWidgetToFocus(menu)` lands there, and a page change re-focuses. Two hops, both UMG's own
+    `DesiredFocusWidget` forwarding.
+  - **Main menu layout (user):** Main: Story (OpenPage StoryPage), Arena (OpenPage ArenaPage), Options (None),
+    Quit Game (QuitGame). Story: New Game (OpenLevel, unset), Load Game (None), Back. Arena: Back Alley
+    (OpenLevel `Lvl_BackAlleys_Arena`), Back. The earlier `UMainMenuWidget` plan is dropped: the main menu needs
+    no class of its own.
+  - **Assets (2026-11-07):** `/Game/UI/Menu/WBP_MenuButton` and `/Game/UI/Menu/WBP_MainMenu`, made through the bridge
+    (`BlueprintTools.create` with the C++ parent as `asset_type`); `WBP_MainMenu` is `MenuWidgetClass` on
+    `BP_MainMenuPlayerController`. The bridge can't build widget trees, so `Tools/MakeMenuTrees.ps1` writes them as
+    UMG clipboard text to paste. WBP_MenuButton: Button "Button" (dark, 65% opaque) holding Text Block "Label"
+    (Antonio Bold 30). WBP_MainMenu: Overlay "Root" → Widget Switcher "Pages" bottom-left (140 px in, 160 up) →
+    Vertical Boxes MainPage, StoryPage, ArenaPage of WBP_MenuButton copies, each with its Text / Action / Page /
+    Level set on the copy. A starting look for the user to restyle.
+  - **Highlight (2026-11-07, user: "the button highlight needs to be more prominent"):** the focused button is the
+    highlighted one: `NativeOnAddedToFocusPath` / `NativeOnRemovedFromFocusPath` swap the Button's background
+    (`NormalColor` dark 65% → `HighlightColor` warm off-white 95%) and the Label's colour (white → near black). The
+    mouse over a usable button moves the focus to it (`OnHovered` → `SetFocus`), so mouse and gamepad share one
+    highlight. `OnHighlightChanged` (Blueprint event) for anything more. The colours are settings on `WBP_MenuButton`.
+  - **Selection frame (2026-11-07, user: "When in controller mode, always have the blue highlight around a selection",
+    then "remove the blue slate thing then and replace it with a BP equivalent"):** Slate's focus ring is off for the
+    whole project (`[/Script/Engine.UserInterfaceSettings] RenderFocusRule=Never`). In its place, an optional widget
+    `FocusFrame` in `WBP_MenuButton` (by default a blue 3 px rounded outline Image over the Button, not hit-testable):
+    `ApplyLook` shows it on the highlighted button while the menu is in controller mode, and leaves it alone at design
+    time so it can be styled. Controller mode: on at start with a gamepad attached, on at any gamepad key
+    (`NativeOnPreviewKeyDown`) or a stick past 0.5 (`NativeOnAnalogValueChanged`), off at a real mouse move (non-zero
+    cursor delta; Slate's synthetic moves have none), which also focuses the button under the cursor. A mode change
+    refreshes every button's look. In controller mode, hover doesn't move the focus, so a parked cursor can't steal it.
+    (Built first as focus set with `EFocusCause::Navigation`, which made Slate draw its ring; dropped for the frame.)
+  - **Menu fade-in (2026-11-07, user: "let the level fade in before activating the menu. fade it in too"):** the
+    main menu controller adds the menu (and the cursor and UI input) only when the scene's fade-in ends (`ShowMenu`
+    on a timer of `FadeInTime`). `UMenuWidget` fades its own opacity in over `FadeInTime` (0.4 s) every time it is
+    constructed, so the pause menu will too.
+
+## Player settings (2026-11-09)
+- **User:** "Lets put Mouse and Controller Sensitivity Settings on the Pause and Main Menu". Three steps: the setting (C++),
+  a slider row (C++), the Options pages (assets). Plan: *Main menu*.
+- **`UBopisGameUserSettings`** (`BopisGameUserSettings.h/.cpp`, on `UGameUserSettings`): the engine makes it, through
+  `[/Script/Engine.Engine] GameUserSettingsClassName=/Script/ProjectBopis.BopisGameUserSettings` in `DefaultEngine.ini`.
+  `Get()` casts `GEngine->GetGameUserSettings()`. Saved per machine with the graphics, in GameUserSettings.ini
+  (`SaveSettings()`), not in save games. `UBopisGameInstance`'s graphics code is unchanged: it is still a `UGameUserSettings`.
+  - `MouseSensitivity` and `ControllerSensitivity` (`UPROPERTY(Config)`, default 1.0 = the game's own tuning), clamped
+    to `MinSensitivity`–`MaxSensitivity` (0.2–3.0) by their setters and again after `LoadSettings`, so a hand-edited file
+    can't freeze or spin the view. `SensitivityStep` 0.05 is for the sliders.
+  - **Mouse:** `AProjectBopisCharacter::LookInput` scales the look vector just before `DoAim`; the weapon wheel's
+    pointer isn't scaled.
+  - **Controller:** `UGamepadAimComponent::ApplyStick` multiplies its `Scale` (hip and aim, the hard-over boost too);
+    soft lock (snap, slowdown, follow) is unchanged.
+  - Not included: a separate aim sensitivity, invert Y.
+  - Compiled clean 2026-11-09 13:27.
+- **The Options page:** one shared `WBP_OptionsPage` placed in both menus (user: "shared options page"), as a child
+  named `OptionsPage` of each menu's `Pages`. `UWidgetTree::ForEachWidgetAndChildrenUntil` doesn't enter a nested
+  user widget's own tree (only panels and named slots), hence the walk below.
+- **Menu items (step 2, compiled clean 2026-11-09 13:58):**
+  - **`UMenuItemWidget`** (`UI/MenuItemWidget.h/.cpp`), new base of `UMenuButtonWidget` and `USettingSliderWidget`:
+    `Text`, the four look colours, the optional `Label` and `FocusFrame`, the highlight on the focus path
+    (`OnHighlightChanged`), `ApplyLook` (virtual: label colour and frame here, each child its own background),
+    `RefreshLook`, virtual `IsSelectable` (enabled; the button adds `IsUsable`). The mouse taking the focus is now
+    `NativeOnMouseEnter` on the item (was the Button's `OnHovered`), still not in controller mode. The button's
+    properties moved up by name, so `WBP_MenuButton`'s values and each copy's Text carry over.
+  - **`USettingSliderWidget`** (`UI/SettingSliderWidget.h/.cpp`; `EPlayerSetting` MouseSensitivity /
+    ControllerSensitivity): `Slider` (required), optional `ValueText` and `Background` (a Border, tinted like the
+    button's background). Range and step from `UBopisGameUserSettings`, set in `NativePreConstruct` with the stored
+    value. `RequiresControllerLock` off (Slate's `SSlider::OnNavigation` then changes it on left/right and lets up/down
+    navigate), `MouseUsesStep` on. A change snaps to the step, shows ("1.00"), applies at once, and saves
+    (`SaveSettings`) per key or pad step, or once at the end of a mouse drag (`OnMouseCaptureBegin/End`).
+    **Gotcha:** `USlider::SetValue` fires `OnValueChanged` (Slate's doesn't), so a value equal to the stored one is
+    ignored; otherwise every menu opening would write the file.
+  - **`UMenuWidget`:** a file-local `ForEachMenuWidget` walk (panels, plus a nested user widget's own tree, but not an
+    item's insides) for the first focus (`FocusFirstItem`, was `FocusFirstButton`), the controller-mode refresh and
+    the hover-on-mouse-move. `UUserWidget::SetDesiredFocusWidget` refuses a widget outside its own tree, so focus is
+    chained: the menu's desired focus is the page, the page (made focusable) forwards to the item.
+- **Assets (step 3, 2026-11-09):** `/Game/UI/Menu/WBP_SettingSlider` (parent `SettingSliderWidget`) and
+  `/Game/UI/Menu/WBP_OptionsPage` (parent `UserWidget`, no C++ of its own), made through the bridge. Trees from
+  `Tools/MakeMenuTrees.ps1` (`-Clipboard SettingSlider`, then `OptionsPage`):
+  - WBP_SettingSlider: Overlay "Root" → Border "Background" (tinted by the C++ like the button's background) holding a
+    Horizontal Box "Row": Text Block "Label" (Antonio Bold 30, fills), Size Box "SliderBox" 360 px → Slider "Slider"
+    (bar grey 0.4, handle amber so it reads on both backgrounds), Size Box "ValueBox" 90 px → Text Block "ValueText"
+    (right-justified); plus the buttons' blue "FocusFrame" on top.
+  - WBP_OptionsPage: Vertical Box "OptionsList": WBP_SettingSlider "MouseSensitivity" (Text "Mouse Sensitivity"),
+    "ControllerSensitivity" (Text "Controller Sensitivity"), WBP_MenuButton "OptionsBackButton" (Back), 10 px apart.
+  - In each menu: a `WBP_OptionsPage` named `OptionsPage` as the last child of `Pages`; Options → OpenPage `OptionsPage`.
+    The script's menu trees hold this too, but menus already in use are edited by hand, not re-pasted.
+
+## Pause menu (2026-11-07)
+- **`UPauseMenuWidget`** (`UI/PauseMenuWidget.h/.cpp`, base of `WBP_PauseMenu`), on `UMenuWidget`: `NativeConstruct`
+  pauses (`SetGamePaused`) and takes the cursor and UI input; `Resume` removes it, unpauses, input back to game-only.
+  **Closing with the pause key:** while it is up, input is UI-only, so `IA_Pause` never fires. `ToggleAction` (`IA_Pause` on
+  `WBP_PauseMenu`) is checked in `NativeOnKeyDown`: a key the player's Enhanced Input maps to it
+  (`QueryKeysMappedToAction`) resumes from any page; repeats ignored. Without one, gamepad Start only.
+  `OnBackFromFirstPage` resumes, so Escape, B and a Back button on the first page all resume; Start
+  (`Gamepad_Special_Right`) resumes from any page. A new instance each time, so it starts on its first page and fades in.
+- **Buttons** (copies of `WBP_MenuButton`): Resume (Back), Restart (`RestartLevel`, new: `OpenGameLevel` with no level
+  reloads the current one through `ULevelTravelSubsystem`), Options (None), Main Menu (OpenLevel `Lvl_MainMenu`),
+  Quit Game. The fade to black runs in real seconds, so it works from the paused game.
+- **Opening:** `AProjectBopisPlayerController::PauseAction` (Enhanced Input, Started) → `OpenPauseMenu`, which adds
+  `PauseMenuClass` at Z-order 50 (over the HUD) unless already paused, the level-start curtain is up, the pawn is dead,
+  or a level change is fading out. In PIE, Escape stops PIE before the game sees it: test with the gamepad's Start.
+- **Assets (2026-11-07):** `/Game/Input/Actions/IA_Pause` (Boolean), set as `PauseAction` on `BP_PlayerController`, with
+  `PauseMenuClass` = `/Game/UI/Menu/WBP_PauseMenu` (parent `PauseMenuWidget`). Its tree comes from
+  `Tools/MakeMenuTrees.ps1`: Overlay "Root" → a full-screen BackgroundBlur "Blur" (strength 10; the user: "Use a blur, not
+  just a dim"), a full-screen Image "Dim" (black, 25%), and the Pages switcher
+  bottom-left with one page of WBP_MenuButton copies.
+- **`IMC_Default` through the bridge:** its mappings are `DefaultKeyMappings.Mappings` (37 on 2026-11-07, some with
+  modifier subobjects). `set_properties` can only replace the whole list, so new keys are mapped by hand in the editor.
+- **Gotcha:** a local variable named `Player` in a player controller hides `APlayerController::Player`; UE builds
+  warnings as errors (C4458), so the build fails.
+
+## Level travel (2026-11-07)
+- **The user:** "when in any state where we load another level. fade out to black before loading the next level".
+- **`ULevelTravelSubsystem`** (game instance subsystem, `Gameplay/LevelTravelSubsystem.h/.cpp`):
+  `FadeAndOpenLevel(Level, FadeTime = 0.6)`; no level reloads the current one; repeats ignored while travelling.
+  - A black `SImage` at Z-order 1000 (like the level-start curtain) fades in over everything, because the HUD and
+    menus are widgets that the camera's own fade doesn't cover. Alongside, `SetManualCameraFade(Alpha, black, true)`
+    fades the sound; the engine puts the volume back on load (`SetTransientPrimaryVolume(1)` in `LoadMap`).
+  - Real seconds on `FTSTicker`, so pause and slow motion can't stall it. At full black, `OpenLevel`.
+  - The cover stays up through the load and comes down on `PostLoadMapWithWorld`, when the next level's own black
+    has taken over (the level-start curtain, or the main menu's camera fade). Viewport content isn't cleared by
+    a level load on its own, so this removal matters.
+- **Users:** `UMenuWidget::OpenGameLevel` (after switching the input mode back to game-only), with
+  `LevelFadeOutTime` 0.6 s; `AProjectBopisCharacter::RestartLevel` (death), with `RestartFadeTime` 0.6 s after
+  `DeathRestartDelay` 3 s. `ALevelExitTrigger` already fades to black itself and is unchanged.
 
 ## Build tooling
 

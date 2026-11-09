@@ -8,6 +8,7 @@
 #include "ProjectBopisPlayerController.generated.h"
 
 class UInputMappingContext;
+class UInputAction;
 class UUserWidget;
 class SImage;
 
@@ -47,6 +48,14 @@ protected:
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
+
+	/** Opens the pause menu (Escape, gamepad Start). */
+	UPROPERTY(EditAnywhere, Category = "Input|Input Mappings")
+	TObjectPtr<UInputAction> PauseAction;
+
+	/** The pause menu (WBP_PauseMenu). It pauses the game itself while it's up. */
+	UPROPERTY(EditAnywhere, Category = "Pause")
+	TSubclassOf<UUserWidget> PauseMenuClass;
 
 	/** Level start (restarts too): the screen stays black, the player's input off, until
 	    everyone's dressed (the Character Customizer shows its characters once their outfits
@@ -98,6 +107,10 @@ private:
 
 	/** The level start's hold on the enemies (see ULevelStartSubsystem). */
 	void SetEnemiesHeld(bool bHeld);
+
+	/** Adds the pause menu, unless the game is already paused, the level is still starting or
+	    leaving, or the player is dead. */
+	void OpenPauseMenu();
 
 	/** The black over the whole screen, HUD included. */
 	TSharedPtr<SImage> Curtain;

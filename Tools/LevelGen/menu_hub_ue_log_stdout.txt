@@ -1,0 +1,236 @@
+Using bundled DotNet SDK version: 10.0 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" -Mode=ValidatePlatforms -OutputSDKs  -AllPlatforms  -project="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/ProjectBopis.uproject" -log="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Saved/Logs/AutoSDKInfo.txt" -verbose -timestamps
+Log file: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Saved\Logs\AutoSDKInfo.txt
+##PlatformValidate: Win64 VALID 10.0.22621.0
+##PlatformValidate: Mac INVALID 26.1.1
+##PlatformValidate: IOS INVALID 26.1.1
+##PlatformValidate: Android INVALID r27c
+##PlatformValidate: Linux INVALID v26_clang-20.1.8-rockylinux8
+##PlatformValidate: LinuxArm64 INVALID <UNKNOWN>
+##PlatformValidate: TVOS INVALID 26.1.1
+##PlatformValidate: VisionOS INVALID <UNKNOWN>
+Unable to find required SDK version 'MainVersion' for platform LinuxArm64. Check your SDK.json files
+Unable to find required SDK version 'MainVersion' for platform VisionOS. Check your SDK.json files
+Trace written to file C:\Users\kevin\AppData\Local\UnrealBuildTool\Trace.uba with size 314b
+[2026.11.07-19.31.59:684][  0]LogInit: Display: Running engine for game: ProjectBopis
+[2026.11.07-19.31.59:684][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.11.07-19.31.59:684][  0]LogTrace: Display: Control listening on port 33269
+[2026.11.07-19.31.59:684][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.11.07-19.31.59:684][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.8-CL-56702186"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.8.2-56702186+++UE5+Release-5.8"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.8.2"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.9711] "
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|12th Gen Intel(R) Core(TM) i5-12600K"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.11.07-19.31.59:685][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : compacttset="0"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : commandline="" "C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\ProjectBopis.uproject" -run=pythonscript -script="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\menu_hub_ue.py" -unattended -nosplash -nop4 -abslog="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\menu_hub_ue_log.txt" -nullrhi -NoShaderCompile""
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : loginid="64fa6c7d4316c6cf5db437a7e0c7890c"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : zenstreaming="0"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.11.07-19.31.59:686][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.11.07-19.31.59:686][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.11.07-19.31.59:686][  0]LogConfig: Display: Loading VulkanPC ini files took 0.06 seconds
+[2026.11.07-19.31.59:686][  0]LogConfig: Display: Loading Android ini files took 0.06 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading IOS ini files took 0.07 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading Mac ini files took 0.07 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading Unix ini files took 0.08 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading VisionOS ini files took 0.08 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading Windows ini files took 0.08 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading TVOS ini files took 0.08 seconds
+[2026.11.07-19.31.59:687][  0]LogConfig: Display: Loading Linux ini files took 0.09 seconds
+[2026.11.07-19.31.59:687][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.07-19.31.59:687][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.07-19.31.59:687][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.07-19.31.59:687][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.07-19.31.59:687][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.07-19.31.59:688][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.07-19.31.59:688][  0]LogAsyncCompilation: Display: MemorySharingInfo: UsedMemory=366MiB, MaxMemoryAvailable=56107MiB
+[2026.11.07-19.31.59:688][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.11.07-19.31.59:688][  0]LogStreaming: Display: AsyncLoading2 - Created: Async Loading Thread: false, Async Post Load: false, Multithreaded: false
+[2026.11.07-19.31.59:688][  0]LogHAL: Display: Platform has ~ 32 GB [34137300992 / 34359738368 / 32], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.11.07-19.31.59:688][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.11.07-19.31.59:688][  0]LogObj: Display: Attempting to load config data for Default__DownlinkBandwidthManagerConfig before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.07-19.32.00:135][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : gpu=""
+[2026.11.07-19.32.00:252][  0]LogCsvProfiler: Display: Metadata set : gpudriver=""
+[2026.11.07-19.32.00:257][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.11.07-19.32.00:258][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.16
+[2026.11.07-19.32.00:258][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.16.dll
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.11.07-19.32.00:258][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.11.07-19.32.00:298][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Android'
+[2026.11.07-19.32.00:323][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'IOS'
+[2026.11.07-19.32.00:347][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Linux'
+[2026.11.07-19.32.00:370][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Mac'
+[2026.11.07-19.32.00:372][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'TVOS'
+[2026.11.07-19.32.00:397][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.11.07-19.32.00:397][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.11.07-19.32.00:397][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.11.07-19.32.00:398][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.11.07-19.32.00:398][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.11.07-19.32.00:400][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.11.07-19.32.00:733][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1679 MiB)
+[2026.11.07-19.32.00:734][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/zen.exe service status'.
+[2026.11.07-19.32.00:943][  0]LogZenServiceInstance: Display: Writing plugin version info to 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen_plugin_versions.json'
+[2026.11.07-19.32.00:943][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/5.8/Saved/Zen/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.07-19.32.00:943][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.07-19.32.00:944][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.11.07-19.32.01:047][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.11.07-19.32.01:048][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc. Status: OK!.
+[2026.11.07-19.32.01:058][  0]LogDerivedDataCache: Display: C:/Users/kevin/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.04ms. RandomReadSpeed=867.41MBs, RandomWriteSpeed=132.32MBs. Assigned SpeedClass 'Local'
+[2026.11.07-19.32.01:064][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.11.07-19.32.01:384][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64Editor not found.
+[2026.11.07-19.32.01:384][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64 not found.
+[2026.11.07-19.32.01:427][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.11.07-19.32.01:429][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.11.07-19.32.01:446][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.11.07-19.32.01:446][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.11.07-19.32.01:446][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.11.07-19.32.01:466][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.11.07-19.32.01:466][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.11.07-19.32.01:466][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.11.07-19.32.01:466][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.11.07-19.32.01:707][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.11.07-19.32.01:708][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.11.07-19.32.01:826][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.11.07-19.32.01:830][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 3.428 ms
+[2026.11.07-19.32.02:455][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.11.07-19.32.02:459][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.11.07-19.32.03:490][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.07-19.32.03:490][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.07-19.32.03:884][  0]LogToolsetRegistry: Display: Registering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.07-19.32.05:078][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PreLoad): 1 .ref files found, 1 referenced binaries
+[2026.11.07-19.32.05:079][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)
+[2026.11.07-19.32.05:079][  0]LogAssetRegistry: Display: FindShardedCacheFiles: 1 via .ref, 0 via migration fallback, 1 total
+[2026.11.07-19.32.05:079][  0]LogAssetRegistry: Display: LoadCacheFiles: loading 1 cache files, memory-mapping=enabled
+[2026.11.07-19.32.05:558][  0]LogAssetRegistry: Display: Asset registry cache read as 189.9 MiB from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_8A42602F4B1123AF37A69D9C7E142FE7.bin (memory-mapped=yes)
+[2026.11.07-19.32.05:566][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.489s loading caches from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry.
+[2026.11.07-19.32.19:889][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.11.07-19.32.19:903][  0]LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.07-19.32.19:904][  0]LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.07-19.32.20:033][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.11.07-19.32.20:896][  0]LogCsvProfiler: Display: Metadata set : raytracing="0"
+[2026.11.07-19.32.21:099][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.EditorAppToolset
+[2026.11.07-19.32.21:100][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.LogsToolset
+[2026.11.07-19.32.21:143][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... started...
+[2026.11.07-19.32.21:338][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.actor.ActorTools
+[2026.11.07-19.32.21:339][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.asset.AssetTools
+[2026.11.07-19.32.21:347][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.blueprint.BlueprintTools
+[2026.11.07-19.32.21:348][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.curve_table.CurveTableTools
+[2026.11.07-19.32.21:349][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_asset.DataAssetTools
+[2026.11.07-19.32.21:349][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_table.DataTableTools
+[2026.11.07-19.32.21:352][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material.MaterialTools
+[2026.11.07-19.32.21:354][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material_instance.MaterialInstanceTools
+[2026.11.07-19.32.21:354][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.object.ObjectTools
+[2026.11.07-19.32.21:356][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.primitive.PrimitiveTools
+[2026.11.07-19.32.21:358][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.scene.SceneTools
+[2026.11.07-19.32.21:361][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools
+[2026.11.07-19.32.21:364][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.static_mesh.StaticMeshTools
+[2026.11.07-19.32.21:364][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.string_table.StringTableTools
+[2026.11.07-19.32.21:365][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.programmatic.ProgrammaticToolset
+[2026.11.07-19.32.21:365][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.texture.TextureTools
+[2026.11.07-19.32.21:365][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... took 222.533 ms
+[2026.11.07-19.32.21:366][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.11.07-19.32.21:400][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 34.626 ms (total: 257.159 ms)
+[2026.11.07-19.32.21:401][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.11.07-19.32.21:404][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 3.891 ms (total: 261.051 ms)
+[2026.11.07-19.32.21:405][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... started...
+[2026.11.07-19.32.21:428][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... took 23.770 ms (total: 284.821 ms)
+[2026.11.07-19.32.21:428][  0]LogPythonScriptCommandlet: Display: Running Python script: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\menu_hub_ue.py
+[2026.11.07-19.32.26:926][  0]LogBlueprint: Warning: FMemberReference::ResolveMember (K2_GetComponentsByClass) bSelfContext == true, but no scope supplied!
+[2026.11.07-19.32.27:368][  0]LogBlueprint: Warning: FMemberReference::ResolveMember (GetOwningPlayer) bSelfContext == true, but no scope supplied!
+[2026.11.07-19.32.33:477][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_183' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:478][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_184' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:478][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_185' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:479][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_186' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:479][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_187' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:479][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_188' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:479][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_189' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.33:479][  0]LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_Root_36' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.34:163][  0]LogStaticMesh: Warning: Mesh cal5_45_Cartrige is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal5_45/cal5_45_Cartrige.cal5_45_Cartrige.
+[2026.11.07-19.32.34:173][  0]LogStaticMesh: Warning: Mesh cal__62_Cartrige is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal7_62/cal__62_Cartrige.cal__62_Cartrige.
+[2026.11.07-19.32.34:179][  0]LogStaticMesh: Warning: Mesh cal12Gauge_Used is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal12Gauge/cal12Gauge_Used.cal12Gauge_Used.
+[2026.11.07-19.32.34:182][  0]LogStaticMesh: Warning: Mesh cal9mm_Cartridge is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal9mm/cal9mm_Cartridge.cal9mm_Cartridge.
+[2026.11.07-19.32.34:184][  0]LogStaticMesh: Warning: Mesh cal5_45_Full is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal5_45/cal5_45_Full.cal5_45_Full.
+[2026.11.07-19.32.34:206][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2969.96875 MiB 
+[2026.11.07-19.32.34:207][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2969.964844 MiB 
+[2026.11.07-19.32.34:223][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2950.648438 MiB 
+[2026.11.07-19.32.34:223][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2950.648438 MiB 
+[2026.11.07-19.32.34:231][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2948.253906 MiB 
+[2026.11.07-19.32.34:232][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2948.253906 MiB 
+[2026.11.07-19.32.34:243][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2932.734375 MiB 
+[2026.11.07-19.32.34:243][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2932.136719 MiB 
+[2026.11.07-19.32.34:272][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2903.058594 MiB 
+[2026.11.07-19.32.34:272][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2902.644531 MiB 
+[2026.11.07-19.32.34:293][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2883.750 MiB 
+[2026.11.07-19.32.34:294][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2883.750 MiB 
+[2026.11.07-19.32.34:298][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2883.500 MiB 
+[2026.11.07-19.32.34:299][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2883.464844 MiB 
+[2026.11.07-19.32.34:365][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2853.503906 MiB 
+[2026.11.07-19.32.34:366][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2853.503906 MiB 
+[2026.11.07-19.32.34:389][  0]LogStaticMesh: Warning: Mesh cal45_Full is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal45/cal45_Full.cal45_Full.
+[2026.11.07-19.32.34:405][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2857.910156 MiB 
+[2026.11.07-19.32.34:406][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2857.910156 MiB 
+[2026.11.07-19.32.34:422][  0]LogStaticMesh: Warning: Mesh SM_G67_Thrown is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/FPS_Weapon_Bundle/Weapons/Meshes/G67_Grenade/SM_G67_Thrown.SM_G67_Thrown.
+[2026.11.07-19.32.34:897][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2871.410156 MiB 
+[2026.11.07-19.32.34:898][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2871.410156 MiB 
+[2026.11.07-19.32.34:964][  0]LogPython: Warning: C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Tools/LevelGen/menu_hub_ue.py:51: RuntimeWarning: EditorLoadingAndSavingUtils: /Game/CharacterCustomizer/Components/Tools/Tool_Smartphone/Smartphone_Talking : Mismatch between number of stored bone animation keys 1 and value stored on the DataModel 2, biggest found number of keys will be used.
+  unreal.EditorLoadingAndSavingUtils.load_map(SCENE)
+
+[2026.11.07-19.32.35:619][  0]LogWorldPartition: Display: WorldPartition initialize started...
+[2026.11.07-19.32.41:698][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2243.847656 MiB 
+[2026.11.07-19.32.41:701][  0]LogAsyncCompilation: Display: BEWARE: AssetCompile memory estimate is greater than available, but we're running it [SkinnedAsset] anyway! RequiredMemory = 0.000 MiB + 4608.000 MiB, MemoryLimit = 2243.847656 MiB 
+[2026.11.07-19.32.41:798][  0]LogWorldPartition: Display: WorldPartition initialize took 6.17 sec
+[2026.11.07-19.32.42:246][  0]LogCrowdFollowing: Warning: Unable to find RecastNavMesh instance while trying to create UCrowdManager instance
+[2026.11.07-19.32.48:432][  0]LogSourceControl: Display: Uncontrolled Changelist persistency file loaded ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Saved/SourceControl/UncontrolledChangelists.json
+[2026.11.07-19.32.50:238][  0]LogPythonScriptCommandlet: Display: Python script executed successfully
+[2026.11.07-19.32.50:238][  0]LogInit: Display: 
+[2026.11.07-19.32.50:238][  0]LogInit: Display: Warning/Error Summary (Unique only)
+[2026.11.07-19.32.50:239][  0]LogInit: Display: -----------------------------------
+[2026.11.07-19.32.50:239][  0]LogInit: Display: LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.07-19.32.50:239][  0]LogInit: Display: LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.07-19.32.50:239][  0]LogInit: Display: LogBlueprint: Warning: FMemberReference::ResolveMember (K2_GetComponentsByClass) bSelfContext == true, but no scope supplied!
+[2026.11.07-19.32.50:239][  0]LogInit: Display: LogBlueprint: Warning: FMemberReference::ResolveMember (GetOwningPlayer) bSelfContext == true, but no scope supplied!
+[2026.11.07-19.32.50:240][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_183' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:240][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_184' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:240][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_185' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:240][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_186' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:240][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_187' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:241][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_188' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:241][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_189' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:241][  0]LogInit: Display: LogBlueprint: Warning: Node '/Game/MilitaryWeapSilver/Sound/Knife/Cues/KnifeA_Swing_Cue.KnifeA_Swing_Cue:SoundCueGraph_36.SoundCueGraphNode_Root_36' missing NodeGuid because of upgrade from old package version, this can cause deterministic cooking issues please resave package.
+[2026.11.07-19.32.50:241][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal5_45_Cartrige is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal5_45/cal5_45_Cartrige.cal5_45_Cartrige.
+[2026.11.07-19.32.50:242][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal__62_Cartrige is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal7_62/cal__62_Cartrige.cal__62_Cartrige.
+[2026.11.07-19.32.50:242][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal12Gauge_Used is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal12Gauge/cal12Gauge_Used.cal12Gauge_Used.
+[2026.11.07-19.32.50:242][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal9mm_Cartridge is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal9mm/cal9mm_Cartridge.cal9mm_Cartridge.
+[2026.11.07-19.32.50:243][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal5_45_Full is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal5_45/cal5_45_Full.cal5_45_Full.
+[2026.11.07-19.32.50:243][  0]LogInit: Display: LogStaticMesh: Warning: Mesh cal45_Full is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/AmmoSet/Models/cal45/cal45_Full.cal45_Full.
+[2026.11.07-19.32.50:243][  0]LogInit: Display: LogStaticMesh: Warning: Mesh SM_G67_Thrown is recomputing physics on load. It must be resaved before it will cook deterministically. Please resave /Game/FPS_Weapon_Bundle/Weapons/Meshes/G67_Grenade/SM_G67_Thrown.SM_G67_Thrown.
+[2026.11.07-19.32.50:243][  0]LogInit: Display: LogPython: Warning: C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Tools/LevelGen/menu_hub_ue.py:51: RuntimeWarning: EditorLoadingAndSavingUtils: /Game/CharacterCustomizer/Components/Tools/Tool_Smartphone/Smartphone_Talking : Mismatch between number of stored bone animation keys 1 and value stored on the DataModel 2, biggest found number of keys will be used.
+  unreal.EditorLoadingAndSavingUtils.load_map(SCENE)
+
+[2026.11.07-19.32.50:244][  0]LogInit: Display: LogCrowdFollowing: Warning: Unable to find RecastNavMesh instance while trying to create UCrowdManager instance
+[2026.11.07-19.32.50:244][  0]LogInit: Display: 
+[2026.11.07-19.32.50:244][  0]LogInit: Display: Failure - 1 error(s), 20 warning(s)
+[2026.11.07-19.32.50:244][  0]LogInit: Display: 
+Execution of commandlet took:  29.10 seconds, PeakPhysMemoryMB=3461 MB, PeakVirtMemoryMB=3388 MB
+[2026.11.07-19.32.50:469][  0]LogToolsetRegistry: Display: Unregistering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.07-19.32.50:907][  0]LogPython: Display: Object '/EditorToolset/Python/editor_toolset/toolsets/blueprint_PY.ContainerType' was externally referenced when shutting down Python. Forcibly releasing its Python resources!
+[2026.11.07-19.32.50:907][  0]LogPython: Display: Object '/EditorToolset/Python/editor_toolset/toolsets/material_instance_PY.MaterialParameterType' was externally referenced when shutting down Python. Forcibly releasing its Python resources!
+[2026.11.07-19.32.50:907][  0]LogPython: Display: Object '/ControlRig/Python/RigHierarchy/add_controls_for_selected_PY.ControlOutputFormat' was externally referenced when shutting down Python. Forcibly releasing its Python resources!
+[2026.11.07-19.32.50:920][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PostWrite): 1 .ref files found, 1 referenced binaries
+[2026.11.07-19.32.50:920][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)

@@ -1,0 +1,127 @@
+Begin Object Class=/Script/UMG.Overlay Name="Root"
+   Begin Object Class=/Script/UMG.OverlaySlot Name="OverlaySlot_Blur"
+   End Object
+   Begin Object Class=/Script/UMG.OverlaySlot Name="OverlaySlot_Dim"
+   End Object
+   Begin Object Class=/Script/UMG.OverlaySlot Name="OverlaySlot_Pages"
+   End Object
+   Begin Object Name="OverlaySlot_Blur"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Fill
+      Parent="/Script/UMG.Overlay'Root'"
+      Content="/Script/UMG.BackgroundBlur'Blur'"
+   End Object
+   Begin Object Name="OverlaySlot_Dim"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Fill
+      Parent="/Script/UMG.Overlay'Root'"
+      Content="/Script/UMG.Image'Dim'"
+   End Object
+   Begin Object Name="OverlaySlot_Pages"
+      Padding=(Left=140.000000,Top=0.000000,Right=0.000000,Bottom=160.000000)
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Bottom
+      Parent="/Script/UMG.Overlay'Root'"
+      Content="/Script/UMG.WidgetSwitcher'Pages'"
+   End Object
+   Slots(0)="/Script/UMG.OverlaySlot'OverlaySlot_Blur'"
+   Slots(1)="/Script/UMG.OverlaySlot'OverlaySlot_Dim'"
+   Slots(2)="/Script/UMG.OverlaySlot'OverlaySlot_Pages'"
+End Object
+Begin Object Class=/Script/UMG.BackgroundBlur Name="Blur"
+   BlurStrength=10.000000
+End Object
+Begin Object Class=/Script/UMG.Image Name="Dim"
+   ColorAndOpacity=(R=0.000000,G=0.000000,B=0.000000,A=0.250000)
+End Object
+Begin Object Class=/Script/UMG.WidgetSwitcher Name="Pages"
+   Begin Object Class=/Script/UMG.WidgetSwitcherSlot Name="WidgetSwitcherSlot_MainPage"
+   End Object
+   Begin Object Class=/Script/UMG.WidgetSwitcherSlot Name="WidgetSwitcherSlot_OptionsPage"
+   End Object
+   Begin Object Name="WidgetSwitcherSlot_MainPage"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Bottom
+      Parent="/Script/UMG.WidgetSwitcher'Pages'"
+      Content="/Script/UMG.VerticalBox'MainPage'"
+   End Object
+   Begin Object Name="WidgetSwitcherSlot_OptionsPage"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Bottom
+      Parent="/Script/UMG.WidgetSwitcher'Pages'"
+      Content="/Game/UI/Menu/WBP_OptionsPage.WBP_OptionsPage_C'OptionsPage'"
+   End Object
+   Slots(0)="/Script/UMG.WidgetSwitcherSlot'WidgetSwitcherSlot_MainPage'"
+   Slots(1)="/Script/UMG.WidgetSwitcherSlot'WidgetSwitcherSlot_OptionsPage'"
+End Object
+Begin Object Class=/Script/UMG.VerticalBox Name="MainPage"
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_ResumeButton"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_RestartButton"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_OptionsButton"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_MainMenuButton"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_QuitButton"
+   End Object
+   Begin Object Name="VerticalBoxSlot_ResumeButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'MainPage'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'ResumeButton'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_RestartButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'MainPage'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'RestartButton'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_OptionsButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'MainPage'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'OptionsButton'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_MainMenuButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'MainPage'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'MainMenuButton'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_QuitButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'MainPage'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'QuitButton'"
+   End Object
+   Slots(0)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_ResumeButton'"
+   Slots(1)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_RestartButton'"
+   Slots(2)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_OptionsButton'"
+   Slots(3)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_MainMenuButton'"
+   Slots(4)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_QuitButton'"
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="ResumeButton"
+   Text=INVTEXT("Resume")
+   Action=Back
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="RestartButton"
+   Text=INVTEXT("Restart")
+   Action=RestartLevel
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="OptionsButton"
+   Text=INVTEXT("Options")
+   Action=OpenPage
+   Page="OptionsPage"
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="MainMenuButton"
+   Text=INVTEXT("Main Menu")
+   Action=OpenLevel
+   Level="/Game/ThirdPerson/Lvl_MainMenu.Lvl_MainMenu"
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="QuitButton"
+   Text=INVTEXT("Quit Game")
+   Action=QuitGame
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_OptionsPage.WBP_OptionsPage_C Name="OptionsPage"
+End Object

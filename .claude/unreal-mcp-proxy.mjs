@@ -143,22 +143,36 @@ function snapshotTools() {
 	}
 }
 
-async function listTools() {
-	try {
-		const msg = await forward("tools/list", {});
-		const tools = msg?.result?.tools;
-		if (Array.isArray(tools) && tools.length) {
-			const json = JSON.stringify(tools, null, 2) + "\n";
-			if (json !== JSON.stringify(snapshotTools(), null, 2) + "\n") {
-				writeFileSync(TOOLS_SNAPSHOT, json);
-				log("tool snapshot updated");
-			}
-			return tools;
-		}
-	} catch (e) {
-		log(`tools/list from snapshot (${e.message})`);
+// Asks the editor for its tool list and saves it, giving up after `ms` milliseconds.
+async function refreshTools(ms) {
+	const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error(`no answer in ${ms} ms`)), ms));
+	const msg = await Promise.race([forward("tools/list", {}), timeout]);
+	const tools = msg?.result?.tools;
+	if (!Array.isArray(tools) || !tools.length) throw new Error("empty tool list");
+	const json = JSON.stringify(tools, null, 2) + "\n";
+	if (json !== JSON.stringify(snapshotTools(), null, 2) + "\n") {
+		writeFileSync(TOOLS_SNAPSHOT, json);
+		log("tool snapshot updated");
 	}
-	return snapshotTools();
+	return tools;
+}
+
+// Answers from the snapshot at once, and refreshes it in the background. The client gives tools/list
+// 30 s; a busy editor (loading, compiling, a long script) took longer, the client gave up, and the
+// session sat "connected" with 0 tools until a manual reconnect (2026-11-07). Only with no snapshot
+// at all does it wait for the editor, and then not past the client's patience.
+async function listTools() {
+	const snapshot = snapshotTools();
+	if (snapshot.length) {
+		refreshTools(120000).catch((e) => log(`tool snapshot not refreshed (${e.message})`));
+		return snapshot;
+	}
+	try {
+		return await refreshTools(20000);
+	} catch (e) {
+		log(`tools/list: no snapshot and no editor (${e.message})`);
+		return [];
+	}
 }
 
 // ---------------------------------------------------------------- dispatch

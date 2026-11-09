@@ -19,6 +19,7 @@ class UShootdodgeComponent;
 class URollComponent;
 class UGamepadAimComponent;
 class UKillCamComponent;
+class UInteractComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class UPostProcessComponent;
@@ -114,6 +115,10 @@ class AProjectBopisCharacter : public ABopisCharacterBase
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UKillCamComponent> KillCam;
 
+	/** The Interact button: picks the inspect in front of the player and shows its prompt. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInteractComponent> Interaction;
+
 	/** The Focus look (desaturate, vignette…). Unbound; Focus drives its weight. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UPostProcessComponent> FocusPostProcess;
@@ -179,6 +184,10 @@ protected:
 	/** First aid: tap to use a kit. */
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* HealAction;
+
+	/** Interact: inspect what the prompt shows. */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* InteractAction;
 
 	/** Weapon wheel: hold to open, release to equip what's pointed at. The number keys keep
 	    working beside it; the wheel is there for a controller. */
@@ -429,6 +438,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoHeal();
 
+	/** Interact pressed: uses what the prompt shows. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoInteract();
+
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
@@ -469,6 +482,10 @@ protected:
 	/** Real seconds from death to the level reloading (slow motion doesn't stretch it). */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float DeathRestartDelay = 3.0f;
+
+	/** Real seconds of fade to black after DeathRestartDelay, before the level reloads. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float RestartFadeTime = 0.6f;
 
 	/** Real seconds of slow motion when the player dies. 0 turns it off. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
@@ -801,6 +818,16 @@ public:
 	UFocusComponent* GetFocus() const { return Focus; }
 
 	UKillCamComponent* GetKillCam() const { return KillCam; }
+
+	UInteractComponent* GetInteraction() const { return Interaction; }
+
+	UInputAction* GetInteractAction() const { return InteractAction; }
+
+	/** No shot fired, hit taken or near miss for OutOfCombatDelay. */
+	bool IsOutOfCombat() const;
+
+	/** Where his head turns: a nearby thing worth inspecting, unless the gun is up. */
+	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
 
 	/** Turning to throw or mid-toss: the free arm stays off physics and the blade's turns ease out. */
 	bool IsThrowingGrenade() const;

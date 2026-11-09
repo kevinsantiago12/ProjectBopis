@@ -1,0 +1,41 @@
+Begin Object Class=/Script/UMG.VerticalBox Name="OptionsList"
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_MouseSensitivity"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_ControllerSensitivity"
+   End Object
+   Begin Object Class=/Script/UMG.VerticalBoxSlot Name="VerticalBoxSlot_OptionsBackButton"
+   End Object
+   Begin Object Name="VerticalBoxSlot_MouseSensitivity"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'OptionsList'"
+      Content="/Game/UI/Menu/WBP_SettingSlider.WBP_SettingSlider_C'MouseSensitivity'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_ControllerSensitivity"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'OptionsList'"
+      Content="/Game/UI/Menu/WBP_SettingSlider.WBP_SettingSlider_C'ControllerSensitivity'"
+   End Object
+   Begin Object Name="VerticalBoxSlot_OptionsBackButton"
+      Padding=(Left=0.000000,Top=0.000000,Right=0.000000,Bottom=10.000000)
+      HorizontalAlignment=HAlign_Fill
+      Parent="/Script/UMG.VerticalBox'OptionsList'"
+      Content="/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C'OptionsBackButton'"
+   End Object
+   Slots(0)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_MouseSensitivity'"
+   Slots(1)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_ControllerSensitivity'"
+   Slots(2)="/Script/UMG.VerticalBoxSlot'VerticalBoxSlot_OptionsBackButton'"
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_SettingSlider.WBP_SettingSlider_C Name="MouseSensitivity"
+   Text=INVTEXT("Mouse Sensitivity")
+   Setting=MouseSensitivity
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_SettingSlider.WBP_SettingSlider_C Name="ControllerSensitivity"
+   Text=INVTEXT("Controller Sensitivity")
+   Setting=ControllerSensitivity
+End Object
+Begin Object Class=/Game/UI/Menu/WBP_MenuButton.WBP_MenuButton_C Name="OptionsBackButton"
+   Text=INVTEXT("Back")
+   Action=Back
+End Object

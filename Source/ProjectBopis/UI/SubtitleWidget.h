@@ -5,8 +5,9 @@
 #include "SubtitleWidget.generated.h"
 
 /**
- * The subtitle line (scripted events' dialogue). Bind a Text Block to GetSubtitleText and its
- * visibility to HasSubtitle.
+ * The subtitle line (scripted events' dialogue). Bind a Text Block to GetSubtitleText. For its
+ * visibility, a binding function that picks Visible or Collapsed from HasSubtitle (UMG binds
+ * Visibility to an ESlateVisibility, not a bool).
  */
 UCLASS()
 class PROJECTBOPIS_API USubtitleWidget : public UPlayerHUDElementWidget

@@ -29,6 +29,11 @@
 >   publicly known to exist; their appearance is fixed (Underworld-style); they
 >   do not transform mid-combat; the protagonist has no human allies.
 >
+> - **2026-11-07 — a level scenario from the user** (pasted in chat): the
+>   missing patrolman. Gives the protagonist's name, **Navarro**, and the
+>   trafficking pipeline. Now *LEVEL SCENARIO — THE MISSING PATROLMAN* at the
+>   end of PART 2.
+>
 > **Gameplay content in both 2026-09-28 sources was deliberately excluded per
 > the user's standing instruction** ("take only the lore notes, ignore any
 > gameplay related stuff"). Specifically not imported: camera perspective
@@ -223,8 +228,11 @@ structural decisions from conversation, marked inline.*
 - Deliberately the opposite of Tequila from Hard Boiled.
 - Avoid making him a permanently angry one-note tough guy.
 - He retains a moral core beneath his cynicism.
-- Exact name, profession/department, personal history and central personal
-  motivation remain `[TBD]`.
+- **Name: Navarro** (user's scenario, 2026-11-07). Whether that's his surname
+  or his whole name isn't stated; it reads as a surname.
+- Profession/department, personal history and central personal motivation
+  remain `[TBD]`. *The 2026-11-07 scenario has him sent by dispatch after a
+  patrol officer goes silent, which again implies police.*
 
 *Implied but not stated: he is law enforcement of some kind. He investigates
 crime, has a **Chief** who can suspend him, and is "removed from duty".
@@ -412,6 +420,63 @@ PART 1's ladder is the spine. The arcs hang off its four rungs.
 
 **Background:** the arrangement has run since roughly 2001, under a regime too
 unstable after the fictionalized revolution to notice or care.
+
+## LEVEL SCENARIO — THE MISSING PATROLMAN *(stated 2026-11-07)*
+
+*From the user, pasted in chat. The order of events and every story item below
+are theirs. Where it sits in the campaign isn't stated, beyond holding "the
+game's first major firefight"; the arc mapping is still blocked (PART 4,
+Campaign structure).*
+
+1. **The call.** Late at night, a patrol officer reports suspicious activity
+   in a densely populated residential district. He tells dispatch he's going
+   to check it out, then stops responding. Navarro is sent to find out what
+   happened.
+2. **The search.** At the patrolman's last reported area, Navarro looks for
+   him. There's no patrol car where it should be, which immediately suggests
+   somebody deliberately interfered with the scene. Signs of disturbance lead
+   him off the main street and deeper between the buildings.
+3. **The car.** He finds the missing patrol car hidden under a large tarp,
+   pushed into an enclosed yard or improvised garage where it can't easily be
+   seen from the road. There are signs of a struggle around it. The
+   patrolman was killed after discovering something he wasn't supposed to see.
+4. **The first major firefight.** The people responsible realize Navarro has
+   found the car. The investigation becomes the game's first major firefight.
+   Navarro pushes through connected residences, storage rooms, alleys and
+   improvised structures the criminals are using.
+5. **What the place is.** Deeper in the compound, rooms have clearly been used
+   to hold people for a while: discarded belongings, bedding, bottled water,
+   food containers, personal items. A large group of captives was kept here
+   very recently and has already been moved.
+   - **Children, never graphic.** The evidence should suggest some of the
+     missing were children without depicting anything graphic: for example a
+     child's backpack, small shoes, a school ID card or similar belongings
+     among the abandoned possessions.
+6. **Too late.** Navarro reaches the innermost part of the staging area and
+   kills or drives off the remaining gunmen. He can't rescue anyone: the
+   captives were moved out shortly before he arrived.
+7. **The documents.** Searching the site, he finds something actionable:
+   multiple forged identity documents and passports prepared for the missing
+   people. Some are incomplete; others carry photographs and false names.
+   They were being prepared so the captives could be moved without their
+   real identities. **Navarro takes the documents.**
+8. **The end.** The murdered patrolman didn't stumble onto a normal gang
+   hideout. He accidentally discovered part of an **organized trafficking
+   pipeline**.
+
+**Implementation notes from the user, same day** (not story):
+- The level generator must build **interiors** for the compound, ending in a
+  **multi-level "trap house"** area.
+- **2026-11-08: one compound.** "this entire area, aside from Section 1 and 2
+  are all a single compound" (the paper layout's sections 3-7: the yard, the
+  row houses, the covered alley and bodega, the holding house, the trap house);
+  "so the slum generator is useless here besides those 2 sections". Only the
+  main street and the eskinita are the residential slum.
+- Story beats get **interactable inspects**, the patrol car for one.
+- Use the planned **section setup** (a chapter streamed in sections), and
+  break long sightlines.
+
+Paper layout: `Design Document/Linear_Slums_Layout.html`.
 
 ---
 
@@ -748,6 +813,34 @@ the player isn't found, it makes an "aggressive sweep to point": from one
 spawn point to another picked at random, in a ready stance. Room enemies in
 linear levels still hold their room, as above.
 
+## Arena mode: 3 maps × 5 levels — *stated 2026-11-08*
+**Stated by the user:** "As part of the Game Modes. Arena, I envision a same
+map multilevel challenge, up to 5 levels level 1 is low level goons, 15 to
+start, level 5 is 50 starting at low level goons to bulltproofed pros." On
+the count, after Claude suggested 3 arena maps of 5 levels each: "3 x 5 is
+good."
+- **3 arena maps, 5 levels each** (15 levels). Every level on a map is the
+  same map.
+- **Level 1:** 15 enemies, all low-level goons.
+- **Level 5:** 50 enemies, starting with low-level goons and ending with
+  **bulletproofed pros**.
+- `Lvl_BackAlleys_Arena` is the first map. **[UNDECIDED]** where the other
+  two are set.
+- *Claude's suggestions, not canon:* levels 2–4 at about 24 / 33 / 42; each
+  level adds one new thing (a tougher type, a new direction, the first pros);
+  the counts are kills to clear, with a cap on how many are alive at once;
+  endless mode alongside for open-ended play.
+- **[UNDECIDED]:**
+  - Levels chosen separately from the menu, or one continuous run? If a run,
+    do health, ammo and weapons carry over?
+  - What dying restarts: the level or the run.
+  - The roster between goon and pro: how many tiers, and what sets them
+    apart (accuracy, health, armour, weapons, behaviour).
+  - Bulletproofing: does armour break, or is it permanent? What counters it
+    (headshots, limbs, heavier guns)? How does the player spot it?
+  - Scoring: time, accuracy, style kills, or simply cleared or not.
+  - Levels 2–4 counts and contents.
+
 **Slice setting — settled 2026-10-23:** the first playable slice is set in
 **Filipino slum alleyways** (user). District and story arc still open.
 
@@ -960,6 +1053,26 @@ The levels will have **"walk around" parts with civilians you can interact
 with** (user). Up to 12 NPCs on screen there; no fighting in them. What the
 interactions are is `[UNDECIDED]`.
 
+## Inspects — *stated 2026-11-08*
+Story beats are **inspects** (the missing-patrolman scenario's notes: "interactable
+inspects for story beats, ie the patrol car"). The user's answers to the proposal:
+- **Voice and subtitles:** "Voice and subtitle, subtitle subject to settings."
+  Navarro's lines at an inspect are voiced, and their subtitles can be switched off.
+- **A silent count:** "Silent count, dont show it but will trigger achievements.
+  Issue with MP3 is OCD guys will restart the level if they missed something."
+  Found inspects are counted, but the count is never shown to the player; it only
+  feeds achievements.
+- **Navarro moves for them:** "move for them". He walks up, crouches, reaches or
+  picks up, rather than the camera alone doing the looking.
+- **Mini cutscenes:** "The inspect will be mini cutscenes essentially." Each one is
+  a short authored scene (its own shots, Navarro's action, his lines). A readable
+  close-up, like the forged documents, is a shot within its scene.
+- **Cut straight in:** "cant we just cut into the clip instead of moving, since we
+  have control of what they can see anyways?" Pressing cuts to the scene; Navarro
+  doesn't walk up in play first. His moving happens inside the scene.
+- `[UNDECIDED]`: what each line says; which achievements; which inspects get a
+  close-up shot.
+
 
 ## Input for the story rewrite
 
@@ -1001,8 +1114,8 @@ answer, kept so none is lost.
 ## `[TBD]` — design-owned, do not invent
 
 - **The revolution's in-universe name.** Explicitly called out in PART 2.
-- **Protagonist:** exact name, profession/department, personal history,
-  central personal motivation.
+- **Protagonist:** first name (if Navarro is his surname),
+  profession/department, personal history, central personal motivation.
 - **Femme fatale:** name; whether the PDEA connection is confirmed.
 - **The Chief:** name, and his actual motive behind the suspension — now with
   a fourth possibility, that he sincerely believes his investigator has lost

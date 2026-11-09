@@ -123,5 +123,13 @@ if ($NoLaunch) {
 }
 
 Write-Step 'Opening the editor...'
+# Someone may have opened it while this was building (the user, another session). A second copy
+# would fight the first for the bridge port, so it's left as the only one (2026-11-08).
+$open = @(Get-ProjectEditors)
+if ($open.Count -gt 0) {
+    Write-Host "An editor is already open (PID $($open.ProcessId -join ', ')): not opening another." -ForegroundColor Yellow
+    Write-Host 'If it opened before the build finished, it may still have the old code: restart it.' -ForegroundColor Yellow
+    exit 0
+}
 Start-Process -FilePath $EditorExe -ArgumentList "`"$UProject`""
 Write-Host 'Editor launched. Done.' -ForegroundColor Green

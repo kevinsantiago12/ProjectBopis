@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Gameplay/EncounterDirector.h"
+#include "Gameplay/LevelTravelSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Enemies/EnemyBase.h"
 #include "Weapons/WeaponBase.h"
 #include "Weapons/WeaponHolderComponent.h"
@@ -47,6 +49,13 @@ void AEncounterDirector::Tick(float DeltaSeconds)
 	// The fallen (and the cleaned-up) drop out of the count.
 	Alive.RemoveAll([](const TWeakObjectPtr<AEnemyBase>& Enemy) { return !Enemy.IsValid() || Enemy->IsDead(); });
 
+	// A set fight that's over restarts the level.
+	if (bRestartOnCleared && IsFightDone())
+	{
+		UpdateClearedRestart();
+		return;
+	}
+
 	const bool bMoreToCome = TotalEnemies <= 0 || SpawnedCount < TotalEnemies;
 	if (!bMoreToCome || Alive.Num() >= MaxAlive)
 	{
@@ -76,6 +85,36 @@ bool AEncounterDirector::IsFightDone() const
 	{
 		return Enemy.IsValid() && !Enemy->IsDead();
 	});
+}
+
+void AEncounterDirector::UpdateClearedRestart()
+{
+	// Real seconds: the kill cam's slow motion can't stretch the wait.
+	const double Now = GetWorld()->GetRealTimeSeconds();
+
+	// The kill cam is still on the last body: the wait starts when it ends.
+	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	const UKillCamComponent* KillCam = Player ? Player->FindComponentByClass<UKillCamComponent>() : nullptr;
+	if (KillCam && KillCam->IsPlaying())
+	{
+		ClearedAt = -1.0;
+		return;
+	}
+	if (ClearedAt < 0.0)
+	{
+		ClearedAt = Now;
+	}
+	if (Now - ClearedAt < RestartDelay)
+	{
+		return;
+	}
+
+	// Fade to black, then this level again, the same way the death restart goes.
+	if (ULevelTravelSubsystem* Travel = GetGameInstance()->GetSubsystem<ULevelTravelSubsystem>())
+	{
+		Travel->FadeAndOpenLevel(TSoftObjectPtr<UWorld>(), RestartFadeTime);
+	}
+	SetActorTickEnabled(false);
 }
 
 AActor* AEncounterDirector::PickSpawnPoint() const

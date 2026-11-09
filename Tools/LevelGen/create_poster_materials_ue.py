@@ -1,6 +1,9 @@
 """Headless, new assets only: the material for the user's posters and ads, and one instance per image. User 2026-11-05: "Added the Ads ... these
 ads are AI generated, they are currently placeholder labeled. I might decide to use them but we will see. Now see what you can do with it".
 
+User 2026-11-07: "Project_Bopis_Local_Business_Signs Added, use this for new posters (add, dont replace the ones already there)": its Posters
+folder is read too (its Wall_Boards are sign boards, create_sign_boards_ue.py).
+
 The images in /Game/Project_Bopis_Posters are not touched: all the wear is in the material, so one image looks different on each wall.
 - M_BackAlleys_PosterPaper: paper on a plane, masked. Each placed copy reads its own patch of T_BackAlleys_PosterWear, from where it stands: R tears
   the edges, G is grime, B says where the sun faded it. Tear, Fade, Dirt and WearScale are parameters; at 0 the image shows as supplied.
@@ -14,7 +17,9 @@ import os
 import unreal
 
 SRC = os.path.join(unreal.Paths.project_saved_dir(), "LevelGen", "import", "street")
-ART = "/Game/Project_Bopis_Posters"
+ARTS = ("/Game/Project_Bopis_Posters", "/Game/Project_Bopis_Local_Business_Signs/Posters")
+# The business posters are white paper: the wear texture's grime showed on them as blue-grey camouflage blotches (2026-11-07 capture). Less of it there.
+LOCAL_ART, LOCAL_DIRT = "/Game/Project_Bopis_Local_Business_Signs/", 0.3
 TEX = "/Game/ThirdPerson/BackAlleys/Textures"
 MATS = "/Game/ThirdPerson/BackAlleys/Materials"
 WEAR = "T_BackAlleys_PosterWear"
@@ -150,10 +155,11 @@ def build_master(first, wear):
 
 
 images = []
-for path in eal.list_assets(ART, recursive=True, include_folder=False):
-    a = unreal.load_asset(path)
-    if isinstance(a, unreal.Texture2D):
-        images.append(a)
+for art in ARTS:
+    for path in eal.list_assets(art, recursive=True, include_folder=False):
+        a = unreal.load_asset(path)
+        if isinstance(a, unreal.Texture2D):
+            images.append(a)
 say("%d images" % len(images))
 usable = [t for t in images if t.get_editor_property("compression_settings") != unreal.TextureCompressionSettings.TC_NORMALMAP]
 for t in images:
@@ -177,6 +183,8 @@ for t in usable:
     mi = tools.create_asset(name, MATS, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
     mi.set_editor_property("parent", master)
     mel.set_material_instance_texture_parameter_value(mi, "Poster", t)
+    if t.get_path_name().startswith(LOCAL_ART):
+        mel.set_material_instance_scalar_parameter_value(mi, "Dirt", LOCAL_DIRT)
     mel.update_material_instance(mi)
     eal.save_loaded_asset(mi)
     say(name + " saved")

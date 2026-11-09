@@ -368,6 +368,30 @@ moral line so the cynicism never becomes total nihilism — he expects
 institutions and people to fail him, and still can't ignore innocent people
 in danger.
 
+His name is **Navarro**.
+
+### A first case: the missing patrolman
+
+Late at night, a patrolman radios in about something suspicious in a crowded
+neighbourhood, says he'll take a look, and goes silent. Navarro is sent after
+him. The patrol car isn't where it should be. A trail leads off the main street
+and in between the houses, to a yard where the car sits hidden under a tarp,
+with signs of a struggle. The patrolman is dead.
+
+The men who did it see Navarro find the car, and the search turns into the
+first big shootout: through houses knocked into one another, storerooms,
+alleys and shacks the gang has taken over. Deeper in, the place shows what
+it's for. Rooms where people were held, very recently: bedding, water,
+leftover food, belongings. Some of them were children's: a school bag, small
+shoes, a school ID. Nothing is shown beyond the things left behind.
+
+At the heart of it, in a ramshackle house built up three floors, Navarro fights
+through the last of them, too late to save anyone: the captives were moved out
+just before he got there. What he finds instead is a stack of forged IDs and
+passports made out for the missing, some with their photos and new names. He
+takes them. The patrolman hadn't stumbled on a gang hideout. He'd found one
+link in a trafficking pipeline.
+
 ### Open
 
 - **The story.** This is the current major design task: a plot that grows
@@ -375,8 +399,8 @@ in danger.
   overlapping criminal and institutional interests, a personal reason for
   him to keep digging, and a structure that naturally escalates into
   spectacular John Woo-style encounters.
-- **The protagonist's** history, profession, name, exact age, personal
-  tragedy or motivation, and his connection to the main crime plot.
+- **The protagonist's** history, profession, exact age, personal tragedy or
+  motivation, and his connection to the main crime plot.
 - Whether dialogue choices exist. The previous version had none, tied to
   the neutral protagonist; with an authored lead, that's no longer settled
   either way.
@@ -397,6 +421,12 @@ of surprise before they open fire.
 In an **arena fight**, once the shooting starts it never calms down. Break
 line of sight and the enemies come after you: first to where they last saw
 you, then sweeping the alleys from one end to the other, guns up.
+
+### Arena mode
+
+Beside the story, an **arena mode**: three arena maps, five levels each, every
+level fought on the same map. The first level sends fifteen low-level goons;
+the fifth sends fifty, starting with goons and ending with bulletproofed pros.
 
 ### Under reconsideration
 
@@ -592,3 +622,11 @@ a shooting range.
   it's a step up. Melee arrives: a strike with the butt of whatever gun you
   hold, which staggers the man in front of you and sets up the shot. The
   weapon wheel's first slot picks whether the grenade key throws or strikes.
+- 2026-11-07 — The lead has a name, Navarro, and a first case: the missing
+  patrolman, from a night search through a crowded neighbourhood to a
+  trafficking gang's three-storey hideout.
+- 2026-11-08 — Planned: story moments where Navarro stops to look at
+  something. He walks up, crouches or reaches, and says a voiced line, with
+  subtitles if you want them. The ones you can miss are counted quietly
+  toward achievements and never shown on screen, so there's no reason to
+  replay a level hunting for one you passed.

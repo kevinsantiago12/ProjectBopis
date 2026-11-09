@@ -1,0 +1,40 @@
+Begin Object Class=/Script/UMG.Overlay Name="Root"
+   Begin Object Class=/Script/UMG.OverlaySlot Name="OverlaySlot_Button"
+   End Object
+   Begin Object Class=/Script/UMG.OverlaySlot Name="OverlaySlot_FocusFrame"
+   End Object
+   Begin Object Name="OverlaySlot_Button"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Fill
+      Parent="/Script/UMG.Overlay'Root'"
+      Content="/Script/UMG.Button'Button'"
+   End Object
+   Begin Object Name="OverlaySlot_FocusFrame"
+      HorizontalAlignment=HAlign_Fill
+      VerticalAlignment=VAlign_Fill
+      Parent="/Script/UMG.Overlay'Root'"
+      Content="/Script/UMG.Image'FocusFrame'"
+   End Object
+   Slots(0)="/Script/UMG.OverlaySlot'OverlaySlot_Button'"
+   Slots(1)="/Script/UMG.OverlaySlot'OverlaySlot_FocusFrame'"
+End Object
+Begin Object Class=/Script/UMG.Button Name="Button"
+   Begin Object Class=/Script/UMG.ButtonSlot Name="ButtonSlot_Label"
+   End Object
+   Begin Object Name="ButtonSlot_Label"
+      Padding=(Left=28.000000,Top=6.000000,Right=28.000000,Bottom=6.000000)
+      HorizontalAlignment=HAlign_Left
+      VerticalAlignment=VAlign_Center
+      Parent="/Script/UMG.Button'Button'"
+      Content="/Script/UMG.TextBlock'Label'"
+   End Object
+   BackgroundColor=(R=0.020000,G=0.020000,B=0.020000,A=0.650000)
+   Slots(0)="/Script/UMG.ButtonSlot'ButtonSlot_Label'"
+End Object
+Begin Object Class=/Script/UMG.TextBlock Name="Label"
+   Font=(FontObject="/Script/Engine.Font'/Game/antonio/Antonio-Bold_Font.Antonio-Bold_Font'",TypefaceFontName="Default",Size=30.000000)
+End Object
+Begin Object Class=/Script/UMG.Image Name="FocusFrame"
+   Brush=(TintColor=(SpecifiedColor=(R=1.000000,G=1.000000,B=1.000000,A=0.000000)),DrawAs=RoundedBox,OutlineSettings=(CornerRadii=(X=4.000000,Y=4.000000,Z=4.000000,W=4.000000),Color=(SpecifiedColor=(R=0.050000,G=0.400000,B=1.000000,A=1.000000)),Width=3.000000,RoundingType=FixedRadius,bUseBrushTransparency=False))
+   Visibility=HitTestInvisible
+End Object

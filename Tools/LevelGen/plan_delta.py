@@ -10,7 +10,7 @@ import sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 NEW = os.path.join(ROOT, "Saved", "BackAlleys")
-KEYS = ("asset", "loc", "rot", "scale", "mats", "mat", "nocoll", "coll", "phys", "vol", "noshadow", "draw", "decal", "light")
+KEYS = ("asset", "loc", "rot", "scale", "mats", "mat", "nocoll", "coll", "phys", "vol", "noshadow", "nonav", "physics", "cap", "seed", "weld_to", "draw", "decal", "light")
 
 
 def load(d):
@@ -25,6 +25,9 @@ old, new = load(sys.argv[1]), load(NEW)
 changed = [k for k in old if k in new and any(old[k].get(a) != new[k].get(a) for a in KEYS)]
 gone = [k for k in old if k not in new]
 added = [k for k in new if k not in old]
+# A welded piece (weld_to, a bucket's lid) goes with its parent: removing the parent leaves it detached in the level, so it's re-placed and re-welded too.
+moved = set(changed) | set(gone) | set(added)
+changed += [k for k in new if k in old and k not in moved and new[k].get("weld_to") and (k[0], new[k]["weld_to"]) in moved]
 remove = sorted(set(changed) | set(gone))
 place = [new[k] for k in sorted(set(changed) | set(added))]
 # In chunks, as the plan is: the bridge's read_file stops at 80 KB.

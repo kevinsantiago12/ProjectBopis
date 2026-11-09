@@ -5,11 +5,14 @@ the lowest roof piece over open ground, against the agent's height (an eave lowe
 Agent: the engine defaults (DefaultEngine.ini sets only RuntimeGeneration=Dynamic): radius 34, height 144, step 35.
 Usage: python Tools/LevelGen/analysis/check_nav_roofs.py"""
 import glob
+import sys
 import json
 import math
 import os
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import plan_source  # noqa: E402   a level's plan: check_nav_roofs.py [level]
 AGENT_H, STEP, REACH = 144, 35, 50      # cm; REACH: horizontal gap that still counts as touching (cell size ~19)
 BOUNDS = {"SM_Cube": ((0, 0, 0), (100, 100, 100)), "SM_Ramp": ((0, 0, 0), (100, 100, 100)),
           "SM_Slate_01": ((-193, -112, 71.2), (189.7, 41.8, 79)),
@@ -60,8 +63,8 @@ stairs = [(s["id"], ue_rect(s, 0, 400)) for s in layout["stairs"]]
 for _, r in stairs:                     # gen_level's STAIR_RUN: 7 m north from the top edge, not the layout's 5 m
     r[3] = r[0] + 700
 items = []
-for f in sorted(glob.glob(os.path.join(ROOT, "Saved", "BackAlleys", "plan3_[0-9]*.json"))):
-    items += [p for p in json.load(open(f)) if p["folder"] in WALKABLE and p["asset"].split("/")[-1] in BOUNDS]
+for f in sorted(glob.glob(plan_source.plan_glob())):
+    items += [p for p in plan_source.normalise(json.load(open(f))) if p["folder"] in WALKABLE and p["asset"].split("/")[-1] in BOUNDS]
 
 touch = []
 for p in items:

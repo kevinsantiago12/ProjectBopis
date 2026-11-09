@@ -1,0 +1,168 @@
+Using bundled DotNet SDK version: 10.0 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" -Mode=ValidatePlatforms -OutputSDKs  -AllPlatforms  -project="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/ProjectBopis.uproject" -log="C:/Users/kevin/Documents/Unreal Projects/ProjectBopis/Saved/Logs/AutoSDKInfo.txt" -verbose -timestamps
+Log file: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Saved\Logs\AutoSDKInfo.txt
+##PlatformValidate: Win64 VALID 10.0.22621.0
+##PlatformValidate: Mac INVALID 26.1.1
+##PlatformValidate: IOS INVALID 26.1.1
+##PlatformValidate: Android INVALID r27c
+##PlatformValidate: Linux INVALID v26_clang-20.1.8-rockylinux8
+##PlatformValidate: LinuxArm64 INVALID <UNKNOWN>
+##PlatformValidate: TVOS INVALID 26.1.1
+##PlatformValidate: VisionOS INVALID <UNKNOWN>
+Unable to find required SDK version 'MainVersion' for platform LinuxArm64. Check your SDK.json files
+Unable to find required SDK version 'MainVersion' for platform VisionOS. Check your SDK.json files
+Trace written to file C:\Users\kevin\AppData\Local\UnrealBuildTool\Trace.uba with size 313b
+[2026.11.07-13.07.00:304][  0]LogInit: Display: Running engine for game: ProjectBopis
+[2026.11.07-13.07.00:304][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.11.07-13.07.00:304][  0]LogTrace: Display: Control listening on port 37871
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.8-CL-56702186"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.8.2-56702186+++UE5+Release-5.8"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.8.2"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.9711] "
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|12th Gen Intel(R) Core(TM) i5-12600K"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.11.07-13.07.00:304][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : compacttset="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : commandline="" "C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\ProjectBopis.uproject" -run=pythonscript -script="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\prop_collision_ue.py" -unattended -nosplash -nop4 -abslog="C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\prop_collision_ue_log.txt" -nullrhi -NoShaderCompile""
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : loginid="64fa6c7d4316c6cf5db437a7e0c7890c"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : zenstreaming="0"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.11.07-13.07.00:305][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.11.07-13.07.00:306][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading IOS ini files took 0.06 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading Android ini files took 0.06 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading Mac ini files took 0.06 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading VulkanPC ini files took 0.06 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading TVOS ini files took 0.07 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading Unix ini files took 0.07 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading VisionOS ini files took 0.08 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading Windows ini files took 0.08 seconds
+[2026.11.07-13.07.00:306][  0]LogConfig: Display: Loading Linux ini files took 0.09 seconds
+[2026.11.07-13.07.00:306][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.11.07-13.07.00:306][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.07-13.07.00:306][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.07-13.07.00:306][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.07-13.07.00:306][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Log is disabled for this application
+[2026.11.07-13.07.00:306][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.CSV is disabled for this application
+[2026.11.07-13.07.00:307][  0]LogAnalytics: Display: Provider StudioTelemetry.Provider.Horde is disabled for this application
+[2026.11.07-13.07.00:307][  0]LogAsyncCompilation: Display: MemorySharingInfo: UsedMemory=366MiB, MaxMemoryAvailable=56107MiB
+[2026.11.07-13.07.00:307][  0]LogStreaming: Display: AsyncLoading2 - Created: Async Loading Thread: false, Async Post Load: false, Multithreaded: false
+[2026.11.07-13.07.00:307][  0]LogHAL: Display: Platform has ~ 32 GB [34137300992 / 34359738368 / 32], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.11.07-13.07.00:307][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.11.07-13.07.00:307][  0]LogObj: Display: Attempting to load config data for Default__DownlinkBandwidthManagerConfig before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.07-13.07.00:759][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : gpu=""
+[2026.11.07-13.07.00:887][  0]LogCsvProfiler: Display: Metadata set : gpudriver=""
+[2026.11.07-13.07.00:893][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.11.07-13.07.00:893][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.11.07-13.07.00:894][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.11.07-13.07.00:894][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.11.07-13.07.00:894][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.11.07-13.07.00:894][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.16
+[2026.11.07-13.07.00:894][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.16.dll
+[2026.11.07-13.07.00:894][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.11.07-13.07.00:895][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.11.07-13.07.00:934][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Android'
+[2026.11.07-13.07.00:958][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'IOS'
+[2026.11.07-13.07.00:983][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Linux'
+[2026.11.07-13.07.01:008][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'Mac'
+[2026.11.07-13.07.01:009][  0]LogTargetPlatformManager: Display: Failed to SetupSDK for platform 'TVOS'
+[2026.11.07-13.07.01:034][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.11.07-13.07.01:036][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.11.07-13.07.01:036][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.11.07-13.07.01:036][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.11.07-13.07.01:036][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.11.07-13.07.01:039][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.11.07-13.07.01:361][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1679 MiB)
+[2026.11.07-13.07.01:362][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.8/Engine/Binaries/Win64/zen.exe service status'.
+[2026.11.07-13.07.01:568][  0]LogZenServiceInstance: Display: Writing plugin version info to 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen_plugin_versions.json'
+[2026.11.07-13.07.01:569][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/5.8/Saved/Zen/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.07-13.07.01:569][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.8.13-202605190912-windows-x64-release-094f62c2'
+[2026.11.07-13.07.01:569][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/kevin/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.11.07-13.07.02:577][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.11.07-13.07.02:579][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc. Status: OK!.
+[2026.11.07-13.07.02:588][  0]LogDerivedDataCache: Display: C:/Users/kevin/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.07ms. RandomReadSpeed=668.65MBs, RandomWriteSpeed=149.69MBs. Assigned SpeedClass 'Local'
+[2026.11.07-13.07.02:594][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.11.07-13.07.02:874][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64Editor not found.
+[2026.11.07-13.07.02:874][  0]LogDeviceProfileManager: Display: Deviceprofile LinuxArm64 not found.
+[2026.11.07-13.07.02:917][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.11.07-13.07.02:919][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.11.07-13.07.02:935][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.11.07-13.07.02:935][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.11.07-13.07.02:935][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.11.07-13.07.02:952][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.11.07-13.07.02:952][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.11.07-13.07.02:953][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.11.07-13.07.02:953][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.11.07-13.07.03:087][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.11.07-13.07.03:087][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.11.07-13.07.03:167][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.11.07-13.07.03:169][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 1.838 ms
+[2026.11.07-13.07.03:726][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.11.07-13.07.03:729][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.11.07-13.07.04:295][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.07-13.07.04:295][  0]LogAudioCaptureCore: Display: No Audio Capture implementations found. Audio input will be silent.
+[2026.11.07-13.07.04:460][  0]LogToolsetRegistry: Display: Registering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.07-13.07.04:629][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PreLoad): 1 .ref files found, 1 referenced binaries
+[2026.11.07-13.07.04:630][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)
+[2026.11.07-13.07.04:630][  0]LogAssetRegistry: Display: FindShardedCacheFiles: 1 via .ref, 0 via migration fallback, 1 total
+[2026.11.07-13.07.04:630][  0]LogAssetRegistry: Display: LoadCacheFiles: loading 1 cache files, memory-mapping=enabled
+[2026.11.07-13.07.04:877][  0]LogAssetRegistry: Display: Asset registry cache read as 180.8 MiB from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry/CachedAssetRegistry_0_BD5F1DFC4280F81FC8EC0FAD63A8FB91.bin (memory-mapped=yes)
+[2026.11.07-13.07.04:884][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.255s loading caches from ../../../../../../Users/kevin/Documents/Unreal Projects/ProjectBopis/Intermediate/CachedAssetRegistry.
+[2026.11.07-13.07.05:266][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.11.07-13.07.05:271][  0]LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.07-13.07.05:271][  0]LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.07-13.07.05:322][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.11.07-13.07.05:643][  0]LogCsvProfiler: Display: Metadata set : raytracing="0"
+[2026.11.07-13.07.05:773][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.EditorAppToolset
+[2026.11.07-13.07.05:773][  0]LogToolsetRegistry: Display: Registering Toolset EditorToolset.LogsToolset
+[2026.11.07-13.07.05:800][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... started...
+[2026.11.07-13.07.05:916][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.actor.ActorTools
+[2026.11.07-13.07.05:917][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.asset.AssetTools
+[2026.11.07-13.07.05:920][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.blueprint.BlueprintTools
+[2026.11.07-13.07.05:921][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.curve_table.CurveTableTools
+[2026.11.07-13.07.05:921][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_asset.DataAssetTools
+[2026.11.07-13.07.05:922][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.data_table.DataTableTools
+[2026.11.07-13.07.05:923][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material.MaterialTools
+[2026.11.07-13.07.05:923][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.material_instance.MaterialInstanceTools
+[2026.11.07-13.07.05:924][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.object.ObjectTools
+[2026.11.07-13.07.05:924][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.primitive.PrimitiveTools
+[2026.11.07-13.07.05:925][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.scene.SceneTools
+[2026.11.07-13.07.05:927][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.skeletal_mesh.SkeletalMeshTools
+[2026.11.07-13.07.05:928][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.static_mesh.StaticMeshTools
+[2026.11.07-13.07.05:928][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.string_table.StringTableTools
+[2026.11.07-13.07.05:928][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.programmatic.ProgrammaticToolset
+[2026.11.07-13.07.05:928][  0]LogToolsetRegistry: Display: Registering Toolset editor_toolset.toolsets.texture.TextureTools
+[2026.11.07-13.07.05:928][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/init_unreal.py... took 127.969 ms
+[2026.11.07-13.07.05:929][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... started...
+[2026.11.07-13.07.05:942][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Experimental/ToolsetRegistry/Content/Python/init_unreal.py... took 12.714 ms (total: 140.684 ms)
+[2026.11.07-13.07.05:942][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.11.07-13.07.05:944][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 3.086 ms (total: 143.771 ms)
+[2026.11.07-13.07.05:945][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.11.07-13.07.05:967][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.8/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 21.910 ms (total: 165.682 ms)
+[2026.11.07-13.07.05:967][  0]LogPythonScriptCommandlet: Display: Running Python script: C:\Users\kevin\Documents\Unreal Projects\ProjectBopis\Tools\LevelGen\analysis\prop_collision_ue.py
+[2026.11.07-13.07.06:055][  0]LogPython: Warning: [PROPCOLL] {"SM_Monobloc_Chair_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [57, 65, 107]}, "SM_Monobloc_Chair_03": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [130, 59, 94]}, "SM_Monobloc_Stool_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 1, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 0, "phys": null, "size": [39, 39, 45]}, "SM_Monobloc_Stool_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [38, 38, 45]}, "SM_Bucket_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 2, "phys": null, "size": [33, 33, 39]}, "SM_Bucket_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [22, 24, 24]}, "SM_Bucket_03": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [38, 38, 40]}, "SM_Bucket_Lid_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [32, 32, 3]}, "SM_MetalBucket_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 1, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 0, "phys": null, "size": [36, 33, 35]}, "SM_MetalBucket_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 4, "phys": null, "size": [36, 33, 35]}}
+[2026.11.07-13.07.06:056][  0]LogPythonScriptCommandlet: Display: Python script executed successfully
+[2026.11.07-13.07.06:056][  0]LogInit: Display: 
+[2026.11.07-13.07.06:056][  0]LogInit: Display: Warning/Error Summary (Unique only)
+[2026.11.07-13.07.06:056][  0]LogInit: Display: -----------------------------------
+[2026.11.07-13.07.06:056][  0]LogInit: Display: LogHttpListener: Error: HttpListener unable to bind to 127.0.0.1:8000
+[2026.11.07-13.07.06:056][  0]LogInit: Display: LogModelContextProtocol: Warning: Data transmitted via this plugin to your connected LLM service is Licensed Technology under the UE EULA. You are responsible for ensuring your LLM provider does not use it as training input. See Section 6(e) of the UE EULA for full terms.
+[2026.11.07-13.07.06:056][  0]LogInit: Display: LogPython: Warning: [PROPCOLL] {"SM_Monobloc_Chair_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [57, 65, 107]}, "SM_Monobloc_Chair_03": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [130, 59, 94]}, "SM_Monobloc_Stool_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 1, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 0, "phys": null, "size": [39, 39, 45]}, "SM_Monobloc_Stool_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [38, 38, 45]}, "SM_Bucket_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 2, "phys": null, "size": [33, 33, 39]}, "SM_Bucket_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [22, 24, 24]}, "SM_Bucket_03": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [38, 38, 40]}, "SM_Bucket_Lid_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 1, "phys": null, "size": [32, 32, 3]}, "SM_MetalBucket_01": {"trace": "CTF_USE_DEFAULT", "box_elems": 1, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 0, "phys": null, "size": [36, 33, 35]}, "SM_MetalBucket_02": {"trace": "CTF_USE_DEFAULT", "box_elems": 0, "sphere_elems": 0, "sphyl_elems": 0, "convex_elems": 4, "phys": null, "size": [36, 33, 35]}}
+[2026.11.07-13.07.06:056][  0]LogInit: Display: 
+[2026.11.07-13.07.06:056][  0]LogInit: Display: Failure - 1 error(s), 2 warning(s)
+[2026.11.07-13.07.06:056][  0]LogInit: Display: 
+Execution of commandlet took:  0.25 seconds, PeakPhysMemoryMB=1909 MB, PeakVirtMemoryMB=1731 MB
+[2026.11.07-13.07.06:192][  0]LogToolsetRegistry: Display: Unregistering Toolset ToolsetRegistry.AgentSkillToolset
+[2026.11.07-13.07.06:451][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PostWrite): 1 .ref files found, 1 referenced binaries
+[2026.11.07-13.07.06:451][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 1 total binaries, 1 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)

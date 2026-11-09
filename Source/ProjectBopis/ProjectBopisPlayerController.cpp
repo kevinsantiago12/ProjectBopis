@@ -18,6 +18,10 @@
 #include "Enemies/EnemyBase.h"
 #include "EngineUtils.h"
 #include "Gameplay/LevelStartSubsystem.h"
+#include "EnhancedInputComponent.h"
+#include "Engine/GameInstance.h"
+#include "BopisCharacterBase.h"
+#include "Gameplay/LevelTravelSubsystem.h"
 
 AProjectBopisPlayerController::AProjectBopisPlayerController()
 {
@@ -201,7 +205,32 @@ void AProjectBopisPlayerController::SetupInputComponent()
 			}
 		}
 	}
-	
+
+	if (UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		if (PauseAction)
+		{
+			Input->BindAction(PauseAction, ETriggerEvent::Started, this,
+				&AProjectBopisPlayerController::OpenPauseMenu);
+		}
+	}
+}
+
+void AProjectBopisPlayerController::OpenPauseMenu()
+{
+	const ABopisCharacterBase* PlayerCharacter = Cast<ABopisCharacterBase>(GetPawn());
+	const UGameInstance* Game = GetGameInstance();
+	const ULevelTravelSubsystem* Travel = Game ? Game->GetSubsystem<ULevelTravelSubsystem>() : nullptr;
+	if (!PauseMenuClass || IsPaused() || Curtain.IsValid() || (PlayerCharacter && PlayerCharacter->IsDead())
+		|| (Travel && Travel->IsTravelling()))
+	{
+		return;
+	}
+
+	if (UUserWidget* Menu = CreateWidget<UUserWidget>(this, PauseMenuClass))
+	{
+		Menu->AddToViewport(50);   // over the HUD
+	}
 }
 
 bool AProjectBopisPlayerController::ShouldUseTouchControls() const

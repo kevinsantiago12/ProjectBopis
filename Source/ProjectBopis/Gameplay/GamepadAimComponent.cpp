@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Misc/App.h"
+#include "BopisGameUserSettings.h"
 
 UGamepadAimComponent::UGamepadAimComponent()
 {
@@ -67,7 +68,10 @@ void UGamepadAimComponent::ApplyStick(const FVector2D& Stick, bool bAiming)
 		Slowdown = 1.0f - SlowdownStrength * (1.0f - Angle / FMath::Max(SlowdownAngle, KINDA_SMALL_NUMBER));
 	}
 
-	const float Scale = (bAiming ? AimSpeedScale : 1.0f) * Slowdown;
+	// The player's controller sensitivity (Options) scales every turn speed, the boost too.
+	const UBopisGameUserSettings* Settings = UBopisGameUserSettings::Get();
+	const float Sensitivity = Settings ? Settings->GetControllerSensitivity() : 1.0f;
+	const float Scale = (bAiming ? AimSpeedScale : 1.0f) * Slowdown * Sensitivity;
 	const float Yaw = Direction.X * Curved * (YawSpeed + Boost) * Scale * DeltaTime;
 	const float PitchSign = bInvertPitch ? 1.0f : -1.0f;
 	const float Pitch = PitchSign * Direction.Y * Curved * PitchSpeed * Scale * DeltaTime;

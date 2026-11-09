@@ -1,0 +1,2772 @@
+{
+ "name": "Linear slum level (working: the missing patrolman)",
+ "drafted": "2026-11-07",
+ "revised": "2026-11-08: doors and steps for the drops, borders both ways",
+ "units": "m, x east, y south, from the NW corner",
+ "floors": {
+  "0": "ground",
+  "1": "+4 (bodega mezzanine +3)",
+  "2": "+8"
+ },
+ "storey_m": 4,
+ "sections": [
+  {
+   "id": 1,
+   "name": "Main street",
+   "ground": "0",
+   "mins": [
+    4,
+    6
+   ],
+   "kind": "walk-around",
+   "what": "Night, people still out. Walk to the patrolman's last reported spot: no car. The street dead-ends at a padlocked lane gate."
+  },
+  {
+   "id": 2,
+   "name": "Eskinita",
+   "ground": "+1.8",
+   "mins": [
+    3,
+    4
+   ],
+   "kind": "search",
+   "what": "Round the gate through the eskinita and a wash yard, following the trail. Ends at a door in the yard wall, with steps down into the yard."
+  },
+  {
+   "id": 3,
+   "name": "The yard",
+   "ground": "0",
+   "mins": [
+    3,
+    5
+   ],
+   "kind": "reveal + fight",
+   "what": "The patrol car under a tarp in an improvised garage, signs of a struggle. Inspecting it starts the first major firefight."
+  },
+  {
+   "id": 4,
+   "name": "Row houses",
+   "ground": "0 / +4",
+   "mins": [
+    6,
+    8
+   ],
+   "kind": "fights",
+   "what": "Four row houses the gang has knocked through: kitchen, joined front rooms, a stair, the bedrooms. Out down H4's back stair."
+  },
+  {
+   "id": 5,
+   "name": "Covered alley + bodega",
+   "ground": "0 / +3",
+   "mins": [
+    6,
+    8
+   ],
+   "kind": "fights",
+   "what": "A lean-to roofed alley lined with plywood rooms, then a storage bodega with a mezzanine."
+  },
+  {
+   "id": 6,
+   "name": "Holding house",
+   "ground": "−1.8",
+   "mins": [
+    4,
+    6
+   ],
+   "kind": "fight + reveal",
+   "what": "Down steps into a guard room, then a corridor of plywood cells: bedding, water, food, belongings. A child's things. No one left."
+  },
+  {
+   "id": 7,
+   "name": "Trap house",
+   "ground": "−1.8 (G, +4, +8)",
+   "mins": [
+    8,
+    11
+   ],
+   "kind": "fights + end",
+   "what": "A courtyard, then a three-level trap house: double-height hall, stair, rooms and gallery, a wooden top storey. The forged documents."
+  }
+ ],
+ "connectors": [
+  {
+   "from": 1,
+   "to": 2,
+   "a": [
+    37.5,
+    82.5
+   ],
+   "b": [
+    40.5,
+    82.5
+   ],
+   "door": false,
+   "note": "the eskinita mouth"
+  },
+  {
+   "from": 2,
+   "to": 3,
+   "a": [
+    63.95,
+    85.5
+   ],
+   "b": [
+    65.05,
+    85.5
+   ],
+   "door": true,
+   "note": "a door in the yard wall, then steps down into the yard"
+  },
+  {
+   "from": 3,
+   "to": 4,
+   "a": [
+    60.5,
+    70.5
+   ],
+   "b": [
+    62.75,
+    70.5
+   ],
+   "door": true,
+   "note": "H1's back door"
+  },
+  {
+   "from": 4,
+   "to": 5,
+   "a": [
+    84,
+    67.125
+   ],
+   "b": [
+    84,
+    69.375
+   ],
+   "door": true,
+   "note": "H4's back door, at the foot of its back stair"
+  },
+  {
+   "from": 5,
+   "to": 6,
+   "a": [
+    112.5,
+    39.75
+   ],
+   "b": [
+    112.5,
+    42
+   ],
+   "door": true,
+   "note": "the bodega's back door, then steps down 1.8 m"
+  },
+  {
+   "from": 6,
+   "to": 7,
+   "a": [
+    130.5,
+    43.5
+   ],
+   "b": [
+    130.5,
+    45.75
+   ],
+   "door": true,
+   "note": "the corridor's end door"
+  }
+ ],
+ "streaming": "Every border is a swinging door (the eskinita's mouth is a bend), and every way through goes both ways: no drops. Whichever way you walk, crossing into a section loads the next one beyond it and unloads the one furthest behind. A border door stays shut until the section behind it is loaded, and unloading waits until you're a few metres past a door, so stepping back and forth through it doesn't reload anything. A section remembers what's done (fights, pickups, inspects) when it unloads, so walking back never brings the dead back.",
+ "areas": [
+  {
+   "id": "ST_A",
+   "sec": 1,
+   "f": 0,
+   "kind": "open",
+   "x0": 0,
+   "y0": 90,
+   "x1": 25.5,
+   "y1": 97.5,
+   "label": ""
+  },
+  {
+   "id": "ST_B",
+   "sec": 1,
+   "f": 0,
+   "kind": "open",
+   "x0": 18,
+   "y0": 75,
+   "x1": 25.5,
+   "y1": 90,
+   "label": ""
+  },
+  {
+   "id": "ST_C",
+   "sec": 1,
+   "f": 0,
+   "kind": "open",
+   "x0": 25.5,
+   "y0": 75,
+   "x1": 42,
+   "y1": 82.5,
+   "label": ""
+  },
+  {
+   "id": "LANE",
+   "sec": 3,
+   "f": 0,
+   "kind": "off",
+   "x0": 42,
+   "y0": 76.5,
+   "x1": 60,
+   "y1": 81,
+   "label": "car lane (gated both ends)"
+  },
+  {
+   "id": "E1",
+   "sec": 2,
+   "f": 0,
+   "kind": "open",
+   "x0": 37.5,
+   "y0": 82.5,
+   "x1": 40.5,
+   "y1": 88.5,
+   "label": ""
+  },
+  {
+   "id": "E2",
+   "sec": 2,
+   "f": 0,
+   "kind": "open",
+   "x0": 37.5,
+   "y0": 88.5,
+   "x1": 48,
+   "y1": 91.5,
+   "label": ""
+  },
+  {
+   "id": "WASH",
+   "sec": 2,
+   "f": 0,
+   "kind": "open",
+   "x0": 48,
+   "y0": 85.5,
+   "x1": 55.5,
+   "y1": 93,
+   "label": "wash yard"
+  },
+  {
+   "id": "E3",
+   "sec": 2,
+   "f": 0,
+   "kind": "open",
+   "x0": 55.5,
+   "y0": 85.5,
+   "x1": 63,
+   "y1": 88.5,
+   "label": ""
+  },
+  {
+   "id": "E4",
+   "sec": 2,
+   "f": 0,
+   "kind": "open",
+   "x0": 63,
+   "y0": 85.5,
+   "x1": 66,
+   "y1": 91.5,
+   "label": ""
+  },
+  {
+   "id": "YARD",
+   "sec": 3,
+   "f": 0,
+   "kind": "open",
+   "x0": 60,
+   "y0": 70.5,
+   "x1": 78,
+   "y1": 85.5,
+   "label": "yard"
+  },
+  {
+   "id": "H1_K",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 60,
+   "y0": 66,
+   "x1": 66,
+   "y1": 70.5,
+   "label": "kitchen"
+  },
+  {
+   "id": "H1_F",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 60,
+   "y0": 58.5,
+   "x1": 66,
+   "y1": 66,
+   "label": "front room"
+  },
+  {
+   "id": "H2_K",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 66,
+   "y0": 66,
+   "x1": 72,
+   "y1": 70.5,
+   "label": "kitchen"
+  },
+  {
+   "id": "H2_F",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 66,
+   "y0": 58.5,
+   "x1": 72,
+   "y1": 66,
+   "label": "front room"
+  },
+  {
+   "id": "H4_K",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 78,
+   "y0": 66,
+   "x1": 84,
+   "y1": 70.5,
+   "label": "back room"
+  },
+  {
+   "id": "H2_U",
+   "sec": 4,
+   "f": 1,
+   "kind": "room",
+   "x0": 66,
+   "y0": 58.5,
+   "x1": 72,
+   "y1": 70.5,
+   "label": "H2 up"
+  },
+  {
+   "id": "H2_SW",
+   "sec": 4,
+   "f": 1,
+   "kind": "void",
+   "x0": 70.2,
+   "y0": 59.5,
+   "x1": 72,
+   "y1": 65.7,
+   "label": ""
+  },
+  {
+   "id": "H3_UF",
+   "sec": 4,
+   "f": 1,
+   "kind": "room",
+   "x0": 72,
+   "y0": 58.5,
+   "x1": 78,
+   "y1": 64.5,
+   "label": "H3 front"
+  },
+  {
+   "id": "H3_UB",
+   "sec": 4,
+   "f": 1,
+   "kind": "room",
+   "x0": 72,
+   "y0": 64.5,
+   "x1": 78,
+   "y1": 70.5,
+   "label": "H3 back"
+  },
+  {
+   "id": "H4_UF",
+   "sec": 4,
+   "f": 1,
+   "kind": "room",
+   "x0": 78,
+   "y0": 58.5,
+   "x1": 84,
+   "y1": 64.5,
+   "label": "H4 front"
+  },
+  {
+   "id": "H4_UB",
+   "sec": 4,
+   "f": 1,
+   "kind": "room",
+   "x0": 78,
+   "y0": 64.5,
+   "x1": 84,
+   "y1": 70.5,
+   "label": "H4 back"
+  },
+  {
+   "id": "H4_SW",
+   "sec": 4,
+   "f": 1,
+   "kind": "void",
+   "x0": 78,
+   "y0": 66.9,
+   "x1": 82.55,
+   "y1": 70.5,
+   "label": ""
+  },
+  {
+   "id": "CA1",
+   "sec": 5,
+   "f": 0,
+   "kind": "cov",
+   "x0": 84,
+   "y0": 66,
+   "x1": 99,
+   "y1": 70.5,
+   "label": "covered alley"
+  },
+  {
+   "id": "PR1",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 84,
+   "y0": 70.5,
+   "x1": 89,
+   "y1": 75,
+   "label": "plywood"
+  },
+  {
+   "id": "PR2",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 89,
+   "y0": 70.5,
+   "x1": 94,
+   "y1": 75,
+   "label": "plywood"
+  },
+  {
+   "id": "PR3",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 94,
+   "y0": 70.5,
+   "x1": 99,
+   "y1": 75,
+   "label": "plywood"
+  },
+  {
+   "id": "CA2",
+   "sec": 5,
+   "f": 0,
+   "kind": "open",
+   "x0": 99,
+   "y0": 49.5,
+   "x1": 103.5,
+   "y1": 75,
+   "label": ""
+  },
+  {
+   "id": "BOD",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 94.5,
+   "y0": 36,
+   "x1": 112.5,
+   "y1": 49.5,
+   "label": "bodega (6 m high)"
+  },
+  {
+   "id": "MEZZ",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 94.5,
+   "y0": 36,
+   "x1": 112.5,
+   "y1": 39.75,
+   "label": "mezzanine +3"
+  },
+  {
+   "id": "PASS",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 112.5,
+   "y0": 39,
+   "x1": 115.5,
+   "y1": 42,
+   "label": ""
+  },
+  {
+   "id": "GUARD",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 115.5,
+   "y0": 36,
+   "x1": 123,
+   "y1": 43.5,
+   "label": "guard room"
+  },
+  {
+   "id": "CORR",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 115.5,
+   "y0": 43.5,
+   "x1": 130.5,
+   "y1": 45.75,
+   "label": ""
+  },
+  {
+   "id": "N1",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 123,
+   "y0": 36,
+   "x1": 126.75,
+   "y1": 43.5,
+   "label": "cell"
+  },
+  {
+   "id": "N2",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 126.75,
+   "y0": 36,
+   "x1": 130.5,
+   "y1": 43.5,
+   "label": "cell"
+  },
+  {
+   "id": "S1C",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 115.5,
+   "y0": 45.75,
+   "x1": 119.25,
+   "y1": 51,
+   "label": "cell"
+  },
+  {
+   "id": "S2C",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 119.25,
+   "y0": 45.75,
+   "x1": 123,
+   "y1": 51,
+   "label": "cell"
+  },
+  {
+   "id": "S3C",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 123,
+   "y0": 45.75,
+   "x1": 126.75,
+   "y1": 51,
+   "label": "cell"
+  },
+  {
+   "id": "S4C",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 126.75,
+   "y0": 45.75,
+   "x1": 130.5,
+   "y1": 51,
+   "label": "cell"
+  },
+  {
+   "id": "CYARD",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 130.5,
+   "y0": 36,
+   "x1": 139.5,
+   "y1": 51,
+   "label": "courtyard"
+  },
+  {
+   "id": "G1",
+   "sec": 7,
+   "f": 0,
+   "kind": "room",
+   "x0": 139.5,
+   "y0": 39,
+   "x1": 148.5,
+   "y1": 48,
+   "label": "hall (to +8)"
+  },
+  {
+   "id": "G2",
+   "sec": 7,
+   "f": 0,
+   "kind": "room",
+   "x0": 148.5,
+   "y0": 39,
+   "x1": 154.5,
+   "y1": 48,
+   "label": "stash"
+  },
+  {
+   "id": "G3",
+   "sec": 7,
+   "f": 0,
+   "kind": "room",
+   "x0": 139.5,
+   "y0": 30,
+   "x1": 147,
+   "y1": 39,
+   "label": "stair hall"
+  },
+  {
+   "id": "G4",
+   "sec": 7,
+   "f": 0,
+   "kind": "room",
+   "x0": 147,
+   "y0": 30,
+   "x1": 154.5,
+   "y1": 39,
+   "label": "back room"
+  },
+  {
+   "id": "LAND",
+   "sec": 7,
+   "f": 1,
+   "kind": "room",
+   "x0": 139.5,
+   "y0": 30,
+   "x1": 148.5,
+   "y1": 32.25,
+   "label": "landing"
+  },
+  {
+   "id": "SWELL",
+   "sec": 7,
+   "f": 1,
+   "kind": "void",
+   "x0": 139.5,
+   "y0": 32.25,
+   "x1": 141.75,
+   "y1": 39,
+   "label": ""
+  },
+  {
+   "id": "R1",
+   "sec": 7,
+   "f": 1,
+   "kind": "room",
+   "x0": 141.75,
+   "y0": 32.25,
+   "x1": 148.5,
+   "y1": 39,
+   "label": "sleeping"
+  },
+  {
+   "id": "R2",
+   "sec": 7,
+   "f": 1,
+   "kind": "room",
+   "x0": 148.5,
+   "y0": 30,
+   "x1": 154.5,
+   "y1": 39,
+   "label": "kitchen"
+  },
+  {
+   "id": "GAL_N",
+   "sec": 7,
+   "f": 1,
+   "kind": "open",
+   "x0": 139.5,
+   "y0": 39,
+   "x1": 148.5,
+   "y1": 41.25,
+   "label": ""
+  },
+  {
+   "id": "GAL_E",
+   "sec": 7,
+   "f": 1,
+   "kind": "open",
+   "x0": 146.25,
+   "y0": 41.25,
+   "x1": 148.5,
+   "y1": 48,
+   "label": ""
+  },
+  {
+   "id": "HALLV",
+   "sec": 7,
+   "f": 1,
+   "kind": "void",
+   "x0": 139.5,
+   "y0": 41.25,
+   "x1": 146.25,
+   "y1": 48,
+   "label": "open to the hall"
+  },
+  {
+   "id": "R3",
+   "sec": 7,
+   "f": 1,
+   "kind": "room",
+   "x0": 148.5,
+   "y0": 39,
+   "x1": 154.5,
+   "y1": 48,
+   "label": "bunks"
+  },
+  {
+   "id": "SR",
+   "sec": 7,
+   "f": 2,
+   "kind": "room",
+   "x0": 144,
+   "y0": 34.5,
+   "x1": 154.5,
+   "y1": 42.75,
+   "label": "staging room"
+  },
+  {
+   "id": "PHOTO",
+   "sec": 7,
+   "f": 2,
+   "kind": "room",
+   "x0": 144,
+   "y0": 30,
+   "x1": 148.5,
+   "y1": 34.5,
+   "label": "photo"
+  },
+  {
+   "id": "FORGE",
+   "sec": 7,
+   "f": 2,
+   "kind": "room",
+   "x0": 148.5,
+   "y0": 30,
+   "x1": 154.5,
+   "y1": 34.5,
+   "label": "forging"
+  },
+  {
+   "id": "WSTAIR",
+   "sec": 7,
+   "f": 2,
+   "kind": "void",
+   "x0": 152.4,
+   "y0": 35.5,
+   "x1": 154.2,
+   "y1": 39,
+   "label": ""
+  },
+  {
+   "id": "TER_W",
+   "sec": 7,
+   "f": 2,
+   "kind": "open",
+   "x0": 139.5,
+   "y0": 30,
+   "x1": 144,
+   "y1": 48,
+   "label": ""
+  },
+  {
+   "id": "TER_S",
+   "sec": 7,
+   "f": 2,
+   "kind": "open",
+   "x0": 144,
+   "y0": 42.75,
+   "x1": 154.5,
+   "y1": 48,
+   "label": "terrace"
+  },
+  {
+   "id": "PLANK",
+   "sec": 7,
+   "f": 2,
+   "kind": "off",
+   "x0": 140.25,
+   "y0": 28.5,
+   "x1": 141.75,
+   "y1": 30,
+   "label": ""
+  },
+  {
+   "id": "NROOF",
+   "sec": 7,
+   "f": 2,
+   "kind": "off",
+   "x0": 136.5,
+   "y0": 22.5,
+   "x1": 145.5,
+   "y1": 28.5,
+   "label": "neighbour's roof"
+  }
+ ],
+ "openings": [
+  {
+   "f": 0,
+   "a": [
+    63.95,
+    85.5
+   ],
+   "b": [
+    65.05,
+    85.5
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    60.5,
+    70.5
+   ],
+   "b": [
+    62.75,
+    70.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    63.5,
+    66
+   ],
+   "b": [
+    65.75,
+    66
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    66,
+    60.75
+   ],
+   "b": [
+    66,
+    63.75
+   ],
+   "k": "knock"
+  },
+  {
+   "f": 0,
+   "a": [
+    66.75,
+    66
+   ],
+   "b": [
+    69,
+    66
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    84,
+    67.125
+   ],
+   "b": [
+    84,
+    69.375
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    72,
+    66.75
+   ],
+   "b": [
+    72,
+    69
+   ],
+   "k": "knock"
+  },
+  {
+   "f": 1,
+   "a": [
+    74.25,
+    64.5
+   ],
+   "b": [
+    76.5,
+    64.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    78,
+    60
+   ],
+   "b": [
+    78,
+    62.25
+   ],
+   "k": "knock"
+  },
+  {
+   "f": 1,
+   "a": [
+    80.25,
+    64.5
+   ],
+   "b": [
+    82.5,
+    64.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    84.5,
+    70.5
+   ],
+   "b": [
+    88.5,
+    70.5
+   ],
+   "k": "front"
+  },
+  {
+   "f": 0,
+   "a": [
+    89.5,
+    70.5
+   ],
+   "b": [
+    93.5,
+    70.5
+   ],
+   "k": "front"
+  },
+  {
+   "f": 0,
+   "a": [
+    94.5,
+    70.5
+   ],
+   "b": [
+    98.5,
+    70.5
+   ],
+   "k": "front"
+  },
+  {
+   "f": 0,
+   "a": [
+    99.75,
+    49.5
+   ],
+   "b": [
+    102.75,
+    49.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    112.5,
+    39.75
+   ],
+   "b": [
+    112.5,
+    42
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    115.5,
+    39.75
+   ],
+   "b": [
+    115.5,
+    42
+   ],
+   "k": "open"
+  },
+  {
+   "f": 0,
+   "a": [
+    118.5,
+    43.5
+   ],
+   "b": [
+    120.75,
+    43.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    124.35,
+    43.5
+   ],
+   "b": [
+    125.35,
+    43.5
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    128.1,
+    43.5
+   ],
+   "b": [
+    129.1,
+    43.5
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    116.85,
+    45.75
+   ],
+   "b": [
+    117.85,
+    45.75
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    120.6,
+    45.75
+   ],
+   "b": [
+    121.6,
+    45.75
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    124.35,
+    45.75
+   ],
+   "b": [
+    125.35,
+    45.75
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    128.1,
+    45.75
+   ],
+   "b": [
+    129.1,
+    45.75
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    130.5,
+    43.5
+   ],
+   "b": [
+    130.5,
+    45.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    139.5,
+    42
+   ],
+   "b": [
+    139.5,
+    45
+   ],
+   "k": "garage"
+  },
+  {
+   "f": 0,
+   "a": [
+    139.5,
+    36.75
+   ],
+   "b": [
+    139.5,
+    38.25
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    148.5,
+    42.75
+   ],
+   "b": [
+    148.5,
+    45
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    142.5,
+    39
+   ],
+   "b": [
+    144.75,
+    39
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    147,
+    34.5
+   ],
+   "b": [
+    147,
+    36.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    144,
+    32.25
+   ],
+   "b": [
+    146.25,
+    32.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    144,
+    39
+   ],
+   "b": [
+    146.25,
+    39
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    148.5,
+    43.5
+   ],
+   "b": [
+    148.5,
+    45.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    149.25,
+    39
+   ],
+   "b": [
+    151.5,
+    39
+   ],
+   "k": "door"
+  },
+  {
+   "f": 2,
+   "a": [
+    145.5,
+    34.5
+   ],
+   "b": [
+    146.5,
+    34.5
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 2,
+   "a": [
+    150,
+    34.5
+   ],
+   "b": [
+    151,
+    34.5
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 2,
+   "a": [
+    144,
+    37.5
+   ],
+   "b": [
+    144,
+    39.75
+   ],
+   "k": "door"
+  }
+ ],
+ "barriers": [
+  {
+   "f": 0,
+   "a": [
+    42,
+    76.5
+   ],
+   "b": [
+    42,
+    81
+   ],
+   "k": "gate",
+   "label": "padlocked gate"
+  },
+  {
+   "f": 0,
+   "a": [
+    60,
+    76.5
+   ],
+   "b": [
+    60,
+    81
+   ],
+   "k": "gate",
+   "label": "yard gate (shut)"
+  },
+  {
+   "f": 0,
+   "a": [
+    60,
+    85.5
+   ],
+   "b": [
+    63.95,
+    85.5
+   ],
+   "k": "wall",
+   "label": "yard wall"
+  },
+  {
+   "f": 0,
+   "a": [
+    65.05,
+    85.5
+   ],
+   "b": [
+    66,
+    85.5
+   ],
+   "k": "wall",
+   "label": "yard wall"
+  }
+ ],
+ "stairs": [
+  {
+   "f": 0,
+   "r": [
+    37.5,
+    84,
+    40.5,
+    87
+   ],
+   "up": "S",
+   "rise": 1.8,
+   "label": "steps +1.8"
+  },
+  {
+   "f": 0,
+   "r": [
+    70.2,
+    59.5,
+    72,
+    65.7
+   ],
+   "up": "S",
+   "rise": 4
+  },
+  {
+   "f": 0,
+   "r": [
+    94.75,
+    39.75,
+    96.55,
+    44.5
+   ],
+   "up": "N",
+   "rise": 3
+  },
+  {
+   "f": 0,
+   "r": [
+    139.75,
+    32.25,
+    141.55,
+    38.4
+   ],
+   "up": "N",
+   "rise": 4
+  },
+  {
+   "f": 1,
+   "r": [
+    152.4,
+    33,
+    154.2,
+    39
+   ],
+   "up": "S",
+   "rise": 4,
+   "label": "wooden"
+  },
+  {
+   "f": 0,
+   "r": [
+    63.5,
+    81.5,
+    65.5,
+    84
+   ],
+   "up": "S",
+   "rise": 1.8,
+   "label": "steps +1.8"
+  },
+  {
+   "f": 0,
+   "r": [
+    79.8,
+    66.9,
+    82.55,
+    68.7
+   ],
+   "up": "W",
+   "rise": 2
+  },
+  {
+   "f": 0,
+   "r": [
+    79.8,
+    68.7,
+    82.55,
+    70.5
+   ],
+   "up": "E",
+   "rise": 2,
+   "z0": 2
+  },
+  {
+   "f": 0,
+   "r": [
+    113.6,
+    39.75,
+    116.1,
+    42
+   ],
+   "up": "W",
+   "rise": 1.8,
+   "z0": -1.8,
+   "label": "steps"
+  }
+ ],
+ "landings": [
+  {
+   "f": 0,
+   "r": [
+    63.5,
+    84,
+    65.5,
+    85.5
+   ],
+   "z": 1.8,
+   "label": "landing +1.8",
+   "rail": true
+  },
+  {
+   "f": 0,
+   "r": [
+    78,
+    66.9,
+    79.8,
+    70.5
+   ],
+   "z": 2,
+   "label": "+2"
+  }
+ ],
+ "cover": [
+  {
+   "f": 0,
+   "r": [
+    16.5,
+    90.6,
+    21,
+    92.8
+   ],
+   "tall": true,
+   "label": "jeepney"
+  },
+  {
+   "f": 0,
+   "r": [
+    19.5,
+    80.9,
+    21.3,
+    82.7
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    26.5,
+    76,
+    28.3,
+    78.4
+   ],
+   "tall": false,
+   "label": "tricycle"
+  },
+  {
+   "f": 0,
+   "r": [
+    61.4,
+    72.2,
+    63.4,
+    76.8
+   ],
+   "tall": false,
+   "label": "car + tarp"
+  },
+  {
+   "f": 0,
+   "r": [
+    66,
+    80,
+    67.6,
+    81.4
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    71.5,
+    82.2,
+    74,
+    83.4
+   ],
+   "tall": false,
+   "label": "blocks"
+  },
+  {
+   "f": 0,
+   "r": [
+    73.8,
+    73.6,
+    75.8,
+    74.4
+   ],
+   "tall": false,
+   "label": "motorbike"
+  },
+  {
+   "f": 0,
+   "r": [
+    62.8,
+    62.6,
+    65.2,
+    63.5
+   ],
+   "tall": false,
+   "label": "sofa"
+  },
+  {
+   "f": 0,
+   "r": [
+    67.6,
+    61.2,
+    69.2,
+    62.8
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    88.5,
+    67.4,
+    90.5,
+    68.6
+   ],
+   "tall": false,
+   "label": "sacks"
+  },
+  {
+   "f": 0,
+   "r": [
+    98.6,
+    44.6,
+    102.4,
+    46
+   ],
+   "tall": true,
+   "label": "pallets"
+  },
+  {
+   "f": 0,
+   "r": [
+    104.6,
+    41.6,
+    106.4,
+    44.6
+   ],
+   "tall": true,
+   "label": "pallets"
+  },
+  {
+   "f": 0,
+   "r": [
+    109.2,
+    39.3,
+    110.4,
+    42.45
+   ],
+   "tall": true,
+   "label": "pallets"
+  },
+  {
+   "f": 0,
+   "r": [
+    108.4,
+    45.4,
+    110.8,
+    47
+   ],
+   "tall": false,
+   "label": "sacks"
+  },
+  {
+   "f": 0,
+   "r": [
+    100.4,
+    40.8,
+    102,
+    42.2
+   ],
+   "tall": false,
+   "label": "sacks"
+  },
+  {
+   "f": 0,
+   "r": [
+    118.6,
+    38.4,
+    120,
+    39.8
+   ],
+   "tall": false,
+   "label": "card table"
+  },
+  {
+   "f": 0,
+   "r": [
+    133,
+    43.8,
+    137.4,
+    45.5
+   ],
+   "tall": true,
+   "label": "van"
+  },
+  {
+   "f": 0,
+   "r": [
+    134.4,
+    47.6,
+    138,
+    49.2
+   ],
+   "tall": false,
+   "label": "owner-type jeep"
+  },
+  {
+   "f": 0,
+   "r": [
+    50.5,
+    88,
+    53,
+    90.5
+   ],
+   "tall": true,
+   "label": "tank + drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    99,
+    58.5,
+    101.7,
+    60
+   ],
+   "tall": true,
+   "label": "crates"
+  },
+  {
+   "f": 0,
+   "r": [
+    100.8,
+    63,
+    103.5,
+    64.5
+   ],
+   "tall": true,
+   "label": "tank stand"
+  },
+  {
+   "f": 0,
+   "r": [
+    131.4,
+    37.2,
+    132.9,
+    38.4
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    142.6,
+    43.2,
+    144.6,
+    45
+   ],
+   "tall": false,
+   "label": "crates"
+  },
+  {
+   "f": 0,
+   "r": [
+    150,
+    41.2,
+    152.6,
+    42.6
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 2,
+   "r": [
+    147.2,
+    37.6,
+    150.4,
+    39.2
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 2,
+   "r": [
+    141,
+    44,
+    142.2,
+    45.2
+   ],
+   "tall": false,
+   "label": "drums"
+  }
+ ],
+ "roofs": [
+  {
+   "f": 0,
+   "r": [
+    60,
+    70.5,
+    67.5,
+    85.5
+   ],
+   "label": "garage roof"
+  },
+  {
+   "f": 0,
+   "r": [
+    84,
+    66,
+    99,
+    70.5
+   ],
+   "label": ""
+  }
+ ],
+ "arms": ".45 pistols, revolvers and shotguns only",
+ "mass_auto": [
+  [
+   132,
+   22.5,
+   162,
+   28.5
+  ],
+  [
+   87,
+   28.5,
+   162,
+   30
+  ],
+  [
+   87,
+   30,
+   139.5,
+   36
+  ],
+  [
+   112.5,
+   36,
+   115.5,
+   39
+  ],
+  [
+   154.5,
+   30,
+   162,
+   48
+  ],
+  [
+   87,
+   36,
+   94.5,
+   49.5
+  ],
+  [
+   112.5,
+   42,
+   115.5,
+   49.5
+  ],
+  [
+   103.5,
+   49.5,
+   115.5,
+   51
+  ],
+  [
+   139.5,
+   48,
+   162,
+   51
+  ],
+  [
+   103.5,
+   51,
+   162,
+   55.5
+  ],
+  [
+   87,
+   49.5,
+   99,
+   57
+  ],
+  [
+   52.5,
+   51,
+   79.5,
+   58.5
+  ],
+  [
+   91.5,
+   57,
+   99,
+   58.5
+  ],
+  [
+   103.5,
+   55.5,
+   147,
+   58.5
+  ],
+  [
+   72,
+   58.5,
+   99,
+   66
+  ],
+  [
+   10.5,
+   67.5,
+   49.5,
+   69
+  ],
+  [
+   52.5,
+   58.5,
+   60,
+   69
+  ],
+  [
+   72,
+   66,
+   78,
+   70.5
+  ],
+  [
+   10.5,
+   69,
+   60,
+   75
+  ],
+  [
+   78,
+   70.5,
+   84,
+   75
+  ],
+  [
+   103.5,
+   58.5,
+   111,
+   75
+  ],
+  [
+   42,
+   75,
+   60,
+   76.5
+  ],
+  [
+   10.5,
+   75,
+   18,
+   82.5
+  ],
+  [
+   42,
+   81,
+   60,
+   82.5
+  ],
+  [
+   78,
+   75,
+   111,
+   82.5
+  ],
+  [
+   40.5,
+   82.5,
+   60,
+   85.5
+  ],
+  [
+   78,
+   82.5,
+   85.5,
+   85.5
+  ],
+  [
+   40.5,
+   85.5,
+   48,
+   88.5
+  ],
+  [
+   -7.5,
+   82.5,
+   18,
+   90
+  ],
+  [
+   25.5,
+   82.5,
+   37.5,
+   91.5
+  ],
+  [
+   55.5,
+   88.5,
+   63,
+   91.5
+  ],
+  [
+   66,
+   85.5,
+   85.5,
+   91.5
+  ],
+  [
+   25.5,
+   91.5,
+   48,
+   93
+  ],
+  [
+   55.5,
+   91.5,
+   85.5,
+   93
+  ],
+  [
+   -7.5,
+   90,
+   0,
+   97.5
+  ],
+  [
+   25.5,
+   93,
+   73.5,
+   97.5
+  ],
+  [
+   -7.5,
+   97.5,
+   73.5,
+   99
+  ],
+  [
+   40.5,
+   99,
+   63,
+   100.5
+  ],
+  [
+   -7.5,
+   99,
+   33,
+   105
+  ]
+ ],
+ "fights": [
+  {
+   "id": "F1",
+   "sec": 3,
+   "room": "Yard",
+   "start": 3,
+   "wave": 3,
+   "max": 4,
+   "trigger": "I3 done: they've seen you",
+   "f": 0,
+   "foes": [
+    [
+     63,
+     72.2
+    ],
+    [
+     68,
+     73.6
+    ],
+    [
+     71,
+     71.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     78,
+     77.6
+    ]
+   ],
+   "lab": [
+    73.4,
+    79
+   ],
+   "note": "The first major firefight. The three come out of H1's back door; the wave comes through the east door. The car is low cover under the garage roof."
+  },
+  {
+   "id": "F2",
+   "sec": 4,
+   "room": "H1 kitchen",
+   "start": 2,
+   "wave": 0,
+   "max": 2,
+   "trigger": "the back door",
+   "f": 0,
+   "foes": [
+    [
+     65,
+     67.4
+    ],
+    [
+     61,
+     68.6,
+     "c"
+    ]
+   ],
+   "lab": [
+    63.4,
+    69.7
+   ],
+   "note": "Close quarters, right inside the door."
+  },
+  {
+   "id": "F3",
+   "sec": 4,
+   "room": "H1 + H2 front rooms",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "seen or heard, or the kitchen door",
+   "f": 0,
+   "foes": [
+    [
+     61.6,
+     60.2
+    ],
+    [
+     64,
+     64.4,
+     "c"
+    ],
+    [
+     68.2,
+     59.8
+    ],
+    [
+     69.2,
+     64.2
+    ]
+   ],
+   "lab": [
+    62.6,
+    65.2
+   ],
+   "note": "12 x 7.5 m once the party wall is knocked through. A sofa and a table. The stair up is in the far corner."
+  },
+  {
+   "id": "F4",
+   "sec": 4,
+   "room": "Upstairs H3 + H4",
+   "start": 3,
+   "wave": 0,
+   "max": 3,
+   "trigger": "the knock-through into H3",
+   "f": 1,
+   "foes": [
+    [
+     74.6,
+     61.2,
+     "c"
+    ],
+    [
+     81.4,
+     60.4
+    ],
+    [
+     83.2,
+     67.6
+    ]
+   ],
+   "lab": [
+    81,
+    63.7
+   ],
+   "note": "Room to room, never more than 9 m. One holds the head of H4's back stair, the way down and out."
+  },
+  {
+   "id": "F5",
+   "sec": 5,
+   "room": "Covered alley",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the alley",
+   "f": 0,
+   "foes": [
+    [
+     86.5,
+     73,
+     "c"
+    ],
+    [
+     91.5,
+     73.4,
+     "c"
+    ],
+    [
+     96.6,
+     72.4
+    ],
+    [
+     97.6,
+     67.4
+    ]
+   ],
+   "lab": [
+    91.5,
+    64.8
+   ],
+   "note": "A low lean-to roof and three open-fronted plywood rooms on the south side. Dim."
+  },
+  {
+   "id": "F6",
+   "sec": 5,
+   "room": "Bodega",
+   "start": 4,
+   "wave": 2,
+   "max": 4,
+   "trigger": "the door",
+   "f": 0,
+   "foes": [
+    [
+     99.4,
+     47.6,
+     "c"
+    ],
+    [
+     103.4,
+     43.4
+    ],
+    [
+     109.6,
+     44.2
+    ],
+    [
+     107,
+     37.9,
+     "",
+     1
+    ]
+   ],
+   "waveDoors": [
+    [
+     112.5,
+     40.9
+    ]
+   ],
+   "lab": [
+    104,
+    48.4
+   ],
+   "note": "Pallet stacks inside the door cut the 37 m line down the alley. One waits on the mezzanine."
+  },
+  {
+   "id": "F7",
+   "sec": 6,
+   "room": "Guard room",
+   "start": 3,
+   "wave": 0,
+   "max": 3,
+   "trigger": "the passage steps",
+   "f": 0,
+   "foes": [
+    [
+     118,
+     37.3,
+     "c"
+    ],
+    [
+     121.8,
+     37.4
+    ],
+    [
+     121.4,
+     41.8
+    ]
+   ],
+   "lab": [
+    119.2,
+    35
+   ],
+   "note": "A card table. Then the cells, quiet."
+  },
+  {
+   "id": "F8",
+   "sec": 7,
+   "room": "Courtyard",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the corridor's end door",
+   "f": 0,
+   "foes": [
+    [
+     136.4,
+     40
+    ],
+    [
+     137.6,
+     46.6
+    ],
+    [
+     132.6,
+     48.8,
+     "c"
+    ],
+    [
+     138.2,
+     38.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     139.5,
+     43.5
+    ],
+    [
+     139.5,
+     37.5
+    ]
+   ],
+   "lab": [
+    134.8,
+    50.5
+   ],
+   "note": "They come out of the trap house as you leave the cells. The owner-type jeep is the cover."
+  },
+  {
+   "id": "F9",
+   "sec": 7,
+   "room": "Hall (G1)",
+   "start": 5,
+   "wave": 0,
+   "max": 5,
+   "trigger": "the garage door",
+   "f": 0,
+   "foes": [
+    [
+     142,
+     41.6
+    ],
+    [
+     145.4,
+     46.2,
+     "c"
+    ],
+    [
+     147.2,
+     42
+    ],
+    [
+     141,
+     47
+    ],
+    [
+     147.4,
+     44.4,
+     "",
+     1
+    ]
+   ],
+   "lab": [
+    144,
+    49.6
+   ],
+   "note": "Double height. One on the gallery above, which you'll walk later."
+  },
+  {
+   "id": "F10",
+   "sec": 7,
+   "room": "Stair hall + landing",
+   "start": 3,
+   "wave": 0,
+   "max": 3,
+   "trigger": "the stair hall door",
+   "f": 0,
+   "foes": [
+    [
+     145,
+     36.6,
+     "c"
+    ],
+    [
+     143,
+     31.2,
+     "",
+     1
+    ],
+    [
+     146.8,
+     31,
+     "",
+     1
+    ]
+   ],
+   "lab": [
+    143.5,
+    29
+   ],
+   "note": "Two wait on the landing at +4, shooting down the stair."
+  },
+  {
+   "id": "F11",
+   "sec": 7,
+   "room": "+4 rooms + gallery",
+   "start": 3,
+   "wave": 0,
+   "max": 3,
+   "trigger": "the top of the stair",
+   "f": 1,
+   "foes": [
+    [
+     146.4,
+     36.4,
+     "c"
+    ],
+    [
+     151.6,
+     46.2
+    ],
+    [
+     150.2,
+     35.6
+    ]
+   ],
+   "lab": [
+    151.5,
+    49.2
+   ],
+   "note": "A loop: sleeping room, gallery, bunks, kitchen. The wooden stair up is in the kitchen."
+  },
+  {
+   "id": "F12",
+   "sec": 7,
+   "room": "Staging room (+8)",
+   "start": 4,
+   "wave": 2,
+   "max": 4,
+   "trigger": "the top of the wooden stair",
+   "f": 2,
+   "foes": [
+    [
+     146.4,
+     36.4
+    ],
+    [
+     149.6,
+     41.2,
+     "c"
+    ],
+    [
+     151.2,
+     37.6
+    ],
+    [
+     147.4,
+     40.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     142,
+     38.6
+    ]
+   ],
+   "lab": [
+    147.6,
+    47.4
+   ],
+   "note": "The last fight and its kill cam. The wave comes in from the terrace. Survivors run for the plank to the neighbour's roof (“drives off”)."
+  }
+ ],
+ "inspects": [
+  {
+   "id": "I1",
+   "f": 0,
+   "x": 33,
+   "y": 81.2,
+   "sec": 1,
+   "name": "Last reported spot",
+   "req": false,
+   "src": "scenario",
+   "what": "No patrol car where it should be.",
+   "sug": "Fresh tyre scuffs at the kerb, a broken tail-light lens.",
+   "does": ""
+  },
+  {
+   "id": "I2",
+   "f": 0,
+   "x": 40.8,
+   "y": 78.6,
+   "sec": 1,
+   "name": "Padlocked lane gate",
+   "req": false,
+   "src": "suggestion",
+   "what": "Signs of disturbance lead on.",
+   "sug": "A new padlock, a scrape of police paint on the post, tyre marks under the gate: the car went in here. You go round.",
+   "does": ""
+  },
+  {
+   "id": "I3",
+   "f": 0,
+   "x": 64.6,
+   "y": 75.6,
+   "sec": 3,
+   "name": "The patrol car",
+   "req": true,
+   "src": "scenario",
+   "what": "The missing car under a large tarp, pushed into an improvised garage.",
+   "sug": "",
+   "does": "Saves CP2, then starts F1."
+  },
+  {
+   "id": "I4",
+   "f": 0,
+   "x": 65,
+   "y": 79.2,
+   "sec": 3,
+   "name": "Signs of a struggle",
+   "req": false,
+   "src": "scenario",
+   "what": "Signs of a struggle around the car.",
+   "sug": "",
+   "does": ""
+  },
+  {
+   "id": "I5",
+   "f": 0,
+   "x": 121.1,
+   "y": 48.6,
+   "sec": 6,
+   "name": "A cell",
+   "req": false,
+   "src": "scenario",
+   "what": "Bedding, bottled water, food containers, personal items: people were held here, recently.",
+   "sug": "",
+   "does": ""
+  },
+  {
+   "id": "I6",
+   "f": 0,
+   "x": 124.9,
+   "y": 48.6,
+   "sec": 6,
+   "name": "A child's things",
+   "req": false,
+   "src": "scenario",
+   "what": "A child's backpack, small shoes, a school ID. Never graphic.",
+   "sug": "",
+   "does": ""
+  },
+  {
+   "id": "I7",
+   "f": 2,
+   "x": 146.25,
+   "y": 32.25,
+   "sec": 7,
+   "name": "Photo corner",
+   "req": false,
+   "src": "suggestion",
+   "what": "",
+   "sug": "A backdrop sheet, a camera, ID-size prints: where the photographs on the documents came from.",
+   "does": ""
+  },
+  {
+   "id": "I8",
+   "f": 2,
+   "x": 151.5,
+   "y": 32.2,
+   "sec": 7,
+   "name": "The forged documents",
+   "req": true,
+   "src": "scenario",
+   "what": "Forged IDs and passports for the missing: some incomplete, some with photos and false names. Navarro takes them.",
+   "sug": "",
+   "does": "Ends the level (ALevelExitTrigger::Fire)."
+  }
+ ],
+ "checkpoints": [
+  {
+   "id": "CP1",
+   "f": 0,
+   "x": 3,
+   "y": 93.75,
+   "sec": 1,
+   "at": "level start"
+  },
+  {
+   "id": "CP2",
+   "f": 0,
+   "x": 66.6,
+   "y": 74.4,
+   "sec": 3,
+   "at": "the car inspected (before F1)"
+  },
+  {
+   "id": "CP3",
+   "f": 0,
+   "x": 61.6,
+   "y": 71.8,
+   "sec": 4,
+   "at": "H1's back door"
+  },
+  {
+   "id": "CP4",
+   "f": 0,
+   "x": 85.4,
+   "y": 68.25,
+   "sec": 5,
+   "at": "H4's back door, into the covered alley"
+  },
+  {
+   "id": "CP5",
+   "f": 0,
+   "x": 101.25,
+   "y": 53.4,
+   "sec": 5,
+   "at": "the alley before the bodega"
+  },
+  {
+   "id": "CP6",
+   "f": 0,
+   "x": 116.9,
+   "y": 40.9,
+   "sec": 6,
+   "at": "the foot of the passage steps"
+  },
+  {
+   "id": "CP7",
+   "f": 0,
+   "x": 131.6,
+   "y": 44.6,
+   "sec": 7,
+   "at": "the courtyard"
+  },
+  {
+   "id": "CP8",
+   "f": 1,
+   "x": 140.6,
+   "y": 31.1,
+   "sec": 7,
+   "at": "the landing at +4"
+  }
+ ],
+ "pickups": [
+  {
+   "f": 0,
+   "x": 70.6,
+   "y": 69.2,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 96.2,
+   "y": 47.8,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 152.4,
+   "y": 33.4,
+   "label": "first aid"
+  }
+ ],
+ "civilians": [
+  [
+   35.4,
+   76.4
+  ],
+  [
+   36.8,
+   76.9
+  ],
+  [
+   38,
+   76.2
+  ],
+  [
+   19.3,
+   80.4
+  ],
+  [
+   21.6,
+   80.4
+  ],
+  [
+   19.3,
+   83.4
+  ],
+  [
+   21.6,
+   83.4
+  ],
+  [
+   12.2,
+   93.6
+  ],
+  [
+   7.6,
+   96.4
+  ],
+  [
+   23.2,
+   92.4
+  ],
+  [
+   30.4,
+   81.4
+  ],
+  [
+   49.4,
+   91.6
+  ]
+ ],
+ "start": [
+  3,
+  93.75
+ ],
+ "flee": [
+  [
+   150,
+   38.6
+  ],
+  [
+   144.4,
+   38.6
+  ],
+  [
+   141,
+   36
+  ],
+  [
+   141,
+   30
+  ],
+  [
+   141,
+   26.4
+  ]
+ ],
+ "sightlines_measured": {
+  "1": {
+   "len": 25.75,
+   "floor": 0,
+   "a": [
+    0.13,
+    90.88
+   ],
+   "b": [
+    25.31,
+    96.23
+   ]
+  },
+  "2": {
+   "len": 22.75,
+   "floor": 0,
+   "a": [
+    39.88,
+    82.63
+   ],
+   "b": [
+    18.24,
+    75.59
+   ]
+  },
+  "3": {
+   "len": 22,
+   "floor": 0,
+   "a": [
+    76.63,
+    84.88
+   ],
+   "b": [
+    60.8,
+    69.59
+   ]
+  },
+  "4": {
+   "len": 24.5,
+   "floor": 0,
+   "a": [
+    78.88,
+    67.63
+   ],
+   "b": [
+    103.32,
+    69.33
+   ]
+  },
+  "5": {
+   "len": 24.75,
+   "floor": 0,
+   "a": [
+    102.88,
+    66.13
+   ],
+   "b": [
+    78.37,
+    69.57
+   ]
+  },
+  "6": {
+   "len": 16.5,
+   "floor": 0,
+   "a": [
+    116.38,
+    44.38
+   ],
+   "b": [
+    132.88,
+    44.38
+   ]
+  },
+  "7": {
+   "len": 24.75,
+   "floor": 2,
+   "a": [
+    140.38,
+    47.38
+   ],
+   "b": [
+    141.24,
+    22.64
+   ]
+  }
+ }
+}
