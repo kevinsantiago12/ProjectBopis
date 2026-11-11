@@ -144,11 +144,16 @@ void UProjectBopisAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade;
 	HipAimHandAlpha = FMath::FInterpTo(HipAimHandAlpha, bHipAimHand ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
+	const bool bGunUpright = (bIsAiming || bIsWeaponRaised) && !bShootdodging
+		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade;
+	GunUprightAlpha = FMath::FInterpTo(GunUprightAlpha, bGunUpright ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
+
 	UpdateUpperBody(DeltaSeconds);
 	UpdatePump(Holder ? Holder->GetEquippedWeapon() : nullptr);
 	UpdateLeftHandGrip(*Character, Weapon);
 	UpdateArmAlphas(Weapon, DeltaSeconds);
 	UpdateRightHandGrip(Weapon, DeltaSeconds);
+	UpdateTriggerFinger(Weapon, DeltaSeconds);
 	UpdateFreeArmSwing(DeltaSeconds);
 	UpdateRecoil(DeltaSeconds);
 	UpdateTurnInPlace(Character->GetActorRotation().Yaw, DeltaSeconds);
@@ -980,6 +985,37 @@ void UProjectBopisAnimInstance::UpdateRightHandGrip(const AWeaponBase* Weapon, f
 
 	const float Target = (Pose && !bEquipAnimating && !bThrowingGrenade) ? 1.0f : 0.0f;
 	RightHandGripPoseAlpha = FMath::FInterpTo(RightHandGripPoseAlpha, Target, DeltaSeconds, UpperBodyInterpSpeed);
+}
+
+void UProjectBopisAnimInstance::UpdateTriggerFinger(const AWeaponBase* Weapon, float DeltaSeconds)
+{
+	// The finger rests on the trigger while the gun is up and presses it on each shot; lowered, the
+	// clips keep their own finger, off the trigger. The last poses are kept while the layer eases
+	// out, so the finger never passes through the bind pose.
+	const FTriggerFingerPoses* Poses = Weapon ? TriggerFingerPoses.Find(Weapon->GetGripStyle()) : nullptr;
+	const bool bHasPoses = Poses && Poses->Rest && Poses->Press;
+	if (bHasPoses)
+	{
+		TriggerRestPose = Poses->Rest;
+		TriggerPressPose = Poses->Press;
+	}
+
+	const bool bOnTrigger = bHasPoses && (bIsAiming || bIsWeaponRaised)
+		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade;
+	TriggerFingerAlpha = FMath::FInterpTo(TriggerFingerAlpha, bOnTrigger ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
+
+	// Each gun's own shot: with duals the right finger pulls for the right gun, the left for the left.
+	const bool bJustFired = bOnTrigger && Weapon->GetTimeSinceLastShot() < TriggerPressHold;
+	const bool bLeftFired = bJustFired && bIsDualWield && Weapon->WasLastShotOffhand();
+	TriggerPressAlpha = FMath::FInterpTo(TriggerPressAlpha, (bJustFired && !bLeftFired) ? 1.0f : 0.0f,
+		DeltaSeconds, TriggerPressSpeed);
+
+	// Duals' left hand: on its own gun's trigger whenever the right one is.
+	const bool bLeftOnTrigger = bOnTrigger && bIsDualWield;
+	TriggerFingerAlphaLeft = FMath::FInterpTo(TriggerFingerAlphaLeft, bLeftOnTrigger ? 1.0f : 0.0f,
+		DeltaSeconds, UpperBodyInterpSpeed);
+	TriggerPressAlphaLeft = FMath::FInterpTo(TriggerPressAlphaLeft, bLeftFired ? 1.0f : 0.0f,
+		DeltaSeconds, TriggerPressSpeed);
 }
 
 void UProjectBopisAnimInstance::UpdatePump(AWeaponBase* Weapon)

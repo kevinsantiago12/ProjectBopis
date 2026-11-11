@@ -1896,6 +1896,24 @@ cant proceed and you also added a wall at the entrance of the eskinita and I can
     lamps. A material that only gains a usage flag at bake time causes it; save the flag (`M_BackAlleys_HollowBlocksWorld`,
     static lighting). A sky light with Real Time Capture is skipped by the bake ("empty cubemap"). The bake has crashed the editor on
     memory (RAM full, then video memory over budget): one editor only, Lightmap Tile Pool Size 30, and the lightmaps are 2 GB.
+  - **A light inside its fitting gets nothing from the bake** if the fitting casts shadows. `SM_Light_A_002` is an opaque bulb and the
+    light sits 8 cm above its bottom: the interiors' 65 bulbs lit sections 4-7 not at all. A lit fitting with the light in it is
+    `noshadow` + `vol` (the street pass's `_cheap` already did this). Check a new light's position against its fitting's shape.
+  - **"Out of video memory" with Local Used under budget** and System Used at its budget (15.5 GB, half the RAM) is the GPU's shared
+    system memory, not the card. Bakes at 618 M texels finished while the sky light was skipped; with the sky in, 143 M didn't, 65 M did.
+  - **Lowering lightmaps by area was reverted (2026-11-09, user).** At 12 texels/m, walls built of several boxes showed bands (each box
+    its own size), and some +X-facing box walls in the row house baked black with blocky patches; the cause wasn't found. Don't shrink
+    the boxes' lightmaps again without testing one room first.
+  - **33% instead (2026-11-09, user: "half the resolution", "use a quarter", then "set it to 33%"):** every lit piece's lightmap at
+    33% of its own size, a multiple of 4 (512 -> 168, 256 -> 84, 128 -> 44, 64 -> 20), one factor for all: 66.9 M texels. Half (154 M)
+    crashed, a quarter (38.6 M) baked. A Static sky light didn't save the memory. The generator doesn't scale them: set a piece placed
+    from a plan by hand.
+  - **Nothing unseen (2026-11-09, rule):** `analysis/cull_unseen_ue.py` lists every static mesh no camera position over the walkable
+    area can see (1,725 of 9,706 in the slum: roofs, back walls, cores, lids, house floors). Run it in a windowless full editor
+    (`UnrealEditor.exe ... -ExecutePythonScript=...`): in a `-run=pythonscript` commandlet no trace hits anything, there's no physics.
+    The nav mesh works in both. Back the map up before removing; remove by object name through the bridge (1,725 in 48 s).
+  - **A headless save fails while the editor has the map open** ("Error moving file ... to temp directory": the file is locked). Check
+    `get_current_level` first, or set the pieces through the bridge.
   - **Reading what the user changed:** `find_actors` by name (`Stair`, `Step`) and the meshes' transforms through one bridge script,
     against the plan. A flight the plan doesn't have (`TRAP_Stair3_3`) and scales that differ show the edit.
 - **Street lamps in balconies (2026-11-09; user: "Street lights are in someones balcony, that cannot happen ... remove them all and

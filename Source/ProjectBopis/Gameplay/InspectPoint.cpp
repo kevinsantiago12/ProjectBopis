@@ -13,7 +13,6 @@
 #include "LevelSequence.h"
 #include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
-#include "UObject/ConstructorHelpers.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -41,12 +40,8 @@ AInspectPoint::AInspectPoint()
 	Mark->ArrowColor = FColor(255, 200, 60);
 	Mark->SetHiddenInGame(true);
 
-	// The player's double, by default.
-	static ConstructorHelpers::FClassFinder<AActor> DoubleFinder(TEXT("/Game/ThirdPerson/Blueprints/CC/BP_Player_Cutscene"));
-	if (DoubleFinder.Succeeded())
-	{
-		DoubleClass = DoubleFinder.Class;
-	}
+	// The player's double, by default. Only its path: nothing loads until BeginPlay.
+	DoubleClass = TSoftClassPtr<AActor>(FSoftObjectPath(TEXT("/Game/ThirdPerson/Blueprints/CC/BP_Player_Cutscene.BP_Player_Cutscene_C")));
 }
 
 float AInspectPoint::GetInteractRange() const
@@ -61,7 +56,7 @@ void AInspectPoint::BeginPlay()
 	{
 		Interactables->Register(this);
 	}
-	if (Cutscene && DoubleClass)
+	if (Cutscene && !DoubleClass.IsNull())
 	{
 		PrepareDouble();
 	}
@@ -281,10 +276,17 @@ void AInspectPoint::EndCutscene()
 
 void AInspectPoint::PrepareDouble()
 {
+	// Loads here, with the level, not with the game module (see DoubleClass).
+	UClass* LoadedClass = DoubleClass.LoadSynchronous();
+	if (!LoadedClass)
+	{
+		return;
+	}
+
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	Double = GetWorld()->SpawnActor<AActor>(DoubleClass, Mark->GetComponentLocation(),
+	Double = GetWorld()->SpawnActor<AActor>(LoadedClass, Mark->GetComponentLocation(),
 		FRotator(0.0f, Mark->GetComponentRotation().Yaw, 0.0f), Params);
 	if (!Double)
 	{

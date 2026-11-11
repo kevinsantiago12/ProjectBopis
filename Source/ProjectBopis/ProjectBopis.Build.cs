@@ -24,7 +24,8 @@ public class ProjectBopis : ModuleRules
 			"PhysicsCore",
 			"DeveloperSettings",
 			"LevelSequence",
-			"MovieScene"
+			"MovieScene",
+			"AnimGraphRuntime"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

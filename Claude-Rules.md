@@ -326,6 +326,10 @@ list, not just chat.
   - **Walls stay inside (2026-11-09):** no inside wall shows on the outside ("the inside walls ... penetrates to the outside yard"),
     and nothing from a lower storey shows through a floor ("the walls below are pushing through the cieling"). No recess where a
     floor meets a wall, and no streaked slab edges ("the cubes you are using has messed up UVs on one side").
+  - **Nothing unseen (2026-11-09):** "RULE: If you cant see it in gameplay, remove it from the level ... Any geometry that will not
+    be visible, just remove it completely". None of the slum houses (`M…`) are entered ("None of them are to be entered"), so their
+    insides (cores, lids, floors) go, and so do roofs, roof plates, walls and ground nobody sees from where the player can be. Decide it
+    by line of sight from the walkable area, not by name; whatever can be seen stays.
 - Read `Tools/LevelGen/LESSONS.md` before every level build. Run
   `Tools/LevelGen/analysis/check_overlaps.py` after every generator change
   (no coincident faces), and `analysis/check_dressing.py` after every dressing change.

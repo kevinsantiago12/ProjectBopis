@@ -13,6 +13,20 @@ class ABopisCharacterBase;
 class APlayerController;
 class UAnimMontage;
 
+/** The trigger finger for one grip style: resting on the trigger, and pressing it (one-frame
+    clips on this skeleton; only the index finger is used). */
+USTRUCT(BlueprintType)
+struct FTriggerFingerPoses
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> Rest;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> Press;
+};
+
 /**
  *  Native parent of the character's AnimBP. Computes every value the AnimGraph reads,
  *  once per frame, so the AnimBP holds only the graph and no Event Graph logic.
@@ -72,6 +86,11 @@ protected:
 	    (the blade's hand turn, without its chest and arm turns). Eased. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Locomotion|Blade")
 	float HipAimHandAlpha = 0.0f;
+
+	/** Weight of the Gun Upright node: in while the gun is up, out lowered, mid-shootdodge (the
+	    dive's aim poses roll the body on purpose) or while a reload, draw or toss uses the hand. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float GunUprightAlpha = 0.0f;
 
 	/** How fast (per second) the blade's turns ease out for a throw, and back after. */
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.1"))
@@ -243,6 +262,43 @@ protected:
 	/** Weight of that layer: in when the weapon's grip has a pose or a pistol is lowered, out while drawing or tossing. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	float RightHandGripPoseAlpha = 0.0f;
+
+	/** The trigger finger by grip style. A style with none keeps the clips' finger. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TMap<EWeaponGripStyle, FTriggerFingerPoses> TriggerFingerPoses;
+
+	/** The held weapon's trigger-finger poses, played by the AnimGraph's trigger layer (index_01_r
+	    down). Kept while the layer eases out. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> TriggerRestPose;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	TObjectPtr<UAnimSequenceBase> TriggerPressPose;
+
+	/** Weight of the trigger layer: in while the gun is up (aimed or raised); out lowered, or while
+	    a reload, draw or toss uses the hand. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerFingerAlpha = 0.0f;
+
+	/** From resting on the trigger to pressing it: up on each shot, back as it's let go. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerPressAlpha = 0.0f;
+
+	/** Duals' left hand: the same trigger finger, mirrored onto it by the AnimGraph. Its own weight
+	    and press, so each finger pulls only when its own gun fires. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerFingerAlphaLeft = 0.0f;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerPressAlphaLeft = 0.0f;
+
+	/** How long the finger stays pressed after a shot (s). Full-auto fire keeps it pressed. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
+	float TriggerPressHold = 0.08f;
+
+	/** How fast the finger presses and lets go. Higher is snappier. */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
+	float TriggerPressSpeed = 40.0f;
 
 	/** Any pistol-style hold (Pistol, PistolOneHanded or Dual) — the AnimGraph's
 	    pistol-vs-long-gun switches (aim offset, hip-fire idle, crouch idle) read this
@@ -789,6 +845,7 @@ private:
 	void UpdateArmAlphas(const AWeaponBase* Weapon, float DeltaSeconds);
 	void UpdateLeftHandGrip(const ABopisCharacterBase& Character, const AWeaponBase* Weapon);
 	void UpdateRightHandGrip(const AWeaponBase* Weapon, float DeltaSeconds);
+	void UpdateTriggerFinger(const AWeaponBase* Weapon, float DeltaSeconds);
 
 	/** Sets the held gun's pump amount from the Pump curve (and zeroes a gun just put away). */
 	void UpdatePump(AWeaponBase* Weapon);

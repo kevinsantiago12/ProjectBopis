@@ -630,6 +630,25 @@ tuned against it.
    again after 3 and 4.
 
 ### Deck test builds (step 5, from 2026-10-27)
+- **Showcase builds (2026-11-10, user: "I want to show the game to someone, I want a build with no
+  debug messages. Starting from the main menu"):** `Tools/BuildDeck.ps1 -Configuration Shipping`
+  builds to `ProjectBopis_Builds/Showcase` (log `Saved/Logs/BuildShowcase.log`); plain runs are still
+  Development to `DeckTest` (log now `BuildDeckTest.log`). Shipping compiles out every on-screen debug
+  message (`UEngine::DrawOnscreenDebugMessages`' body), the map warnings ("LIGHTING NEEDS TO BE
+  REBUILT", `DrawMapWarnings` under `!UE_BUILD_SHIPPING`), Print String (`UKismetSystemLibrary`),
+  `DrawDebug*` (`ENABLE_DRAW_DEBUG` 0), logging and the console. Ours: the Deck settings message is
+  already `#if !UE_BUILD_SHIPPING`; the left-hand grip readout is behind a cvar, off.
+- **Gotcha: no Character Customizer content from a C++ constructor (2026-11-10).** The first Showcase
+  cook failed (exit 25, "1 error"): `LogProperty: Error: … CCMH_Body_AnimBP … AnimGraphNode_RetargetPoseFromMesh.
+  Unknown structure`, with `/Script/IKRig` "not found" for `MH_IK_Rig`, `CC_IK_Rig`, `MH_Retargeter`.
+  Cause: `AInspectPoint`'s constructor had a `ConstructorHelpers::FClassFinder` for `BP_Player_Cutscene`
+  (2026-11-08), which loads it while the game module builds its default objects, before the IK Rig
+  plugin's module is up; the CC character's AnimBP then can't load. The editor logged the same error
+  at every start since. Fix: `DoubleClass` is a `TSoftClassPtr` with only the path in the constructor,
+  loaded at `BeginPlay`. Any asset that pulls in CC content stays out of constructors (soft
+  references, loaded later). **For cooking `Lvl_01_Slum` later:** a soft default that's left unchanged
+  isn't saved on the placed actor, so the cooker won't follow it: add `BP_Player_Cutscene` to the cook
+  (e.g. `DirectoriesToAlwaysCook` for its folder) or set it on each Inspect Point.
 - **Packaging** (`DefaultGame.ini`, `ProjectPackagingSettings`):
   - Development (console and `stat` readouts; Shipping strips them);
   - pak + IoStore, compressed;
@@ -993,7 +1012,23 @@ dynamic characters.
     `DynamicShadowDistanceStationaryLight` **3000** (0 by default, which
     leaves moving objects with per-object shadows only). The movable sun had
     `DynamicShadowDistanceMovableLight` 20000 with 4 cascades.
-  - **Sky light:** **Stationary**.
+  - **Sky light:** **Stationary**. *`Lvl_01_Slum` (2026-11-09): a Static
+    sky didn't stop the bake running out of the GPU's shared memory, so it
+    went back to Stationary. Instead every lit piece's lightmap there is
+    33% of its own size (component override = own x 0.33, to a multiple
+    of 4: 512 -> 168, 256 -> 84, 128 -> 44, 64 -> 20): 618 M -> 67 M
+    texels (half, 154 M, crashed; a quarter, 39 M, baked). One factor for all,
+    so neighbouring pieces keep their proportions; sizing by area gave
+    walls bands and was reverted.*
+  - *Volumetric lightmap only was tried (2026-11-09) and dropped: with a
+    2 m cell no shadows show. `Lvl_01_Slum` is back to surface lightmaps
+    at the meshes' own sizes (515.6 M texels after the cull), baked with
+    CPU Lightmass, which uses system RAM, not the GPU's shared memory.*
+  - *Unseen geometry is removed (user rule, 2026-11-09): a line-of-sight
+    test from every camera position over the walkable area
+    (`Tools/LevelGen/analysis/cull_unseen_ue.py`) lists what nobody can
+    see; in `Lvl_01_Slum` 1,725 pieces (roofs, back walls, cores, lids,
+    house floors) went, about 12.5 M lightmap texels.*
   - **`LightmassImportanceVolume_Play`** over the play area plus margin:
     - Sandbox: the nav-mesh bounds ±5 m;
     - Linear: the greybox bounds, without the sky sphere, ±3 m.
@@ -1005,7 +1040,14 @@ dynamic characters.
     RAM**.
   - **Sandbox's World Settings had `bForceNoPrecomputedLighting` on**; the
     log said "Skipping Lighting Build!". Now off; Linear's was already off.
-- **GPU Lightmass:**
+- **Bakes use CPU Lightmass from 2026-11-09** (user: "ill use cpu lighmass
+  from now on"): **Build → Build Lighting Only**, quality from the Build
+  menu, run by Swarm on the CPU and system RAM. GPU Lightmass ran out of the
+  GPU's shared system memory on `Lvl_01_Slum` (15.5 GB, half the RAM) at
+  143 M texels and up. CPU Lightmass's settings are World Settings →
+  Lightmass; the GPU Lightmass notes below (tile pool, start-cancel-start
+  for the volumetric bricks) no longer apply to bakes.
+- **GPU Lightmass** (no longer used for bakes, kept for reference):
   - **Plugin:** on in the `.uproject` (user).
   - **Ray tracing:** it needs Support Hardware Ray Tracing
     (`r.RayTracing=True`, user, then a restart and a big shader compile).
@@ -3951,6 +3993,31 @@ separate meshes. Can you help normalize this to our specs?"
   `BP_Sniper`). *Done 2026-10-30: the whole `SniperRiflePack` is deleted
   (see Pack cleanup).*
 
+**Gun scale vs the .45 (2026-11-11, user: "can you scale the m4 weapon relative to the pistol45").**
+Measured headless (mesh bounds × component scale) against the real guns: the .45 (`SK_P1911`, 25.1 × 15.7 cm
+as modelled) was 1.2 → ~1.37× life size; the M4 (`SK_AR4_CompactStock`, 82.0 × 26.1 cm) 1.1 → ~1.13×.
+- **M4 → 1.33** ("go ahead with 1.33"; bridge on `BP_AssaultRifle`'s `WeaponMesh`, compiled, saved): ~109 cm
+  in game. `GripLocationOffset` (1, 0, −2) → **(1.64, 1.47, −2.42)**, so the wrist stays on the same point of
+  the grip: the gun grows about its origin (in front of the grip). Formula, in the `HandGrip_R` socket's
+  frame (the wrist there is w = (−2.049, −7.012, 0)): o' = w − (s'/s)(w − o). Sockets (left-hand grip,
+  muzzle, eject) scale with the mesh. `BP_Kamz` only carries the M4 (not a subclass).
+- **The .45 → 1.1** (user, in the editor, saved 01:27): ~1.25× life; its offset left at (−0.5, 0, 2.5) (the
+  compensated one would be (−0.63, −0.58, 2.29)). The M4 matched to that would be ~1.22 with (1.33, 0.77,
+  −2.22). **User: "it looks ok without any adjustments"**: both stay as they are.
+- **Consequence for the trigger finger:** at 1.33 the M4's trigger is ~3 cm further from the wrist than the
+  poses were solved for; an L finger can't reach it (the best solve is a nearly straight finger). The
+  installed poses are the L ones; left as they are for now.
+- **Machine pistols (`SK_Uzi`, a Micro Uzi with a barrel grip, modelled ~life size):** the single was 1.3
+  (~1.3× life, about the .45's ~1.25×), the dual 1.5; the user set the dual to match ("fixed that").
+- **Pickups and drops at the hand's size (2026-11-11, user: "normalize scale with the pickups"; applied by
+  Claude, "apply and build", compiled clean 01:41):** both took only the weapon's mesh asset, so every gun
+  on the ground showed at scale 1 (the M4 at 1.0 against 1.33 in hand). Now `AWeaponPickup::OnConstruction`
+  and `AWeaponDrop::Launch` also copy the weapon mesh component's `RelativeScale3D`; the drop's box extent
+  and centring use the scaled bounds, so it still starts exactly where the hand held it; `BecomePickup`
+  spawns the pickup with unit scale (the drop mesh's world scale would otherwise come on top of the
+  pickup's own). The pickup Blueprints keep mesh scale 1 (they only offset the gun), so nothing of theirs
+  is overridden; placed pickups update on load. Not seen in Play yet.
+
 **AK-74u (2026-10-30, `BP_AssaultCarbine`).** User: "The M4 Stays, that is
 the accurate rifle with less ROF, AK74u is fast fire rate, high damage but
 also inaccurate spread"; "The AK74 asset is in the FPS Pack already"; "go,
@@ -4006,6 +4073,15 @@ make the AK-74u".
   **`LeftHandGrip` not added:** it lives on `b_gun_Root`, which sits at a
   different place per gun. The user places it; until then the hand follows
   the clip.
+  - **2026-11-11 (user: "the AK74u is not aligning like the M4, it rolls when looking around"):** the
+    user's socket is (29, −9, −4) with no rotation, and `bLockLeftHandRotation` is off, so the hand
+    follows the clips' wrist and rolls with the aim offset. The two roots are turned differently
+    (Blender, FBX space): the M4's `b_gun_Root` has Z down the barrel and Y up; the AK's (re-exported
+    stockless) X down the barrel and Y up; both meshes share the component axes. The M4's hand angle
+    (13, 151, −167) converted into the AK's root frame (`Tools/AnimAuthoring/TriggerFinger/bl_convert_grip.py`,
+    round trip exact): **(pitch 58.45, yaw 64.54, roll 80.91)**. Proposed: set it on the AK's socket and
+    turn the lock on (bridge). **Not applied by Claude; the user, 2026-11-11: "ak left hand is ok now".**
+    The conversion stays here if the lock is wanted later.
 - **`BP_AssaultCarbine`** (a copy of `BP_AssaultRifle`, compiled, saved):
   - `SK_KA74U_Y` (since swapped for `SK_KA74U_Stockless`, above) at the
     M4's scale 1.1; grip offsets the M4's (1, 0, −2), (0, 0, 0) as a start.
@@ -5568,8 +5644,8 @@ the model with a BP_Player_Cutscene?" So:
   character then takes a moment (blocking loads, added components, material instances), and
   under the engine's default `r.PSOPrecache.ProxyCreationStrategy` 1 (`DelayUntilPSOPrecached`;
   the ini only restates it) a new mesh isn't drawn until its shader pipelines are ready. So
-  `AInspectPoint::DoubleClass` (default `BP_Player_Cutscene`, by `ConstructorHelpers`) is spawned
-  in `BeginPlay`, on the floor under the Mark (a Visibility trace + capsule half-height), hidden
+  `AInspectPoint::DoubleClass` (a `TSoftClassPtr`, default path `BP_Player_Cutscene`, loaded with
+  `LoadSynchronous` in `PrepareDouble`) is spawned in `BeginPlay`, on the floor under the Mark (a Visibility trace + capsule half-height), hidden
   with its actor and skeletal-mesh ticks off (`SetDoubleActive(false)`). At the cut it's shown,
   ticking, and given to the sequence in place of its own (`SetBindingByTag(PlayerTag, …)`); at the
   end it's hidden and goes 0.5 s later. One hidden double per Inspect Point for the level's
@@ -8090,6 +8166,76 @@ now. Mossberg hold is ok". Not locked: `BP_Shotgun`, `BP_BattleRifle`,
 **Open:** lying **backwards** after a shootdodge (prone on the back), the
 left hand can't reach `LeftHandGrip` — deferred by the user.
 
+**Forearm Twist (2026-11-10).** The limit above showed once the shoulder swap
+put the left wrist in view (user: "the left wrist does a overtwist of some
+sort, I never noticed until the switched angle"; "this only happens when
+aiming with 2 hand weapons"). The locked angle was calibrated on the lowered
+idle/jog, whose forearms sit near that roll; the aiming pose (and its aim
+offset) holds the forearm at another roll while the hand keeps the gun's angle,
+and the body's `lowerarm_twist_01_l` / `_02_l` keep the clip's roll, so the
+whole difference pinched at the wrist. A support hand's grip doesn't change
+between lowered and aimed; the forearm turns. So the fix spreads the roll
+along the forearm rather than giving aiming its own angle.
+- **`FAnimNode_ForearmTwist`** (`Source/ProjectBopis/AnimNode_ForearmTwist.h/.cpp`,
+  a `FAnimNode_SkeletalControlBase`): `LowerArm`, `Hand`, `TwistBones`. The
+  axis is the hand's reference offset from the forearm; the roll is the hand's
+  twist about it against its rest rotation (`GetTwistAngle`); each twist bone
+  (a child of `LowerArm`; skipped if a LOD drops it) gets its reference rotation
+  turned by roll × its share, the share being how far along the forearm its
+  reference position sits. Needs `AnimGraphRuntime`.
+- **`UAnimGraphNode_ForearmTwist`** (`Source/ProjectBopisEditor/`, "Forearm
+  Twist" in the AnimGraph menu). The editor module now needs `AnimGraph`,
+  `AnimGraphRuntime`, `BlueprintGraph`.
+- **In `ABP_Player`** (bridge, on the user's ask, 2026-11-10 22:41: the top-level
+  AnimGraph takes new nodes; only state graphs don't): `AnimGraphNode_ForearmTwist_0`
+  after the Copy Bone `ik_hand_l` → `hand_l` (`CopyBone_5`), before
+  `ComponentToLocalSpace_1`; Alpha ← `K2Node_VariableGet_97` (`LeftHandIKAlpha`).
+  Compiled (the tool reports no errors, but anim compile messages only show in the
+  editor's Compiler Results), saved; backup of the asset before the change in the
+  session scratchpad. Lower Arm `lowerarm_l`, Hand `hand_l`, Twist Bones
+  `lowerarm_twist_01_l`, `lowerarm_twist_02_l`; Alpha ← `LeftHandIKAlpha`
+  (every hold where the IK sets the hand; in the lowered stances the mismatch
+  is small).
+- Compiled clean 2026-11-10 22:33. Tested (user, 2026-11-10): "looks good".
+
+**Upper Arm Twist, and the right arm (2026-11-11, user, with a one-handed pistol aimed high: "the right hand
+twists the higher you point, also, the twist messes up the shoulder here").** Measured in the pistol aim-offset
+poses (roll about each bone's X, local): the upper arm rolls −19° (aim down) / 39° (straight) / **92°** (up)
+against the clavicle while `upperarm_twist_01/02_r` stay at 0 (turning fully with it, so the shoulder skin
+tears), and the hand rolls 132° / 134° / **115°** against the forearm while `lowerarm_twist_*_r` stay at −1.3
+(a pinch at the wrist). The mannequin's own fix is its post-process rig (`CR_Mannequin_Procedural`, a Control
+Rig, in `Characters/Mannequins/Rigs/`); not used, for its per-character game-thread cost.
+- **`FAnimNode_UpperArmTwist`** (`Source/ProjectBopis/AnimNode_UpperArmTwist.h/.cpp`; editor node
+  `UAnimGraphNode_UpperArmTwist`, "Upper Arm Twist"): `UpperArm`, `LowerArm` (gives the axis: its reference
+  offset), `TwistBones`. The roll is the upper arm's twist about its axis since rest, in its own frame
+  (`RefRot⁻¹ × (ParentCS⁻¹ × UpperArmCS)`); each twist bone (a child of `UpperArm`) gets its reference rotation
+  turned by −roll × (1 − how far along the upper arm it sits): all of it at the shoulder, none at the elbow.
+- **In `ABP_Player`** (bridge, compiled, saved 2026-11-11): after the head look (`ModifyBone_27`), before
+  `ComponentToLocalSpace_4` (→ `SaveCachedPose` 'PreAdditive'): `UpperArmTwist_0` (left), `UpperArmTwist_1`
+  (right), `ForearmTwist_1` (right: `lowerarm_r`, `hand_r`, `lowerarm_twist_01/02_r`), all alpha 1 (every
+  pose). The left forearm's node stays where it was, on `LeftHandIKAlpha`.
+- Compiled clean 13:45. Not seen in Play. It fixes the skin, not the gun's angle: the aim-up pose itself rolls
+  the hand ~19°, so the pistol still cants a little; a "keep the gun upright" correction would be separate.
+
+**Gun Upright (2026-11-11, user, after the twist nodes: "still an issue").** Measured headless in the pistol aim
+poses (the gun's sideways axis through the `HandGrip_R` socket, barrel along gun Y): the gun rolls −1.9° aimed
+straight (CC), **+14.6°** up (CU), −11.5° down (CD), +10° / +11° up-left / up-right. The aim poses themselves cant
+it; the skin nodes can't fix that.
+- **`FAnimNode_GunUpright`** (`Source/ProjectBopis/AnimNode_GunUpright.h/.cpp`; editor node
+  `UAnimGraphNode_GunUpright`, "Gun Upright"): `Hand`, `BarrelAxis` (−1, 0, 0), `SideAxis` (0, 1, 0), both in the
+  hand bone's space (the `HandGrip_R` socket's yaw 90). It rolls the hand about the barrel until the sideways
+  axis has no Z, at any pitch (straight up and down too). Of the two level answers it takes the smaller turn
+  (`Atan2(−Side.Z · sign(Top.Z), |Top.Z|)`, Top = Barrel × Side, which points out of the gun's bottom), so it
+  never turns more than 90° and never flips the gun. The first build used `Atan2(−Side.Z, Top.Z)`, which picks
+  the half-turn for an upright gun; fixed before any test (rebuilt 15:13).
+- **`GunUprightAlpha`** (`UProjectBopisAnimInstance`): eases to 1 while aiming or raised, and to 0 while
+  shootdodging, reloading, equipping or throwing a grenade (`UpperBodyInterpSpeed`).
+- **In `ABP_Player`** (bridge, compiled, saved 2026-11-11; backup `ABP_Player_2026-11-11_before_GunUpright` in
+  the session scratchpad): `GunUpright_0` (Hand `hand_r`, Alpha ← `GunUprightAlpha`) after the recoil
+  (`ModifyBone_2`), before `CopyBone_0` (`hand_r` → `ik_hand_gun`), so the left hand, fitted to the gun later,
+  follows it. Only the right hand: the duals' left gun isn't covered.
+- Tested (user, 2026-11-11, M4 firing): "looks good".
+
 **Right-hand grip style (2026-10-26).** Every clip's right-hand fingers are
 posed for a pistol grip; on the Mossberg's straight stock the thumb went
 through the wood (user: "the normal right hand gun grip does not fit ... the
@@ -8127,6 +8273,66 @@ finger layer plays it. Raised, the clips' own fingers come back as the layer
 eases out. Duals' left hand stays open (a mirrored pose would be a separate
 change). Set over the bridge, an object reference: restart the editor before
 judging it in PIE (see the gotcha). **Tested (user, 2026-10-26): "grip works".**
+
+**Trigger finger (2026-11-10, user: "can you help me curl the finger into a trigger press
+possition?"; picked "on trigger + squeeze" and "you pose it").** While the gun is up (aimed or
+hip-fire raised) the right index finger rests on the trigger, and presses it on each shot;
+lowered, the clip's finger stays. Enemies share `ABP_Player`, so theirs press too.
+- **C++** (compiled clean 23:10): `FTriggerFingerPoses` { `Rest`, `Press` } and
+  `TriggerFingerPoses` (`TMap<EWeaponGripStyle, FTriggerFingerPoses>`, Class Defaults; a style
+  with no pair keeps the clips' finger). `UpdateTriggerFinger` sets `TriggerRestPose` /
+  `TriggerPressPose` (kept while easing out), **`TriggerFingerAlpha`** (eases in while aimed or
+  raised, out lowered or while a reload, draw or toss uses the hand; `UpperBodyInterpSpeed`) and
+  **`TriggerPressAlpha`** (1 while `AWeaponBase::GetTimeSinceLastShot()` < `TriggerPressHold`
+  0.08 s, eased at `TriggerPressSpeed` 40, so full-auto holds it). Duals: either gun's shot
+  presses the right finger.
+- **AnimGraph** (bridge, saved 2026-11-10): `LayeredBoneBlend_18` after the grip layer
+  (`LayeredBoneBlend_16` → `_18` → `_5`): Base the pose, Blend `TwoWayBlend_2` (A
+  `SequenceEvaluator_1` ← `TriggerRestPose`, B `SequenceEvaluator_2` ← `TriggerPressPose`, Alpha
+  ← `TriggerPressAlpha`), weight `TriggerFingerAlpha`, filter `index_01_r` depth 0, local space.
+  The evaluators' Sequence pins were exposed through `ShowPinForProperties` (a new Sequence
+  Evaluator has none). Backup of the asset before the change in the session scratchpad.
+- **Poses, made in Blender (2026-11-10, user: "can you do it via blender yourslef?"; the user's
+  hand-keyed attempts were deleted on their say, "feel free to delete the ones I added"):**
+  `/Game/ThirdPerson/Animations/TriggerFinger/TriggerRestPose` and `TriggerPressPose`, set in
+  `ABP_Player` Class Defaults → `TriggerFingerPoses` → PistolGrip (bridge, compiled, saved 23:44).
+  Made by `Tools/AnimAuthoring/TriggerFinger/` from `MM_Rifle_Idle_Hipfire` frame 0 with
+  `SK_AR4_CompactStock` on `hand_r` as the game places it (`HandGrip_R` + `BP_AssaultRifle`'s grip
+  offset (1, 0, −2)). The blade is the mesh skinned to `b_gun_trigger` (0.6 cm thick, on the gun's
+  centre line; its front is deepest, y −6.31 in gun cm, at z ~4). The pad (the skin weighted to
+  `index_03_r`) is solved onto (0, −7.0, 4.0) for Rest and 0.45 cm further back for Press: the knuckle
+  curls −14° (eases back) and tilts −8.5° / −10° about its local Y (drops the finger into the guard),
+  the middle joint curls 76° / 83.5°, the last only 0.15 of that (11.4° / 12.5°), within 3 mm of the
+  target; curl is each joint's local +Z in Blender (Unreal's yaw). **Shape (2026-11-11, user, of a
+  pistol in Play: "the finger doesnt go like an L shape, its more like a C shape which makes the grip
+  look weird", "L or J shape"):** the first solve let the last joint follow the middle at 0.65
+  (66° / 43°), which wrapped the tip into a C; now the base segment runs along the frame, the middle
+  joint takes the bend and the last stays nearly straight (`DIP_SHARE` 0.15). **Deeper (2026-11-11,
+  user: "i need the tip further into the trigger"):** the pad's target moved from 0.7 cm in front of the
+  blade on its line to 0.6 cm past the line and at its front: Rest (0.6, −6.5, 3.9), Press (0.6, −6.05,
+  3.85). Solved: knuckle −10° curl, −9.5° / −11.5° tilt; middle 81° / 86.5°; last 12.2° / 13°. Saved
+  00:3x the same way (unset, delete, headless import, set, compile, save). **Swapping poses the editor
+  holds:** clear `TriggerFingerPoses` and delete the old pair through the bridge, import headless under
+  the same names (new assets then), set the map again, compile, save. Both clips span two identical keys (1/30 s, "one frame"; one key
+  won't import: "Animation Stack Scene does not contain any valid key"). Checked after import: every
+  other bone matches the clip's frame 0 (worst 0.0004). Not seen in Play yet. A `StraightStock` pair,
+  or a Handgun grip style with its own pair, only if the Mossberg's or a pistol's finger misses.
+- **Duals' left hand (2026-11-11, user: "dual left hand is not using the curled finfer", "left hand i
+  mean"; applied by Claude, "apply and build", compiled clean 01:48):** the same pair, mirrored.
+  `TriggerFingerAlphaLeft` (gun up, duals only) and `TriggerPressAlphaLeft`; each finger now pulls only for
+  its own gun (`AWeaponBase::WasLastShotOffhand()`: the right press skips offhand shots, the left takes only
+  those), so alternating fire alternates the fingers. AnimGraph (bridge, saved): `LayeredBoneBlend_19`,
+  filter `index_01_l`, weight `TriggerFingerAlphaLeft`, **after the left-arm layers**: `ComponentToLocalSpace_5`
+  → `_19` → `LayeredBoneBlend_4`. (First placed right after `_18`, it did nothing (user: "did not work"):
+  `LayeredBoneBlend_5` (the one-handed free arm) and `LayeredBoneBlend_1` (mesh-space left arm from a cached
+  pose, the duals') both replace everything from `clavicle_l` down, fingers included. A left-hand finger
+  layer has to come after them.) blend pose `Mirror_4`
+  (`MDT_Mannequin`, the duals' existing table) of `TwoWayBlend_3` (`SequenceEvaluator_3` Rest,
+  `SequenceEvaluator_4` Press, alpha `TriggerPressAlphaLeft`). Its own evaluators: a pose output feeds one
+  node only, and the bridge can't make Use Cached Pose. Not seen in Play.
+- **Hand-keying gotcha (the user's attempts):** in the Animation editor a bone that's rotated but not
+  **Keyed** is dropped on save, and a key made with the gizmo in World space adds roll and pitch, not
+  only the curl. Their Rest held a key on `index_03_r` only (roll −21°, pitch −16.5°).
 
 ### One-handed pistol (2026-10-07)
 `EWeaponAnimType::PistolOneHanded` (appended; `BP_Pistol` uses it, duals stay
@@ -10035,6 +10241,23 @@ normal world-space primitives. Consequences:
   for weapons with `HasZoom`), and sets the boom height from the capsule so
   crouching doesn't move the camera (see *Crouch*). Pitch limits −70/+80 in
   `AProjectBopisCameraManager`.
+- **Shoulder swap (2026-11-10, user: "We are adding shoulder switch").** `ShoulderSwapAction`
+  (`/Game/Input/Actions/IA_ShoulderSwap`, a copy of `IA_Interact`, Boolean; set on `BP_PlayerCharacter`,
+  inherited by `BP_Player_CC`) toggles `bLeftShoulder` (`DoShoulderSwap`, not during the kill cam;
+  `IsOnLeftShoulder()` for Blueprints). `UpdateCameraTransition` mirrors the target socket offset's Y
+  (hip, aim and shootdodge alike), and the existing ease (`CameraTransitionSpeed`) carries the camera
+  across. Camera only: the gun stays in the right hand and shots still leave its muzzle toward the
+  camera's aim point, so on the left shoulder a corner on the left can stop them. Resets to the right
+  on a new pawn (level load, restart). Compiled clean 2026-11-10 21:20. Keys (user): **V** and
+  **D-pad Down** (Heal moved to D-pad Up). Works (user, 2026-11-10).
+  - **Gotcha: a key on two actions in one context.** `H` was on both `IA_Heal` (row 36) and
+    `IA_ShoulderSwap` (row 42); Heal comes first and consumes it (`bConsumeInput`), so the swap never
+    saw it. Read the rows headless (`IMC_Default` → `default_key_mappings.mappings`) to find clashes.
+  - **Gotcha: Blueprint defaults set through the bridge, then Play.** The action was set on the player
+    Blueprints' CDOs and saved (read back), but Play in that editor session never bound it ("debug says
+    its triggering", camera unmoved); after an editor restart it bound at once. Restart the editor before
+    testing a Blueprint default set through the bridge.
+  - The diagnostic `UE_LOG`s are out again (with the Forearm Twist build, 22:33).
 - **Rotation.** Stance-driven (`ApplyMovementStance`): free-run faces travel,
   aiming or a recent hip-fire faces the camera and strafes. Turn-in-place hides
   the capsule snapping when standing still.

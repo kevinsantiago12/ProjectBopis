@@ -1,0 +1,7 @@
+*.fbx
+*.blend
+*.blend1
+*.json
+*.png
+*_log.txt
+renders/

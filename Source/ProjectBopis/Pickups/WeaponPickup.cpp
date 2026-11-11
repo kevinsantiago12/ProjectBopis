@@ -44,6 +44,8 @@ void AWeaponPickup::OnConstruction(const FTransform& Transform)
 	const AWeaponBase* WeaponDefaults = WeaponClass ? WeaponClass->GetDefaultObject<AWeaponBase>() : nullptr;
 	const USkeletalMeshComponent* WeaponMesh = WeaponDefaults ? WeaponDefaults->GetWeaponMesh() : nullptr;
 	MeshComponent->SetSkeletalMeshAsset(WeaponMesh ? WeaponMesh->GetSkeletalMeshAsset() : nullptr);
+	// The same size as in the hand: the weapon Blueprint's mesh scale.
+	MeshComponent->SetRelativeScale3D(WeaponMesh ? WeaponMesh->GetRelativeScale3D() : FVector::OneVector);
 }
 
 void AWeaponPickup::BeginPlay()

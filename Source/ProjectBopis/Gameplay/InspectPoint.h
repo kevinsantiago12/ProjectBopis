@@ -66,9 +66,11 @@ protected:
 	/** The player's cutscene double. Built when the level starts and kept hidden, then put in the
 	    cutscene in place of its own (the binding tagged PlayerTag), so it's there on the first frame:
 	    a double the sequence spawns itself shows up late (building it takes a moment, and a new mesh
-	    isn't drawn until its shaders are ready). None: the sequence spawns its own. */
+	    isn't drawn until its shaders are ready). None: the sequence spawns its own. A soft reference,
+	    loaded at BeginPlay: a hard one loads the Character Customizer when the game module starts,
+	    before the IK Rig plugin, which breaks its AnimBP and fails the cook. */
 	UPROPERTY(EditAnywhere, Category = "Inspect|Cutscene")
-	TSubclassOf<AActor> DoubleClass;
+	TSoftClassPtr<AActor> DoubleClass;
 
 private:
 	/** Takes the player out of play and starts the cutscene. False if there's none to play. */

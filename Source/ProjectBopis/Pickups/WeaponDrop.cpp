@@ -47,6 +47,9 @@ void AWeaponDrop::Launch(TSubclassOf<AWeaponBase> InWeaponClass, TSubclassOf<AWe
 	const AWeaponBase* WeaponDefaults = WeaponClass ? WeaponClass->GetDefaultObject<AWeaponBase>() : nullptr;
 	const USkeletalMeshComponent* WeaponMesh = WeaponDefaults ? WeaponDefaults->GetWeaponMesh() : nullptr;
 	MeshComponent->SetSkeletalMeshAsset(WeaponMesh ? WeaponMesh->GetSkeletalMeshAsset() : nullptr);
+	// The same size as in the hand: the weapon Blueprint's mesh scale.
+	const FVector GunScale = WeaponMesh ? WeaponMesh->GetRelativeScale3D() : FVector::OneVector;
+	MeshComponent->SetRelativeScale3D(GunScale);
 
 	// Fit the box to the gun and centre it, then shift the actor by the same amount so the
 	// gun stays exactly where the hand held it. The mesh's own imported bounds, not the
@@ -56,9 +59,10 @@ void AWeaponDrop::Launch(TSubclassOf<AWeaponBase> InWeaponClass, TSubclassOf<AWe
 	const FBox LocalBox = GunMesh ? GunMesh->GetImportedBounds().GetBox() : FBox(ForceInit);
 	if (LocalBox.IsValid)
 	{
-		Body->SetBoxExtent(LocalBox.GetExtent());
-		MeshComponent->SetRelativeLocation(-LocalBox.GetCenter());
-		SetActorLocation(GetActorLocation() + GetActorQuat().RotateVector(LocalBox.GetCenter()),
+		const FVector Centre = LocalBox.GetCenter() * GunScale;
+		Body->SetBoxExtent(LocalBox.GetExtent() * GunScale);
+		MeshComponent->SetRelativeLocation(-Centre);
+		SetActorLocation(GetActorLocation() + GetActorQuat().RotateVector(Centre),
 			false, nullptr, ETeleportType::TeleportPhysics);
 	}
 
@@ -91,6 +95,8 @@ void AWeaponDrop::BecomePickup()
 		// Where the gun lies, lowered onto the floor if there's a gap under it (a forced swap
 		// mid-fall, or anything it was resting on that has since moved).
 		FTransform Where = MeshComponent->GetComponentTransform();
+		// The pickup sizes its gun itself; the drop mesh's scale would come on top of that.
+		Where.SetScale3D(FVector::OneVector);
 		const FBox Bounds = Body->Bounds.GetBox();
 
 		FCollisionObjectQueryParams Floor;

@@ -61,6 +61,7 @@ for t in _tiles:                                   # bulbs over street doors
         continue
     k = 0.7
     put("Bulb_" + t["label"], AS + "SM_Light_A_002", x_, y_, top, SL_RNG.uniform(0.0, 360.0), (k, k, k), folder=SL, nocoll=True, mats=[LIGHT_ON_N])
+    items[-1].update({"noshadow": True, "vol": True})      # the light is inside the bulb's glass: shadowing, it would block it (2026-11-09)
     x0_, y0_ = at(t["x"], t["y"], t["side"], s_, -1.0)
     X0, X1 = sorted((x0_, x_))
     Y0, Y1 = sorted((y0_, y_))

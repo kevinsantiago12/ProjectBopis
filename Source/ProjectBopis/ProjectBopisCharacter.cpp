@@ -238,6 +238,12 @@ void AProjectBopisCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 				&AProjectBopisCharacter::DoInteract);
 		}
 
+		if (ShoulderSwapAction)
+		{
+			EnhancedInputComponent->BindAction(ShoulderSwapAction, ETriggerEvent::Started, this,
+				&AProjectBopisCharacter::DoShoulderSwap);
+		}
+
 		if (WeaponWheelAction)
 		{
 			EnhancedInputComponent->BindAction(WeaponWheelAction, ETriggerEvent::Started, this,
@@ -561,7 +567,14 @@ void AProjectBopisCharacter::UpdateCameraTransition(float DeltaSeconds)
 	// Derived from state every frame rather than pushed on aim start/end. A weapon
 	// swap mid-aim can't strand the camera, because there's nothing to strand.
 	const float TargetArmLength = bDodgeCamera ? ShootdodgeArmLength : (bIsAiming ? AimArmLength : HipArmLength);
-	const FVector TargetSocketOffset = bDodgeCamera ? ShootdodgeSocketOffset : (bIsAiming ? AimSocketOffset : HipSocketOffset);
+	FVector TargetSocketOffset = bDodgeCamera ? ShootdodgeSocketOffset : (bIsAiming ? AimSocketOffset : HipSocketOffset);
+
+	// Over the left shoulder every framing is mirrored sideways; the eased move below carries the
+	// camera across. The gun stays in the right hand.
+	if (bLeftShoulder)
+	{
+		TargetSocketOffset.Y = -TargetSocketOffset.Y;
+	}
 
 	float TargetFOV = DefaultFOV;
 	if (bIsAiming && GetWeaponHolder())
@@ -1604,6 +1617,16 @@ void AProjectBopisCharacter::DoInteract()
 	{
 		Interaction->Interact();
 	}
+}
+
+void AProjectBopisCharacter::DoShoulderSwap()
+{
+	// The kill cam's view is somewhere else: a swap now would only show once it's over.
+	if (IsInKillCam())
+	{
+		return;
+	}
+	bLeftShoulder = !bLeftShoulder;
 }
 
 bool AProjectBopisCharacter::IsOutOfCombat() const

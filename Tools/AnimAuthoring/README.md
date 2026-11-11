@@ -13,6 +13,7 @@ motion, the timings, the gun's rig and the assets made.
 | M4, rear charging-handle pull | `MM_Rifle_Reload_M4`, `AM_Rifle_Reload_M4`, `A_AR4_Reload` | *Charging styles: the M4 reload* | in git history (`M4Reload/`) |
 | Revolver, speedloader with a full flick | `MM_Pistol_Reload_Revolver`, `AM_Pistol_Reload_Revolver`, `A_Revolver_Reload` | *Revolver reload: speedloader, full flick* | removed |
 | Mossberg pump rack after a reload from empty | `MM_Shotgun_Reload_Pump`, `AM_Shotgun_Reload_Pump`, `A_Mossberg_Rack` | *Shotgun rack after a reload from empty* | removed |
+| Trigger finger, resting and pressing (one-frame poses, solved onto the AR4's trigger blade) | `TriggerRestPose`, `TriggerPressPose` (`/Game/ThirdPerson/Animations/TriggerFinger/`) | *Trigger finger* | `TriggerFinger/` (in progress: kept until tested in Play) |
 
 ## Layout
 

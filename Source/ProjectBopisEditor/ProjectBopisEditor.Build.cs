@@ -17,7 +17,10 @@ public class ProjectBopisEditor : ModuleRules
 			"PlacementMode",
 			"Slate",
 			"SlateCore",
-			"ProjectBopis"
+			"ProjectBopis",
+			"AnimGraph",
+			"AnimGraphRuntime",
+			"BlueprintGraph"
 		});
 	}
 }

@@ -265,6 +265,9 @@ public:
 	bool LocksLeftHandRotation() const { return bLockLeftHandRotation; }
 	EWeaponGripStyle GetGripStyle() const { return GripStyle; }
 
+	/** Seconds since this gun last fired (counts up every tick). */
+	float GetTimeSinceLastShot() const { return TimeSinceLastShot; }
+
 	/** Pump guns: where the slide is now, in its parent bone's space — back along -X by
 	    PumpTravel × the pump amount. Zero for guns without a pump. */
 	FVector GetPumpOffset() const

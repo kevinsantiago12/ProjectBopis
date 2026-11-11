@@ -1008,6 +1008,9 @@ for bid, f, c in _light_cells:
             put("Bulb_%s_%s_%d%d" % (bid, c["id"], i, j), AS + "SM_Light_A_002", X, Y, ceil_b, INT_RNG.uniform(0.0, 360.0), (k_, k_, k_),
                 folder=IL, nocoll=True, mats=["/Game/AsiaSlum/Material/MI_Light_A_001"] if LIGHTS_ON else None)
             if LIGHTS_ON:
+                # Shadowless and volumetric, as the street's bulbs are (_cheap): the light sits inside the bulb's opaque glass, which
+                # otherwise shadows it whole, and the bake gave sections 4-7 no light at all (user 2026-11-09: "no lights past the first 2 sections").
+                items[-1].update({"noshadow": True, "vol": True})
                 put("Light_Bulb_%s_%s_%d%d" % (bid, c["id"], i, j), "/Script/Engine.PointLight", X, Y, ceil_b - 124.0 * k_ - 4.0, 0.0, (1, 1, 1), folder=IL)
                 items[-1]["light"] = {"kind": "PointLight", "intensity": 6.0, "radius": 650.0 if area < 40 else 900.0, "colour": COL_BULB_IN,
                                       "source": 3.0, "outer": 60.0, "length": 0.0}

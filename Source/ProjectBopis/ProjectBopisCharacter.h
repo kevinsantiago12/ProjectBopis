@@ -189,6 +189,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* InteractAction;
 
+	/** Shoulder swap: the camera moves over the other shoulder (a toggle). */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ShoulderSwapAction;
+
 	/** Weapon wheel: hold to open, release to equip what's pointed at. The number keys keep
 	    working beside it; the wheel is there for a controller. */
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -441,6 +445,10 @@ protected:
 	/** Interact pressed: uses what the prompt shows. */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoInteract();
+
+	/** Shoulder swap pressed: the camera goes over the other shoulder. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoShoulderSwap();
 
 	/** Crouch key pressed. Records the crouch request (toggle or hold, per bCrouchIsToggle);
 	    UpdateCrouch decides whether the character is actually down. */
@@ -807,6 +815,9 @@ protected:
 	/** Current eased value of ShootdodgeCameraHeight — 0 normally, the full offset while dodging. */
 	float CurrentShootdodgeCameraHeight = 0.0f;
 
+	/** The camera sits over the left shoulder: every framing's sideways offset is mirrored. */
+	bool bLeftShoulder = false;
+
 public:
 
 	/** Returns the camera boom **/
@@ -822,6 +833,10 @@ public:
 	UInteractComponent* GetInteraction() const { return Interaction; }
 
 	UInputAction* GetInteractAction() const { return InteractAction; }
+
+	/** The camera is over the left shoulder (Shoulder Swap). */
+	UFUNCTION(BlueprintPure, Category = "Camera")
+	bool IsOnLeftShoulder() const { return bLeftShoulder; }
 
 	/** No shot fired, hit taken or near miss for OutOfCombatDelay. */
 	bool IsOutOfCombat() const;
