@@ -15,6 +15,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleEmitter.h"
 #include "Components/PointLightComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
 #include "Gameplay/FocusComponent.h"
@@ -69,6 +70,13 @@ AWeaponBase::AWeaponBase()
 	MuzzleLight->IntensityUnits = ELightUnits::Candelas;
 	MuzzleLight->Intensity = 15.0f;
 	MuzzleLight->LightColor = FColor(255, 184, 107);
+
+	// The flash mesh at each muzzle, idle until a Blueprint sets FlashMesh (BeginPlay puts them on the sockets).
+	FlashComponent = CreateDefaultSubobject<UMuzzleFlashComponent>(TEXT("FlashComponent"));
+	FlashComponent->SetupAttachment(WeaponMesh);
+	OffhandFlashComponent = CreateDefaultSubobject<UMuzzleFlashComponent>(TEXT("OffhandFlashComponent"));
+	OffhandFlashComponent->SetupAttachment(OffhandMesh);
+	FlashEmitterNames = { TEXT("Flash Core"), TEXT("FlashCore Smoke"), TEXT("FlashCore Diagonals"), TEXT("Pop"), TEXT("Core") };
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -405,10 +413,7 @@ EFireResult AWeaponBase::Fire(const FVector& TraceStart, const FVector& TraceDir
 	{
 		PlayWeaponSound(EWeaponSound::Fire, FiringMesh == OffhandMesh);
 	}
-	if (MuzzleFlash)
-	{
-		PlayMuzzleFlash(FiringMesh);
-	}
+	PlayMuzzleFlash(FiringMesh);
 	FlashMuzzleLight(FiringMesh);
 
 	// A burst runs while shots follow at the weapon's rate; a longer gap starts a new one.
@@ -604,6 +609,19 @@ void AWeaponBase::BeginPlay()
 	}
 	UpdateRestPoses();
 
+	// The flash meshes go on the muzzle sockets, whose name is a per-Blueprint default.
+	if (FlashMesh)
+	{
+		FlashComponent->SetStaticMesh(FlashMesh);
+		FlashComponent->AttachToComponent(WeaponMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, MuzzleSocketName);
+		if (bDualWield)
+		{
+			OffhandFlashComponent->SetStaticMesh(FlashMesh);
+			OffhandFlashComponent->AttachToComponent(OffhandMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, MuzzleSocketName);
+		}
+	}
+	MuzzleLightIntensity = MuzzleLight->Intensity;
+
 	// A fire animation with an Eject notify times the casing itself.
 	if (FireAnimation)
 	{
@@ -650,13 +668,17 @@ void AWeaponBase::Tick(float DeltaTime)
 
 	TimeSinceLastShot += DeltaTime;
 
-	// The muzzle light goes out a moment after the shot.
-	if (MuzzleLightTimeLeft > 0.0f)
+	// The muzzle light dies down with the flame, then goes out.
+	if (MuzzleLightTimeLeft > 0.0f && MuzzleLight)
 	{
 		MuzzleLightTimeLeft -= DeltaTime;
-		if (MuzzleLightTimeLeft <= 0.0f && MuzzleLight)
+		if (MuzzleLightTimeLeft <= 0.0f)
 		{
 			MuzzleLight->SetVisibility(false);
+		}
+		else
+		{
+			MuzzleLight->SetIntensity(MuzzleLightIntensity * FMath::Square(MuzzleLightTimeLeft / MuzzleLightDuration));
 		}
 	}
 
@@ -675,27 +697,43 @@ void AWeaponBase::Tick(float DeltaTime)
 
 void AWeaponBase::PlayMuzzleFlash(USkeletalMeshComponent* FiringMesh)
 {
-	UParticleSystemComponent* Flash = UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName,
-		FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true, EPSCPoolMethod::AutoRelease);
-	if (!Flash)
-	{
-		return;
-	}
-
-	// Smoke at most every MuzzleSmokeInterval: a puff per burst, not one per shot. Set on every
-	// shot, since a pooled effect keeps whatever its last user left switched.
+	// Smoke at most every MuzzleSmokeInterval: a puff per burst, not one per shot.
 	const float Now = GetWorld()->GetTimeSeconds();
 	const bool bSmoke = Now - LastMuzzleSmokeTime >= MuzzleSmokeInterval;
 	if (bSmoke)
 	{
 		LastMuzzleSmokeTime = Now;
 	}
+
+	// The flame: the flash mesh at the muzzle that fired.
+	if (FlashMesh)
+	{
+		UMuzzleFlashComponent* Flash = (FiringMesh == OffhandMesh) ? OffhandFlashComponent.Get() : FlashComponent.Get();
+		Flash->Fire(FlashSettings);
+	}
+
+	if (!MuzzleFlash)
+	{
+		return;
+	}
+	UParticleSystemComponent* Particles = UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, FiringMesh, MuzzleSocketName,
+		FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, true, EPSCPoolMethod::AutoRelease);
+	if (!Particles)
+	{
+		return;
+	}
+
+	// Every emitter is set on every shot, since a pooled effect keeps whatever its last user left switched (and
+	// guns share them): off if the flash mesh replaces it, smoke only when a puff is due.
 	for (const UParticleEmitter* Emitter : MuzzleFlash->Emitters)
 	{
-		if (Emitter && Emitter->EmitterName.ToString().Contains(MuzzleSmokeEmitterMatch))
+		if (!Emitter)
 		{
-			Flash->SetEmitterEnable(Emitter->EmitterName, bSmoke);
+			continue;
 		}
+		const bool bReplaced = FlashMesh && FlashEmitterNames.Contains(Emitter->EmitterName);
+		const bool bIsSmoke = Emitter->EmitterName.ToString().Contains(MuzzleSmokeEmitterMatch);
+		Particles->SetEmitterEnable(Emitter->EmitterName, !bReplaced && (bSmoke || !bIsSmoke));
 	}
 }
 
@@ -720,6 +758,7 @@ void AWeaponBase::FlashMuzzleLight(USkeletalMeshComponent* FiringMesh)
 
 	// At the muzzle that fired (duals alternate hands); re-lit, never a second light.
 	MuzzleLight->SetWorldLocation(FiringMesh->GetSocketLocation(MuzzleSocketName));
+	MuzzleLight->SetIntensity(MuzzleLightIntensity);
 	MuzzleLight->SetVisibility(true);
 	MuzzleLightTimeLeft = MuzzleLightDuration;
 }
@@ -971,6 +1010,17 @@ FTransform AWeaponBase::GetMuzzleTransform(bool bOffhand) const
 		return Mesh->GetSocketTransform(MuzzleSocketName);
 	}
 	return GetActorTransform();
+}
+
+bool AWeaponBase::GetTriggerFingerLocation(bool bOffhand, FVector& OutLocation) const
+{
+	const USkeletalMeshComponent* Mesh = bOffhand ? OffhandMesh.Get() : WeaponMesh.Get();
+	if (!Mesh || !Mesh->DoesSocketExist(TriggerFingerSocketName))
+	{
+		return false;
+	}
+	OutLocation = Mesh->GetSocketLocation(TriggerFingerSocketName);
+	return true;
 }
 
 FVector AWeaponBase::GetMuzzleLocation() const

@@ -4,6 +4,11 @@
 // writes Design Document/Linear_Slums_Layout.html and Design Document/Linear_Slums_Layout.json.
 // Units are metres from the NW corner, x east, y south. Building faces sit on the 1.5 m grid (the 3 m wall kit);
 // interior partitions and openings may sit off it. Floors: 0 ground, 1 = +4 m (the bodega mezzanine is +3), 2 = +8 m.
+// Revised 2026-11-12, the way back (user: "how about we just do the whole map in reverse? it ends back at the yard gate where you
+// need to meet up with arriving cops, also work narratively becuase the cop's body is there"; "Yes add it"): after the documents,
+// sections 7 to 3 again in reverse, with their own fights (ret: true), to the yard gate (I9, the end).
+// Gunmen and pickups here are rough guides (user, 2026-11-12: "placements of enemies for the paper layout are rough guides and may
+// not strictly be followed, same goes for pickups. The layout, I'm willing to follow no problem"). The geometry is what gets built.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,28 +18,29 @@ const OUT_HTML = path.join(ROOT, "Design Document", "Linear_Slums_Layout.html");
 const OUT_JSON = path.join(ROOT, "Design Document", "Linear_Slums_Layout.json");
 
 // ---------------------------------------------------------------------------------------------------------------
-// Sections (streamed: each is an _Art and a _Gameplay sublevel of one small persistent map)
+// Sections (streamed: each is an _Art and a _Gameplay sublevel of one small persistent map). Their minutes are worked out below
+// from the measured route, the gunmen and the inspects (2026-11-12: the hand guesses here before ran about three times long).
 const SECTIONS = [
-  { id: 1, name: "Main street", ground: "0", mins: [4, 6], kind: "walk-around",
+  { id: 1, name: "Main street", ground: "0", kind: "walk-around",
     what: "Night, people still out. Walk to the patrolman's last reported spot: no car. The street dead-ends at a padlocked lane gate.",
     label: [6, 101.5] },
-  { id: 2, name: "Eskinita", ground: "+1.8", mins: [3, 4], kind: "search",
+  { id: 2, name: "Eskinita", ground: "+1.8", kind: "search",
     what: "Round the gate through the eskinita and a wash yard, following the trail. Ends at a door in the yard wall, with steps down into the yard.",
     label: [49, 99] },
-  { id: 3, name: "The yard", ground: "0", mins: [3, 5], kind: "reveal + fight",
-    what: "The patrol car under a tarp in an improvised garage, signs of a struggle. Inspecting it starts the first major firefight.",
+  { id: 3, name: "The yard", ground: "0", kind: "reveal + fight · the end",
+    what: "The patrol car under a tarp in an improvised garage, signs of a struggle. Inspecting it starts the first major firefight. The way back ends here: the last fight, then the cops arriving at the yard gate. The patrolman's body is here.",
     label: [70, 89.5] },
-  { id: 4, name: "Row houses", ground: "0 / +4", mins: [6, 8], kind: "fights",
+  { id: 4, name: "Row houses", ground: "0 / +4", kind: "fights",
     what: "Four row houses the gang has knocked through: kitchen, joined front rooms, a stair, the bedrooms. Out down H4's back stair.",
     label: [62, 54.5] },
-  { id: 5, name: "Covered alley + bodega", ground: "0 / +3", mins: [6, 8], kind: "fights",
+  { id: 5, name: "Covered alley + bodega", ground: "0 / +3", kind: "fights",
     what: "A lean-to roofed alley lined with plywood rooms, then a storage bodega with a mezzanine.",
-    label: [86, 80.5] },
-  { id: 6, name: "Holding house", ground: "−1.8", mins: [4, 6], kind: "fight + reveal",
+    label: [79, 80.5] },   // clear of the route box at x 112 (2026-11-12)
+  { id: 6, name: "Holding house", ground: "−1.8", kind: "fight + reveal",
     what: "Down steps into a guard room, then a corridor of plywood cells: bedding, water, food, belongings. A child's things. No one left.",
     label: [113.5, 57] },
-  { id: 7, name: "Trap house", ground: "−1.8 (G, +4, +8)", mins: [8, 11], kind: "fights + end",
-    what: "A courtyard, then a three-level trap house: double-height hall, stair, rooms and gallery, a wooden top storey. The forged documents.",
+  { id: 7, name: "Trap house", ground: "−1.8 (G, +4, +8)", kind: "fights + the turn",
+    what: "A courtyard, then a three-level trap house: double-height hall, stair, rooms and gallery, a wooden top storey. The forged documents, then back the way you came.",
     label: [127.5, 20.6] },
 ];
 
@@ -155,7 +161,7 @@ const OPENINGS = [
 // Closed barriers between open areas (block movement and sight)
 const BARRIERS = [
   { f: 0, a: [42, 76.5], b: [42, 81], k: "gate", label: "padlocked gate" },
-  { f: 0, a: [60, 76.5], b: [60, 81], k: "gate", label: "yard gate (shut)" },
+  { f: 0, a: [60, 76.5], b: [60, 81], k: "gate", label: "yard gate (shut; the cops open it at the end, I9)" },
   { f: 0, a: [60, 85.5], b: [63.95, 85.5], k: "wall", label: "yard wall" },     // the eskinita's north wall, either side of the door
   { f: 0, a: [65.05, 85.5], b: [66, 85.5], k: "wall", label: "yard wall" },
 ];
@@ -249,7 +255,23 @@ const FIGHTS = [
     note: "A loop: sleeping room, gallery, bunks, kitchen. The wooden stair up is in the kitchen." },
   { id: "F12", sec: 7, room: "Staging room (+8)", start: 4, wave: 2, max: 4, trigger: "the top of the wooden stair", f: 2,
     foes: [[146.4, 36.4], [149.6, 41.2, "c"], [151.2, 37.6], [147.4, 40.6]], waveDoors: [[142, 38.6]], lab: [147.6, 47.4],
-    note: "The last fight and its kill cam. The wave comes in from the terrace. Survivors run for the plank to the neighbour's roof (“drives off”)." },
+    note: "The last fight on the way in. The wave comes in from the terrace. Survivors run for the plank to the neighbour's roof (“drives off”)." },
+  // The way back (2026-11-12), armed when I8 is done. Its gunmen come from ahead, through the doors you're heading for. Rough guides.
+  { id: "F13", sec: 7, ret: true, room: "Hall, from the gallery", start: 3, wave: 2, max: 4, trigger: "back down the wooden stair (I8 done)", f: 0,
+    foes: [[141.6, 46.4], [146, 41.8, "c"], [142.8, 40.6]], waveDoors: [[139.5, 43.5]], lab: [151.5, 50.2],
+    note: "The reverse of F9: they come in through the garage door below, and you have the gallery, its rail your cover. Then down the stair past them and out." },
+  { id: "F14", sec: 6, ret: true, room: "Guard room, from the cells", start: 2, wave: 1, max: 3, trigger: "the guard room door, from the corridor", f: 0,
+    foes: [[117.2, 41.4, "c"], [120.6, 37.6]], waveDoors: [[113.4, 40.9]], lab: [126.5, 34.6],
+    note: "The reverse of F7: you come out of the corridor, and they come down the passage steps. The cells themselves stay quiet." },
+  { id: "F15", sec: 5, ret: true, room: "Bodega, from the back door", start: 3, wave: 2, max: 4, trigger: "the bodega's back door, coming back", f: 0,
+    foes: [[101.8, 43.2, "c"], [106.4, 46.6], [98.2, 38.4, "", 1]], waveDoors: [[101.25, 49.5]], lab: [109.6, 48.6],
+    note: "The reverse of F6: in by the back door, the pallets between you and them. One gets up on the mezzanine; the wave comes in from the alley. The covered alley after it stays quiet." },
+  { id: "F16", sec: 4, ret: true, room: "Upstairs, then the front rooms", start: 4, wave: 0, max: 4, trigger: "the top of H4's back stair", f: 1,
+    foes: [[75.4, 61.6], [81.6, 61.2, "c"], [62.4, 61, "", 0], [68.6, 63.6, "c", 0]], lab: [75, 57.6],
+    note: "Up H4's back stair into a floor they hold (the reverse of F4), then two more waiting in the front rooms below H2's stair." },
+  { id: "F17", sec: 3, ret: true, room: "The yard, the last fight", start: 3, wave: 2, max: 4, trigger: "H1's back door, coming back", f: 0,
+    foes: [[69, 77.4], [73.2, 73], [66.8, 82, "c"]], waveDoors: [[78, 77.6], [64.5, 84.8]], lab: [72.5, 84.7],
+    note: "The last fight and its kill cam, in the yard where the shooting started. The wave comes through the east door and the eskinita door. Then the cops come down the lane to the gate (I9)." },
 ];
 // Inspects (the new interactable): req = the route waits on it
 const INSPECTS = [
@@ -268,7 +290,9 @@ const INSPECTS = [
   { id: "I7", f: 2, x: 146.25, y: 32.25, sec: 7, name: "Photo corner", req: false,
     src: "suggestion", what: "", sug: "A backdrop sheet, a camera, ID-size prints: where the photographs on the documents came from.", does: "" },
   { id: "I8", f: 2, x: 151.5, y: 32.2, sec: 7, name: "The forged documents", req: true,
-    src: "scenario", what: "Forged IDs and passports for the missing: some incomplete, some with photos and false names. Navarro takes them.", sug: "", does: "Ends the level (ALevelExitTrigger::Fire)." },
+    src: "scenario", what: "Forged IDs and passports for the missing: some incomplete, some with photos and false names. Navarro takes them.", sug: "", does: "Saves CP9, then arms the way back (F13–F17)." },
+  { id: "I9", f: 0, x: 61.4, y: 78.75, sec: 3, ret: true, name: "The yard gate", req: true,
+    src: "scenario", what: "The way back ends at the yard gate, where you meet the cops arriving down the lane. The patrolman's body is here.", sug: "", does: "Ends the level (ALevelExitTrigger::Fire)." },
 ];
 const CHECKPOINTS = [
   { id: "CP1", f: 0, x: 3, y: 93.75, sec: 1, at: "level start" },
@@ -279,8 +303,15 @@ const CHECKPOINTS = [
   { id: "CP6", f: 0, x: 116.9, y: 40.9, sec: 6, at: "the foot of the passage steps" },
   { id: "CP7", f: 0, x: 131.6, y: 44.6, sec: 7, at: "the courtyard" },
   { id: "CP8", f: 1, x: 140.6, y: 31.1, sec: 7, at: "the landing at +4" },
+  // the way back
+  { id: "CP9", f: 2, x: 151.5, y: 33.6, sec: 7, ret: true, at: "the documents taken: the way back starts" },
+  { id: "CP10", f: 0, x: 128.6, y: 44.6, sec: 6, ret: true, at: "the corridor's end door, coming back (before F14)" },
+  { id: "CP11", f: 0, x: 117.4, y: 39.4, sec: 6, ret: true, at: "the foot of the passage steps, coming back (before F15)" },
+  { id: "CP12", f: 0, x: 83.3, y: 66.8, sec: 4, ret: true, at: "inside H4's back door, coming back (before F16)" },
+  { id: "CP13", f: 0, x: 63.2, y: 68.8, sec: 4, ret: true, at: "H1's kitchen, before the yard (F17)" },
 ];
-// Level 1: no ammo, weapons or grenades are placed (user, 2026-11-07). Only first aid.
+// Level 1: no ammo, weapons or grenades are placed (user, 2026-11-07). Only first aid. Rough guides, as the gunmen are (2026-11-12);
+// all three are on the way back too.
 const PICKUPS = [
   { f: 0, x: 70.6, y: 69.2, label: "first aid" },
   { f: 0, x: 96.2, y: 47.8, label: "first aid" },
@@ -304,6 +335,49 @@ const STREAM_NOTE = "Every border is a swinging door (the eskinita's mouth is a 
   + "A section remembers what's done (fights, pickups, inspects) when it unloads, so walking back never brings the dead back.";
 const START = [3, 93.75];
 const FLEE = [[150, 38.6], [144.4, 38.6], [141, 36], [141, 30], [141, 26.4]];
+
+// The route walked (2026-11-12): waypoints through the doors and up the stairs, measured in plan (a stair by its run). The way in
+// visits every inspect; the way back takes the short way from I8 to the yard gate.
+const ROUTE_IN = {
+  1: [[3, 93.75], [21.75, 93.75], [21.75, 78.75], [33, 79.5], [40, 79], [39, 82.5]],
+  2: [[39, 82.5], [39, 90], [51.75, 90], [59, 87], [64.5, 87], [64.5, 85.5]],
+  3: [[64.5, 85.5], [64.5, 81.5], [65.5, 77.5], [65, 79.2], [61.6, 71.5], [61.6, 70.5]],
+  4: [[61.6, 70.5], [62, 68], [64.6, 66], [64.5, 62.25], [66, 62.25], [71.1, 59], [71.1, 65.7], [71, 67.9], [72, 67.9], [75.4, 67],
+      [75.4, 64.5], [75, 61], [78, 61.1], [81.4, 61], [81.4, 64.5], [83.2, 69.6], [79.8, 69.6], [78.9, 68.7], [79.8, 67.8], [82.55, 67.8], [84, 68.25]],
+  5: [[84, 68.25], [100, 68.25], [101.25, 62], [101.25, 49.5], [103, 47.8], [107.5, 48], [111.5, 43.5], [112.5, 40.9]],
+  6: [[112.5, 40.9], [116.1, 40.9], [119.5, 42], [119.6, 43.5], [121.1, 44.6], [121.1, 48.6], [124.9, 48.6], [125, 44.6], [130.5, 44.6]],
+  7: [[130.5, 44.6], [135, 42], [139.5, 43.5], [143.6, 42], [143.6, 39], [140.65, 38.6], [140.65, 32], [145.1, 31.2], [145.1, 36], [145.1, 39],
+      [147.4, 40.2], [147.4, 44.6], [151.5, 44], [150.4, 39], [153.3, 33], [153.3, 39], [150, 40], [146, 34.5], [146.25, 32.5], [146, 34.5],
+      [150.5, 34.5], [151.5, 32.2]],
+};
+const ROUTE_BACK = {
+  7: [[151.5, 32.2], [150.5, 34.5], [150, 40], [153.3, 39], [153.3, 33], [150.4, 39], [151.5, 44], [147.4, 44.6], [147.4, 40.2], [145.1, 39],
+      [145.1, 36], [145.1, 31.2], [140.65, 32], [140.65, 38.6], [143.6, 39], [143.6, 42], [139.5, 43.5], [135, 42], [130.5, 44.6]],
+  6: [[130.5, 44.6], [119.6, 44.6], [119.6, 43.5], [119.5, 42], [116.1, 40.9], [112.5, 40.9]],
+  5: [...ROUTE_IN[5]].reverse(),
+  4: [...ROUTE_IN[4]].reverse(),
+  3: [[61.6, 70.5], [64, 74], [61.4, 78.75]],
+};
+const pathLen = p => p.slice(1).reduce((n, q, k) => n + Math.hypot(q[0] - p[k][0], q[1] - p[k][1]), 0);
+// Time, first play with no deaths: walking at a careful 2.5 m/s, 12-20 s a gunman, 15-45 s an inspect. A rough model, but it
+// replaces hand guesses that ran about three times long (2026-11-12).
+const WALK_MS = 2.5, GUN_S = [12, 20], INSP_S = [15, 45];
+function sectionSecs(sec, ret, len) {
+  const foes = FIGHTS.filter(F => F.sec === sec && !!F.ret === ret).reduce((n, F) => n + F.start + F.wave, 0);
+  const insp = INSPECTS.filter(i => i.sec === sec && !!i.ret === ret).length;
+  return [0, 1].map(k => len / WALK_MS + foes * GUN_S[k] + insp * INSP_S[k]);
+}
+const half = (v, up) => (up ? Math.ceil(v * 2) : Math.floor(v * 2)) / 2;
+for (const S of SECTIONS) {
+  const back = ROUTE_BACK[S.id];
+  S.route_m = [Math.round(pathLen(ROUTE_IN[S.id])), back ? Math.round(pathLen(back)) : 0];
+  S.secs = [sectionSecs(S.id, false, pathLen(ROUTE_IN[S.id])), back ? sectionSecs(S.id, true, pathLen(back)) : null];
+  S.mins = S.secs[0].map((v, k) => half(v / 60, k === 1));
+  S.back = S.secs[1] ? S.secs[1].map((v, k) => half(v / 60, k === 1)) : null;
+}
+const secsIn = SECTIONS.reduce((m, S) => [m[0] + S.secs[0][0], m[1] + S.secs[0][1]], [0, 0]);
+const secsBack = SECTIONS.reduce((m, S) => (S.secs[1] ? [m[0] + S.secs[1][0], m[1] + S.secs[1][1]] : m), [0, 0]);
+const routeIn = SECTIONS.reduce((n, S) => n + S.route_m[0], 0), routeBack = SECTIONS.reduce((n, S) => n + S.route_m[1], 0);
 
 // ---------------------------------------------------------------------------------------------------------------
 // Raster for sightlines (0.25 m cells). 0 solid, 1 open (stand + see), 2 see-through only (void, out of bounds)
@@ -493,7 +567,10 @@ function plan(f, vb, opt = {}) {
 // ---------------------------------------------------------------------------------------------------------------
 // Page
 const totalFoes = FIGHTS.reduce((n, F) => n + F.start + F.wave, 0);
-const mins = SECTIONS.reduce((m, S) => [m[0] + S.mins[0], m[1] + S.mins[1]], [0, 0]);
+const backFights = FIGHTS.filter(F => F.ret), backFoes = backFights.reduce((n, F) => n + F.start + F.wave, 0);
+const mins = [Math.floor((secsIn[0] + secsBack[0]) / 60), Math.ceil((secsIn[1] + secsBack[1]) / 60)];
+const minsIn = [Math.floor(secsIn[0] / 60), Math.ceil(secsIn[1] / 60)], minsBack = [Math.floor(secsBack[0] / 60), Math.ceil(secsBack[1] / 60)];
+const needed = INSPECTS.filter(i => i.req).length;
 const sightRow = s => SIGHT[s] ? `${SIGHT[s].len.toFixed(1)} m${SIGHT[s].f ? ` (${["G", "+4", "+8"][SIGHT[s].f]})` : ""}` : "—";
 const streetLen = SIGHT[1] ? SIGHT[1].len : 0;
 
@@ -501,14 +578,21 @@ const streetLen = SIGHT[1] ? SIGHT[1].len : 0;
 const routeBox = (() => {
   let y = 66, s = `<text x="112" y="${y}" class="t-sec" style="font-size:1.6px">THE ROUTE</text>`;
   for (const S of SECTIONS) {
-    y += 2.6;
-    const fights = FIGHTS.filter(F => F.sec === S.id), foes = fights.reduce((n, F) => n + F.start + F.wave, 0);
+    y += 2.4;
+    const fights = FIGHTS.filter(F => F.sec === S.id && !F.ret), foes = fights.reduce((n, F) => n + F.start + F.wave, 0);
     const out = CONNECTORS.find(c => c.from === S.id);
     s += `<text x="112" y="${y}" class="t-dim" style="font-size:1.05px"><tspan class="t-r">${S.id}</tspan>  ${esc(S.name)} · ${S.mins[0]}–${S.mins[1]} min · ${esc(S.kind)}${fights.length ? ` · ${fights.map(F => F.id).join(" ")} (${foes})` : ""}</text>`;
-    s += `<text x="114.2" y="${y + 1.25}" class="t-sub" style="font-size:.85px">${out ? "on: " + esc(out.note) : "ends on the documents (I8)"}</text>`;
+    s += `<text x="114.2" y="${y + 1.15}" class="t-sub" style="font-size:.85px">${out ? "on: " + esc(out.note) : "the documents (I8) turn you round"}</text>`;
   }
-  y += 3.4;
-  s += `<text x="112" y="${y}" class="t-dim" style="font-size:1.05px">${SECTIONS.reduce((m, S) => m + S.mins[0], 0)}–${SECTIONS.reduce((m, S) => m + S.mins[1], 0)} min · ${FIGHTS.length} fights · ${FIGHTS.reduce((n, F) => n + F.start + F.wave, 0)} gunmen · night</text>`;
+  y += 3;
+  s += `<text x="112" y="${y}" class="t-sec" style="font-size:1.35px">THE WAY BACK · 7 TO 3</text>`;
+  for (const S of [...SECTIONS].reverse().filter(S => S.back)) {
+    y += 1.75;
+    const fights = backFights.filter(F => F.sec === S.id), foes = fights.reduce((n, F) => n + F.start + F.wave, 0);
+    s += `<text x="112" y="${y}" class="t-dim" style="font-size:1.05px"><tspan class="t-r">${S.id}</tspan>  ${esc(S.name)} · ${S.back[0]}–${S.back[1]} min${fights.length ? ` · ${fights.map(F => `${F.id} ${esc(F.room.toLowerCase())}`).join(", ")} (${foes})` : " · quiet"}${S.id === 3 ? " · I9: the cops, the end" : ""}</text>`;
+  }
+  y += 2.6;
+  s += `<text x="112" y="${y}" class="t-dim" style="font-size:1.05px">${mins[0]}–${mins[1]} min · ${routeIn + routeBack} m walked · ${FIGHTS.length} fights · ${totalFoes} gunmen · night</text>`;
   return s;
 })();
 const overview = plan(0, [-9, 15, 174, 91], { id: "o", connectors: true, sections: true, extra: routeBox, sight: [1, 2, 3, 4, 5, 6, 7], aria: "Top-down ground plan of the whole level, seven sections from the main street to the trap house" });
@@ -538,26 +622,30 @@ const stack = (() => {
   g += arr(56.5, 31.6, 13.5, 25.6) ;
   g += box(6, 18.5, 14, "landing", "CP8 · F10") + arr(20.4, 21.7, 23.6, 21.7) + box(24, 18.5, 14, "sleeping", "F11") + arr(38.4, 21.7, 41.6, 21.7) + box(42, 18.5, 14, "gallery", "over the hall") + arr(56.4, 21.7, 59.6, 21.7) + box(60, 18.5, 13, "bunks", "F11") + arr(73.4, 21.7, 76.6, 21.7) + box(77, 18.5, 14, "kitchen", "F11 · wooden stair");
   g += arr(84, 18.1, 50, 12.1);
-  g += box(36, 5, 20, "staging room", "F12 · last fight") + arr(56.4, 8.2, 61.6, 8.2) + box(62, 5, 17, "forging room", "I8 · END", "end") + box(81, 5, 14, "photo", "I7 (optional)", "opt");
+  g += box(36, 5, 20, "staging room", "F12 · last fight") + arr(56.4, 8.2, 61.6, 8.2) + box(62, 5, 17, "forging room", "I8 · CP9 · back", "end") + box(81, 5, 14, "photo", "I7 (optional)", "opt");
   g += `<line x1="56" y1="9.6" x2="80.6" y2="9.6" class="route" style="stroke-width:.25;stroke-dasharray:.6 .4"/>`;
   g += arr(35.6, 8.2, 22, 8.2, "flee") + box(6, 5, 15.6, "terrace → plank", "survivors flee", "fl");
   return g + "</svg>";
 })();
 
 const sectionRows = SECTIONS.map(S => {
-  const cps = CHECKPOINTS.filter(c => c.sec === S.id).map(c => c.id).join(", ") || "—";
-  const fights = FIGHTS.filter(F => F.sec === S.id).map(F => F.id).join(", ") || "—";
+  const ids = (list, ret) => list.filter(x => x.sec === S.id && !!x.ret === ret).map(x => x.id).join(", ");
+  const cell = list => [ids(list, false), ids(list, true)].map((v, k) => (v ? (k ? `<span class="small">back: ${v}</span>` : v) : "")).filter(Boolean).join("<br>") || "—";
   const out = CONNECTORS.find(c => c.from === S.id);
-  return `<tr><td>${S.id}</td><td><b>${esc(S.name)}</b><br><span class="small">${esc(S.what)}</span></td><td>${esc(S.ground)}</td><td>${S.mins[0]}–${S.mins[1]}</td><td>${fights}</td><td>${cps}</td><td>${out ? esc(out.note) : "the documents (I8)"}</td><td>${sightRow(S.id)}</td></tr>`;
+  return `<tr><td>${S.id}</td><td><b>${esc(S.name)}</b><br><span class="small">${esc(S.what)}</span></td><td>${esc(S.ground)}</td><td class="nw">${S.mins[0]}–${S.mins[1]}${S.back ? `<br><span class="small">back: ${S.back[0]}–${S.back[1]}</span>` : ""}</td><td class="nw">${S.route_m[0]}${S.route_m[1] ? `<br><span class="small">back: ${S.route_m[1]}</span>` : ""}</td><td>${cell(FIGHTS)}</td><td>${cell(CHECKPOINTS)}</td><td>${out ? esc(out.note) : "back the way you came (I8)"}</td><td>${sightRow(S.id)}</td></tr>`;
 }).join("");
-const fightRows = FIGHTS.map(F => `<tr><td>${F.id}</td><td>${F.sec} · ${esc(F.room)}</td><td>${F.start}${F.wave ? ` + ${F.wave} (${F.max} at once)` : ""}${F.foes.some(e => e[2] === "c") ? `<br><span class="small">${F.foes.filter(e => e[2] === "c").length} crouched</span>` : ""}</td><td>${esc(F.trigger)}</td><td class="small">${esc(F.note)}</td></tr>`).join("");
-const inspRows = INSPECTS.map(i => `<tr><td>${i.id}</td><td>${i.sec}</td><td><b>${esc(i.name)}</b>${i.req ? ' <span class="tag">needed</span>' : ""}</td><td class="small">${i.what ? esc(i.what) + (i.src === "scenario" ? ' <span class="src">scenario</span>' : "") : ""}${i.sug ? `${i.what ? "<br>" : ""}<i>${esc(i.sug)}</i> <span class="src sug">suggestion</span>` : ""}</td><td class="small">${esc(i.does) || "—"}</td></tr>`).join("");
+const fightRows = FIGHTS.map(F => `<tr><td>${F.id}</td><td>${F.sec} · ${esc(F.room)}${F.ret ? ' <span class="tag back">way back</span>' : ""}</td><td>${F.start}${F.wave ? ` + ${F.wave} (${F.max} at once)` : ""}${F.foes.some(e => e[2] === "c") ? `<br><span class="small">${F.foes.filter(e => e[2] === "c").length} crouched</span>` : ""}</td><td>${esc(F.trigger)}</td><td class="small">${esc(F.note)}</td></tr>`).join("");
+const inspRows = INSPECTS.map(i => `<tr><td>${i.id}</td><td>${i.sec}</td><td><b>${esc(i.name)}</b>${i.req ? ' <span class="tag">needed</span>' : ""}${i.ret ? ' <span class="tag back">way back</span>' : ""}</td><td class="small">${i.what ? esc(i.what) + (i.src === "scenario" ? ' <span class="src">scenario</span>' : "") : ""}${i.sug ? `${i.what ? "<br>" : ""}<i>${esc(i.sug)}</i> <span class="src sug">suggestion</span>` : ""}</td><td class="small">${esc(i.does) || "—"}</td></tr>`).join("");
 
 const json = {
-  name: "Linear slum level (working: the missing patrolman)", drafted: "2026-11-07", revised: "2026-11-08: doors and steps for the drops, borders both ways",
+  name: "Linear slum level (working: the missing patrolman)", drafted: "2026-11-07",
+  revised: "2026-11-08: doors and steps for the drops, borders both ways; 2026-11-12: the way back, sections 7 to 3 in reverse to the yard gate",
+  guides: "Gunmen and pickups are rough guides (user, 2026-11-12); the geometry is followed.",
+  time_model: { walk_m_s: WALK_MS, s_per_gunman: GUN_S, s_per_inspect: INSP_S, route_in_m: routeIn, route_back_m: routeBack, minutes: mins },
+  route_in: ROUTE_IN, route_back: ROUTE_BACK,
   units: "m, x east, y south, from the NW corner",
   floors: { "0": "ground", "1": "+4 (bodega mezzanine +3)", "2": "+8" }, storey_m: 4,
-  sections: SECTIONS.map(({ label, ...S }) => S), connectors: CONNECTORS, streaming: STREAM_NOTE,
+  sections: SECTIONS.map(({ label, secs, ...S }) => S), connectors: CONNECTORS, streaming: STREAM_NOTE,
   areas: AREAS, openings: OPENINGS, barriers: BARRIERS, stairs: STAIRS, landings: LANDINGS, cover: COVER, roofs: ROOFS,
   arms: ARMS, mass_auto: MASS.map(r => r.map(r2)), fights: FIGHTS, inspects: INSPECTS, checkpoints: CHECKPOINTS, pickups: PICKUPS,
   civilians: CIVILIANS, start: START, flee: FLEE,
@@ -646,6 +734,8 @@ th { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .06e
 td:first-child { font: 500 12.5px var(--mono); white-space: nowrap; }
 .small { font-size: 12.5px; color: var(--muted); }
 .tag { font: 600 10.5px var(--mono); text-transform: uppercase; color: var(--sheet); background: var(--insp); padding: 1px 5px; border-radius: 3px; }
+.tag.back { background: var(--trig); }
+td.nw { white-space: nowrap; }
 .src { font: 600 10px var(--mono); text-transform: uppercase; color: var(--insp); }
 .src.sug { color: var(--accent); }
 .lists { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
@@ -697,15 +787,16 @@ code { font: 500 .9em var(--mono); }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">ProjectBopis · level layout · linear story level · slum compound · night · draft 2026-11-07 · revised 2026-11-08: doors, no drops</div>
+    <div class="eyebrow">ProjectBopis · level layout · linear story level · slum compound · night · draft 2026-11-07 · revised 2026-11-08: doors, no drops · 2026-11-12: the way back</div>
     <h1>Slum Linear Layout</h1>
-    <p class="lede">The missing patrolman, laid out from your scenario as <b>seven streamed sections</b>: a night street with people still out, an eskinita, the yard where the patrol car is hidden, then the compound. That's knocked-through row houses, a covered alley, a bodega, the holding house and a <b>three-level trap house</b> at the end. Every street and alley bends, or has something standing in it, within about 25 m, and no room or yard is deeper than 18 m. <b>The longest sightline in any fight space is ${fightMax.toFixed(1)} m</b>, and the walk-around street's is ${streetLen.toFixed(1)} m. Both were measured on this plan with a 1.2 m-wide line. Fights follow the room-encounter rules: 2–5 waiting, waves topping up to 4, never more than 6 in one fight. Arms are <b>${ARMS}</b>. Story beats are <b>inspects</b>: the car one starts the first big fight, and the documents one ends the level. <b>There are no drops:</b> every section border is a swinging door (the eskinita's mouth is a bend), every way through goes both ways, and the height changes are steps.</p>
+    <p class="lede">The missing patrolman, laid out from your scenario as <b>seven streamed sections</b>: a night street with people still out, an eskinita, the yard where the patrol car is hidden, then the compound. That's knocked-through row houses, a covered alley, a bodega, the holding house and a <b>three-level trap house</b> at the end. Every street and alley bends, or has something standing in it, within about 25 m, and no room or yard is deeper than 18 m. <b>The longest sightline in any fight space is ${fightMax.toFixed(1)} m</b>, and the walk-around street's is ${streetLen.toFixed(1)} m. Both were measured on this plan with a 1.2 m-wide line. Fights follow the room-encounter rules: 2–5 waiting, waves topping up to 4, never more than 6 in one fight. Arms are <b>${ARMS}</b>. Story beats are <b>inspects</b>: the car one starts the first big fight, and the documents one turns you round. <b>The way back</b> runs sections 7 to 3 again in reverse, with ${backFights.length} fights of its own (${backFoes} gunmen) that each come at a room from the side you left it by, and ends at the yard gate, where the cops arrive down the lane and the patrolman's body is (I9). <b>There are no drops:</b> every section border is a swinging door (the eskinita's mouth is a bend), every way through goes both ways, and the height changes are steps. <b>Gunmen and pickups are rough guides; the layout is what gets built.</b></p>
     <div class="stats">
-      <div><b>${mins[0]}–${mins[1]} min</b><span>estimated, first play</span></div>
+      <div><b>${mins[0]}–${mins[1]} min</b><span>estimated, first play (in ${minsIn[0]}–${minsIn[1]}, back ${minsBack[0]}–${minsBack[1]})</span></div>
+      <div><b>${routeIn + routeBack} m</b><span>walked (in ${routeIn}, back ${routeBack})</span></div>
       <div><b>7</b><span>sections</span></div>
-      <div><b>${FIGHTS.length}</b><span>fights</span></div>
+      <div><b>${FIGHTS.length}</b><span>fights (${backFights.length} on the way back)</span></div>
       <div><b>${totalFoes}</b><span>gunmen</span></div>
-      <div><b>${INSPECTS.length}</b><span>inspects, 2 needed</span></div>
+      <div><b>${INSPECTS.length}</b><span>inspects, ${needed} needed</span></div>
       <div><b>${CHECKPOINTS.length}</b><span>checkpoints</span></div>
       <div><b>${fightMax.toFixed(1)} m</b><span>longest fight sightline</span></div>
     </div>
@@ -723,7 +814,7 @@ code { font: 500 .9em var(--mono); }
     <div class="pad grid2">
       <figure><figcaption>Row houses, +4 (F4)</figcaption>${rowUp}</figure>
       <figure><figcaption>Bodega mezzanine, +3 (one of F6)</figcaption>${mezz}
-        <p class="note">You come up H2's stair facing south. Then it's a knock-through into H3, a door to its front room, a knock-through into H4, and its back room. A gunman holds the head of H4's back stair, which turns at a half landing (+2) and comes down facing the back door. The section's way out is that door (CP4 is just outside it). The stair fits inside H4's back room, so no building changes size.</p>
+        <p class="note">You come up H2's stair facing south. Then it's a knock-through into H3, a door to its front room, a knock-through into H4, and its back room. A gunman holds the head of H4's back stair, which turns at a half landing (+2) and comes down facing the back door. The section's way out is that door (CP4 is just outside it). The stair fits inside H4's back room, so no building changes size. <b>On the way back</b> you come in by that door and up that stair into a floor they hold (F16), then down H2's stair into the front rooms.</p>
         <p class="note">The mezzanine runs the bodega's full 18 m along the north wall, with one gunman on it. Its stair starts by the door.</p></figure>
     </div>
   </div>
@@ -739,6 +830,7 @@ code { font: 500 .9em var(--mono); }
           <figure><figcaption>The route up (schematic, not to scale)</figcaption>${stack}</figure>
           <p class="note"><b>Built like a trap house:</b> a hollow-block ground storey, a plastered and painted +4, and a plywood-and-tin storey on top with its own wooden stair. Doors are knocked out to 2.25 m, there's a gallery round the double-height hall, and a terrace on the +4 roof.</p>
           <p class="note"><b>You see the hall twice.</b> You fight in it from below (F9), then walk the gallery above it on the way to the bunks (F11). The kitchen's wooden stair comes up into the staging room, where F12 is the last fight. The two small rooms off it hold the photo corner and the documents.</p>
+          <p class="note"><b>The way back starts here.</b> The documents (I8) save CP9 and arm the return fights. Back down the wooden stair and along the +4, men come in through the garage door below, and you have the gallery this time (F13). Then down the main stair, out through the hall and across the courtyard.</p>
           <p class="note"><b>“Kills or drives off”:</b> F12's survivors break for the terrace and cross a plank to the neighbour's roof, then the plank falls. That's optional new tech (a scripted flee). Without it, F12 is simply a fight to the last man.</p>
         </div>
       </div>
@@ -750,13 +842,15 @@ code { font: 500 .9em var(--mono); }
     <div class="pad">
       <p class="note"><b>Loaded: the section you're in and the ones either side.</b> ${esc(STREAM_NOTE)} A death reloads only the current section's <code>_Gameplay</code> from its last checkpoint, never the map. Every border is a door or a bend, so no two sections that aren't neighbours can see each other.</p>
       <p class="note"><b>In place of the drops (2026-11-08), with no building resized:</b> 2→3 is a door in the yard wall at the eskinita's level, then a railed landing and steps down into the yard, with the car in view from the landing (the garage roof's back edge has to clear it: about 4.2 m at the wall). In section 4, H4's floor hole is now a stair with a half landing, inside the back room. 5→6 is the bodega's back door, then steps down 1.8 m through the passage, their foot coming through a doorway into the guard room. The ground heights stay as they were: the eskinita at +1.8, the holding house at −1.8.</p>
-      <div class="tw"><table><tr><th>#</th><th>Section</th><th>Ground</th><th>Min</th><th>Fights</th><th>Checkpoints</th><th>Way out</th><th>Longest sightline</th></tr>${sectionRows}</table></div>
+      <div class="tw"><table><tr><th>#</th><th>Section</th><th>Ground</th><th>Min</th><th>Route m</th><th>Fights</th><th>Checkpoints</th><th>Way out</th><th>Longest sightline</th></tr>${sectionRows}</table></div>
+      <p class="note"><b>The minutes are a rough model:</b> the route above walked at a careful ${WALK_MS} m/s, ${GUN_S[0]}–${GUN_S[1]} s a gunman, ${INSP_S[0]}–${INSP_S[1]} s an inspect, first play with no deaths. The route is measured in plan through the doors and up the stairs: ${routeIn} m in, ${routeBack} m back. Until 2026-11-12 this table held hand guesses that ran about three times long.</p>
     </div>
   </div>
 
   <div class="sheet">
     <div class="sheet-head"><h2>Fights</h2><span class="meta">${totalFoes} gunmen · never more than 6 in one fight · ${ARMS}</span></div>
     <div class="pad tw"><table><tr><th>#</th><th>Where</th><th>Gunmen</th><th>Starts on</th><th>Notes</th></tr>${fightRows}</table>
+    <p class="note"><b>Rough guides (your call, 2026-11-12):</b> where the gunmen stand, how many and the pickups are suggestions to start from, not to be followed exactly. The rooms, doors and stairs are. <b>The way back (F13–F17)</b> is armed when I8 is done, so its triggers stay quiet on the way in. Each one meets a room from the side you left it by, and its gunmen come from ahead, through the doors you're heading for.</p>
     <p class="note"><b>Level 1 arms: ${ARMS}</b>, for Navarro and the gunmen alike. No ammo, weapons or grenades are placed: what you carry on comes from what they drop. First aid is the only pickup.</p></div>
   </div>
 
@@ -783,9 +877,10 @@ code { font: 500 .9em var(--mono); }
     <section>
       <h2>New gameplay it needs</h2>
       <ul>
-        <li><b>Inspects</b> (yours, coming): a prompt, a look, a line or subtitle, and events. I3 saves CP2 and then starts F1; I8 ends the level through <code>ALevelExitTrigger::Fire()</code>, which already exists.</li>
-        <li><b>Section streaming both ways, and checkpoints:</b> a border door that holds until the section behind it is loaded, and sections that remember what's done.</li>
+        <li><b>Inspects</b> (yours, coming): a prompt, a look, a line or subtitle, and events. I3 saves CP2 and then starts F1; I8 saves CP9 and arms the way back; I9 ends the level through <code>ALevelExitTrigger::Fire()</code>, which already exists.</li>
+        <li><b>Section streaming both ways, and checkpoints:</b> a border door that holds until the section behind it is loaded, and sections that remember what's done. The way back walks every room you cleared, so that memory is needed now, not later.</li>
         <li><b>A fight started by an event</b> rather than a volume (F1 on I3; F8 as you leave the cells).</li>
+        <li><b>Fights armed by an event:</b> F13–F17's triggers are off until I8, because you cross their rooms on the way in.</li>
         <li><b>Civilians</b> on the street, up to 12, no fighting. What you can do with them is still undecided.</li>
         <li>Optional: <b>a scripted flee</b> for F12's survivors.</li>
       </ul>
@@ -796,13 +891,17 @@ code { font: 500 .9em var(--mono); }
         <li>No fight in the cells. The reveal stays quiet, with F7 before it and F8 after.</li>
         <li>Pallets inside the bodega door cut what would be a 37 m line from the alley's end.</li>
         <li>CP2 saves after the car inspect, so a death in F1 doesn't replay the reveal.</li>
+        <li>The way back's fights each take a room from the other side: the hall from the gallery, the guard room from the cells, the bodega from its back door, H4 up its back stair, the yard from H1's back door.</li>
+        <li>The covered alley and the cells stay quiet on the way back.</li>
       </ul>
     </section>
     <section class="owned">
       <h2>Open — yours to call</h2>
       <ul>
         <li>The level's name (a story level, so no <code>_Arena</code>).</li>
-        <li>Is the patrolman's body at the car, and where?</li>
+        <li>The patrolman's body is in the yard (your call, 2026-11-12): where in it, and is it found on the way in (at the car) or only on the way back?</li>
+        <li>Who comes at you on the way back, and why.</li>
+        <li>The cops at the gate: what happens there, and whether it's an inspect you press or plays once the yard is clear.</li>
         <li>How Navarro arrives, and whether he starts with a .45 or a revolver (the plan assumes a .45).</li>
         <li>What the clues are at I1, I2 and I7 (my suggestions are marked).</li>
         <li>Navarro's lines at each inspect: voice, subtitles, or none.</li>

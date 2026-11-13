@@ -20,7 +20,17 @@ public:
 	/** Records a fresh corpse; past MaxCorpses, the oldest is removed. */
 	void RegisterCorpse(AActor* Corpse);
 
+	/** Console, while playing: "StartAt S3" reloads the level at the PlayerStart whose Player Start Tag is S3,
+	    and keeps spawning there (later Plays too, until the editor closes). "StartAt off" goes back to the
+	    level's own start. The same choice is the console variable Bopis.StartAt. */
+	UFUNCTION(Exec)
+	void StartAt(const FString& Tag);
+
 protected:
+	/** The level's own start (its untagged PlayerStart), or the test start Bopis.StartAt names. The
+	    editor's "Play From Here" still comes first. */
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
 	/** Most bodies left lying around at once. Older ones are removed as new ones fall. */
 	UPROPERTY(EditAnywhere, Category = "Corpses", meta = (ClampMin = "0"))
 	int32 MaxCorpses = 5;

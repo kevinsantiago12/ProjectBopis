@@ -1,0 +1,3940 @@
+{
+ "name": "Mission 2: the restaurant / smuggler compound",
+ "drafted": "2026-11-13",
+ "guides": "Gunmen and pickups are rough guides (user, 2026-11-12); the geometry is followed.",
+ "time_model": {
+  "walk_m_s": 2.5,
+  "s_per_gunman": [
+   12,
+   20
+  ],
+  "s_per_inspect": [
+   15,
+   45
+  ],
+  "route_m": 499,
+  "minutes": [
+   25,
+   45
+  ]
+ },
+ "route": [
+  {
+   "sec": 1,
+   "pts": [
+    [
+     3,
+     69.75
+    ],
+    [
+     7.6,
+     68.4
+    ],
+    [
+     22,
+     69.25
+    ],
+    [
+     29.5,
+     69.25
+    ],
+    [
+     37.5,
+     67
+    ],
+    [
+     37.5,
+     66
+    ]
+   ]
+  },
+  {
+   "sec": 2,
+   "pts": [
+    [
+     37.5,
+     66
+    ],
+    [
+     37.5,
+     60
+    ],
+    [
+     36.4,
+     58.2
+    ],
+    [
+     36.4,
+     57
+    ],
+    [
+     36.4,
+     55.2
+    ],
+    [
+     33.2,
+     54
+    ],
+    [
+     36.4,
+     55.2
+    ],
+    [
+     42,
+     55.2
+    ],
+    [
+     43.1,
+     51
+    ]
+   ]
+  },
+  {
+   "sec": 3,
+   "pts": [
+    [
+     43.1,
+     51
+    ],
+    [
+     43.1,
+     49.5
+    ],
+    [
+     52.4,
+     49.2
+    ],
+    [
+     54,
+     46
+    ],
+    [
+     57,
+     43.9
+    ]
+   ]
+  },
+  {
+   "sec": 4,
+   "pts": [
+    [
+     57,
+     43.9
+    ],
+    [
+     59,
+     47
+    ],
+    [
+     59.6,
+     48
+    ],
+    [
+     61.4,
+     51.4
+    ],
+    [
+     59.6,
+     48
+    ],
+    [
+     68,
+     47.2
+    ],
+    [
+     71.1,
+     46.05
+    ],
+    [
+     71.1,
+     41.25
+    ]
+   ]
+  },
+  {
+   "sec": 5,
+   "pts": [
+    [
+     71.1,
+     41.25
+    ],
+    [
+     69,
+     44
+    ],
+    [
+     67.1,
+     46.5
+    ],
+    [
+     66,
+     50.6
+    ],
+    [
+     61,
+     50.6
+    ],
+    [
+     58.9,
+     46.5
+    ],
+    [
+     59.6,
+     42
+    ],
+    [
+     63.1,
+     39
+    ],
+    [
+     62,
+     34
+    ],
+    [
+     57,
+     32.25
+    ],
+    [
+     54,
+     32.25
+    ],
+    [
+     50.4,
+     30
+    ],
+    [
+     48,
+     29.6
+    ],
+    [
+     45,
+     29.6
+    ],
+    [
+     44.6,
+     33
+    ],
+    [
+     46,
+     34.5
+    ],
+    [
+     48.6,
+     34.5
+    ],
+    [
+     53.4,
+     34.5
+    ],
+    [
+     52.6,
+     37
+    ],
+    [
+     50.6,
+     39
+    ]
+   ]
+  },
+  {
+   "sec": 3,
+   "pts": [
+    [
+     50.6,
+     39
+    ],
+    [
+     53,
+     42
+    ],
+    [
+     55.5,
+     40
+    ],
+    [
+     55.5,
+     34.1
+    ],
+    [
+     57,
+     34.1
+    ]
+   ]
+  },
+  {
+   "sec": 6,
+   "pts": [
+    [
+     57,
+     34.1
+    ],
+    [
+     62,
+     32
+    ],
+    [
+     65.6,
+     28
+    ],
+    [
+     65.6,
+     27
+    ],
+    [
+     62,
+     25.8
+    ],
+    [
+     53,
+     25.6
+    ],
+    [
+     50,
+     22
+    ],
+    [
+     48,
+     21.75
+    ]
+   ]
+  },
+  {
+   "sec": 7,
+   "pts": [
+    [
+     48,
+     21.75
+    ],
+    [
+     40,
+     24.2
+    ],
+    [
+     30.75,
+     24.2
+    ],
+    [
+     30.75,
+     35.25
+    ],
+    [
+     12.75,
+     35.25
+    ],
+    [
+     12.75,
+     22.5
+    ],
+    [
+     13.5,
+     18
+    ],
+    [
+     19.5,
+     13.4
+    ],
+    [
+     32,
+     13.4
+    ],
+    [
+     33,
+     15.1
+    ]
+   ]
+  },
+  {
+   "sec": 8,
+   "pts": [
+    [
+     33,
+     15.1
+    ],
+    [
+     38,
+     15.4
+    ],
+    [
+     42,
+     15.4
+    ],
+    [
+     45,
+     17.6
+    ],
+    [
+     42,
+     15.4
+    ],
+    [
+     40.4,
+     18
+    ],
+    [
+     39.6,
+     20.1
+    ],
+    [
+     34.8,
+     20.1
+    ],
+    [
+     34,
+     18
+    ],
+    [
+     38,
+     16.1
+    ],
+    [
+     42,
+     16.1
+    ],
+    [
+     45.4,
+     16.1
+    ],
+    [
+     45.4,
+     13.5
+    ],
+    [
+     40,
+     9.6
+    ],
+    [
+     35.1,
+     6.8
+    ],
+    [
+     35.1,
+     7.5
+    ],
+    [
+     35.1,
+     12.3
+    ],
+    [
+     40,
+     10.6
+    ],
+    [
+     48,
+     7.6
+    ]
+   ]
+  },
+  {
+   "sec": 9,
+   "pts": [
+    [
+     48,
+     7.6
+    ],
+    [
+     49.6,
+     8
+    ],
+    [
+     49.6,
+     10.8
+    ],
+    [
+     50.6,
+     12
+    ],
+    [
+     54,
+     13
+    ],
+    [
+     56.6,
+     15.2
+    ],
+    [
+     58,
+     18.4
+    ],
+    [
+     60,
+     16.1
+    ],
+    [
+     62,
+     17
+    ],
+    [
+     60,
+     16.1
+    ],
+    [
+     54,
+     13
+    ],
+    [
+     50.6,
+     12
+    ],
+    [
+     52,
+     10.8
+    ],
+    [
+     58,
+     9.6
+    ],
+    [
+     58.5,
+     7.9
+    ],
+    [
+     63.3,
+     7.9
+    ],
+    [
+     64.5,
+     9.6
+    ],
+    [
+     51.4,
+     9.6
+    ],
+    [
+     51.4,
+     10.5
+    ],
+    [
+     55,
+     15.2
+    ],
+    [
+     59,
+     13.1
+    ],
+    [
+     62.8,
+     12.4
+    ],
+    [
+     59,
+     13.1
+    ],
+    [
+     59,
+     18.4
+    ],
+    [
+     62.6,
+     17.6
+    ],
+    [
+     66,
+     19.3
+    ],
+    [
+     67.5,
+     19.3
+    ],
+    [
+     67.5,
+     18
+    ],
+    [
+     67.5,
+     13.2
+    ],
+    [
+     69.4,
+     12
+    ],
+    [
+     68.2,
+     7
+    ]
+   ]
+  }
+ ],
+ "order_played": [
+  "1",
+  "2",
+  "3 (west to east)",
+  "4",
+  "5",
+  "3 (again, from the north)",
+  "6",
+  "7 (round the ring)",
+  "8",
+  "9"
+ ],
+ "units": "m, x east, y south, from the NW corner",
+ "floors": {
+  "0": "ground",
+  "1": "+3.5"
+ },
+ "storey_m": 3.5,
+ "sections": [
+  {
+   "id": 1,
+   "name": "The street",
+   "ground": "0",
+   "kind": "walk-around",
+   "what": "A street, the restaurant's open front halfway along. The informant waits at an eskinita mouth near the start: the passport maker is inside. No civilians in play (the recognition cutscene gets the customers out).",
+   "route_m": 36,
+   "mins": [
+    0,
+    1
+   ]
+  },
+  {
+   "id": 2,
+   "name": "The restaurant",
+   "ground": "0",
+   "kind": "wave encounter + fight",
+   "what": "Dining room, counter, kitchen, dry store. He's recognised a few steps in; a cutscene gets the customers and staff out, then the waves. Kill the count and the kitchen door opens.",
+   "route_m": 28,
+   "mins": [
+    3,
+    5.5
+   ]
+  },
+  {
+   "id": 3,
+   "name": "The back lanes",
+   "ground": "0",
+   "kind": "fights · loop 1",
+   "what": "The covered service lane behind the kitchen, a small courtyard where the lanes meet, and a chained lane north. Crossed twice: west to east first, then from the north, out of the flats.",
+   "route_m": 32,
+   "mins": [
+    2.5,
+    4.5
+   ]
+  },
+  {
+   "id": 4,
+   "name": "Storage",
+   "ground": "0",
+   "kind": "fight",
+   "what": "A storage hall of stacked boxes, a loading room and an office. They're carrying boxes out as he comes in. The stair up is in the far corner.",
+   "route_m": 29,
+   "mins": [
+    1.5,
+    3
+   ]
+  },
+  {
+   "id": 5,
+   "name": "Upstairs + the roof",
+   "ground": "+3.5, then 0",
+   "kind": "fights",
+   "what": "Safe rooms above the storage hall, out onto the workshop's flat roof, a plank across the lane into the next building's upper floor, then down its stair and out its front door into the courtyard again.",
+   "route_m": 71,
+   "mins": [
+    3,
+    5.5
+   ]
+  },
+  {
+   "id": 6,
+   "name": "Workshop + burn yard",
+   "ground": "0",
+   "kind": "fights",
+   "what": "A workshop off the lane, then a narrow yard where they're burning papers in drums. A side gate at its west end lets out into the back alleys.",
+   "route_m": 31,
+   "mins": [
+    2.5,
+    5
+   ]
+  },
+  {
+   "id": 7,
+   "name": "The back alleys",
+   "ground": "0",
+   "kind": "fights · loop 2",
+   "what": "Alleys as the arena's: 4.5 m between houses, bending every 15 m or so, posts, tanks and parked bikes in them. They ring a block of houses, through a half-court where they make a stand, and come back round to the first alley's corner from the north, where the safe house's side door is.",
+   "route_m": 86,
+   "mins": [
+    4.5,
+    8
+   ]
+  },
+  {
+   "id": 8,
+   "name": "The safe house",
+   "ground": "0 / +3.5",
+   "kind": "fights",
+   "what": "Two storeys of stash and safe rooms: the front room and stash room, up the stair, round the floor, down the back stair into the back room, which they've knocked through into the print shop's front.",
+   "route_m": 75,
+   "mins": [
+    2.5,
+    4.5
+   ]
+  },
+  {
+   "id": 9,
+   "name": "Print shop",
+   "ground": "0 / +3.5",
+   "kind": "fights + the turn",
+   "what": "A print shop with its shutters down, presses half pulled apart. Upstairs, the document lab, the photo room and the passport maker's office. Out by the side stair to the next street.",
+   "route_m": 111,
+   "mins": [
+    4.5,
+    9
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": 1,
+   "to": 2,
+   "a": [
+    33,
+    66
+   ],
+   "b": [
+    42,
+    66
+   ],
+   "door": false,
+   "note": "the restaurant's open front"
+  },
+  {
+   "from": 2,
+   "to": 3,
+   "a": [
+    42,
+    51
+   ],
+   "b": [
+    44.25,
+    51
+   ],
+   "door": true,
+   "note": "the kitchen's back door"
+  },
+  {
+   "from": 3,
+   "to": 4,
+   "a": [
+    57,
+    42.75
+   ],
+   "b": [
+    57,
+    45
+   ],
+   "door": true,
+   "note": "the storage hall's side door"
+  },
+  {
+   "from": 4,
+   "to": 5,
+   "a": [
+    70.2,
+    41.25
+   ],
+   "b": [
+    72,
+    41.25
+   ],
+   "door": false,
+   "note": "the stair up (a stairwell, not a door)"
+  },
+  {
+   "from": 5,
+   "to": 3,
+   "a": [
+    49.5,
+    39
+   ],
+   "b": [
+    51.75,
+    39
+   ],
+   "door": true,
+   "note": "the flats' front door, back into the courtyard"
+  },
+  {
+   "from": 3,
+   "to": 6,
+   "a": [
+    57,
+    33
+   ],
+   "b": [
+    57,
+    35.25
+   ],
+   "door": true,
+   "note": "the workshop's side door, off the chained lane"
+  },
+  {
+   "from": 6,
+   "to": 7,
+   "a": [
+    48,
+    21
+   ],
+   "b": [
+    48,
+    22.5
+   ],
+   "door": true,
+   "note": "a side gate at the burn yard's west end"
+  },
+  {
+   "from": 7,
+   "to": 8,
+   "a": [
+    33,
+    14
+   ],
+   "b": [
+    33,
+    16.25
+   ],
+   "door": true,
+   "note": "the safe house's side door"
+  },
+  {
+   "from": 8,
+   "to": 9,
+   "a": [
+    48,
+    6.5
+   ],
+   "b": [
+    48,
+    8.75
+   ],
+   "door": false,
+   "note": "a wall knocked through into the print shop's front"
+  }
+ ],
+ "streaming": "As Mission 1, but the loops make the sections a graph, not a line: the courtyard (3) borders the restaurant, storage, the flats and the workshop. Loaded is the section you're in and every section it borders. The workshop's roof is walked in 5 but belongs to the workshop's building, so 6 loads with 5 as well. The alleys (7) are one section: their ring comes back to its own start. A border door holds until the section behind it is loaded, unloading waits until you're a few metres past a door, and a section remembers what's done. That memory matters more here: the courtyard and the alleys' first corner are each fought twice, and the second fight must not bring back the first one's dead.",
+ "areas": [
+  {
+   "id": "ST",
+   "sec": 1,
+   "f": 0,
+   "kind": "open",
+   "x0": 0,
+   "y0": 66,
+   "x1": 51,
+   "y1": 73.5,
+   "label": "street"
+  },
+  {
+   "id": "DIN",
+   "sec": 2,
+   "f": 0,
+   "kind": "room",
+   "x0": 30,
+   "y0": 57,
+   "x1": 45,
+   "y1": 66,
+   "label": "dining room"
+  },
+  {
+   "id": "KIT",
+   "sec": 2,
+   "f": 0,
+   "kind": "room",
+   "x0": 34.5,
+   "y0": 51,
+   "x1": 45,
+   "y1": 57,
+   "label": "kitchen"
+  },
+  {
+   "id": "DRY",
+   "sec": 2,
+   "f": 0,
+   "kind": "room",
+   "x0": 30,
+   "y0": 51,
+   "x1": 34.5,
+   "y1": 57,
+   "label": "dry store"
+  },
+  {
+   "id": "LA",
+   "sec": 3,
+   "f": 0,
+   "kind": "cov",
+   "x0": 39,
+   "y0": 48,
+   "x1": 48,
+   "y1": 51,
+   "label": "service lane"
+  },
+  {
+   "id": "CY",
+   "sec": 3,
+   "f": 0,
+   "kind": "open",
+   "x0": 48,
+   "y0": 39,
+   "x1": 57,
+   "y1": 51,
+   "label": "courtyard"
+  },
+  {
+   "id": "LC",
+   "sec": 3,
+   "f": 0,
+   "kind": "open",
+   "x0": 54,
+   "y0": 27,
+   "x1": 57,
+   "y1": 39,
+   "label": ""
+  },
+  {
+   "id": "SH",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 57,
+   "y0": 39,
+   "x1": 72,
+   "y1": 48,
+   "label": "storage hall"
+  },
+  {
+   "id": "LR",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 57,
+   "y0": 48,
+   "x1": 64.5,
+   "y1": 54,
+   "label": "loading room"
+  },
+  {
+   "id": "SO",
+   "sec": 4,
+   "f": 0,
+   "kind": "room",
+   "x0": 64.5,
+   "y0": 48,
+   "x1": 72,
+   "y1": 54,
+   "label": "office"
+  },
+  {
+   "id": "UA",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 57,
+   "y0": 39,
+   "x1": 64.5,
+   "y1": 46.5,
+   "label": "safe room"
+  },
+  {
+   "id": "UB",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 64.5,
+   "y0": 39,
+   "x1": 72,
+   "y1": 46.5,
+   "label": "stash room"
+  },
+  {
+   "id": "UC",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 57,
+   "y0": 46.5,
+   "x1": 64.5,
+   "y1": 54,
+   "label": "bunks"
+  },
+  {
+   "id": "UD",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 64.5,
+   "y0": 46.5,
+   "x1": 72,
+   "y1": 54,
+   "label": "kitchen"
+  },
+  {
+   "id": "SW1",
+   "sec": 5,
+   "f": 1,
+   "kind": "void",
+   "x0": 70.2,
+   "y0": 41.25,
+   "x1": 72,
+   "y1": 46.05,
+   "label": ""
+  },
+  {
+   "id": "ROOF",
+   "sec": 5,
+   "f": 1,
+   "kind": "open",
+   "x0": 57,
+   "y0": 27,
+   "x1": 72,
+   "y1": 39,
+   "label": "workshop roof"
+  },
+  {
+   "id": "PLANK",
+   "sec": 5,
+   "f": 1,
+   "kind": "open",
+   "x0": 54,
+   "y0": 31.5,
+   "x1": 57,
+   "y1": 33,
+   "label": ""
+  },
+  {
+   "id": "AU1",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 48,
+   "y0": 27,
+   "x1": 54,
+   "y1": 33,
+   "label": ""
+  },
+  {
+   "id": "AU2",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 42,
+   "y0": 27,
+   "x1": 48,
+   "y1": 33,
+   "label": ""
+  },
+  {
+   "id": "AU3",
+   "sec": 5,
+   "f": 1,
+   "kind": "room",
+   "x0": 42,
+   "y0": 33,
+   "x1": 54,
+   "y1": 39,
+   "label": "flat"
+  },
+  {
+   "id": "SW2",
+   "sec": 5,
+   "f": 1,
+   "kind": "void",
+   "x0": 48.6,
+   "y0": 33.6,
+   "x1": 53.4,
+   "y1": 35.4,
+   "label": ""
+  },
+  {
+   "id": "AG1",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 42,
+   "y0": 33,
+   "x1": 54,
+   "y1": 39,
+   "label": "front room"
+  },
+  {
+   "id": "AG2",
+   "sec": 5,
+   "f": 0,
+   "kind": "room",
+   "x0": 42,
+   "y0": 27,
+   "x1": 54,
+   "y1": 33,
+   "label": "back room"
+  },
+  {
+   "id": "WS",
+   "sec": 6,
+   "f": 0,
+   "kind": "room",
+   "x0": 57,
+   "y0": 27,
+   "x1": 72,
+   "y1": 39,
+   "label": "workshop"
+  },
+  {
+   "id": "BC",
+   "sec": 6,
+   "f": 0,
+   "kind": "open",
+   "x0": 48,
+   "y0": 21,
+   "x1": 72,
+   "y1": 27,
+   "label": "burn yard"
+  },
+  {
+   "id": "AL1",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 33,
+   "y0": 21,
+   "x1": 48,
+   "y1": 25.5,
+   "label": "alley"
+  },
+  {
+   "id": "AL2",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 28.5,
+   "y0": 21,
+   "x1": 33,
+   "y1": 37.5,
+   "label": ""
+  },
+  {
+   "id": "AL3",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 15,
+   "y0": 33,
+   "x1": 28.5,
+   "y1": 37.5,
+   "label": "alley"
+  },
+  {
+   "id": "AL4",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 10.5,
+   "y0": 22.5,
+   "x1": 15,
+   "y1": 37.5,
+   "label": ""
+  },
+  {
+   "id": "PK",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 7.5,
+   "y0": 12,
+   "x1": 19.5,
+   "y1": 22.5,
+   "label": "half-court"
+  },
+  {
+   "id": "AL5",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 19.5,
+   "y0": 12,
+   "x1": 33,
+   "y1": 16.5,
+   "label": "alley"
+  },
+  {
+   "id": "PSG",
+   "sec": 7,
+   "f": 0,
+   "kind": "open",
+   "x0": 28.5,
+   "y0": 16.5,
+   "x1": 33,
+   "y1": 21,
+   "label": ""
+  },
+  {
+   "id": "SG1",
+   "sec": 8,
+   "f": 0,
+   "kind": "room",
+   "x0": 33,
+   "y0": 13.5,
+   "x1": 42,
+   "y1": 21,
+   "label": "front room"
+  },
+  {
+   "id": "SG2",
+   "sec": 8,
+   "f": 0,
+   "kind": "room",
+   "x0": 42,
+   "y0": 13.5,
+   "x1": 48,
+   "y1": 21,
+   "label": "stash room"
+  },
+  {
+   "id": "SG3",
+   "sec": 8,
+   "f": 0,
+   "kind": "room",
+   "x0": 33,
+   "y0": 6,
+   "x1": 48,
+   "y1": 13.5,
+   "label": "back room"
+  },
+  {
+   "id": "SU1",
+   "sec": 8,
+   "f": 1,
+   "kind": "room",
+   "x0": 33,
+   "y0": 13.5,
+   "x1": 42,
+   "y1": 21,
+   "label": ""
+  },
+  {
+   "id": "SW4",
+   "sec": 8,
+   "f": 1,
+   "kind": "void",
+   "x0": 34.8,
+   "y0": 19.2,
+   "x1": 39.6,
+   "y1": 21,
+   "label": ""
+  },
+  {
+   "id": "SU2",
+   "sec": 8,
+   "f": 1,
+   "kind": "room",
+   "x0": 42,
+   "y0": 13.5,
+   "x1": 48,
+   "y1": 21,
+   "label": "safe room"
+  },
+  {
+   "id": "SU3",
+   "sec": 8,
+   "f": 1,
+   "kind": "room",
+   "x0": 33,
+   "y0": 6,
+   "x1": 48,
+   "y1": 13.5,
+   "label": "bunk room"
+  },
+  {
+   "id": "SW5",
+   "sec": 8,
+   "f": 1,
+   "kind": "void",
+   "x0": 34.2,
+   "y0": 7.5,
+   "x1": 36,
+   "y1": 12.3,
+   "label": ""
+  },
+  {
+   "id": "PS",
+   "sec": 9,
+   "f": 0,
+   "kind": "room",
+   "x0": 48,
+   "y0": 12,
+   "x1": 60,
+   "y1": 21,
+   "label": "print shop"
+  },
+  {
+   "id": "PP",
+   "sec": 9,
+   "f": 0,
+   "kind": "room",
+   "x0": 60,
+   "y0": 12,
+   "x1": 66,
+   "y1": 21,
+   "label": "paper store"
+  },
+  {
+   "id": "PF",
+   "sec": 9,
+   "f": 0,
+   "kind": "room",
+   "x0": 48,
+   "y0": 6,
+   "x1": 66,
+   "y1": 12,
+   "label": "shop front (shutters down)"
+  },
+  {
+   "id": "EX",
+   "sec": 9,
+   "f": 0,
+   "kind": "open",
+   "x0": 66,
+   "y0": 6,
+   "x1": 70.5,
+   "y1": 21,
+   "label": "side lane"
+  },
+  {
+   "id": "UL",
+   "sec": 9,
+   "f": 1,
+   "kind": "room",
+   "x0": 48,
+   "y0": 6,
+   "x1": 66,
+   "y1": 10.5,
+   "label": "upper hall"
+  },
+  {
+   "id": "SW3",
+   "sec": 9,
+   "f": 1,
+   "kind": "void",
+   "x0": 58.5,
+   "y0": 7,
+   "x1": 63.3,
+   "y1": 8.8,
+   "label": ""
+  },
+  {
+   "id": "DL",
+   "sec": 9,
+   "f": 1,
+   "kind": "room",
+   "x0": 48,
+   "y0": 10.5,
+   "x1": 60,
+   "y1": 21,
+   "label": "document lab"
+  },
+  {
+   "id": "PH",
+   "sec": 9,
+   "f": 1,
+   "kind": "room",
+   "x0": 60,
+   "y0": 10.5,
+   "x1": 66,
+   "y1": 15,
+   "label": "photos"
+  },
+  {
+   "id": "FO",
+   "sec": 9,
+   "f": 1,
+   "kind": "room",
+   "x0": 60,
+   "y0": 15,
+   "x1": 66,
+   "y1": 21,
+   "label": "his office"
+  },
+  {
+   "id": "EXL",
+   "sec": 9,
+   "f": 1,
+   "kind": "open",
+   "x0": 66,
+   "y0": 18,
+   "x1": 69,
+   "y1": 21,
+   "label": ""
+  }
+ ],
+ "openings": [
+  {
+   "f": 0,
+   "a": [
+    33,
+    66
+   ],
+   "b": [
+    42,
+    66
+   ],
+   "k": "front"
+  },
+  {
+   "f": 0,
+   "a": [
+    35.25,
+    57
+   ],
+   "b": [
+    37.5,
+    57
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    30,
+    59.25
+   ],
+   "b": [
+    30,
+    60.35
+   ],
+   "k": "door1"
+  },
+  {
+   "f": 0,
+   "a": [
+    34.5,
+    52.5
+   ],
+   "b": [
+    34.5,
+    54.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    42,
+    51
+   ],
+   "b": [
+    44.25,
+    51
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    57,
+    42.75
+   ],
+   "b": [
+    57,
+    45
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    58.5,
+    48
+   ],
+   "b": [
+    60.75,
+    48
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    64.5,
+    49.5
+   ],
+   "b": [
+    64.5,
+    51.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    49.5,
+    39
+   ],
+   "b": [
+    51.75,
+    39
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    43.5,
+    33
+   ],
+   "b": [
+    45.75,
+    33
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    57,
+    33
+   ],
+   "b": [
+    57,
+    35.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    64.5,
+    27
+   ],
+   "b": [
+    66.75,
+    27
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    33,
+    14
+   ],
+   "b": [
+    33,
+    16.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    42,
+    14.25
+   ],
+   "b": [
+    42,
+    16.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    48,
+    6.5
+   ],
+   "b": [
+    48,
+    8.75
+   ],
+   "k": "knock"
+  },
+  {
+   "f": 0,
+   "a": [
+    60,
+    15
+   ],
+   "b": [
+    60,
+    17.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 0,
+   "a": [
+    49.5,
+    12
+   ],
+   "b": [
+    51.75,
+    12
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    66,
+    46.5
+   ],
+   "b": [
+    68.25,
+    46.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    64.5,
+    49.5
+   ],
+   "b": [
+    64.5,
+    51.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    57.75,
+    46.5
+   ],
+   "b": [
+    60,
+    46.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    62,
+    39
+   ],
+   "b": [
+    64.25,
+    39
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    54,
+    31.5
+   ],
+   "b": [
+    54,
+    33
+   ],
+   "k": "knock"
+  },
+  {
+   "f": 1,
+   "a": [
+    48,
+    28.5
+   ],
+   "b": [
+    48,
+    30.75
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    43.5,
+    33
+   ],
+   "b": [
+    45.75,
+    33
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    42,
+    15
+   ],
+   "b": [
+    42,
+    17.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    44.25,
+    13.5
+   ],
+   "b": [
+    46.5,
+    13.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    50.25,
+    10.5
+   ],
+   "b": [
+    52.5,
+    10.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    60,
+    12
+   ],
+   "b": [
+    60,
+    14.25
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    60,
+    17.25
+   ],
+   "b": [
+    60,
+    19.5
+   ],
+   "k": "door"
+  },
+  {
+   "f": 1,
+   "a": [
+    66,
+    18.75
+   ],
+   "b": [
+    66,
+    19.85
+   ],
+   "k": "door1"
+  }
+ ],
+ "barriers": [
+  {
+   "f": 0,
+   "a": [
+    54,
+    39
+   ],
+   "b": [
+    57,
+    39
+   ],
+   "k": "gate",
+   "label": "chained gate (F8's wave opens it)"
+  },
+  {
+   "f": 0,
+   "a": [
+    54,
+    27
+   ],
+   "b": [
+    57,
+    27
+   ],
+   "k": "wall",
+   "label": ""
+  },
+  {
+   "f": 0,
+   "a": [
+    66,
+    21
+   ],
+   "b": [
+    72,
+    21
+   ],
+   "k": "wall",
+   "label": ""
+  },
+  {
+   "f": 0,
+   "a": [
+    48,
+    22.5
+   ],
+   "b": [
+    48,
+    27
+   ],
+   "k": "wall",
+   "label": ""
+  },
+  {
+   "f": 0,
+   "a": [
+    28.5,
+    21
+   ],
+   "b": [
+    33,
+    21
+   ],
+   "k": "gate",
+   "label": "chained gate (F14's wave opens it)"
+  },
+  {
+   "f": 0,
+   "a": [
+    66,
+    6
+   ],
+   "b": [
+    70.5,
+    6
+   ],
+   "k": "gate",
+   "label": "side gate to the next street (I10)"
+  }
+ ],
+ "stairs": [
+  {
+   "f": 0,
+   "r": [
+    70.2,
+    41.25,
+    72,
+    46.05
+   ],
+   "up": "N",
+   "rise": 3.5
+  },
+  {
+   "f": 0,
+   "r": [
+    48.6,
+    33.6,
+    53.4,
+    35.4
+   ],
+   "up": "W",
+   "rise": 3.5
+  },
+  {
+   "f": 0,
+   "r": [
+    58.5,
+    7,
+    63.3,
+    8.8
+   ],
+   "up": "E",
+   "rise": 3.5
+  },
+  {
+   "f": 0,
+   "r": [
+    66.6,
+    13.2,
+    68.4,
+    18
+   ],
+   "up": "S",
+   "rise": 3.5,
+   "label": "steel"
+  },
+  {
+   "f": 0,
+   "r": [
+    34.8,
+    19.2,
+    39.6,
+    21
+   ],
+   "up": "W",
+   "rise": 3.5
+  },
+  {
+   "f": 0,
+   "r": [
+    34.2,
+    7.5,
+    36,
+    12.3
+   ],
+   "up": "N",
+   "rise": 3.5,
+   "label": "wooden"
+  }
+ ],
+ "landings": [],
+ "cover": [
+  {
+   "f": 0,
+   "r": [
+    23,
+    66,
+    26,
+    68.75
+   ],
+   "tall": true,
+   "label": "stall"
+  },
+  {
+   "f": 0,
+   "r": [
+    24,
+    69.75,
+    28.5,
+    72.5
+   ],
+   "tall": true,
+   "label": "jeepney"
+  },
+  {
+   "f": 0,
+   "r": [
+    8.5,
+    71,
+    10.3,
+    72.6
+   ],
+   "tall": false,
+   "label": "tricycle"
+  },
+  {
+   "f": 0,
+   "r": [
+    45.5,
+    67,
+    50,
+    69.2
+   ],
+   "tall": true,
+   "label": "van"
+  },
+  {
+   "f": 0,
+   "r": [
+    31,
+    70.6,
+    32.6,
+    72
+   ],
+   "tall": false,
+   "label": "tables"
+  },
+  {
+   "f": 0,
+   "r": [
+    39,
+    57.75,
+    44.5,
+    58.75
+   ],
+   "tall": false,
+   "label": "counter"
+  },
+  {
+   "f": 0,
+   "r": [
+    32,
+    61,
+    33.5,
+    62.5
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    35.5,
+    61,
+    37,
+    62.5
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    39,
+    61,
+    40.5,
+    62.5
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    42.5,
+    61,
+    44,
+    62.5
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    32.5,
+    63.8,
+    34,
+    65
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    42.5,
+    63.8,
+    44,
+    65
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    37.4,
+    63.6,
+    38.6,
+    64.8
+   ],
+   "tall": true,
+   "label": "pillar"
+  },
+  {
+   "f": 0,
+   "r": [
+    37,
+    53,
+    41.5,
+    54.2
+   ],
+   "tall": false,
+   "label": "prep table"
+  },
+  {
+   "f": 0,
+   "r": [
+    43.6,
+    51.6,
+    44.9,
+    54.2
+   ],
+   "tall": false,
+   "label": "stoves"
+  },
+  {
+   "f": 0,
+   "r": [
+    30.6,
+    51.6,
+    31.8,
+    56.2
+   ],
+   "tall": true,
+   "label": "shelves"
+  },
+  {
+   "f": 0,
+   "r": [
+    45.4,
+    48.3,
+    46.7,
+    49.6
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    49.5,
+    43.5,
+    51.5,
+    45.5
+   ],
+   "tall": true,
+   "label": "tank stand"
+  },
+  {
+   "f": 0,
+   "r": [
+    53.4,
+    47.6,
+    55.4,
+    48.8
+   ],
+   "tall": false,
+   "label": "bench"
+  },
+  {
+   "f": 0,
+   "r": [
+    54.3,
+    29.6,
+    55.7,
+    31
+   ],
+   "tall": false,
+   "label": "crates"
+  },
+  {
+   "f": 0,
+   "r": [
+    59.5,
+    40.5,
+    62,
+    42.5
+   ],
+   "tall": true,
+   "label": "boxes"
+  },
+  {
+   "f": 0,
+   "r": [
+    63.5,
+    43.5,
+    66.5,
+    45.5
+   ],
+   "tall": true,
+   "label": "boxes"
+  },
+  {
+   "f": 0,
+   "r": [
+    60,
+    45.2,
+    61.8,
+    46.8
+   ],
+   "tall": false,
+   "label": "boxes"
+  },
+  {
+   "f": 0,
+   "r": [
+    66.8,
+    40,
+    68.6,
+    41.5
+   ],
+   "tall": false,
+   "label": "sacks"
+  },
+  {
+   "f": 0,
+   "r": [
+    60,
+    50.4,
+    62.5,
+    51.8
+   ],
+   "tall": false,
+   "label": "pallet"
+  },
+  {
+   "f": 0,
+   "r": [
+    67.5,
+    51.5,
+    70.5,
+    52.7
+   ],
+   "tall": false,
+   "label": "desk"
+  },
+  {
+   "f": 1,
+   "r": [
+    65.5,
+    40,
+    67.5,
+    41.5
+   ],
+   "tall": false,
+   "label": "boxes"
+  },
+  {
+   "f": 1,
+   "r": [
+    58,
+    49.5,
+    59.2,
+    53.4
+   ],
+   "tall": false,
+   "label": "bunks"
+  },
+  {
+   "f": 1,
+   "r": [
+    66.5,
+    29,
+    68.5,
+    31
+   ],
+   "tall": true,
+   "label": "water tanks"
+  },
+  {
+   "f": 1,
+   "r": [
+    61.5,
+    34.5,
+    63,
+    36
+   ],
+   "tall": true,
+   "label": "tank"
+  },
+  {
+   "f": 1,
+   "r": [
+    69.4,
+    35.4,
+    71.2,
+    37
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 1,
+   "r": [
+    43,
+    35.4,
+    45.4,
+    36.6
+   ],
+   "tall": false,
+   "label": "sofa"
+  },
+  {
+   "f": 0,
+   "r": [
+    59,
+    29.4,
+    63,
+    30.6
+   ],
+   "tall": false,
+   "label": "workbench"
+  },
+  {
+   "f": 0,
+   "r": [
+    66,
+    33.5,
+    70,
+    34.7
+   ],
+   "tall": false,
+   "label": "workbench"
+  },
+  {
+   "f": 0,
+   "r": [
+    68.5,
+    36,
+    70.5,
+    38
+   ],
+   "tall": true,
+   "label": "crates"
+  },
+  {
+   "f": 0,
+   "r": [
+    58.5,
+    22,
+    62,
+    24.6
+   ],
+   "tall": true,
+   "label": "multicab"
+  },
+  {
+   "f": 0,
+   "r": [
+    51,
+    23,
+    52.4,
+    24.4
+   ],
+   "tall": false,
+   "label": "burn drum"
+  },
+  {
+   "f": 0,
+   "r": [
+    64,
+    24.6,
+    65.2,
+    25.8
+   ],
+   "tall": false,
+   "label": "burn drum"
+  },
+  {
+   "f": 0,
+   "r": [
+    36,
+    21,
+    39.5,
+    22.8
+   ],
+   "tall": true,
+   "label": "owner-type jeep"
+  },
+  {
+   "f": 0,
+   "r": [
+    44,
+    24,
+    45.2,
+    25.2
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    29.4,
+    28,
+    31.2,
+    28.8
+   ],
+   "tall": false,
+   "label": "motorbike"
+  },
+  {
+   "f": 0,
+   "r": [
+    31.2,
+    32,
+    33,
+    34
+   ],
+   "tall": true,
+   "label": "tank stand"
+  },
+  {
+   "f": 0,
+   "r": [
+    20,
+    33.2,
+    22,
+    34
+   ],
+   "tall": false,
+   "label": "bench"
+  },
+  {
+   "f": 0,
+   "r": [
+    24,
+    35.4,
+    25.5,
+    37.5
+   ],
+   "tall": true,
+   "label": "crates"
+  },
+  {
+   "f": 0,
+   "r": [
+    16,
+    36,
+    17.2,
+    37.2
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    10.5,
+    24,
+    12.5,
+    26
+   ],
+   "tall": true,
+   "label": "tank stand"
+  },
+  {
+   "f": 0,
+   "r": [
+    13.2,
+    29,
+    14.8,
+    30.6
+   ],
+   "tall": false,
+   "label": "tricycle"
+  },
+  {
+   "f": 0,
+   "r": [
+    11.5,
+    12,
+    15.5,
+    14.5
+   ],
+   "tall": true,
+   "label": "sari-sari stall"
+  },
+  {
+   "f": 0,
+   "r": [
+    10,
+    17,
+    11.5,
+    18.5
+   ],
+   "tall": false,
+   "label": "tables"
+  },
+  {
+   "f": 0,
+   "r": [
+    16.4,
+    19.6,
+    18,
+    20.6
+   ],
+   "tall": false,
+   "label": "bench"
+  },
+  {
+   "f": 0,
+   "r": [
+    8,
+    20.2,
+    9.6,
+    21.2
+   ],
+   "tall": false,
+   "label": "motorbike"
+  },
+  {
+   "f": 0,
+   "r": [
+    22,
+    15.2,
+    23.2,
+    16.4
+   ],
+   "tall": false,
+   "label": "drums"
+  },
+  {
+   "f": 0,
+   "r": [
+    27,
+    14.4,
+    31,
+    16.4
+   ],
+   "tall": true,
+   "label": "multicab"
+  },
+  {
+   "f": 0,
+   "r": [
+    36,
+    16.6,
+    38.4,
+    17.6
+   ],
+   "tall": false,
+   "label": "table"
+  },
+  {
+   "f": 0,
+   "r": [
+    43,
+    18.8,
+    46.6,
+    20.2
+   ],
+   "tall": false,
+   "label": "rice sacks"
+  },
+  {
+   "f": 1,
+   "r": [
+    43.4,
+    15.4,
+    44.6,
+    19
+   ],
+   "tall": false,
+   "label": "mattresses"
+  },
+  {
+   "f": 1,
+   "r": [
+    39.6,
+    7.2,
+    46.6,
+    8.4
+   ],
+   "tall": false,
+   "label": "bunks"
+  },
+  {
+   "f": 0,
+   "r": [
+    50.5,
+    14.5,
+    53,
+    16.5
+   ],
+   "tall": true,
+   "label": "press"
+  },
+  {
+   "f": 0,
+   "r": [
+    55,
+    17,
+    57.5,
+    19
+   ],
+   "tall": true,
+   "label": "press"
+  },
+  {
+   "f": 0,
+   "r": [
+    55.5,
+    13.2,
+    57.5,
+    14.4
+   ],
+   "tall": false,
+   "label": "cutter"
+  },
+  {
+   "f": 0,
+   "r": [
+    61,
+    13,
+    63,
+    15
+   ],
+   "tall": true,
+   "label": "paper"
+  },
+  {
+   "f": 0,
+   "r": [
+    50.5,
+    6,
+    51.7,
+    10
+   ],
+   "tall": true,
+   "label": "shelves"
+  },
+  {
+   "f": 0,
+   "r": [
+    53.5,
+    7.2,
+    57,
+    8.2
+   ],
+   "tall": false,
+   "label": "counter"
+  },
+  {
+   "f": 1,
+   "r": [
+    50,
+    13,
+    53,
+    14.2
+   ],
+   "tall": false,
+   "label": "laminator"
+  },
+  {
+   "f": 1,
+   "r": [
+    54.5,
+    16,
+    57.5,
+    17.2
+   ],
+   "tall": false,
+   "label": "seal desk"
+  },
+  {
+   "f": 1,
+   "r": [
+    50,
+    18.5,
+    53,
+    19.7
+   ],
+   "tall": false,
+   "label": "light table"
+  },
+  {
+   "f": 1,
+   "r": [
+    57.6,
+    11.2,
+    59.6,
+    12.4
+   ],
+   "tall": true,
+   "label": "shelves"
+  },
+  {
+   "f": 1,
+   "r": [
+    62,
+    18.6,
+    64.4,
+    19.8
+   ],
+   "tall": false,
+   "label": "desk"
+  }
+ ],
+ "roofs": [
+  {
+   "f": 0,
+   "r": [
+    39,
+    48,
+    48,
+    51
+   ],
+   "label": ""
+  },
+  {
+   "f": 0,
+   "r": [
+    15,
+    33,
+    22.5,
+    37.5
+   ],
+   "label": ""
+  }
+ ],
+ "arms": "not set yet: Mission 1's .45 pistols, revolvers and shotguns assumed",
+ "mass_auto": [
+  [
+   25.5,
+   -1.5,
+   78,
+   4.5
+  ],
+  [
+   0,
+   4.5,
+   78,
+   6
+  ],
+  [
+   0,
+   6,
+   33,
+   12
+  ],
+  [
+   70.5,
+   6,
+   78,
+   13.5
+  ],
+  [
+   70.5,
+   13.5,
+   79.5,
+   21
+  ],
+  [
+   0,
+   12,
+   7.5,
+   22.5
+  ],
+  [
+   19.5,
+   16.5,
+   28.5,
+   22.5
+  ],
+  [
+   33,
+   25.5,
+   48,
+   27
+  ],
+  [
+   0,
+   22.5,
+   10.5,
+   30
+  ],
+  [
+   15,
+   22.5,
+   28.5,
+   33
+  ],
+  [
+   3,
+   30,
+   10.5,
+   37.5
+  ],
+  [
+   33,
+   27,
+   42,
+   37.5
+  ],
+  [
+   3,
+   37.5,
+   42,
+   39
+  ],
+  [
+   3,
+   39,
+   48,
+   45
+  ],
+  [
+   22.5,
+   45,
+   48,
+   48
+  ],
+  [
+   22.5,
+   48,
+   39,
+   51
+  ],
+  [
+   45,
+   51,
+   57,
+   54
+  ],
+  [
+   72,
+   21,
+   79.5,
+   54
+  ],
+  [
+   22.5,
+   51,
+   30,
+   58.5
+  ],
+  [
+   45,
+   54,
+   79.5,
+   61.5
+  ],
+  [
+   -6,
+   58.5,
+   30,
+   66
+  ],
+  [
+   45,
+   61.5,
+   58.5,
+   66
+  ],
+  [
+   -6,
+   66,
+   0,
+   73.5
+  ],
+  [
+   51,
+   66,
+   58.5,
+   73.5
+  ],
+  [
+   -6,
+   73.5,
+   58.5,
+   81
+  ]
+ ],
+ "fights": [
+  {
+   "id": "F1",
+   "sec": 2,
+   "room": "Dining room",
+   "kind": "waves",
+   "start": 4,
+   "wave": 7,
+   "max": 5,
+   "killTo": 11,
+   "trigger": "the recognition cutscene (it gets the customers and staff out)",
+   "f": 0,
+   "waves": [
+    {
+     "n": 4,
+     "from": "at the tables, once the room is cleared"
+    },
+    {
+     "n": 4,
+     "from": "in at the front, off the street"
+    },
+    {
+     "n": 3,
+     "from": "down the stair from the rooms above"
+    }
+   ],
+   "opens": "the kitchen door: the last of them kick it open and fall back through the kitchen",
+   "foes": [
+    [
+     33.6,
+     63.2
+    ],
+    [
+     41.2,
+     60.2
+    ],
+    [
+     44,
+     60
+    ],
+    [
+     41.6,
+     59.3,
+     "c"
+    ]
+   ],
+   "waveDoors": [
+    [
+     37.5,
+     66.4
+    ],
+    [
+     30,
+     59.8
+    ]
+   ],
+   "lab": [
+    37.6,
+    60.2
+   ],
+   "note": "A wave encounter: kill 11 and the kitchen door opens. It's barred from the kitchen side until then. A cutscene, not live civilians, shows him recognised and the customers and staff got out. Then four at the tables, four in at the front off the street, three down the stair from the family's rooms above. Never more than 5 up at once. Tables and the counter are low cover, the pillar is the only full cover."
+  },
+  {
+   "id": "F2",
+   "sec": 2,
+   "room": "Kitchen",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the kitchen door",
+   "f": 0,
+   "foes": [
+    [
+     39.5,
+     52.2,
+     "c"
+    ],
+    [
+     44,
+     55.6
+    ],
+    [
+     33.2,
+     54.4
+    ],
+    [
+     41.6,
+     55.4,
+     "c"
+    ]
+   ],
+   "lab": [
+    39.6,
+    56.2
+   ],
+   "note": "Close quarters round the prep table, one in the dry store. They're going out the back door, not holding."
+  },
+  {
+   "id": "F3",
+   "sec": 3,
+   "room": "Service lane + courtyard",
+   "start": 4,
+   "wave": 2,
+   "max": 4,
+   "trigger": "the kitchen's back door",
+   "f": 0,
+   "foes": [
+    [
+     46.2,
+     49.4,
+     "c"
+    ],
+    [
+     50.4,
+     47.4
+    ],
+    [
+     53.6,
+     41.6
+    ],
+    [
+     55.8,
+     46.4,
+     "c"
+    ]
+   ],
+   "waveDoors": [
+    [
+     57,
+     43.9
+    ]
+   ],
+   "lab": [
+    52.4,
+    50.2
+   ],
+   "note": "Out of the kitchen into a 3 m lane under a lean-to roof, then the courtyard where the lanes meet. The wave comes out of the storage side door, the way on."
+  },
+  {
+   "id": "F4",
+   "sec": 4,
+   "room": "Storage hall",
+   "start": 5,
+   "wave": 1,
+   "max": 5,
+   "trigger": "the side door: they're carrying boxes out",
+   "f": 0,
+   "foes": [
+    [
+     60.6,
+     44
+    ],
+    [
+     64.6,
+     41.4,
+     "c"
+    ],
+    [
+     68.2,
+     44.2
+    ],
+    [
+     69.2,
+     47,
+     "c"
+    ],
+    [
+     70.6,
+     40.2,
+     "",
+     1
+    ]
+   ],
+   "waveDoors": [
+    [
+     59.6,
+     48
+    ]
+   ],
+   "lab": [
+    64.6,
+    47.2
+   ],
+   "note": "Stacks of boxes break the hall into short lanes. One holds the head of the stair in the far corner; one comes in from the loading room."
+  },
+  {
+   "id": "F5",
+   "sec": 5,
+   "room": "Rooms over the hall",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the top of the stair",
+   "f": 1,
+   "foes": [
+    [
+     68.2,
+     49.8
+    ],
+    [
+     61.6,
+     51.6,
+     "c"
+    ],
+    [
+     62.6,
+     43.4
+    ],
+    [
+     58.6,
+     41.6,
+     "c"
+    ]
+   ],
+   "lab": [
+    64.5,
+    55.4
+   ],
+   "note": "Room to room, a loop round the floor: stash room, kitchen, bunks, the safe room. The safe room's door is the way out onto the roof."
+  },
+  {
+   "id": "F6",
+   "sec": 5,
+   "room": "The workshop roof",
+   "start": 3,
+   "wave": 1,
+   "max": 3,
+   "trigger": "the roof door",
+   "f": 1,
+   "foes": [
+    [
+     64.6,
+     31.8,
+     "c"
+    ],
+    [
+     69.8,
+     32.6
+    ],
+    [
+     59,
+     28.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     54,
+     32.25
+    ]
+   ],
+   "lab": [
+    64.5,
+    26.2
+   ],
+   "note": "In the open, among water tanks, with the lane below. The last one comes across the plank from the flats."
+  },
+  {
+   "id": "F7",
+   "sec": 5,
+   "room": "The flats",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the knocked-out window",
+   "f": 1,
+   "foes": [
+    [
+     45,
+     30.2
+    ],
+    [
+     44.4,
+     37.4,
+     "c"
+    ],
+    [
+     52.4,
+     29.6
+    ],
+    [
+     52.4,
+     37.4,
+     "",
+     0
+    ]
+   ],
+   "lab": [
+    45,
+    40.4
+   ],
+   "note": "Two small rooms and the front room upstairs, then one waiting at the foot of the stair, by the front door."
+  },
+  {
+   "id": "F8",
+   "sec": 3,
+   "room": "Courtyard, from the north",
+   "start": 3,
+   "wave": 3,
+   "max": 4,
+   "trigger": "the flats' front door",
+   "f": 0,
+   "foes": [
+    [
+     50.4,
+     47.4,
+     "c"
+    ],
+    [
+     55.2,
+     49.6
+    ],
+    [
+     46.4,
+     49.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     55.5,
+     39.4
+    ],
+    [
+     43.1,
+     50.6
+    ]
+   ],
+   "lab": [
+    52.4,
+    52.2
+   ],
+   "note": "Loop 1: the courtyard again, from the other side. They've moved across the block: men in the service lane where he came from, and a wave that comes down the chained lane (opening its gate, which is the way on) and out of the kitchen."
+  },
+  {
+   "id": "F9",
+   "sec": 6,
+   "room": "Lane + workshop",
+   "start": 5,
+   "wave": 0,
+   "max": 5,
+   "trigger": "through the lane gate",
+   "f": 0,
+   "foes": [
+    [
+     55.5,
+     29.4,
+     "c"
+    ],
+    [
+     60.6,
+     33.8
+    ],
+    [
+     64,
+     36.8,
+     "c"
+    ],
+    [
+     69.8,
+     31.2
+    ],
+    [
+     61.5,
+     37.4
+    ]
+   ],
+   "lab": [
+    64.5,
+    40.8
+   ],
+   "note": "One at the lane's dead end, four in the workshop among the benches. The plank you crossed is over your head."
+  },
+  {
+   "id": "F10",
+   "sec": 6,
+   "room": "Burn yard",
+   "start": 4,
+   "wave": 2,
+   "max": 4,
+   "trigger": "the workshop's back door",
+   "f": 0,
+   "foes": [
+    [
+     51.8,
+     25.4
+    ],
+    [
+     57.6,
+     23.2,
+     "c"
+    ],
+    [
+     66.4,
+     22.6
+    ],
+    [
+     70,
+     25.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     48.4,
+     21.75
+    ]
+   ],
+   "lab": [
+    60.2,
+    28.2
+   ],
+   "note": "They're feeding papers into drums as he comes out. A parked multicab splits the yard. The wave comes in through the side gate from the alleys, the way on."
+  },
+  {
+   "id": "F11",
+   "sec": 7,
+   "room": "The first alley",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the side gate",
+   "f": 0,
+   "foes": [
+    [
+     42.6,
+     23.6,
+     "c"
+    ],
+    [
+     34.4,
+     24.2
+    ],
+    [
+     30.2,
+     30.6
+    ],
+    [
+     32,
+     36.2,
+     "c"
+    ]
+   ],
+   "lab": [
+    40.5,
+    27.4
+   ],
+   "note": "Out of the gate, an owner-type jeep parked across half the alley, then the turn south. The chained gate north of the corner stays shut: that's where you'll come back to."
+  },
+  {
+   "id": "F12",
+   "sec": 7,
+   "room": "The long alley",
+   "start": 4,
+   "wave": 1,
+   "max": 4,
+   "trigger": "the turn west",
+   "f": 0,
+   "foes": [
+    [
+     26.2,
+     34,
+     "c"
+    ],
+    [
+     18.6,
+     35
+    ],
+    [
+     12.6,
+     31.4
+    ],
+    [
+     13.8,
+     27.4,
+     "c"
+    ]
+   ],
+   "waveDoors": [
+    [
+     22,
+     33
+    ]
+   ],
+   "lab": [
+    21.6,
+    39.6
+   ],
+   "note": "West under a lean-to, then the turn north. One comes out of a house door behind the bench."
+  },
+  {
+   "id": "F13",
+   "sec": 7,
+   "room": "The half-court",
+   "start": 5,
+   "wave": 2,
+   "max": 5,
+   "trigger": "the mouth of the half-court",
+   "f": 0,
+   "foes": [
+    [
+     9.4,
+     19.4,
+     "c"
+    ],
+    [
+     13.4,
+     17.6
+    ],
+    [
+     17.6,
+     21.6
+    ],
+    [
+     16.8,
+     15.6,
+     "c"
+    ],
+    [
+     9,
+     15.4
+    ]
+   ],
+   "waveDoors": [
+    [
+     19.5,
+     14.25
+    ],
+    [
+     7.5,
+     16.5
+    ]
+   ],
+   "lab": [
+    13.5,
+    24.6
+   ],
+   "note": "The widest place in the alleys, 12 × 10.5 m, a sari-sari stall in one corner. They make a stand here; the wave comes in from the alley east and a house on the west side."
+  },
+  {
+   "id": "F14",
+   "sec": 7,
+   "room": "Back at the corner, from the north",
+   "start": 3,
+   "wave": 3,
+   "max": 4,
+   "trigger": "the end of the alley east",
+   "f": 0,
+   "foes": [
+    [
+     25.4,
+     13.4,
+     "c"
+    ],
+    [
+     30.4,
+     13
+    ],
+    [
+     31.6,
+     18.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     30.75,
+     21.4
+    ]
+   ],
+   "lab": [
+    26,
+    19.2
+   ],
+   "note": "Loop 2: the alleys come round to the first alley's corner from the north. The safe house's side door is here; men are waiting at it, and the wave opens the chained gate from the first alley, so you're shooting back down the way you came in."
+  },
+  {
+   "id": "F15",
+   "sec": 8,
+   "room": "Safe house, ground",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the side door",
+   "f": 0,
+   "foes": [
+    [
+     37.6,
+     14.6
+    ],
+    [
+     40.6,
+     18,
+     "c"
+    ],
+    [
+     45.6,
+     15.4
+    ],
+    [
+     46.6,
+     17.6,
+     "c"
+    ]
+   ],
+   "lab": [
+    40.5,
+    23.6
+   ],
+   "note": "The front room and the stash room. The stair up is along the front room's south wall."
+  },
+  {
+   "id": "F16",
+   "sec": 8,
+   "room": "Safe house, upstairs",
+   "start": 5,
+   "wave": 0,
+   "max": 5,
+   "trigger": "the top of the stair",
+   "f": 1,
+   "foes": [
+    [
+     38.6,
+     16.4
+    ],
+    [
+     45,
+     20.2,
+     "c"
+    ],
+    [
+     46.6,
+     15.4
+    ],
+    [
+     38.4,
+     10.4
+    ],
+    [
+     44.6,
+     10,
+     "c"
+    ]
+   ],
+   "lab": [
+    40.5,
+    23.6
+   ],
+   "note": "Round the floor: the landing room, the safe room, the bunk room. Down the wooden back stair into the back room, knocked through into the print shop."
+  },
+  {
+   "id": "F17",
+   "sec": 9,
+   "room": "Print shop",
+   "start": 6,
+   "wave": 0,
+   "max": 5,
+   "trigger": "through the knocked-out wall",
+   "f": 0,
+   "foes": [
+    [
+     56,
+     10.2
+    ],
+    [
+     53.6,
+     13.4,
+     "c"
+    ],
+    [
+     58.6,
+     19.8
+    ],
+    [
+     62.6,
+     18.8
+    ],
+    [
+     49.6,
+     19.4,
+     "c"
+    ],
+    [
+     57.6,
+     15.6
+    ]
+   ],
+   "lab": [
+    54,
+    22.6
+   ],
+   "note": "In through the shop front, shutters down. Behind it the presses are half pulled apart, one in the paper store."
+  },
+  {
+   "id": "F18",
+   "sec": 9,
+   "room": "Document lab (+3.5)",
+   "start": 5,
+   "wave": 2,
+   "max": 5,
+   "trigger": "the top of the stair",
+   "f": 1,
+   "foes": [
+    [
+     49.8,
+     12.4,
+     "c"
+    ],
+    [
+     53.8,
+     18.2
+    ],
+    [
+     57.8,
+     15,
+     "c"
+    ],
+    [
+     58.6,
+     19.8
+    ],
+    [
+     55.6,
+     11.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     60,
+     13.1
+    ]
+   ],
+   "lab": [
+    54,
+    22.4
+   ],
+   "note": "The last fight, in the room the case is about. The wave comes out of the photo room. The office door stays barred until the lab is clear."
+  }
+ ],
+ "inspects": [
+  {
+   "id": "I1",
+   "f": 0,
+   "x": 7.6,
+   "y": 67.2,
+   "sec": 1,
+   "name": "The informant (Jun-Jun)",
+   "req": true,
+   "src": "scenario",
+   "what": "A teenage street informant confirms the passport maker is inside the restaurant right now. He's paid a few hundred pesos and jokes that he's too cheap.",
+   "sug": "",
+   "does": "Saves CP2 by the restaurant's front."
+  },
+  {
+   "id": "I2",
+   "f": 0,
+   "x": 61.6,
+   "y": 52.8,
+   "sec": 4,
+   "name": "Storage",
+   "req": false,
+   "src": "scenario",
+   "what": "Rooms used for storage: the smuggling side of the ring.",
+   "sug": "Cartons of cigarettes and boxed appliances with no duty stamps, and a ledger of deliveries by date.",
+   "does": ""
+  },
+  {
+   "id": "I3",
+   "f": 1,
+   "x": 58.4,
+   "y": 40.6,
+   "sec": 5,
+   "name": "Safe room",
+   "req": false,
+   "src": "scenario",
+   "what": "A temporary safe room.",
+   "sug": "Mattresses, a bag packed to run, a cash box left open.",
+   "does": ""
+  },
+  {
+   "id": "I4",
+   "f": 0,
+   "x": 53,
+   "y": 24.8,
+   "sec": 6,
+   "name": "The burn drums",
+   "req": false,
+   "src": "scenario",
+   "what": "Papers being burned to cover their tracks.",
+   "sug": "Half-burnt sheets of passport-page print and photo strips in the ash.",
+   "does": ""
+  },
+  {
+   "id": "I5",
+   "f": 0,
+   "x": 45,
+   "y": 17.6,
+   "sec": 8,
+   "name": "Stash room",
+   "req": false,
+   "src": "scenario",
+   "what": "A stash room.",
+   "sug": "Rice sacks with bundles of cash inside, and a carton of blank passport booklets.",
+   "does": ""
+  },
+  {
+   "id": "I6",
+   "f": 0,
+   "x": 56.6,
+   "y": 15.2,
+   "sec": 9,
+   "name": "A press pulled apart",
+   "req": false,
+   "src": "scenario",
+   "what": "Equipment pulled apart in a rush.",
+   "sug": "",
+   "does": ""
+  },
+  {
+   "id": "I7",
+   "f": 1,
+   "x": 55,
+   "y": 15.2,
+   "sec": 9,
+   "name": "The document lab",
+   "req": true,
+   "src": "scenario",
+   "what": "Printers, fake seals, blank papers, passport photos and incomplete identity documents, matching the ones from Mission 1: the passports were made here.",
+   "sug": "",
+   "does": "Saves CP14 and unbars his office."
+  },
+  {
+   "id": "I8",
+   "f": 1,
+   "x": 62.8,
+   "y": 12.4,
+   "sec": 9,
+   "name": "Passport photos",
+   "req": false,
+   "src": "scenario",
+   "what": "Passport photos.",
+   "sug": "A backdrop sheet and a camera on a stand, the photos cut and sorted into envelopes.",
+   "does": ""
+  },
+  {
+   "id": "I9",
+   "f": 1,
+   "x": 62.6,
+   "y": 17.2,
+   "sec": 9,
+   "name": "The passport maker",
+   "req": true,
+   "src": "scenario",
+   "what": "Cornered, he says he's only a forger and smuggler. Threatened with the trafficking case, he breaks: a big batch, no questions, through intermediaries. He gives the address he delivered to: an active construction site.",
+   "sug": "",
+   "does": "Saves CP15; the way out."
+  },
+  {
+   "id": "I10",
+   "f": 0,
+   "x": 68.2,
+   "y": 7,
+   "sec": 9,
+   "name": "The way out",
+   "req": true,
+   "src": "suggestion",
+   "what": "",
+   "sug": "Down the side stair and out through the side gate to the next street, leaving the block with the address.",
+   "does": "Ends the level (ALevelExitTrigger::Fire)."
+  }
+ ],
+ "checkpoints": [
+  {
+   "id": "CP1",
+   "f": 0,
+   "x": 3,
+   "y": 69.75,
+   "sec": 1,
+   "at": "level start"
+  },
+  {
+   "id": "CP2",
+   "f": 0,
+   "x": 36.4,
+   "y": 67.4,
+   "sec": 1,
+   "at": "the informant done: the restaurant's front"
+  },
+  {
+   "id": "CP3",
+   "f": 0,
+   "x": 41.6,
+   "y": 49.6,
+   "sec": 3,
+   "at": "the kitchen's back door"
+  },
+  {
+   "id": "CP4",
+   "f": 0,
+   "x": 58.4,
+   "y": 43.9,
+   "sec": 4,
+   "at": "inside the storage side door"
+  },
+  {
+   "id": "CP5",
+   "f": 1,
+   "x": 69.2,
+   "y": 42.2,
+   "sec": 5,
+   "at": "the top of the stair"
+  },
+  {
+   "id": "CP6",
+   "f": 1,
+   "x": 63.1,
+   "y": 37.6,
+   "sec": 5,
+   "at": "out on the roof"
+  },
+  {
+   "id": "CP7",
+   "f": 0,
+   "x": 50.4,
+   "y": 36.8,
+   "sec": 5,
+   "at": "the flats' front room, at the foot of the stair"
+  },
+  {
+   "id": "CP8",
+   "f": 0,
+   "x": 55.5,
+   "y": 37.2,
+   "sec": 3,
+   "at": "through the lane gate"
+  },
+  {
+   "id": "CP9",
+   "f": 0,
+   "x": 66.8,
+   "y": 25.6,
+   "sec": 6,
+   "at": "the workshop's back door"
+  },
+  {
+   "id": "CP10",
+   "f": 0,
+   "x": 46.4,
+   "y": 22.4,
+   "sec": 7,
+   "at": "through the side gate into the alleys"
+  },
+  {
+   "id": "CP11",
+   "f": 0,
+   "x": 13.6,
+   "y": 23.4,
+   "sec": 7,
+   "at": "the mouth of the half-court"
+  },
+  {
+   "id": "CP12",
+   "f": 0,
+   "x": 34.6,
+   "y": 15.2,
+   "sec": 8,
+   "at": "inside the safe house's side door"
+  },
+  {
+   "id": "CP13",
+   "f": 1,
+   "x": 64.6,
+   "y": 9.6,
+   "sec": 9,
+   "at": "the top of the print shop's stair"
+  },
+  {
+   "id": "CP14",
+   "f": 1,
+   "x": 57,
+   "y": 19.6,
+   "sec": 9,
+   "at": "the lab inspected (I7)"
+  },
+  {
+   "id": "CP15",
+   "f": 1,
+   "x": 64.4,
+   "y": 16.4,
+   "sec": 9,
+   "at": "after the passport maker: the way out"
+  }
+ ],
+ "pickups": [
+  {
+   "f": 0,
+   "x": 32.2,
+   "y": 52.6,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 70.4,
+   "y": 49.6,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 44,
+   "y": 28.8,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 18.4,
+   "y": 13.2,
+   "label": "first aid"
+  },
+  {
+   "f": 0,
+   "x": 64.6,
+   "y": 19.8,
+   "label": "first aid"
+  }
+ ],
+ "civilians": [],
+ "start": [
+  3,
+  69.75
+ ],
+ "sightlines_measured": {
+  "1": {
+   "len": 25,
+   "floor": 0,
+   "a": [
+    50.63,
+    72.38
+   ],
+   "b": [
+    26.17,
+    67.18
+   ]
+  },
+  "2": {
+   "len": 22.25,
+   "floor": 0,
+   "a": [
+    37.13,
+    51.38
+   ],
+   "b": [
+    34.03,
+    73.41
+   ]
+  },
+  "3": {
+   "len": 19.25,
+   "floor": 0,
+   "a": [
+    56.63,
+    44.63
+   ],
+   "b": [
+    42.78,
+    31.25
+   ]
+  },
+  "4": {
+   "len": 20.25,
+   "floor": 0,
+   "a": [
+    59.63,
+    45.38
+   ],
+   "b": [
+    43.24,
+    33.47
+   ]
+  },
+  "5": {
+   "len": 23.25,
+   "floor": 1,
+   "a": [
+    71.63,
+    33.38
+   ],
+   "b": [
+    48.43,
+    31.75
+   ]
+  },
+  "6": {
+   "len": 23.5,
+   "floor": 0,
+   "a": [
+    48.38,
+    25.13
+   ],
+   "b": [
+    71.88,
+    25.13
+   ]
+  },
+  "7": {
+   "len": 24.5,
+   "floor": 0,
+   "a": [
+    31.88,
+    13.13
+   ],
+   "b": [
+    7.61,
+    16.53
+   ]
+  },
+  "8": {
+   "len": 17.25,
+   "floor": 0,
+   "a": [
+    33.38,
+    10.13
+   ],
+   "b": [
+    50.36,
+    7.13
+   ]
+  },
+  "9": {
+   "len": 18,
+   "floor": 1,
+   "a": [
+    65.63,
+    19.88
+   ],
+   "b": [
+    48.51,
+    14.31
+   ]
+  }
+ }
+}

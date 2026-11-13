@@ -114,6 +114,7 @@
   - [Kit list for the slum arena (`Arena_Slums_Layout.html`)](#kit-list-for-the-slum-arena-arena_slums_layouthtml)
   - [`Lvl_BackAlleys_Arena`: first build (2026-11-02)](#lvl_backalleys_arena-first-build-2026-11-02)
 - [Arena mode: 3 maps × 5 levels (planned 2026-11-08)](#arena-mode-3-maps--5-levels-planned-2026-11-08)
+- [Test starts](#test-starts-2026-11-11-built-not-yet-used)
 - [Build tooling](#build-tooling)
 - [Engineering gotchas](#engineering-gotchas)
   - [Full list (from ProjectPlan.md, 2026-10-24)](#full-list-from-projectplanmd-2026-10-24)
@@ -348,11 +349,22 @@ behind.
 
 1. Deprojects screen centre via
    `APlayerController::DeprojectScreenPositionToWorld`.
-2. Traces that ray to `AWeaponBase::GetMaxRange()` to find the aim point.
-3. Clamps the converge distance to **`MinConvergenceDistance`** (200). Against
-   a near wall the muzzle can sit *past* the hit point, and converging on it
-   would aim the shot backwards. The point is taken along the ray rather than
-   from `ImpactPoint` precisely so it can be clamped.
+2. Traces that ray to `AWeaponBase::GetMaxRange()` to find the aim point,
+   **starting level with the character** (2026-11-12), so nothing between the
+   camera and the character counts, the same as the pose's aim point.
+3. Clamps the converge distance to at least **`MinConvergenceDistance`** (50 cm)
+   **past the muzzle**, along the ray. Against a near wall the muzzle can sit
+   *past* the hit point, and converging on it would aim the shot backwards. The
+   point is taken along the ray rather than from `ImpactPoint` precisely so it
+   can be clamped.
+   - **Changed 2026-11-12.** The user, in a doorway with the camera past the
+     open leaf: "from this position, the bullet goes to the wood behind me". The
+     trace started at the camera and hit the leaf a few cm in front of the
+     lens. The leaf ignores the camera channel, so the boom swings through it.
+     The clamp (200 cm from the camera) didn't help: when aiming, the camera is
+     140 cm back and 65 cm to the side, so 200 cm out is still beside the
+     character. At hip it's 300 cm back, so the clamp never came into play.
+   - Built 2026-11-12 (applied by Claude, "apply and build"). Not tested yet.
 4. Checks the muzzle is where it looks — see below.
 5. Fires `Fire(MuzzleLocation, (AimPoint - MuzzleLocation).Normalized)`.
 
@@ -1175,6 +1187,115 @@ The Sixth Deck trace's per-shot costs, removed in `AWeaponBase`.
     rate-limited;
   - impact effects (smoke plus a decal per hit, lights on `NS_ImpactMetal`
     and `NS_ImpactElectronics`) are the rest of the fight translucency.
+- **2026-11-11:** the flame itself is now our own mesh flash on most guns (next
+  section). On those guns the pack's flame emitters, `Pop` included, are switched
+  off from code; its smoke, streaks, sparks and embers stay.
+
+### Muzzle flash mesh (2026-11-11, tested)
+**Why:** the user: "the muzzle flash looks flat, like a billboard ... They looks
+worse especially in Focus slo mo", and "I need it so that It doesnt look awful in
+slo mo". Each pack flash was one barrel-aligned card holding a single random frame
+for 0.05–0.08 s; at Focus's 0.3 it hung as a still card for 12–16 frames.
+
+**The flash:** `UMuzzleFlashComponent` (a `UStaticMeshComponent`,
+`Weapons/MuzzleFlashComponent.h/.cpp`), two per gun: `FlashComponent` on the
+weapon mesh and `OffhandFlashComponent` on the off-hand mesh.
+- **Mesh:** 3 side cards crossed through the barrel axis (60° apart), plus one
+  front card 0.06 of the length out. 8 triangles, 100 cm long and wide, scaled per
+  shot. Each card fades as it turns edge-on (`FacingMin`/`FacingMax` on
+  |camera · normal|), so every view shows the cards that suit it.
+- **Per shot (`Fire`):**
+  - its own length and width, picked in the gun's `FlashSettings` ranges;
+  - a random roll about the barrel;
+  - custom primitive data: 0 `Age`, 1 `Seed`, 2 `Petals` (3–6 star spikes),
+    3 `Brightness` (×0.85–1.15).
+- **Every frame while showing:**
+  - it grows from 45% length / 60% width to full over the first 30% of its life,
+    eased out;
+  - it hands the material `Age` (0 → 1 over `Duration`), and the material does
+    the rest: the noise flows out along the flame, a threshold rising with age burns
+    it away from the thin edges inward, and the colour cools from Hot through Mid to
+    Cool;
+  - the frame it fires on is skipped (`GFrameCounter`), so the bang always gets a
+    whole frame.
+- **Slow motion:** `DeltaTime` is game time, so in Focus the flash plays slowed
+  but keeps changing every frame. `SlowMotionMaxStretch` (0 = off) caps how much
+  longer it can stay on screen.
+- **Cheap when idle:** it ticks only while showing; no collision, shadow, decals
+  or reflection captures. Absolute scale, so sizes are cm whatever the gun's own
+  scale.
+- **Attached at `BeginPlay`** to `MuzzleSocketName` (a per-Blueprint default,
+  `SnapToTargetNotIncludingScale`), the off-hand one only for `bDualWield` guns.
+
+**On `AWeaponBase`:**
+- `FlashMesh`: set means the flash mesh is the flame; empty means the pack flash
+  plays whole, as before.
+- `FlashSettings` (`FMuzzleFlashSettings`): `Length` and `Width` (cm ranges),
+  `Duration` (0.06 s), `Brightness`, `SlowMotionMaxStretch`.
+- `FlashEmitterNames` (`Flash Core`, `FlashCore Smoke`, `FlashCore Diagonals`,
+  `Pop`, `Core`): the pack's flame emitters, switched off while `FlashMesh` is
+  set. `PlayMuzzleFlash` sets every emitter on every shot, since pooled systems are
+  shared between guns: replaced ones off, smoke only when a puff is due, the rest on.
+- The muzzle light now fades with the square of its time left, from the
+  Blueprint's intensity (`MuzzleLightIntensity`, read at `BeginPlay`).
+
+**Material** (`M_MuzzleFlash`, additive, unlit, two-sided, about 283
+instructions): one Custom HLSL node fed by UV, vertex colour (R: front card; G:
+which side card), the camera vector, the vertex normal, the CPD scalars and the
+parameters below. The noise is `T_Explosion_Macro_01` sampled at a fixed mip (no
+seam at the front card's angle wrap). It's multiplied by a `DepthFade` (6 cm), so
+a shot point-blank into a wall shows no hard line.
+- **Looks** (`Spikes`, 0–1):
+  - **0, round base:** the front card is a ragged disc (radius 0.42 of the width),
+    and the side cards get a ball on the muzzle under the flame tongue;
+  - **1, star:** the front card has 3–6 spikes and the side cards plain pointed
+    petals.
+  - The user: "I would prefer a circular looking base than the spiky leaf", then
+    "the rifles can retain the spiky star actually".
+- **Instances:**
+  - `MI_MuzzleFlash` (`Spikes` 0) on `SM_MuzzleFlash`;
+  - `MI_MuzzleFlash_Star` (`Spikes` 1) on `SM_MuzzleFlash_Star`, the same cards.
+  A gun picks its look with its `FlashMesh`, so pistols and rifles tune apart.
+- **Parameters to tune:** `Intensity` 1, `Softness` 0.12 (the burning edge),
+  `Flow` 0.6, `FacingMin` 0.12, `FacingMax` 0.55, `DepthFade` 6, `Spikes`, and the
+  colours `HotColour` (40, 28, 14), `MidColour` (30, 8, 1.5), `CoolColour`
+  (6, 0.8, 0.1), linear HDR (the pack's flash peaks at about 40 red).
+
+**Per gun:**
+
+| Gun | Look | Length (cm) | Width (cm) | Duration |
+|---|---|---|---|---|
+| .45, 9mm, machine pistol (singles, duals, enemy .45) | round | 18–26 | 11–15 | 0.06 |
+| Revolver | round | 26–34 | 16–21 | 0.06 |
+| M4 (`BP_AssaultRifle`) | star | 34–46 | 20–26 | 0.06 |
+| AK (`BP_AssaultCarbine`) | star | 38–50 | 24–30 | 0.06 |
+| Pump and auto shotgun | round | 45–60 | 32–40 | 0.07 |
+
+- **Kept from the pack:** pistol `Streaks`; the shotguns' `Streaks`,
+  `StreaksAltColor`, `sparks`, `Embers`, `EmbersAltColor`; every gun's smoke
+  (rate-limited as before).
+- **Not done:**
+  - **Sniper: stays on its pack flash** (user, 2026-11-11: "leave the sniper"). For
+    reference, should it change: the pack flash has side blasts for a muzzle brake
+    (`Flash Left`, `Flash Right`), and its flame emitters are `Flash Core`,
+    `FlashCoreSmoke` (no space), `Pop`, so it would need its own
+    `FlashEmitterNames`.
+  - **Grenade launcher:** `P_Grenade_MuzzleFlash_01`, unchanged.
+
+**The tool** (`Tools/FX/MuzzleFlash/`; `design.py` holds the look, the rest is
+built from it):
+- `bl_mesh.py`: the cards, in Blender, to `SM_MuzzleFlash.fbx`.
+- `make_ue.py`: headless (`RunUnreal.ps1 ... -Render`). Builds `M_MuzzleFlash`
+  (its HLSL formatted from `design.py`), both instances and both meshes. **Close the
+  editor first** if it has them loaded.
+- `set_guns_ue.py`: headless, editor closed; puts the rifles on the star mesh.
+- `verify_ue.py`: read-only. Shader statistics, meshes, instances, `Spikes`, and
+  two guns' settings.
+- `preview.py`: a numpy ray-trace of the same cards and HLSL (Blender's bundled
+  Python). `preview.py compare` draws the star above the round base.
+
+**Tested** (user, 2026-11-11, in Play): "tested, all good". No tuning needed
+so far; the instances stay at the defaults above.
 
 ### Seventh Deck trace (2026-11-01, `Lvl_Sandbox`, after step-4 work)
 - **The trace:** `20261101_150419.utrace`, 250 s of play. It's compared to
@@ -1595,6 +1716,49 @@ Deck build measures it all together.
     - **Fights are still bound by both the GPU and the game thread** (game
       frame ≈21.7 ms, `UWorld_Tick` ≈14.7). The weapon meshes still tick
       ≈72 times per frame (1.06 ms): the next target.
+- **Lit again, per vertex (2026-11-12, user: "I think impact needs to be lit", then
+  "Per-vertex lit"; bridge, saved):**
+  - The same 16 materials: `MSM_DefaultLit` and
+    `TLM_VolumetricPerVertexNonDirectional` (they were
+    `TLM_VolumetricNonDirectional` when lit before 2026-11-01). Lighting comes
+    from the volume at each vertex, so the pixel cost stays near unlit; the
+    volume is 32 cells across, so per pixel would add little detail on small
+    sprites.
+  - `Unlit Brightness` 0 on all 16 (the flecks were 0.25, the rest 1), so the
+    emissive term is gone and the colour goes through the lighting.
+    `M_MeshEmitWater_MASTER` keeps its own emissive. The parameter stays in the
+    graphs, so unlit is two settings away.
+  - `r.TranslucencyLightingVolume=0` removed from `[EffectsQuality@2]`; Dim 32 and
+    Blur 0 stay. CC's eyelashes get the volume back too.
+  - Not changed: `M_ImpactPaper` and `M_ImpactPosterBits` (unlit, shading baked
+    into their frames).
+  - **Seen in Play (user):** "keep the impact lit for now"; "smoke is ok actually,
+    blood is bright even on shade" (an orange glowing splash on an enemy in a dark room).
+  - **Blood splash glow off (2026-11-12, user: "go ahead with option 1"; bridge, saved
+    14:08):** `NS_ImpactBlood` is `M_Fleks4` (one of the 16) plus
+    `M_ImpactSplashSubUV`, which is lit and masked and was never touched. Its colour is
+    all particle colour: `T_BloodVarious` is a white 8×8 mask sheet. Base Color =
+    particle colour × mask, and **Emissive was the particle colour straight**, so every
+    visible blood pixel glowed whatever the light, and bloom made it orange. Now Emissive
+    = the Base Color input × a new `Unlit Brightness` (group Unlit, default **0**), the
+    same knob as the other 16. Only `NS_ImpactBlood` uses the material. No compile
+    errors. If the lit splash is orange, not red, the particle colour in `NS_ImpactBlood`
+    is next.
+  - **Then 0.15 (user: "the look black", then "go ahead"; bridge, saved 14:27).** Lit with
+    no glow, the splash read as black in a dim room. 0.15 of the old glow gives a dark red
+    floor, with the lighting on top.
+  - **Then 0.35 (user: "still too dark", then "go set it"; bridge).** The lit part alone
+    barely shows: the splash's colour is all particle colour, likely a dark red. Auto-exposure
+    lifts any glow in dark rooms, which is why 1.0 shone orange. In sun the glow fades under
+    the lighting. If the knob can't get it right, the other route is a lighter blood colour
+    in `NS_ImpactBlood` (`BloodChunks1` → Initialize Particle / Color), so the lighting does
+    more.
+  - **Estimate (Deck, not traced):** about 0.2 ms a frame: the volume 0.15 ms
+    every frame (trace 15) plus a little shading. Full per-pixel lit would be
+    about 0.3 ms, 0.5 ms in the heaviest fights, scaled from the 2026-11-01
+    lit/unlit traces (shading 0.16 ms average, 0.25 busiest) to trace 26's
+    unlit translucency (0.40 ms average, 0.81 in its busiest 5 s). Fights' GPU
+    `Scene` in trace 26: 15.4 ms average, p90 18.8.
 - **`Lvl_Linear` trace (2026-11-02, `20261102_000532`, 278 s, exports
   `t17/`; build 00:03 with the user's fresh `Lvl_Linear` light bake):**
   - **Seconds ≥58 fps: 91%**, under 50: 1%.
@@ -1623,7 +1787,7 @@ Deck build measures it all together.
     `DirectionalLight_0.LightComponent0` (bridge; `Lvl_Linear.umap` saved
     09:48:11, and the flag is now stored there). Expected about −1.3 ms of
     shadow projection. Not yet traced.
-  - **Lighting volume off:** `r.TranslucencyLightingVolume=0` in
+  - **Lighting volume off** (back on 2026-11-12, impacts lit per vertex): `r.TranslucencyLightingVolume=0` in
     `[EffectsQuality@2]`. Only CC's eyelashes and eye water still read it
     since the impacts went unlit; the lashes lose volume lighting. About
     −0.15 ms.
@@ -2163,6 +2327,23 @@ enemies"; "apply and run".
 - **Later, for big levels:** build each arena's reserve on approach (an
   optional distance on the director, no new trigger), spread over frames,
   and free it after the arena.
+- **No draw on waking (2026-11-12).** User: "When you activate the enemy via
+  a encounter trigger, if they are nearby, you can hear them equip their
+  weapons, giving away their presence."
+  - **Why:** during `FinishSpawning`, `UWeaponHolderComponent::BeginPlay`
+    equips the starting weapon, and `PlayEquipAnimation` starts the equip
+    montage. `Sleep` turns the ticks off partway through it, and `Wake`
+    turns them back on, so the montage finishes and `AnimNotify_WeaponSound`
+    plays the `EquipSound` where the enemy appears. The director's reserves,
+    the triggers' reserves and enemies built fresh all drew with the sound.
+  - **Fix:** `AEnemyBase::ShouldSkipEquipAnimation()` returns true, so an
+    enemy comes into play gun in hand. Enemies only ever equip their starting
+    weapon: weapon switching is the player's, and pickups go to the player.
+  - **Side effect:** firing waits on `IsEquipAnimating()`, so a woken enemy
+    can shoot once its `ReactionTimeMin/Max` is up, with no draw first. Raise
+    the reaction time if it's too quick.
+  - Applied by the slum-level session ("Apply it yourself"); built 2026-11-12
+    01:00. Not tested yet.
 
 ### CC clothing LOD fix (2026-10-27)
 User: clothes "busted" on far enemies, alive or dead, only on the Deck.
@@ -5703,8 +5884,9 @@ the model with a BP_Player_Cutscene?" So:
   the `camera_component` property.
 
 
-Story beats in story levels (lore *Inspects*). `Lvl_01_Slum` has 8 (layout I1-I8). Two are
-needed: the patrol car (I3) and the documents (I8).
+Story beats in story levels (lore *Inspects*). `Lvl_01_Slum` has 9 (layout I1-I9). Three are
+needed: the patrol car (I3), the documents (I8, which arms the way back) and the yard gate
+(I9, the end; added 2026-11-12).
 
 **The user's decisions (2026-11-08):**
 - **Voice and subtitles.** Voice always plays; subtitles follow a player setting. That
@@ -5735,7 +5917,7 @@ needed: the patrol car (I3) and the documents (I8).
   (a transform track on the Navarro binding). Pressing again skips. A close-up (the documents) is a shot in its sequence. This replaces the
   camera-blend look first proposed. Needs the `LevelSequence` and `MovieScene` modules.
 - **Events, as the camera returns:** `AEncounterTrigger::Fire()` (I3 sets off F1),
-  `AEncounterEvent::StartEvent()`, `ALevelExitTrigger::Fire()` (I8), and a Blueprint
+  `AEncounterEvent::StartEvent()`, `ALevelExitTrigger::Fire()` (I9; I8 until 2026-11-12), and a Blueprint
   `OnInspected`. A checkpoint hook (I3 saves CP2) waits for checkpoints, which must record
   the inspects done so a death doesn't replay one.
 - **Code shape:** `IInteractable` (UINTERFACE); `UInteractComponent` on the player,
@@ -6874,7 +7056,17 @@ Blueprints**, so the BP values are the live ones.
 | Alive | — | Damage × bone multiplier. Health 0 → `Die`. |
 | **Dying** | health hits 0 | `Die`: AI detached (`AEnemyBase` override), movement off, capsule `NoCollision`, directional death animation. Hits add to `PostDeathDamage`; ≥ `RagdollDamageThreshold` (30) → riddled. |
 | **Riddled** | dying + threshold | The upper body (`RiddledRootBone` `spine_01` and below it in the hierarchy) simulates on `UPhysicalAnimationComponent` motors (world-space, strength `RiddledHoldStrength` 800, damping ×0.1). Legs stay animated; the death montage slows to `RiddledAnimRate` 0.2 and pauses short of its end. Each hit `KickBone`s the struck bone (×`RiddledKickScale` 1.5) and adds to `RiddledDamage`. After `RiddledDuration` (1 s, world time) → ragdoll launched with all of `RiddledDamage`. **Break:** damage within `OverkillWindow` (0.1 s; the triggering bullet opens the first window) ≥ `RiddledBreakDamage` (30) → ragdoll at once (a rifle round, a headshot, a blast; pistol 25 can't). |
-| **Ragdoll** | riddled timeout; death anim ends; overkill; the dying body adrift | Motors cleared, full `SetSimulatePhysics`. Every hit `LaunchBody`s it. |
+| **Ragdoll** | riddled timeout; death anim ends; overkill; post-death soak; the dying body adrift | Motors cleared, full `SetSimulatePhysics`. Every hit `LaunchBody`s it. |
+
+**Post-death soak** (2026-11-13; user: "count the accumulated damage since the dying bullet, if the
+body keeps taking hits and reaches 100% damage, then straight into ragdoll regardless of what state
+he is currently in"). It sits on top of the overkill, the break and the timeout.
+- Every hit on a dead body that isn't a ragdoll yet adds to `PostDeathDamage`, before the state
+  routing. The killing bullet doesn't count: `Die` resets it to 0.
+- At `PostDeathDamage` ≥ `PostDeathRagdollFraction` (Health|Death, 1.0) × `MaxHealth`, the body goes
+  to ragdoll from the death animation or the riddled stage alike. It launches with all of
+  `PostDeathDamage`, which `MaxLaunchSpeedPerHit` caps.
+- At 100 health, that's four pistol hits after the kill.
 
 **Dying bodies adrift** (2026-10-31; user: "during that [riddled] state,
 enemies goes thru walls, and also on a slope or if he gets thrown by the
@@ -6908,6 +7100,22 @@ death anim off a platform, enemy would float in the air"):
   slopes, but needs asset changes, and a falling upper body could still
   clip.
 - **Tested** by the user 2026-10-31 ("tested, works").
+- **Caught earlier, and CCD (2026-11-12).** User, with a screenshot of a body folded round
+  a post: "that image thing happens to walls too, I think is the pint where hes in riddle
+  then goes to ragdoll that does this".
+  - **Why:** a line between two joints only crosses a wall once one end is already past
+    it, so the ragdoll started with a leg through the post or wall. Also, the riddled
+    collapse launches the body at up to 900 cm/s plus lift, about 15 cm a frame, which is
+    thicker than a post, and CCD was off.
+  - **Into a wall is now `IsWallNear`:** a multi sphere sweep (`SweepMultiByObjectType`,
+    radius **`DyingWallMargin`** 12 cm, *Health|Death*) along the same four lines. It
+    fires a limb's width before the line reaches the wall. The filter is the same as
+    `IsWorldBetween`, plus `ImpactNormal.Z < 0.7`, so a floor never counts: a sweep that
+    starts inside the floor under a lying body reports "up" as its normal. The
+    off-the-ground check still uses the line traces.
+  - **`UseRagdollCollision` now calls `SetAllUseCCD(true)`.** It runs only at the riddled
+    start and the ragdoll start, so only dying bodies get CCD. They sleep once settled.
+  - Applied by Claude ("apply and build"); built 2026-11-12 15:25. Not tested yet.
 
 - **Death animation:** `DeathAnimations` (`FDirectionalAnimSet`: Front / Back /
   Left / Right arrays, random per side, Front as fallback).
@@ -8330,6 +8538,150 @@ lowered, the clip's finger stays. Enemies share `ABP_Player`, so theirs press to
   (`MDT_Mannequin`, the duals' existing table) of `TwoWayBlend_3` (`SequenceEvaluator_3` Rest,
   `SequenceEvaluator_4` Press, alpha `TriggerPressAlphaLeft`). Its own evaluators: a pose output feeds one
   node only, and the bridge can't make Use Cached Pose. Not seen in Play.
+- **Tracking the trigger (2026-11-12, user: "can we do something to make the trigger finger track
+  the trigger?", then "go ahead with the trigger finger").** The fixed pair misses on every gun but
+  the old AR4: each puts its trigger elsewhere in the hand, and the M4 at 1.33 is out of the L's
+  reach. Every gun mesh has a trigger bone: `b_gun_trigger` (AR4, AK), `trigger` (1911, Uzi, Benelli),
+  `Trigger` (Beretta, revolver). The Mossberg is `/Game/Mossberg/Mossberg-500`, not checked yet. Plan:
+  1. **`FAnimNode_TriggerFinger`** (+ editor `UAnimGraphNode_TriggerFinger`, "Trigger Finger").
+     **Built 2026-11-12 15:50** (applied by Claude, "apply and build"). Component space; `Hand`,
+     `Knuckle`/`Middle`/`Last` (index_01/02/03), `Target` (a pin, in the hand bone's space).
+     - It keeps the incoming shape (the Rest layer's L). The pad is `PadLength` (2 cm) past the
+       last joint along its bone, with the X axis sign checked against the middle→last direction.
+     - **Curl:** the bend axis comes from the incoming curl, or for a straight finger (<~3°) the
+       finger × the direction to the target. It bisects (24 steps) on the middle joint's curl θ,
+       with the last at `LastJointShare` (0.15) × θ and θ in [0, `MaxCurl` 110°], until the pad's
+       reach from the knuckle equals the target's distance.
+     - **Swing:** then a minimal swing at the knuckle (`FindBetweenVectors`) lands the pad on it,
+       capped at `MaxSwing` 40°.
+  2. **Anim instance + weapon. Built 2026-11-12 16:02** (applied by Claude, "apply and build").
+     - **No press any more** (user: "I dont really need a press anim, I just want the finger on the
+       trigger, the kick will sell the trigger pull already"). The press timing (`TriggerPressHold`,
+       `TriggerPressSpeed`) is deleted. `TriggerPressAlpha`/`Left` stay at 0 and `TriggerPressPose`
+       is no longer set, all three kept only because the AnimGraph's press blend still reads them.
+       Step 4 removes that blend, then those, `FTriggerFingerPoses::Press` and the Press clips.
+     - **Weapon:** `AWeaponBase::TriggerFingerSocketName` ("TriggerFinger") and
+       `GetTriggerFingerLocation(bOffhand, OutLocation)`, false without the socket.
+     - **Anim instance:** at the end of `UpdateTriggerFinger`, the socket goes into
+       `hand_r`'s / `hand_l`'s space (`GetSocketTransform(...).InverseTransformPosition`) →
+       `TriggerTarget` / `TriggerTargetLeft`. The gun is rigid on the hand, so last frame's pose is
+       fine. `TriggerTrackAlpha` = `TriggerFingerAlpha` while the socket exists, else 0;
+       `TriggerTrackAlphaLeft` likewise for duals. The layer now needs only a Rest pose
+       (`bHasPoses` = Rest).
+  3. **`TriggerFinger` sockets on the 8 gun meshes. Placed 2026-11-12 16:20** (user: "go ahead,
+     place them after the renders"; bridge `SkeletalMeshTools` add/set/read back, saved). Each is on
+     its trigger bone; the duals use the singles' meshes.
+
+     | Mesh | Bone | Offset in the bone's space (cm) |
+     |---|---|---|
+     | `SK_AR4_CompactStock` | `b_gun_trigger` | (−0.15, 2.03, 0.13) |
+     | `SK_KA74U_Stockless` | `b_gun_trigger` | (0.93, 2.09, 0.26) |
+     | `SK_P1911` | `trigger` | (0.00, 0.25, 1.19) |
+     | `SK_Beretta_92FS` | `Trigger` | (−0.12, 0.75, −1.28) |
+     | `SK_Uzi` | `trigger` | (0.78, 0.00, −1.45) |
+     | `SK_Benelli` | `trigger` | (0.18, 0.14, −1.24) |
+     | `_357Revolver_Rig` | `Trigger` | (−0.0143, 0.0162, −0.0002) × the bone's 100 scale |
+     | `Mossberg-5001` | `trigger` | (−0.19, −1.49, 0.32) |
+
+     - **Found by** `Tools/AnimAuthoring/TriggerFinger/sockets_export_ue.py` (headless `-Render`: each
+       gun Blueprint's mesh as FBX, its trigger bone and muzzle socket, into `Saved/TriggerSockets/`)
+       and `sockets_find_bl.py` (Blender; run blender.exe directly, as `RunBlender.ps1` stops on
+       Blender's stderr). The blade is the vertices skinned > 0.5 to the trigger bone. "Down" is from
+       the barrel line (the muzzle socket's X) to the bone. The pad sits in the slice 45–85% down the
+       blade whose front is furthest back (the bottom of the curve), nearest 62%, on the blade's
+       centre line, **0.6 cm in front of its face** (`CLEARANCE`). The script renders `sheet.png`,
+       which was sent to the user.
+     - **The mesh's own bone, not the skeleton's:** a mesh's reference pose can differ from its
+       skeleton asset's. The Benelli's trigger bone is 15 cm off; the 1911's 0.4 cm. A socket rides the
+       mesh's bone, so offsets come from the FBX (the mesh's bind pose). Where the two agree, the
+       offsets matched the skeleton-based ones exactly, the revolver's 100× scale included.
+     - **The revolver:** its C-shaped trigger curves back hardest near the top. A search over 30–90%
+       put the pad 1.1 cm down, hence 45–85%.
+     - **Tuning:** drag the socket in the mesh editor. A new gun: run both scripts, then place its
+       socket.
+  4. **AnimGraph. Done 2026-11-12 16:47** (user: "go ahead"; bridge, compiled, saved; no errors in
+     the log, though anim compile messages show only in the editor's Compiler Results). Backup of the
+     asset before the change in the session scratchpad; it was also clean in git.
+     - **Press blend out:** `TwoWayBlend_2`/`_3`, `SequenceEvaluator_2`/`_4` (Press) and their getters
+       are deleted. `SequenceEvaluator_1` (Rest) feeds `LayeredBoneBlend_18`'s blend pose directly, and
+       `SequenceEvaluator_3` feeds `Mirror_4`.
+     - **Right:** `LayeredBoneBlend_18` → `LocalToComponentSpace_6` → **`TriggerFinger_0`** (`hand_r`,
+       `index_01_r`/`02_r`/`03_r`; Target ← `TriggerTarget`, Alpha ← `TriggerTrackAlpha`) →
+       `ComponentToLocalSpace_6` → `LayeredBoneBlend_5`.
+     - **Left:** `LayeredBoneBlend_19` → `LocalToComponentSpace_7` → **`TriggerFinger_1`** (`hand_l`,
+       `index_*_l`; `TriggerTargetLeft`, `TriggerTrackAlphaLeft`) → `ComponentToLocalSpace_7` →
+       `LayeredBoneBlend_4`.
+     - **Class Defaults:** `TriggerFingerPoses` gained `StraightStock` (the Mossberg) with the
+       PistolGrip pair, so the node has the L to start from.
+     - **Bridge type ids:** `Animation|SkeletalControls|TriggerFinger`,
+       `Animation|ConvertSpaces|LocalToComponent` / `ComponentToLocal`, `Variables|Weapon|Get<Var>`.
+       `find_node_types` matches type ids, not display names.
+  5. **C++ cleanup built 2026-11-12 16:53** (applied by Claude, "apply and build"):
+     `TriggerPressAlpha`/`Left`, `TriggerPressPose` and `FTriggerFingerPoses::Press` are deleted;
+     the struct holds `Rest` only.
+  6. **Assets cleaned 2026-11-12 18:44** (the user: "ok go"): `ABP_Player` re-saved, and its file no
+     longer names `TriggerPressPose`. Both `pistolGrip` and `straightStock` keep the Rest clip. The
+     `TriggerPressPose` clip is deleted; nothing else referenced it. `TriggerRestPose` is the only clip
+     left in `Animations/TriggerFinger/`.
+     - **Gotcha, re-saving to drop a removed property:** `save_assets` skips a package that isn't
+       dirty, and writing back the same value doesn't dirty it. Make a real change and revert it
+       (here: drop a map key, then restore it), then compile and save.
+  7. **Curled fingers, 2026-11-12** (user, with a Play screenshot of a pistol: "fingers look curled").
+     Checked offline with `Tools/AnimAuthoring/TriggerFinger/check_export_ue.py`, which writes
+     `Saved/TriggerSockets/grips.json` with every gun Blueprint's grip offsets and mesh scale.
+     `check_solve_bl.py` then runs a Python copy of the node's maths on Manny's hand, with the
+     incoming Rest finger and every gun on `HandGrip_R`, and renders a sheet per mode into
+     `Saved/TriggerSockets/check/`.
+     - **What the Rest finger does:** it comes in straight (1° at the middle joint) and already aims
+       at the trigger. Every trigger is within 1 cm of the finger's line. Only the distance from the
+       knuckle varies: M4 8.57 cm (pad reach 8.67), pump 7.15, AK 6.03, Beretta 5.72, revolver 5.34,
+       Benelli 4.91, .45 4.35, Uzi 4.23.
+     - **Fault 1, the curl axis:** with no incoming bend, the axis falls back to the plane through the
+       finger and the target, which is effectively arbitrary. Fingers curled up over the slide (AK,
+       .45, Uzi) or sideways.
+     - **Fault 2, triggers too close for the pad:** the .45 and the Uzi (single and dual) are inside
+       the full curl's reach (4.51 cm), so they hit 110°. The pistols and shotguns need 86–104°, and a
+       30–60° knuckle swing to bring the hooked pad back onto the trigger. The result is an up-and-over
+       hook.
+     - **What Manny's fingers flex about:** each bone's −Z, on both hands. The middle, ring and pinky
+       curls in `MM_Rifle_Idle_Hipfire` all lie within 8° of it.
+     - **The fix (checked offline, `sheet_bone_wrap50.png`):**
+       - The node curls about the middle joint's own `CurlAxis` (default (0, 0, −1)).
+       - `MaxCurl` becomes the wrap limit, 50°. A trigger closer than the pad reaches at 50° rests
+         further back along the finger: the point on the finger as far from the knuckle as the trigger
+         is, with the rest wrapping round. That point is middle phalanx 6–21% on the .45 and the Uzi,
+         84–98% on the Beretta and the AK.
+       - Swings drop to 8–37°, and the pad reaches the M4 as before (17° curl).
+       - 35° and 70° were also tried. At 70° the Beretta and AK still rose over the guard; at 35° the
+         finger poked further out.
+     - **Replaced, on the user's word: "try using the 2nd bone on the trigger"**
+       (`sheet_bone_second50_tip40.png`). The trigger rests on `index_02` (the middle segment).
+       - **Where on it:** `ContactAlong` 0.5 of the way along it. The middle joint curls until that spot
+         is as far from the knuckle as the trigger: .45 87°, Uzi 92–94°, Benelli 57°, revolver 16°.
+         Swings stay at 12–24°.
+       - **The tip:** the last joint wraps 40° round the trigger (`TipWrap`).
+       - **Far triggers:** if the trigger is further away than that spot reaches with the finger
+         straight, the finger stays straight and the contact slides out along it: Beretta and AK
+         middle 63–75%, pump last segment 24%, M4 last segment 95%. The last joint straightens once
+         the contact is past the middle segment.
+       - **Removed:** `LastJointShare` and the pad-reach solve. `MaxCurl` is just the search's bound,
+         120°.
+       - **Tried 80% along:** the .45 and Uzi needed 97–101° and swings of 22–36°, which curled more.
+     - **Status: built 2026-11-12 20:18** (applied by Claude, "apply and build"). DLL newer than the
+       sources, files read back, bridge answers. Both nodes keep the defaults: `CurlAxis` (0, 0, −1) is
+       right for both hands, so the AnimGraph needs no change. `check_solve_bl.py` now defaults to this
+       node, and its numbers match the sheet. To do: the user's Play test.
+     - **Tuning, live in `ABP_Player`** (each node's Details): `ContactAlong` moves the trigger along
+       the middle segment, where less curls less; `TipWrap` sets how far the tip wraps.
+     - **Contact Along 0.75 on both nodes (2026-11-12 21:35, through the bridge; user: "too far in,
+       something in between maybe", then "go set it in the bridge").** The C++ default stays 0.5; the
+       AnimGraph holds 0.75 (`sheet_bone_second75_tip40.png`).
+       - Middle-joint bends: .45 95°, Uzi 99°, Benelli 77°, revolver 60°, Beretta 39°.
+       - Swings 20–34°. The AK, pump and M4 are unchanged (their contact slides out).
+       - 1.0 (at the last joint) was tried: .45 and Uzi 102–106°, and the Benelli hit the 40° swing
+         cap, so the curl comes back.
+     - **Accepted 2026-11-12** (user: "keep this fir now, make all tests ok. I'll bring it up again if
+       its broken").
 - **Hand-keying gotcha (the user's attempts):** in the Animation editor a bone that's rotated but not
   **Keyed** is dropped on save, and a key made with the gizmo in World space adds roll and pitch, not
   only the curl. Their Rest held a key on `index_03_r` only (roll −21°, pitch −16.5°).
@@ -8518,6 +8870,18 @@ strafing.
     taken back out, as for the dive. They're Transform (Modify) Bone nodes on
     the standing branch (add, component space) after `LocalToComponentSpace_1`
     and before the spine recoil.
+  - **The aim point** (2026-11-11, `GetCrosshairAimPoint`, shared with the dive's
+    aim correction). The user: "happens on doors when aiming", "happens even when the
+    door is open". In a doorway the crosshair landed on the jamb beside the
+    shoulder, since the camera sits 65 cm right, and the arm swung up to its caps.
+    Now:
+    - the trace starts level with the character along the crosshair's ray, so
+      nothing between the camera and the character counts;
+    - the point is held at least `AimMinReach` (150 cm) past the character; nearer,
+      the guns point that far out along the ray.
+    Built 2026-11-11; tested (user): "tested, all good". The shots got the same
+    trace start on 2026-11-12, but keep their own clamp (`MinConvergenceDistance`,
+    50 cm past the muzzle; see *Trace source — two-stage*).
   - **Stiff shooting shoulder, open** (2026-10-31, user: "when shooting
     pistols, I am not getting any motion on the shooting shoulder, it looks
     stiff"):
@@ -9923,8 +10287,11 @@ scenario (lore *LEVEL SCENARIO — THE MISSING PATROLMAN*).
 - **Files:** `Design Document/Linear_Slums_Layout.html` and `.json`, both written by
   `Tools/LevelGen/layout_linear_slums.mjs`. The script is the source: edit it and run
   `node Tools/LevelGen/layout_linear_slums.mjs`, never the outputs.
-- **Shape:** 7 sections, 12 fights, 49 gunmen (≤ 6 per fight), 8 inspects
-  (2 needed), 8 checkpoints, 34-48 minutes estimated.
+- **Shape (since 2026-11-12, the way back):** 7 sections, 17 fights, 71 gunmen (≤ 6 per fight),
+  9 inspects (3 needed), 13 checkpoints. The route is 340 m in and 224 m back, about 20-35
+  minutes on the script's time model (below). *Until 2026-11-12 it said 12 fights, 49
+  gunmen, 8 inspects, 8 checkpoints and "34-48 minutes": hand guesses that ran about three
+  times long (the user: the eskinita "takes 10 secons to cross").*
 - **Sightlines:** the script rasterises each floor at 0.25 m and casts 1.2 m-wide lines
   from every 0.75 m. The longest in a fight space is 25.3 m; the walk-around street's
   is 25.8 m.
@@ -9952,6 +10319,43 @@ scenario (lore *LEVEL SCENARIO — THE MISSING PATROLMAN*).
     - `wall` barriers.
     - New stairs are appended, because `story_interiors.py` finds the mezzanine's stair
       by index 2.
+- **Revised 2026-11-12: the way back** (user: "how about we just do the whole map in
+  reverse? it ends back at the yard gate where you need to meet up with arriving cops, also
+  work narratively becuase the cop's body is there"; "Yes add it"). Lore: the scenario's
+  beat 9. No geometry changed: the areas, openings, stairs, cover, mass and sightlines in
+  the JSON are identical to the 2026-11-08 version.
+  - **Route:** after I8, sections 7 to 3 in reverse, then the yard gate. Sections 1 and 2
+    are crossed once.
+  - **Fights F13-F17 (`ret: true`), 22 gunmen.** Each takes a room from the side you left
+    it by, with its gunmen coming from ahead, through the doors you're heading for. This
+    follows the loop rule (Claude-Rules §8, *Loops*): a reverse run only where every fight
+    on it has a new angle.
+    - F13: the hall, from the gallery.
+    - F14: the guard room, from the cells, with them on the passage steps.
+    - F15: the bodega, from its back door, one on the mezzanine.
+    - F16: up H4's back stair into a held floor, then the front rooms below H2's stair.
+    - F17: the yard, from H1's back door. The last fight and the kill cam (F12 lost it).
+    - The covered alley and the cells stay quiet.
+  - **Armed by I8:** F13-F17's triggers are off until the documents are taken, since you
+    cross their rooms on the way in. I8 saves CP9 and arms them. That needs an
+    "arm on event" for encounter triggers, alongside the inspect events.
+  - **The end, I9 (needed):** the yard gate, where the cops arrive down the lane. It ends
+    the level through `ALevelExitTrigger::Fire()`, which moved here from I8. The lane stays
+    out of bounds; the gate opens from the cops' side. Whether I9 is pressed or plays when
+    the yard is clear is open.
+  - **Checkpoints CP9-CP13:** the documents, the corridor's end door, the foot of the
+    passage steps, inside H4's back door, H1's kitchen.
+  - **Section memory is now required, not optional:** the way back walks every cleared
+    room, so a section must keep its dead, opened doors and taken pickups when it
+    unloads.
+  - **Rough guides (user, 2026-11-12):** "placements of enemies for the paper layout are
+    rough guides and may not strictly be followed, same goes for pickups. The layout, I'm
+    willing to follow no problem". The geometry is built as drawn; gunmen and pickups are
+    starting points.
+  - **Time model (the script):** the route is waypoints through the doors and up the
+    stairs (`ROUTE_IN`, `ROUTE_BACK`), measured in plan. Time is that route walked at
+    2.5 m/s, plus 12-20 s a gunman and 15-45 s an inspect, for a first play with no deaths.
+    The user's target was 30-45 minutes (above). This plan sits at about 20-35.
 - **Arms (user, 2026-11-07: "Remove ammo drop and weapon suggestions. For Level 1,
   only .45 pistols and shotguns", then "and revolvers actually"):**
   - Navarro and the gunmen carry .45 pistols, revolvers and shotguns only.
@@ -9960,8 +10364,10 @@ scenario (lore *LEVEL SCENARIO — THE MISSING PATROLMAN*).
   - Enemy drops still work as they do everywhere (`AWeaponPickup`, 1-1.5 magazines).
 - **New gameplay it needs:**
   - **Inspects** (the user: "interactable inspects for story beats"). The patrol car's
-    saves a checkpoint, then starts the first fight. The documents' ends the level
-    through `ALevelExitTrigger::Fire()`.
+    saves a checkpoint, then starts the first fight. The documents' saves CP9 and arms
+    the way back; the yard gate's (I9) ends the level through
+    `ALevelExitTrigger::Fire()` (I8 did, until 2026-11-12).
+  - Encounter triggers armed by an event (the way back's, by I8).
   - A fight started by an event rather than a volume.
   - Street civilians (≤ 12).
   - Optionally, a scripted flee for "drives off".
@@ -10102,6 +10508,22 @@ prefix). See `Tools/LevelGen/README.md` and LESSONS, *Levels as data*.
     - `BP_SwingDoor` (`/Game/ThirdPerson/Blueprints`) gives the leaf Favela's `SM_Door_01`.
       One child per door type in `Blueprints/SwingDoors/` (`BP_SwingDoor_<pack>_<mesh>`, 14 so
       far) changes only the leaf mesh.
+    - **Nav link (2026-11-11):** the user: "The nav does not go thru doors it seems. So When I
+      spawn from enemies in the room to rush me outside, they cant get out".
+      - **Why:** the navmesh keeps `AgentRadius` 35 cm (saved on the level's
+        `RecastNavMesh-Default`) off every wall, rounded up to 2 cells of 19 cm, so 38 cm off each
+        jamb. That closes a 105.8 cm doorway. On the saved navmesh, all 6 doors had navmesh on both
+        sides and paths that stopped in the doorway (partial, 53–90 cm; `Tools/LevelGen/analysis/check_door_nav_ue.py`,
+        headless).
+      - **Fix:** `NavLink` (`UNavLinkComponent`, Movable, on the root), one link both ways from
+        75 cm in front of the doorway to 75 cm behind, on the floor. Its ends can be dragged per
+        door. Pawns walk straight through (capsule 34 in 105.8); the leaf ignores them and the push
+        zone swings it. The links are baked into the navmesh, so a level needs Build Paths and a save.
+      - **The alternative, not taken:** a finer navmesh (10 cm cells) with a smaller radius. It costs
+        more everywhere and means editing the level's navmesh actor.
+      - Built 2026-11-11 (applied by Claude, "apply and build").
+      - **Checked 2026-11-12:** after the user's Build Paths and save, `check_door_nav_ue.py` found
+        all 6 doors OK, with full paths of 240–246 cm and none partial. Not yet seen in Play.
     - **Sounds (stand-ins, user: "actually use the stand ins"):** the project has no door
       sounds. Our own cues in `/Game/Audio/Doors/`, so real door sounds can replace their waves
       later without touching the Blueprints: `SC_Door_Push` (a copy of CharacterCustomizer's
@@ -10148,6 +10570,67 @@ until then a cleared arena's director restarts it (user, 2026-11-07; see *Level 
   `EditorViews` and `PerWorldEditorSettings`, whose entries were removed with the editor
   closed. Then `DefaultEngine.ini`, `DefaultGame.ini` (`MapsToCook`) and the
   `Tools/LevelGen` scripts were pointed at the new path.
+
+**Second one: Mission 2, the restaurant block (paper layout, 2026-11-13).** Built from the
+user's scenario (lore *LEVEL SCENARIO — MISSION 2*). Not in UE5; name open
+(`Lvl_02_Restaurant` suggested).
+- **Files:** `Design Document/Linear_Restaurant_Layout.html` and `.json`, both written by
+  `Tools/LevelGen/layout_linear_restaurant.mjs` (Mission 1's script with new data; same
+  raster, sightline, mass and time code). Edit the script, never the outputs.
+- **Shape (lengthened the same day):** 9 sections, 18 fights, 100 gunmen, 10 inspects (4
+  needed), 15 checkpoints, 499 m walked, about 25-45 min on Mission 1's time model (the first
+  draft was 7 sections and 17-31 min). Storeys 3.5 m (`Lvl_01_Slum`'s), two
+  floors (0 and +3.5).
+  - 1 the street (the informant), 2 the restaurant, 3 the back lanes (service lane,
+    courtyard, chained lane), 4 storage, 5 rooms over storage + the workshop's flat roof + a
+    plank over the lane + the flats next door, 6 workshop + burn yard, 7 the back alleys, 8 the safe house
+    (two storeys, its back room knocked through into the print shop), 9 print shop (press
+    floor; upstairs the document lab, photo room and the passport maker's office), out by a
+    steel side stair and a gate to the next street.
+- **The back alleys (user, 2026-11-13: "add more backalleys, somilar to what we have in the
+  arena", "except linear", "linear or looping"):** the arena's 4.5 m alleys, laid as a ring
+  round a block of houses: west, south, west under a lean-to, north into a 12 × 10.5 m
+  half-court (F13), east to the safe house's side door. That's the first alley's corner
+  again from the north, behind a chained gate that F14's wave opens: loop 2. Every leg 15 m or
+  less; an owner-type jeep just inside the burn yard's side gate stops a line down the first
+  alley.
+- **Loop 1 (Claude-Rules §8, *Loops*):** the courtyard is crossed twice. First west to
+  east out of the kitchen (F3); then from the north, out of the flats' front door after
+  section 5 (F8). The lane north is chained the first time; F8's wave opens the gate, which
+  is the way on.
+- **Sightlines:** longest in a fight space 24.5 m (the half-court into the alley east), the
+  street 25.0 m. Lines broken on the way: the safe house's back room → knock-through → the print
+  shop's 18 m front (32.5 m; the hole moved north, shelving inside it), and street → front → kitchen door → back door into the lane
+  (the kitchen door moved west), and the bunks door → safe-room door → across the roof
+  (staggered).
+- **Wave encounters (user, 2026-11-13: "for this level, we can start using wave stlye
+  encounters, in the restaurant is a good spot to put it, where you have to kill x amount of
+  enemies for the next event that would open the door start").** New encounter type beside
+  room encounters. Data: `kind: "waves"`, `waves` (count and where from), `max` alive at
+  once, `killTo`, `opens` (the event). F1: 4 at the tables, 4 in at the front
+  off the street, 3 down a stair from the rooms above; kill 11, at most 5 up; the barred
+  kitchen door opens. The 6-per-fight cap is for room encounters, not waves.
+  - **To build:** an encounter that spawns waves at set points, keeps a live cap, counts
+    kills and fires an event at the target. Mission 1's fights have a single top-up wave;
+    this is the general case, and the arena director (Arena mode) already wants count +
+    alive cap + waves, so build it once for both.
+- **Streaming as a graph:** the courtyard borders four sections, so "loaded" is the section
+  you're in plus every section it borders (not "either side"). The workshop's roof is walked
+  in 5 but is section 6's building, so 6 loads with 5. Section memory is required: the
+  courtyard and the alleys' first corner are each fought twice.
+- **New gameplay it needs** (beyond Mission 1's): a talk inspect (the informant, money
+  changes hands); a recognition cutscene that gets the customers and staff out (no live
+  civilians: "remove the civilians in real time,we will evacuate them via cutscene"), F1 starting
+  on its end;
+  gunmen busy with a task until they see him (boxes, burning, a press); gates opened by an
+  enemy wave (F8, F14) and a door unbarred by an event (the office, after I7); a non-hostile
+  NPC for the passport maker, whose interrogation is a mini cutscene (I9).
+- **Generator needs:** the arena's alleys and their dressing laid as a chain or ring; a restaurant (dining room with an open front, counter, kitchen), a
+  walkable flat roof with a parapet, a plank bridge into a knocked-out window, an outside
+  steel stair, print-shop props (presses, guillotine, paper, light table, laminator: likely
+  not in any pack), shut shop fronts.
+- **Arms:** not set; Mission 1's assumed (.45s, revolvers, shotguns, nothing placed, first aid
+  the only pickup).
 
 ---
 
@@ -11158,6 +11641,16 @@ level besides building blockouts as a rule."
     `analysis/check_dressing.py` tests these. Rooms and air conditioners block shots; patches,
     vents and pipes have no collision. New materials: `MI_BackAlleys_Ply_*` (Wood surface),
     `MI_BackAlleys_VentBlock_*`, children of `M_BackAlleys_HollowBlocks`.
+    *Since 2026-11-13 (user: "I added a Plywood texture on the content folder. Use that instead
+    of whatever you are using"), plywood walls (the story level's alley rooms, cells and wooden
+    storey) use `MI_BackAlleys_Plywood_World`: the user's `T_Plywood_BaseColor` / `_Normal_DX` on
+    the world-mapped `M_BackAlleys_HollowBlocksWorld`, 122 cm a repeat, Wood surface. The
+    textures are resized to 1024 at build, with mips. The patches keep the `MI_BackAlleys_Ply_*`
+    above ("keep the patches as they are. The one I added is for actually plywood walls"). The
+    covered alley's plywood rooms are one box per stretch of wall ("use less boards on the Alley
+    section"). The studs behind plywood are `MI_BackAlleys_Timber_World` (AsiaSlum's
+    `T_WoodFrame_A_001`, world-mapped 60 x 250 cm; user: "Give them timber"). LESSONS:
+    *Plywood: the user's texture*.*
   - **Laundry (2026-11-04):** only where somebody could reach it, no collision. Lines on 4
     balcony strips and in 5 overhanging rooms, clothes on the gallery rail, racks under 6
     second-floor windows and beside 5 ground doors, and 3 lines over a street, each from
@@ -11549,6 +12042,29 @@ and doesn't edit it.
 - **Users:** `UMenuWidget::OpenGameLevel` (after switching the input mode back to game-only), with
   `LevelFadeOutTime` 0.6 s; `AProjectBopisCharacter::RestartLevel` (death), with `RestartFadeTime` 0.6 s after
   `DeathRestartDelay` 3 s. `ALevelExitTrigger` already fades to black itself and is unchanged.
+- **Also:** `AProjectBopisGameMode::StartAt` (*Test starts*, next), with a 0.3 s fade.
+
+## Test starts (2026-11-11, built; not yet used)
+- **The user:** "I need a way to place multiple player starts so I can test each section", "and switch where I
+  want to spawn".
+- **Placing (in the editor, by hand):** an ordinary Player Start per section, its **Player Start Tag** set to the
+  section (`S1`…`S7`), plus the same section in its Actor Tags (the one-map, sections-as-tags rule). The level's
+  own start keeps an empty Player Start Tag.
+- **Choosing** (`AProjectBopisGameMode::ChoosePlayerStart_Implementation`):
+  1. the editor's "Play From Here" (`APlayerStartPIE`);
+  2. the start whose Player Start Tag matches `Bopis.StartAt` (case-insensitive), with "Test start: S3" on screen;
+  3. the first untagged start;
+  4. the engine's own pick, which is random, for a level with no untagged start.
+
+  An unknown tag shows a warning listing the level's tags and uses the untagged start. Without this, several
+  starts would make the engine spawn the player at a random one.
+- **Switching:**
+  - **`StartAt S3`** (console, while playing; `UFUNCTION(Exec)` on the game mode) sets the variable and reloads
+    through `ULevelTravelSubsystem` (0.3 s fade);
+  - **`StartAt off`** clears it (the word is needed, since packaged builds can't fill a missing argument);
+  - **`Bopis.StartAt S3`** in the editor's command line sets it before pressing Play.
+
+  The choice lasts until the editor closes, across Plays and reloads. `ECVF_Cheat`, so Shipping can't set it.
 
 ## Build tooling
 

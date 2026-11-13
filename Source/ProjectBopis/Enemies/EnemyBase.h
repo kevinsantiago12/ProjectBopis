@@ -500,6 +500,11 @@ public:
 	virtual bool GetHeadLookTarget(FVector& OutLocation) const override;
 	virtual bool WantsFreeArmPhysics() const override;
 
+	/** An enemy never draws: it comes into play gun in hand. Its only equip is its starting
+	    weapon at spawn, and a reserve built asleep would finish that draw when it wakes, the
+	    draw's sound giving it away. */
+	virtual bool ShouldSkipEquipAnimation() const override { return true; }
+
 	/** Where to roam next. Sweeping an arena, a random sweep point other than the one it's at;
 	    otherwise the furthest Target Point (RoamToPointChance), or a random reachable spot
 	    within RoamRadius. False if none was found. */

@@ -9,12 +9,13 @@
 class UBoxComponent;
 class UStaticMeshComponent;
 class USoundBase;
+class UNavLinkComponent;
 
 /**
  *  A door that swings both ways, as in Max Payne: whoever walks into it (the player, an enemy,
  *  anyone with a pawn) pushes it open away from them, harder the faster they come, and a spring
  *  swings it back through shut once they're gone. The leaf never blocks a pawn or the camera and
- *  doesn't cut the navmesh; it does stop shots.
+ *  doesn't cut the navmesh; it does stop shots. A nav link (NavLink) carries the AI through the doorway.
  *  Origin: the doorway's centre on the floor, local X along the wall (the generator's doors.json).
  */
 UCLASS()
@@ -53,6 +54,11 @@ protected:
 	/** Pawns in here push the door: the doorway, PushDepth to either side. */
 	UPROPERTY(VisibleAnywhere, Category = "Door")
 	TObjectPtr<UBoxComponent> PushZone;
+
+	/** The AI's way through. The navmesh keeps an agent's radius off every wall, which closes a one-leaf
+	    doorway, so this link joins its two sides, 75 cm out each way (drag its ends per door if needed). */
+	UPROPERTY(VisibleAnywhere, Category = "Door")
+	TObjectPtr<UNavLinkComponent> NavLink;
 
 	/** The leaf's size (cm); its mesh is scaled to it. The width is the jamb's clear opening. */
 	UPROPERTY(EditAnywhere, Category = "Door", meta = (ClampMin = "40.0"))

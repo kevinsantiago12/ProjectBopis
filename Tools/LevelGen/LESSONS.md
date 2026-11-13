@@ -1912,6 +1912,10 @@ cant proceed and you also added a wall at the entrance of the eskinita and I can
     area can see (1,725 of 9,706 in the slum: roofs, back walls, cores, lids, house floors). Run it in a windowless full editor
     (`UnrealEditor.exe ... -ExecutePythonScript=...`): in a `-run=pythonscript` commandlet no trace hits anything, there's no physics.
     The nav mesh works in both. Back the map up before removing; remove by object name through the bridge (1,725 in 48 s).
+  - **A stair into the handcrafted map (2026-11-11, H4's back stair):** compute the pieces offline with story_interiors' own maths
+    (`analysis/h4_back_stair.py`: FITTED flights anchored at the top, balusters, pipes via `axes_rot`, `_rail` bar rails), give each a
+    template actor already in the map and copy its materials and collision, place by the bridge, then trace the surfaces and test a nav
+    path headless. A solid landing block hides the lower flight-pieces' sunk ends and needs no posts.
   - **A headless save fails while the editor has the map open** ("Error moving file ... to temp directory": the file is locked). Check
     `get_current_level` first, or set the pieces through the bridge.
   - **Reading what the user changed:** `find_actors` by name (`Stair`, `Step`) and the meshes' transforms through one bridge script,
@@ -1963,6 +1967,40 @@ cant proceed and you also added a wall at the entrance of the eskinita and I can
     rice sacks on balconies). Props that would start touching something are still dropped (49 here, 28 in the arena).
 - **Report gotcha:** `swap_sections_ue.py` compares rotations as pitch/yaw/roll, and Unreal re-expresses a piece stood on end (pitch 90: water
   meter legs, meter conduits), so those show as "differ" right after being placed. Compare quaternions if the seam report starts to matter for them.
+
+### Plywood: the user's texture, fewer sheets in the alley (2026-11-13)
+- **User:** "I added a Plywood texture on the content folder. Use that instead of whatever you are using", "and use less boards on the
+  Alley section"; asked, "Plywood room walls" and "All bare plywood"; of the texture's settings, "can you fix it by resizing yourself?".
+- **The texture** (`/Game/T_Plywood_BaseColor`, `/Game/T_Plywood_Normal_DX`, 1254 px, a seamless square of grain, no sheet edges) came in with
+  `TC_EditorIcon` compression on the colour and no mipmaps on either (`TMGS_NoMipmaps`, not a power of two). Now: colour `TC_Default`, both
+  `PowerOfTwoMode` = `ResizeToSpecificResolution` at 1024, mips from the texture group (World / WorldNormalMap). The source image is
+  untouched: the resize happens at build. Left where the user put them, in the Content root.
+- **`MI_BackAlleys_Plywood_World`:** a child of `M_BackAlleys_HollowBlocksWorld` (world-position UVs, so a long box doesn't stretch it),
+  `TileU`/`TileV` 122 cm (a sheet's width), roughness 0.85, Wood surface with `bOverridePhysMaterial`. It's for **plywood walls only**:
+  `story_interiors` `PLY_MATS` (the alley rooms, the cells, the trap house's wooden storey). **The patches keep their own plywood**
+  (`building_dressing` `PLY`, `MI_BackAlleys_Ply_Natural` / `_Weathered` / `_GreenPaint`). User: "keep the patches as they are. The one I
+  added is for actually plywood walls". The plywood doors stay too.
+- **Fewer sheets:** `_ply_wall(whole=True)` for the covered alley's plywood rooms (`bid == "PLY"`): one box per solid stretch between the
+  openings, and studs only at the wall's two ends. The cells (S6) and the trap house's wooden storey (S7) keep a box per sheet.
+- **In the map** (bridge, backup `Saved/Backups/Lvl_01_Slum_before_plywood_20261113_0030.umap`): `analysis/wood_pieces_ue.py` (read-only, headless)
+  lists the wood pieces; `analysis/plywood_pass.py` merged the alley's 86 sheets into 16 boxes (kept the first sheet of each stretch,
+  resized) and its 44 studs to 20, and swapped 181 pieces to the new material. That included the 17 patches in S1-S3, put back on
+  their old plywood the same night (`Saved/LinearSlums/plywood_revert_patches.json`). Read back headless: 164 wall pieces on the new
+  plywood (S5 16, S6 111, S7 37), the patches as before, S5 at 16 sheets and 20 studs. The baked lighting is stale for the changed
+  walls.
+- **The arena** has no plywood walls, so nothing there changes.
+- **Studs (user, of the dark strips: "what are these?", then "Give them timber"):** the studs behind the plywood wore
+  `MI_BackAlleys_Boards_Natural`, a plank texture laid once per box face, so on a 10 cm x 4 m stud it showed as chopped plank ends. Now
+  `MI_BackAlleys_Timber_World`: AsiaSlum's `T_WoodFrame_A_001_D` / `_N` (the only tileable timber in the packs with its grain along its
+  length; the Megapack woods are atlases) on the world-mapped material, `TileU` 60, `TileV` 250 (stretched along the grain so a stud
+  crosses at most one or two repeats: its edges match only roughly), Wood surface. All 87 studs in the map (S5 20, S6 53, S7 14), saved
+  01:04; `story_interiors` `TIMBER`. Not looked at in the viewport.
+- **Runner gotcha:** `RunUnreal.ps1` passes the script's path with backslashes, and the pythonscript commandlet reads `\t` in it as a tab:
+  a script named `t…` in a subfolder fails to load ("Could not load Python file …analysis	imber…"). Don't start a script's name with
+  `t` (or another escape letter); `wood_timber_tex_ue.py` runs.
+- **`gen_level.py linear_slums` stops** on `KeyError: 'open'` (`OPEN_H`): the layout's 2026-11-08 data (`open`, `z0`, landings, wall barriers)
+  isn't read yet, as the spec says. Not from this change; the story pass's edit is compile-checked only. The arena ran, and its checks are
+  clean.
 
 ### Not decided (the user's call)
 - **Wall material: hollow blocks only on faces with no door or window

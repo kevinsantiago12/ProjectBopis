@@ -274,6 +274,29 @@ list, not just chat.
 - **No exits in arenas (2026-11-07):** "I dont want an exit trigger at all, the resets will be handled by the menu screen when
   it comes." No exit actor goes into an arena level. **Until the menu exists (2026-11-07):** a cleared arena restarts itself
   through its director ("Restart, no exit actor"), switched off once the menu screen handles resets.
+- **Plywood walls (2026-11-13):** "I added a Plywood texture on the content folder. Use that instead of whatever you are using".
+  Plywood walls (the covered alley's rooms, the cells, the trap house's wooden storey) use the user's `T_Plywood` texture
+  (`MI_BackAlleys_Plywood_World`, world-mapped). **Patches stay on their own plywood:** "keep the patches as they are. The one I added
+  is for actually plywood walls". "use less boards on the Alley section": the covered alley's plywood rooms are one piece per stretch
+  of wall, with studs only at the ends. The studs are timber, grain along their length ("Give them timber":
+  `MI_BackAlleys_Timber_World`), never the plank texture squeezed onto them.
+- **Loops (2026-11-12):** "we will try to think about loops and when designing levels from now on when we can use it, such as going
+  to the midpoint of the level, to the final rooms then going back to the mid room for another encounter"; "by going back to the
+  midroom I mean from another entrance". "If we are using short sightlined and croocked paths, then doing a reverse run is an option
+  AS LONG AS the reverse run give s a uniquely different angle". Every level layout looks for loops: a mid room you come back to by a
+  different entrance, for a new encounter. A reverse run is allowed only where each fight on it meets its room from a new side.
+- **Wave encounters (2026-11-13):** "for this level, we can start using wave stlye encounters, in the restaurant is a
+  good spot to put it, where you have to kill x amount of enemies for the next event that would open the door start".
+  Linear levels may now use wave encounters (waves, an alive cap, a kill count that opens the way on) beside room
+  encounters. Mission 2's restaurant is the first.
+- **No live civilians in Mission 2 (2026-11-13):** "remove the civilians in real time,we will evacuate them via cutscene".
+  People who'd be in a fight are got out in a cutscene, not placed as live NPCs.
+- **Back alleys in story levels (2026-11-13):** "add more backalleys, somilar to what we have in the arena", "except
+  linear", "linear or looping". The arena's 4.5 m alleys and their dressing, laid as a run or a ring, never as the arena's open
+  maze.
+- **Paper layouts (2026-11-12):** "placements of enemies for the paper layout are rough guides and may not strictly be followed, same
+  goes for pickups. The layout, I'm willing to follow no problem". Gunmen and pickups in a paper layout are suggestions; the
+  geometry gets built, so keep it buildable.
 - **Story levels (2026-11-08, `Lvl_01_Slum`):** the first one is `Lvl_01_Slum` ("LevelName is 01_Slum"; the `Lvl_` prefix was asked).
   - **Stair rails:** "The way you use the blocks for stair rails is absurd, remove immediately". No stacked blocks as stair balustrades.
   - **Interiors from the AsiaSlum demo:** "look at Demomap_AsiaSlum for interiors, it has a stair and rail setup". Stairs and rails

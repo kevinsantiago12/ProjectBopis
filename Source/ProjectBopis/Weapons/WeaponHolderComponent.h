@@ -125,10 +125,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
 	float CrosshairViewportPositionY = 0.5f;
 
-	/** Shots never converge on anything nearer than this. Against a close wall the
-	    muzzle can sit past the hit point, and converging would aim the shot backwards. */
+	/** Shots never converge on anything nearer than this past the muzzle (cm, along the crosshair's
+	    ray). Nearer, converging would send the shot sideways or backwards. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Holder")
-	float MinConvergenceDistance = 200.0f;
+	float MinConvergenceDistance = 50.0f;
 
 	/** Blocks the shot when the muzzle has clipped through geometry — stops the player
 	    firing through a wall they're pressed against. */

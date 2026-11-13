@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Weapons/MuzzleFlashComponent.h"
 #include "WeaponBase.generated.h"
 
 class USoundBase;
@@ -265,6 +266,10 @@ public:
 	bool LocksLeftHandRotation() const { return bLockLeftHandRotation; }
 	EWeaponGripStyle GetGripStyle() const { return GripStyle; }
 
+	/** World location of the trigger finger's spot on this gun (TriggerFingerSocketName), on the
+	    main-hand mesh or the off-hand's. False if the mesh has no such socket. */
+	bool GetTriggerFingerLocation(bool bOffhand, FVector& OutLocation) const;
+
 	/** Seconds since this gun last fired (counts up every tick). */
 	float GetTimeSinceLastShot() const { return TimeSinceLastShot; }
 
@@ -516,6 +521,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	EWeaponGripStyle GripStyle = EWeaponGripStyle::PistolGrip;
 
+	/** Socket on the gun mesh, on its trigger, where the trigger finger's pad sits. A mesh without
+	    one keeps the fixed trigger finger poses. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+	FName TriggerFingerSocketName = TEXT("TriggerFinger");
+
 	/** Each shot, from the muzzle. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Sounds")
 	TObjectPtr<USoundBase> FireSound;
@@ -559,6 +569,27 @@ protected:
 	/** Least seconds between muzzle smoke puffs. 0: smoke every shot. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback", meta = (ClampMin = "0.0"))
 	float MuzzleSmokeInterval = 0.35f;
+
+	/** The flash mesh (/Game/ThirdPerson/FX/MuzzleFlash/SM_MuzzleFlash). Set: the flame is this mesh at the
+	    muzzle, and MuzzleFlash only adds what FlashEmitterNames leaves on (its smoke, streaks and sparks).
+	    Empty: MuzzleFlash plays whole, as before. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UStaticMesh> FlashMesh;
+
+	/** This gun's flash: size, length of life, brightness. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	FMuzzleFlashSettings FlashSettings;
+
+	/** MuzzleFlash's own flame emitters (names as in the particle system), switched off while FlashMesh is set. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TArray<FName> FlashEmitterNames;
+
+	/** The flash mesh at the gun's muzzle, and at the off-hand gun's for a pair. Idle without FlashMesh. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UMuzzleFlashComponent> FlashComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Feedback")
+	TObjectPtr<UMuzzleFlashComponent> OffhandFlashComponent;
 
 	/** The shot's flash of light (Max Payne 3: a split second, no shadow): one small light per
 	    gun, re-lit by each shot rather than stacked. Radius, colour and brightness are set on the
@@ -875,6 +906,7 @@ protected:
 
 	float LastMuzzleSmokeTime = -1000.0f;
 	float MuzzleLightTimeLeft = 0.0f;
+	float MuzzleLightIntensity = 0.0f;	// the Blueprint's brightness, which the light fades down from
 
 	/** A gun's meshes only animate for a shot or a new rest pose. Between those they tick this
 	    often (seconds), just enough to keep their LOD current: a held or holstered gun otherwise

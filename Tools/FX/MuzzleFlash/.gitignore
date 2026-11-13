@@ -1,0 +1,7 @@
+# Made by the scripts: the noise texture export, previews, the mesh FBX, logs.
+noise.tga
+preview*.png
+*.fbx
+*_log.txt
+*_stdout.txt
+result.json

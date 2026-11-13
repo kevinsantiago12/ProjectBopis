@@ -337,14 +337,25 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon(bool bFreshPull)
 	QueryParams.AddIgnoredActor(OwningCharacter);
 	QueryParams.AddIgnoredActor(EquippedWeapon);
 
+	// Only what's past the character can be the target. The camera sits behind him and 50-65 cm
+	// to the side, and swings past door leaves and jambs, so anything between the two would pull
+	// the shot sideways or backwards. The trace starts level with the character, as the pose's does.
+	const float CharacterDepth = FMath::Max(
+		FVector::DotProduct(OwningCharacter->GetActorLocation() - CameraLocation, CameraDirection), 0.0f);
+
 	FHitResult AimHit;
 	const bool bAimHit = GetWorld()->LineTraceSingleByChannel(
-		AimHit, CameraLocation, CameraLocation + (CameraDirection * AimRange),
+		AimHit, CameraLocation + (CameraDirection * CharacterDepth), CameraLocation + (CameraDirection * AimRange),
 		ECC_Visibility, QueryParams);
 
-	// Taken along the ray rather than from ImpactPoint, so it can be clamped.
-	const float HitDistance = bAimHit ? AimHit.Distance : AimRange;
-	const float ConvergeDistance = FMath::Max(HitDistance, MinConvergenceDistance);
+	// Stage 2 — the muzzle decides WHERE the shot comes from.
+	const FVector MuzzleLocation = EquippedWeapon->GetMuzzleLocation();
+
+	// Taken along the ray rather than from ImpactPoint, so it can be clamped: never nearer than
+	// MinConvergenceDistance past the muzzle, or the shot would leave sideways or backwards.
+	const float HitDistance = bAimHit ? CharacterDepth + AimHit.Distance : AimRange;
+	const float MuzzleDepth = FVector::DotProduct(MuzzleLocation - CameraLocation, CameraDirection);
+	const float ConvergeDistance = FMath::Max(HitDistance, MuzzleDepth + MinConvergenceDistance);
 	FVector AimPoint = CameraLocation + (CameraDirection * ConvergeDistance);
 
 	// The kill cam has the view, so the crosshair is looking from somewhere else: the shots go
@@ -353,9 +364,6 @@ EFireResult UWeaponHolderComponent::FireEquippedWeapon(bool bFreshPull)
 	{
 		AimPoint = KillCam->TakeShotPoint();
 	}
-
-	// Stage 2 — the muzzle decides WHERE the shot comes from.
-	const FVector MuzzleLocation = EquippedWeapon->GetMuzzleLocation();
 
 	// The muzzle can poke through a wall the character is pressed against, which would
 	// let the shot originate on the far side. Trace from the character's centre out to

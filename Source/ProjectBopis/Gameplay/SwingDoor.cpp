@@ -6,6 +6,7 @@
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "NavLinkComponent.h"
 
 ASwingDoor::ASwingDoor()
 {
@@ -31,6 +32,18 @@ ASwingDoor::ASwingDoor()
 	PushZone->SetGenerateOverlapEvents(true);
 	PushZone->SetCanEverAffectNavigation(false);
 	PushZone->ShapeColor = FColor(255, 160, 40);
+
+	// Joins the doorway's two sides for the AI (the navmesh's wall margin closes a one-leaf doorway). Both ways,
+	// on the floor; the leaf ignores pawns and the push zone swings it open as they come through.
+	NavLink = CreateDefaultSubobject<UNavLinkComponent>(TEXT("NavLink"));
+	NavLink->SetupAttachment(Root);
+	NavLink->SetMobility(EComponentMobility::Movable);
+	if (NavLink->Links.Num() > 0)
+	{
+		NavLink->Links[0].Left = FVector(0.0f, -75.0f, 0.0f);
+		NavLink->Links[0].Right = FVector(0.0f, 75.0f, 0.0f);
+		NavLink->Links[0].Direction = ENavLinkDirection::BothWays;
+	}
 }
 
 void ASwingDoor::OnConstruction(const FTransform& Transform)

@@ -1,7 +1,593 @@
 {
  "name": "Linear slum level (working: the missing patrolman)",
  "drafted": "2026-11-07",
- "revised": "2026-11-08: doors and steps for the drops, borders both ways",
+ "revised": "2026-11-08: doors and steps for the drops, borders both ways; 2026-11-12: the way back, sections 7 to 3 in reverse to the yard gate",
+ "guides": "Gunmen and pickups are rough guides (user, 2026-11-12); the geometry is followed.",
+ "time_model": {
+  "walk_m_s": 2.5,
+  "s_per_gunman": [
+   12,
+   20
+  ],
+  "s_per_inspect": [
+   15,
+   45
+  ],
+  "route_in_m": 340,
+  "route_back_m": 224,
+  "minutes": [
+   20,
+   35
+  ]
+ },
+ "route_in": {
+  "1": [
+   [
+    3,
+    93.75
+   ],
+   [
+    21.75,
+    93.75
+   ],
+   [
+    21.75,
+    78.75
+   ],
+   [
+    33,
+    79.5
+   ],
+   [
+    40,
+    79
+   ],
+   [
+    39,
+    82.5
+   ]
+  ],
+  "2": [
+   [
+    39,
+    82.5
+   ],
+   [
+    39,
+    90
+   ],
+   [
+    51.75,
+    90
+   ],
+   [
+    59,
+    87
+   ],
+   [
+    64.5,
+    87
+   ],
+   [
+    64.5,
+    85.5
+   ]
+  ],
+  "3": [
+   [
+    64.5,
+    85.5
+   ],
+   [
+    64.5,
+    81.5
+   ],
+   [
+    65.5,
+    77.5
+   ],
+   [
+    65,
+    79.2
+   ],
+   [
+    61.6,
+    71.5
+   ],
+   [
+    61.6,
+    70.5
+   ]
+  ],
+  "4": [
+   [
+    61.6,
+    70.5
+   ],
+   [
+    62,
+    68
+   ],
+   [
+    64.6,
+    66
+   ],
+   [
+    64.5,
+    62.25
+   ],
+   [
+    66,
+    62.25
+   ],
+   [
+    71.1,
+    59
+   ],
+   [
+    71.1,
+    65.7
+   ],
+   [
+    71,
+    67.9
+   ],
+   [
+    72,
+    67.9
+   ],
+   [
+    75.4,
+    67
+   ],
+   [
+    75.4,
+    64.5
+   ],
+   [
+    75,
+    61
+   ],
+   [
+    78,
+    61.1
+   ],
+   [
+    81.4,
+    61
+   ],
+   [
+    81.4,
+    64.5
+   ],
+   [
+    83.2,
+    69.6
+   ],
+   [
+    79.8,
+    69.6
+   ],
+   [
+    78.9,
+    68.7
+   ],
+   [
+    79.8,
+    67.8
+   ],
+   [
+    82.55,
+    67.8
+   ],
+   [
+    84,
+    68.25
+   ]
+  ],
+  "5": [
+   [
+    84,
+    68.25
+   ],
+   [
+    100,
+    68.25
+   ],
+   [
+    101.25,
+    62
+   ],
+   [
+    101.25,
+    49.5
+   ],
+   [
+    103,
+    47.8
+   ],
+   [
+    107.5,
+    48
+   ],
+   [
+    111.5,
+    43.5
+   ],
+   [
+    112.5,
+    40.9
+   ]
+  ],
+  "6": [
+   [
+    112.5,
+    40.9
+   ],
+   [
+    116.1,
+    40.9
+   ],
+   [
+    119.5,
+    42
+   ],
+   [
+    119.6,
+    43.5
+   ],
+   [
+    121.1,
+    44.6
+   ],
+   [
+    121.1,
+    48.6
+   ],
+   [
+    124.9,
+    48.6
+   ],
+   [
+    125,
+    44.6
+   ],
+   [
+    130.5,
+    44.6
+   ]
+  ],
+  "7": [
+   [
+    130.5,
+    44.6
+   ],
+   [
+    135,
+    42
+   ],
+   [
+    139.5,
+    43.5
+   ],
+   [
+    143.6,
+    42
+   ],
+   [
+    143.6,
+    39
+   ],
+   [
+    140.65,
+    38.6
+   ],
+   [
+    140.65,
+    32
+   ],
+   [
+    145.1,
+    31.2
+   ],
+   [
+    145.1,
+    36
+   ],
+   [
+    145.1,
+    39
+   ],
+   [
+    147.4,
+    40.2
+   ],
+   [
+    147.4,
+    44.6
+   ],
+   [
+    151.5,
+    44
+   ],
+   [
+    150.4,
+    39
+   ],
+   [
+    153.3,
+    33
+   ],
+   [
+    153.3,
+    39
+   ],
+   [
+    150,
+    40
+   ],
+   [
+    146,
+    34.5
+   ],
+   [
+    146.25,
+    32.5
+   ],
+   [
+    146,
+    34.5
+   ],
+   [
+    150.5,
+    34.5
+   ],
+   [
+    151.5,
+    32.2
+   ]
+  ]
+ },
+ "route_back": {
+  "3": [
+   [
+    61.6,
+    70.5
+   ],
+   [
+    64,
+    74
+   ],
+   [
+    61.4,
+    78.75
+   ]
+  ],
+  "4": [
+   [
+    84,
+    68.25
+   ],
+   [
+    82.55,
+    67.8
+   ],
+   [
+    79.8,
+    67.8
+   ],
+   [
+    78.9,
+    68.7
+   ],
+   [
+    79.8,
+    69.6
+   ],
+   [
+    83.2,
+    69.6
+   ],
+   [
+    81.4,
+    64.5
+   ],
+   [
+    81.4,
+    61
+   ],
+   [
+    78,
+    61.1
+   ],
+   [
+    75,
+    61
+   ],
+   [
+    75.4,
+    64.5
+   ],
+   [
+    75.4,
+    67
+   ],
+   [
+    72,
+    67.9
+   ],
+   [
+    71,
+    67.9
+   ],
+   [
+    71.1,
+    65.7
+   ],
+   [
+    71.1,
+    59
+   ],
+   [
+    66,
+    62.25
+   ],
+   [
+    64.5,
+    62.25
+   ],
+   [
+    64.6,
+    66
+   ],
+   [
+    62,
+    68
+   ],
+   [
+    61.6,
+    70.5
+   ]
+  ],
+  "5": [
+   [
+    112.5,
+    40.9
+   ],
+   [
+    111.5,
+    43.5
+   ],
+   [
+    107.5,
+    48
+   ],
+   [
+    103,
+    47.8
+   ],
+   [
+    101.25,
+    49.5
+   ],
+   [
+    101.25,
+    62
+   ],
+   [
+    100,
+    68.25
+   ],
+   [
+    84,
+    68.25
+   ]
+  ],
+  "6": [
+   [
+    130.5,
+    44.6
+   ],
+   [
+    119.6,
+    44.6
+   ],
+   [
+    119.6,
+    43.5
+   ],
+   [
+    119.5,
+    42
+   ],
+   [
+    116.1,
+    40.9
+   ],
+   [
+    112.5,
+    40.9
+   ]
+  ],
+  "7": [
+   [
+    151.5,
+    32.2
+   ],
+   [
+    150.5,
+    34.5
+   ],
+   [
+    150,
+    40
+   ],
+   [
+    153.3,
+    39
+   ],
+   [
+    153.3,
+    33
+   ],
+   [
+    150.4,
+    39
+   ],
+   [
+    151.5,
+    44
+   ],
+   [
+    147.4,
+    44.6
+   ],
+   [
+    147.4,
+    40.2
+   ],
+   [
+    145.1,
+    39
+   ],
+   [
+    145.1,
+    36
+   ],
+   [
+    145.1,
+    31.2
+   ],
+   [
+    140.65,
+    32
+   ],
+   [
+    140.65,
+    38.6
+   ],
+   [
+    143.6,
+    39
+   ],
+   [
+    143.6,
+    42
+   ],
+   [
+    139.5,
+    43.5
+   ],
+   [
+    135,
+    42
+   ],
+   [
+    130.5,
+    44.6
+   ]
+  ]
+ },
  "units": "m, x east, y south, from the NW corner",
  "floors": {
   "0": "ground",
@@ -14,78 +600,128 @@
    "id": 1,
    "name": "Main street",
    "ground": "0",
-   "mins": [
-    4,
-    6
-   ],
    "kind": "walk-around",
-   "what": "Night, people still out. Walk to the patrolman's last reported spot: no car. The street dead-ends at a padlocked lane gate."
+   "what": "Night, people still out. Walk to the patrolman's last reported spot: no car. The street dead-ends at a padlocked lane gate.",
+   "route_m": [
+    56,
+    0
+   ],
+   "mins": [
+    0.5,
+    2
+   ],
+   "back": null
   },
   {
    "id": 2,
    "name": "Eskinita",
    "ground": "+1.8",
-   "mins": [
-    3,
-    4
-   ],
    "kind": "search",
-   "what": "Round the gate through the eskinita and a wash yard, following the trail. Ends at a door in the yard wall, with steps down into the yard."
+   "what": "Round the gate through the eskinita and a wash yard, following the trail. Ends at a door in the yard wall, with steps down into the yard.",
+   "route_m": [
+    35,
+    0
+   ],
+   "mins": [
+    0,
+    0.5
+   ],
+   "back": null
   },
   {
    "id": 3,
    "name": "The yard",
    "ground": "0",
-   "mins": [
-    3,
-    5
+   "kind": "reveal + fight · the end",
+   "what": "The patrol car under a tarp in an improvised garage, signs of a struggle. Inspecting it starts the first major firefight. The way back ends here: the last fight, then the cops arriving at the yard gate. The patrolman's body is here.",
+   "route_m": [
+    19,
+    10
    ],
-   "kind": "reveal + fight",
-   "what": "The patrol car under a tarp in an improvised garage, signs of a struggle. Inspecting it starts the first major firefight."
+   "mins": [
+    1.5,
+    4
+   ],
+   "back": [
+    1,
+    2.5
+   ]
   },
   {
    "id": 4,
    "name": "Row houses",
    "ground": "0 / +4",
-   "mins": [
-    6,
-    8
-   ],
    "kind": "fights",
-   "what": "Four row houses the gang has knocked through: kitchen, joined front rooms, a stair, the bedrooms. Out down H4's back stair."
+   "what": "Four row houses the gang has knocked through: kitchen, joined front rooms, a stair, the bedrooms. Out down H4's back stair.",
+   "route_m": [
+    62,
+    62
+   ],
+   "mins": [
+    2,
+    3.5
+   ],
+   "back": [
+    1,
+    2
+   ]
   },
   {
    "id": 5,
    "name": "Covered alley + bodega",
    "ground": "0 / +3",
-   "mins": [
-    6,
-    8
-   ],
    "kind": "fights",
-   "what": "A lean-to roofed alley lined with plywood rooms, then a storage bodega with a mezzanine."
+   "what": "A lean-to roofed alley lined with plywood rooms, then a storage bodega with a mezzanine.",
+   "route_m": [
+    51,
+    51
+   ],
+   "mins": [
+    2,
+    4
+   ],
+   "back": [
+    1,
+    2.5
+   ]
   },
   {
    "id": 6,
    "name": "Holding house",
    "ground": "−1.8",
-   "mins": [
-    4,
-    6
-   ],
    "kind": "fight + reveal",
-   "what": "Down steps into a guard room, then a corridor of plywood cells: bedding, water, food, belongings. A child's things. No one left."
+   "what": "Down steps into a guard room, then a corridor of plywood cells: bedding, water, food, belongings. A child's things. No one left.",
+   "route_m": [
+    28,
+    21
+   ],
+   "mins": [
+    1,
+    3
+   ],
+   "back": [
+    0.5,
+    1.5
+   ]
   },
   {
    "id": 7,
    "name": "Trap house",
    "ground": "−1.8 (G, +4, +8)",
-   "mins": [
-    8,
-    11
+   "kind": "fights + the turn",
+   "what": "A courtyard, then a three-level trap house: double-height hall, stair, rooms and gallery, a wooden top storey. The forged documents, then back the way you came.",
+   "route_m": [
+    89,
+    80
    ],
-   "kind": "fights + end",
-   "what": "A courtyard, then a three-level trap house: double-height hall, stair, rooms and gallery, a wooden top storey. The forged documents."
+   "mins": [
+    5,
+    9.5
+   ],
+   "back": [
+    1.5,
+    2.5
+   ]
   }
  ],
  "connectors": [
@@ -1285,7 +1921,7 @@
     81
    ],
    "k": "gate",
-   "label": "yard gate (shut)"
+   "label": "yard gate (shut; the cops open it at the end, I9)"
   },
   {
    "f": 0,
@@ -2412,7 +3048,196 @@
     147.6,
     47.4
    ],
-   "note": "The last fight and its kill cam. The wave comes in from the terrace. Survivors run for the plank to the neighbour's roof (“drives off”)."
+   "note": "The last fight on the way in. The wave comes in from the terrace. Survivors run for the plank to the neighbour's roof (“drives off”)."
+  },
+  {
+   "id": "F13",
+   "sec": 7,
+   "ret": true,
+   "room": "Hall, from the gallery",
+   "start": 3,
+   "wave": 2,
+   "max": 4,
+   "trigger": "back down the wooden stair (I8 done)",
+   "f": 0,
+   "foes": [
+    [
+     141.6,
+     46.4
+    ],
+    [
+     146,
+     41.8,
+     "c"
+    ],
+    [
+     142.8,
+     40.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     139.5,
+     43.5
+    ]
+   ],
+   "lab": [
+    151.5,
+    50.2
+   ],
+   "note": "The reverse of F9: they come in through the garage door below, and you have the gallery, its rail your cover. Then down the stair past them and out."
+  },
+  {
+   "id": "F14",
+   "sec": 6,
+   "ret": true,
+   "room": "Guard room, from the cells",
+   "start": 2,
+   "wave": 1,
+   "max": 3,
+   "trigger": "the guard room door, from the corridor",
+   "f": 0,
+   "foes": [
+    [
+     117.2,
+     41.4,
+     "c"
+    ],
+    [
+     120.6,
+     37.6
+    ]
+   ],
+   "waveDoors": [
+    [
+     113.4,
+     40.9
+    ]
+   ],
+   "lab": [
+    126.5,
+    34.6
+   ],
+   "note": "The reverse of F7: you come out of the corridor, and they come down the passage steps. The cells themselves stay quiet."
+  },
+  {
+   "id": "F15",
+   "sec": 5,
+   "ret": true,
+   "room": "Bodega, from the back door",
+   "start": 3,
+   "wave": 2,
+   "max": 4,
+   "trigger": "the bodega's back door, coming back",
+   "f": 0,
+   "foes": [
+    [
+     101.8,
+     43.2,
+     "c"
+    ],
+    [
+     106.4,
+     46.6
+    ],
+    [
+     98.2,
+     38.4,
+     "",
+     1
+    ]
+   ],
+   "waveDoors": [
+    [
+     101.25,
+     49.5
+    ]
+   ],
+   "lab": [
+    109.6,
+    48.6
+   ],
+   "note": "The reverse of F6: in by the back door, the pallets between you and them. One gets up on the mezzanine; the wave comes in from the alley. The covered alley after it stays quiet."
+  },
+  {
+   "id": "F16",
+   "sec": 4,
+   "ret": true,
+   "room": "Upstairs, then the front rooms",
+   "start": 4,
+   "wave": 0,
+   "max": 4,
+   "trigger": "the top of H4's back stair",
+   "f": 1,
+   "foes": [
+    [
+     75.4,
+     61.6
+    ],
+    [
+     81.6,
+     61.2,
+     "c"
+    ],
+    [
+     62.4,
+     61,
+     "",
+     0
+    ],
+    [
+     68.6,
+     63.6,
+     "c",
+     0
+    ]
+   ],
+   "lab": [
+    75,
+    57.6
+   ],
+   "note": "Up H4's back stair into a floor they hold (the reverse of F4), then two more waiting in the front rooms below H2's stair."
+  },
+  {
+   "id": "F17",
+   "sec": 3,
+   "ret": true,
+   "room": "The yard, the last fight",
+   "start": 3,
+   "wave": 2,
+   "max": 4,
+   "trigger": "H1's back door, coming back",
+   "f": 0,
+   "foes": [
+    [
+     69,
+     77.4
+    ],
+    [
+     73.2,
+     73
+    ],
+    [
+     66.8,
+     82,
+     "c"
+    ]
+   ],
+   "waveDoors": [
+    [
+     78,
+     77.6
+    ],
+    [
+     64.5,
+     84.8
+    ]
+   ],
+   "lab": [
+    72.5,
+    84.7
+   ],
+   "note": "The last fight and its kill cam, in the yard where the shooting started. The wave comes through the east door and the eskinita door. Then the cops come down the lane to the gate (I9)."
   }
  ],
  "inspects": [
@@ -2518,6 +3343,20 @@
    "src": "scenario",
    "what": "Forged IDs and passports for the missing: some incomplete, some with photos and false names. Navarro takes them.",
    "sug": "",
+   "does": "Saves CP9, then arms the way back (F13–F17)."
+  },
+  {
+   "id": "I9",
+   "f": 0,
+   "x": 61.4,
+   "y": 78.75,
+   "sec": 3,
+   "ret": true,
+   "name": "The yard gate",
+   "req": true,
+   "src": "scenario",
+   "what": "The way back ends at the yard gate, where you meet the cops arriving down the lane. The patrolman's body is here.",
+   "sug": "",
    "does": "Ends the level (ALevelExitTrigger::Fire)."
   }
  ],
@@ -2585,6 +3424,51 @@
    "y": 31.1,
    "sec": 7,
    "at": "the landing at +4"
+  },
+  {
+   "id": "CP9",
+   "f": 2,
+   "x": 151.5,
+   "y": 33.6,
+   "sec": 7,
+   "ret": true,
+   "at": "the documents taken: the way back starts"
+  },
+  {
+   "id": "CP10",
+   "f": 0,
+   "x": 128.6,
+   "y": 44.6,
+   "sec": 6,
+   "ret": true,
+   "at": "the corridor's end door, coming back (before F14)"
+  },
+  {
+   "id": "CP11",
+   "f": 0,
+   "x": 117.4,
+   "y": 39.4,
+   "sec": 6,
+   "ret": true,
+   "at": "the foot of the passage steps, coming back (before F15)"
+  },
+  {
+   "id": "CP12",
+   "f": 0,
+   "x": 83.3,
+   "y": 66.8,
+   "sec": 4,
+   "ret": true,
+   "at": "inside H4's back door, coming back (before F16)"
+  },
+  {
+   "id": "CP13",
+   "f": 0,
+   "x": 63.2,
+   "y": 68.8,
+   "sec": 4,
+   "ret": true,
+   "at": "H1's kitchen, before the yard (F17)"
   }
  ],
  "pickups": [

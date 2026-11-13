@@ -5,6 +5,15 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/PlayerCameraManager.h"
 #include "TimerManager.h"
+#include "GameFramework/PlayerStart.h"
+#include "Engine/PlayerStartPIE.h"
+#include "Engine/Engine.h"
+#include "EngineUtils.h"
+#include "Gameplay/LevelTravelSubsystem.h"
+
+static TAutoConsoleVariable<FString> CVarStartAt(TEXT("Bopis.StartAt"), TEXT(""),
+	TEXT("Spawn at the PlayerStart with this Player Start Tag (a test start, e.g. S3). Empty: the level's own, untagged start."),
+	ECVF_Cheat);
 
 AProjectBopisGameMode::AProjectBopisGameMode()
 {
@@ -92,5 +101,61 @@ void AProjectBopisGameMode::TrimCorpses()
 	else
 	{
 		Timers.ClearTimer(CorpseCheckTimer);
+	}
+}
+
+AActor* AProjectBopisGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	const FString Wanted = CVarStartAt.GetValueOnGameThread();
+	APlayerStart* OwnStart = nullptr;
+	APlayerStart* TestStart = nullptr;
+	TArray<FString> StartTags;
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+	{
+		APlayerStart* Start = *It;
+		if (Start->IsA<APlayerStartPIE>())
+		{
+			return Start;	// the editor's "Play From Here"
+		}
+		if (Start->PlayerStartTag.IsNone())
+		{
+			OwnStart = OwnStart ? OwnStart : Start;
+			continue;
+		}
+		const FString Tag = Start->PlayerStartTag.ToString();
+		StartTags.Add(Tag);
+		if (!Wanted.IsEmpty() && Tag.Equals(Wanted, ESearchCase::IgnoreCase))
+		{
+			TestStart = Start;
+		}
+	}
+
+	if (!Wanted.IsEmpty() && GEngine)
+	{
+		if (TestStart)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Cyan, FString::Printf(TEXT("Test start: %s"), *Wanted));
+			return TestStart;
+		}
+		StartTags.Sort();
+		GEngine->AddOnScreenDebugMessage(-1, 8.0f, FColor::Orange, FString::Printf(
+			TEXT("No PlayerStart tagged %s (this level has: %s). Using the level's own start."),
+			*Wanted, StartTags.IsEmpty() ? TEXT("none") : *FString::Join(StartTags, TEXT(", "))));
+	}
+
+	// The untagged start; a level with none falls back to the engine's pick.
+	return OwnStart ? OwnStart : Super::ChoosePlayerStart_Implementation(Player);
+}
+
+void AProjectBopisGameMode::StartAt(const FString& Tag)
+{
+	const bool bOff = Tag.IsEmpty() || Tag.Equals(TEXT("off"), ESearchCase::IgnoreCase);
+	CVarStartAt->Set(bOff ? TEXT("") : *Tag, ECVF_SetByConsole);
+
+	// Reload here, through the usual fade, so the new start takes effect at once.
+	UGameInstance* Game = GetGameInstance();
+	if (ULevelTravelSubsystem* Travel = Game ? Game->GetSubsystem<ULevelTravelSubsystem>() : nullptr)
+	{
+		Travel->FadeAndOpenLevel(TSoftObjectPtr<UWorld>(), 0.3f);
 	}
 }

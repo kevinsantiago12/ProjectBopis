@@ -320,6 +320,8 @@ for t in _door_ts:
 # User: "if you are gonna place patches, place atleast 2 beside each other", "except the roof type, the wood one, yes do 2". Plywood is
 # always a group of two or three sheets, lapping, the same finish, over as many blank tiles in a row as it takes; a stretch too short for
 # two at their narrowest gets none. Tin stays one plate.
+# The patches keep their own plywood: the user's plywood texture is for plywood walls only (2026-11-13: "keep the patches as they are.
+# The one I added is for actually plywood walls").
 PLY = [BM + "MI_BackAlleys_Ply_" + k for k in ("Natural", "Weathered", "GreenPaint")]
 PATCH_RNG = random.Random(163)
 P_PATCHY, P_PATCH_T, P_PATCH_RARE = 0.65, 0.6, 0.2

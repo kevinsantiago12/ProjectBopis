@@ -13,8 +13,8 @@ class ABopisCharacterBase;
 class APlayerController;
 class UAnimMontage;
 
-/** The trigger finger for one grip style: resting on the trigger, and pressing it (one-frame
-    clips on this skeleton; only the index finger is used). */
+/** The trigger finger for one grip style: resting on the trigger (a one-frame clip on this skeleton;
+    only the index finger is used). The Trigger Finger node bends it onto each gun's own trigger. */
 USTRUCT(BlueprintType)
 struct FTriggerFingerPoses
 {
@@ -22,9 +22,6 @@ struct FTriggerFingerPoses
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<UAnimSequenceBase> Rest;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
-	TObjectPtr<UAnimSequenceBase> Press;
 };
 
 /**
@@ -171,6 +168,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.0", ClampMax = "90.0"))
 	float BladeHandMaxAngle = 45.0f;
 
+	/** The guns never point at anything nearer than this past the character (cm, along the crosshair's
+	    ray): a door jamb or wall right beside it would swing the arm sideways or up. Nearer, they point
+	    this far out along the ray instead. The shots keep their own rule (MinConvergenceDistance). */
+	UPROPERTY(EditDefaultsOnly, Category = "Locomotion|Blade", meta = (ClampMin = "0.0"))
+	float AimMinReach = 150.0f;
+
 	/** Travel further than this from forward (degrees) always plays the backstep clips, however
 	    the strafe got there — a side clip warped round past it twists the torso. */
 	UPROPERTY(EditDefaultsOnly, Category = "Locomotion", meta = (ClampMin = "90.0", ClampMax = "180.0"))
@@ -267,38 +270,36 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TMap<EWeaponGripStyle, FTriggerFingerPoses> TriggerFingerPoses;
 
-	/** The held weapon's trigger-finger poses, played by the AnimGraph's trigger layer (index_01_r
+	/** The held weapon's trigger-finger pose, played by the AnimGraph's trigger layer (index_01_r
 	    down). Kept while the layer eases out. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	TObjectPtr<UAnimSequenceBase> TriggerRestPose;
-
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
-	TObjectPtr<UAnimSequenceBase> TriggerPressPose;
 
 	/** Weight of the trigger layer: in while the gun is up (aimed or raised); out lowered, or while
 	    a reload, draw or toss uses the hand. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	float TriggerFingerAlpha = 0.0f;
 
-	/** From resting on the trigger to pressing it: up on each shot, back as it's let go. */
-	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
-	float TriggerPressAlpha = 0.0f;
-
-	/** Duals' left hand: the same trigger finger, mirrored onto it by the AnimGraph. Its own weight
-	    and press, so each finger pulls only when its own gun fires. */
+	/** Duals' left hand: the same trigger finger, mirrored onto it by the AnimGraph, with its own
+	    weight. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
 	float TriggerFingerAlphaLeft = 0.0f;
 
+	/** Where the trigger finger's pad goes, in hand_r's space: the gun's TriggerFinger socket. Read by
+	    the AnimGraph's Trigger Finger node. */
 	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
-	float TriggerPressAlphaLeft = 0.0f;
+	FVector TriggerTarget = FVector::ZeroVector;
 
-	/** How long the finger stays pressed after a shot (s). Full-auto fire keeps it pressed. */
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
-	float TriggerPressHold = 0.08f;
+	/** The Trigger Finger node's weight: the trigger layer's, while the gun has the socket. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerTrackAlpha = 0.0f;
 
-	/** How fast the finger presses and lets go. Higher is snappier. */
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon", meta = (ClampMin = "0.0"))
-	float TriggerPressSpeed = 40.0f;
+	/** Duals' left hand: the off-hand gun's trigger in hand_l's space, and its node's weight. */
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	FVector TriggerTargetLeft = FVector::ZeroVector;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Weapon")
+	float TriggerTrackAlphaLeft = 0.0f;
 
 	/** Any pistol-style hold (Pistol, PistolOneHanded or Dual) — the AnimGraph's
 	    pistol-vs-long-gun switches (aim offset, hip-fire idle, crouch idle) read this
@@ -756,6 +757,11 @@ private:
 	    camera's elsewhere, so it's from the player's own camera at the body. */
 	void GetCrosshairView(const ABopisCharacterBase& Character, const APlayerController& PlayerController,
 		FVector& OutLocation, FRotator& OutRotation) const;
+
+	/** Where the guns point: the first thing the crosshair's ray hits past the character, held at least
+	    AimMinReach beyond it. Nothing between the camera and the character counts. */
+	FVector GetCrosshairAimPoint(const ABopisCharacterBase& Character, const APlayerController& PlayerController,
+		const AWeaponBase& Weapon) const;
 
 	void UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds);
 

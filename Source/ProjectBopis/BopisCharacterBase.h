@@ -345,6 +345,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float DyingGroundReach = 35.0f;
 
+	/** Dying, a limb counts as going into a wall once a wall is this close (cm) to its line, so
+	    physics takes the body while it's still this side of it (a thin post included). */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float DyingWallMargin = 12.0f;
+
 	/** World-time seconds after the kill during which hits still count as the killing burst
 	    (pellets of one blast). */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
@@ -431,6 +436,11 @@ protected:
 	    mid-animation. */
 	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
 	float RagdollDamageThreshold = 30.0f;
+
+	/** Damage a dead body takes after the killing blow, as a share of max health, that drops it
+	    into ragdoll from the death animation or riddled alike. */
+	UPROPERTY(EditAnywhere, Category = "Health|Death", meta = (ClampMin = "0.0"))
+	float PostDeathRagdollFraction = 1.0f;
 
 	/** Launch speed, in cm/s, per point of bullet damage, for every hit on a ragdoll. */
 	UPROPERTY(EditAnywhere, Category = "Health|Ragdoll", meta = (ClampMin = "0.0"))
@@ -539,6 +549,10 @@ private:
 	    and To. */
 	bool IsWorldBetween(const FVector& From, const FVector& To) const;
 
+	/** A wall (solid, and not facing up as a floor does) within DyingWallMargin of the line
+	    From-To, or one the line is already inside. */
+	bool IsWallNear(const FVector& From, const FVector& To) const;
+
 	bool bWeaponBlocked = false;
 	float FreeArmWeight = 0.0f;
 
@@ -581,7 +595,8 @@ private:
 	FHitResult RiddledLastHit;
 	FVector RiddledLastDirection = FVector::ZeroVector;
 
-	/** Damage taken since health ran out, toward RagdollDamageThreshold. */
+	/** Damage taken since health ran out (not the killing bullet), toward RagdollDamageThreshold
+	    and PostDeathRagdollFraction. */
 	float PostDeathDamage = 0.0f;
 
 	/** The death animation playing, while dying and still animated. */

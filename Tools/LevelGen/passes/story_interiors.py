@@ -19,7 +19,14 @@ PAINTS_IN = ("Cream", "White", "Mint", "SkyBlue", "Peach", "Pink", "Yellow", "Ap
 # Hollow blocks on boxes: the user's texture, world-mapped (create_hollow_world_material_ue.py). User 2026-11-08: "you are also using
 # the wrong hollowblock material" (it was the procedural MI_BackAlleys_CHB_Bare).
 CHB_BARE, CHB_CONC = BM + "MI_BackAlleys_HollowBlocks_World", BM + "MI_BackAlleys_CHB_Concrete"
-PLY_MATS = [BM + "MI_BackAlleys_Ply_" + k for k in ("Natural", "Weathered", "GreenPaint")]
+# Bare plywood is the user's texture, world-mapped (user 2026-11-13: "I added a Plywood texture on the content folder. Use that instead
+# of whatever you are using"): T_Plywood_BaseColor / _Normal_DX on the hollow blocks' world material, 122 cm a repeat. It stands for
+# both the old Natural and Weathered; the green-painted sheets stay.
+PLYWOOD = BM + "MI_BackAlleys_Plywood_World"
+PLY_MATS = [PLYWOOD, PLYWOOD, BM + "MI_BackAlleys_Ply_GreenPaint"]
+# The studs behind plywood: AsiaSlum's frame timber (T_WoodFrame_A_001, grain along its length), world-mapped 60 x 250 cm so a 10 cm stud
+# reads as one length of wood (user 2026-11-13: "Give them timber"; the plank texture squeezed onto a stud showed as blocks).
+TIMBER = BM + "MI_BackAlleys_Timber_World"
 BOARDS = [BM + "MI_BackAlleys_Boards_" + k for k in ("Natural", "Blue", "Green", "Brown")]
 FLOOR_FIN = {"concrete": GM + "ConcreteA", "old": GM + "ConcreteOld", "new": GM + "ConcreteNew"}
 RAIL = AS + "SM_Rail_A_001"
@@ -361,12 +368,14 @@ def _openings(f, axis, c, t0, t1):
     return out
 
 
-def _ply_wall(label, axis, c, t0, t1, n_c, z0, z1, holes, mat, studs_n):
-    """Plywood: sheets (1.22 x 2.44 m, one sheet's texture per face) on 5 x 10 cm studs on the studs_n side, holes cut."""
+def _ply_wall(label, axis, c, t0, t1, n_c, z0, z1, holes, mat, studs_n, whole=False):
+    """Plywood: sheets (1.22 x 2.44 m) on 5 x 10 cm studs on the studs_n side, holes cut. whole: one box per solid stretch between the
+    holes and studs at the two ends only (user 2026-11-13, of the covered alley's plywood rooms: "use less boards on the Alley section";
+    the world-mapped plywood doesn't need a box per sheet)."""
     k = 0
     for ta, tb, za, zb in _solid_parts(t0, t1, z0, z1, holes):
-        nw = max(1, math.ceil((tb - ta) / 1.22 - 1e-6))
-        nh = max(1, math.ceil((zb - za) / 244.0 - 1e-6))
+        nw = 1 if whole else max(1, math.ceil((tb - ta) / 1.22 - 1e-6))
+        nh = 1 if whole else max(1, math.ceil((zb - za) / 244.0 - 1e-6))
         for i in range(nw):
             for j in range(nh):
                 s0, s1 = ta + (tb - ta) * i / nw, ta + (tb - ta) * (i + 1) / nw
@@ -379,12 +388,12 @@ def _ply_wall(label, axis, c, t0, t1, n_c, z0, z1, holes, mat, studs_n):
     # studs at the sheet joints and ends, behind the sheets, not across the holes
     n0 = n_c + studs_n * PLY_T / 2
     n1 = n0 + studs_n * 0.05
-    m = max(1, math.ceil((t1 - t0) / 1.22 - 1e-6))
+    m = 1 if whole else max(1, math.ceil((t1 - t0) / 1.22 - 1e-6))
     for i in range(m + 1):
         t = min(max(t0 + (t1 - t0) * i / m, t0 + 0.05), t1 - 0.05)
         if any(h[0] - 0.06 < t < h[1] + 0.06 for h in holes):
             continue
-        _wbox("%s_Stud%d" % (label, i), axis, c, t - 0.05, t + 0.05, min(n0, n1), max(n0, n1), z0, z1, [BOARDS[0]])
+        _wbox("%s_Stud%d" % (label, i), axis, c, t - 0.05, t + 0.05, min(n0, n1), max(n0, n1), z0, z1, [TIMBER])
         items[-1]["phys"] = PHYS + "Wood"
 
 
@@ -682,7 +691,8 @@ for bid in sorted(_bld):
                     if bid == "TRAP" and f == 2:
                         core = _wood_mat()
                     if kind == "ext" and bid == "PLY":
-                        _ply_wall(name + "_PlyX", axis, cc, ta, tb, (-PLY_T / 2 if sgn > 0 else PLY_T / 2), lv0, z_hi, holes, PLY_MATS[0], -sgn)
+                        _ply_wall(name + "_PlyX", axis, cc, ta, tb, (-PLY_T / 2 if sgn > 0 else PLY_T / 2), lv0, z_hi, holes, PLY_MATS[0], -sgn,
+                                  whole=True)
                         _n["walls"] += 1
                         continue
                     if kind == "party":
@@ -722,7 +732,8 @@ for bid in sorted(_bld):
                     mat = _fin(bid, f, ca if ka in walled else cb) or PLY_MATS[1]
                     if mat not in PLY_MATS:
                         mat = PLY_MATS[1]
-                    _ply_wall(name + "_PlyW", axis, cc, ta_w, tb_w, 0.0, lv0 - 2.0 if f else lv0, z_top, holes, mat, studs)
+                    _ply_wall(name + "_PlyW", axis, cc, ta_w, tb_w, 0.0, lv0 - 2.0 if f else lv0, z_top, holes, mat, studs,
+                              whole=(bid == "PLY"))
                     _n["walls"] += 1
                     continue
                 if kind == "boards":

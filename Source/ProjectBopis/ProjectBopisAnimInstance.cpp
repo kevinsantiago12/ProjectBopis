@@ -297,6 +297,26 @@ void UProjectBopisAnimInstance::GetCrosshairView(const ABopisCharacterBase& Char
 	}
 }
 
+FVector UProjectBopisAnimInstance::GetCrosshairAimPoint(const ABopisCharacterBase& Character,
+	const APlayerController& PlayerController, const AWeaponBase& Weapon) const
+{
+	FVector ViewLocation;
+	FRotator ViewRotation;
+	GetCrosshairView(Character, PlayerController, ViewLocation, ViewRotation);
+	const FVector ViewDirection = ViewRotation.Vector();
+
+	// How far along the ray the character stands. The trace starts there (whatever is between the camera
+	// and the character can't be what it's aiming at), and the point is never nearer than AimMinReach past it.
+	const float Depth = FMath::Max(FVector::DotProduct(Character.GetActorLocation() - ViewLocation, ViewDirection), 0.0f);
+	const float Range = Weapon.GetMaxRange();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(CrosshairAim), false, &Character);
+	Params.AddIgnoredActor(&Weapon);
+	FHitResult Hit;
+	const float Distance = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation + ViewDirection * Depth,
+		ViewLocation + ViewDirection * Range, ECC_Visibility, Params) ? Depth + Hit.Distance : Range;
+	return ViewLocation + ViewDirection * FMath::Max(Distance, Depth + AimMinReach);
+}
+
 void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharacterBase& Character, const AWeaponBase* Weapon, float DeltaSeconds)
 {
 	// The dive and prone clips aim wherever they were authored; the shots go to the crosshair.
@@ -335,17 +355,8 @@ void UProjectBopisAnimInstance::UpdateShootdodgeAimCorrection(const ABopisCharac
 	// torso to point a gun at the crosshair that's down by the chest), and comes back once done.
 	if (bShootdodging && Mesh && Weapon && PlayerController && !bReloadAnimating && !Character.IsEquipAnimating())
 	{
-		// Where the crosshair is looking: the camera's view, out to whatever it hits.
-		FVector ViewLocation;
-		FRotator ViewRotation;
-		GetCrosshairView(Character, *PlayerController, ViewLocation, ViewRotation);
-		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
-
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(ShootdodgeAim), false, &Character);
-		Params.AddIgnoredActor(Weapon);
-		FHitResult Hit;
-		const FVector AimPoint = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, ViewEnd, ECC_Visibility, Params)
-			? Hit.ImpactPoint : ViewEnd;
+		// Where the crosshair is looking: the camera's view, out to whatever it hits past the character.
+		const FVector AimPoint = GetCrosshairAimPoint(Character, *PlayerController, *Weapon);
 
 		// The gun as drawn (corrections included) and where it should point, both in the
 		// mesh's own space, where the correction nodes apply their rotation.
@@ -989,33 +1000,41 @@ void UProjectBopisAnimInstance::UpdateRightHandGrip(const AWeaponBase* Weapon, f
 
 void UProjectBopisAnimInstance::UpdateTriggerFinger(const AWeaponBase* Weapon, float DeltaSeconds)
 {
-	// The finger rests on the trigger while the gun is up and presses it on each shot; lowered, the
-	// clips keep their own finger, off the trigger. The last poses are kept while the layer eases
-	// out, so the finger never passes through the bind pose.
+	// The finger rests on the trigger while the gun is up; lowered, the clips keep their own finger,
+	// off the trigger. No press: the shot's kick sells the pull. The last pose is kept while the
+	// layer eases out, so the finger never passes through the bind pose.
 	const FTriggerFingerPoses* Poses = Weapon ? TriggerFingerPoses.Find(Weapon->GetGripStyle()) : nullptr;
-	const bool bHasPoses = Poses && Poses->Rest && Poses->Press;
+	const bool bHasPoses = Poses && Poses->Rest;
 	if (bHasPoses)
 	{
 		TriggerRestPose = Poses->Rest;
-		TriggerPressPose = Poses->Press;
 	}
 
 	const bool bOnTrigger = bHasPoses && (bIsAiming || bIsWeaponRaised)
 		&& !bReloadAnimating && !bEquipAnimating && !bThrowingGrenade;
 	TriggerFingerAlpha = FMath::FInterpTo(TriggerFingerAlpha, bOnTrigger ? 1.0f : 0.0f, DeltaSeconds, UpperBodyInterpSpeed);
 
-	// Each gun's own shot: with duals the right finger pulls for the right gun, the left for the left.
-	const bool bJustFired = bOnTrigger && Weapon->GetTimeSinceLastShot() < TriggerPressHold;
-	const bool bLeftFired = bJustFired && bIsDualWield && Weapon->WasLastShotOffhand();
-	TriggerPressAlpha = FMath::FInterpTo(TriggerPressAlpha, (bJustFired && !bLeftFired) ? 1.0f : 0.0f,
-		DeltaSeconds, TriggerPressSpeed);
-
 	// Duals' left hand: on its own gun's trigger whenever the right one is.
-	const bool bLeftOnTrigger = bOnTrigger && bIsDualWield;
-	TriggerFingerAlphaLeft = FMath::FInterpTo(TriggerFingerAlphaLeft, bLeftOnTrigger ? 1.0f : 0.0f,
+	TriggerFingerAlphaLeft = FMath::FInterpTo(TriggerFingerAlphaLeft, (bOnTrigger && bIsDualWield) ? 1.0f : 0.0f,
 		DeltaSeconds, UpperBodyInterpSpeed);
-	TriggerPressAlphaLeft = FMath::FInterpTo(TriggerPressAlphaLeft, bLeftFired ? 1.0f : 0.0f,
-		DeltaSeconds, TriggerPressSpeed);
+
+	// Tracking: the gun's TriggerFinger socket, in the hand's space. The gun is fixed to the hand, so
+	// that's the same whatever the arm does, even read from last frame's pose. A gun without the
+	// socket keeps the fixed pose (the node's weight is 0).
+	const USkeletalMeshComponent* Body = GetSkelMeshComponent();
+	const auto Track = [Weapon, Body](bool bOffhand, FName HandBone, FVector& OutTarget)
+	{
+		FVector Contact;
+		if (!Weapon || !Body || !Weapon->GetTriggerFingerLocation(bOffhand, Contact))
+		{
+			return false;
+		}
+		OutTarget = Body->GetSocketTransform(HandBone).InverseTransformPosition(Contact);
+		return true;
+	};
+	TriggerTrackAlpha = Track(false, RightHandBone, TriggerTarget) ? TriggerFingerAlpha : 0.0f;
+	TriggerTrackAlphaLeft = (bIsDualWield && Track(true, LeftHandBone, TriggerTargetLeft))
+		? TriggerFingerAlphaLeft : 0.0f;
 }
 
 void UProjectBopisAnimInstance::UpdatePump(AWeaponBase* Weapon)
@@ -1144,16 +1163,7 @@ void UProjectBopisAnimInstance::UpdateBlade(const ABopisCharacterBase& Character
 	const APlayerController* PlayerController = Cast<APlayerController>(Character.GetController());
 	if (HandAlpha > KINDA_SMALL_NUMBER && Mesh && Weapon && PlayerController)
 	{
-		FVector ViewLocation;
-		FRotator ViewRotation;
-		GetCrosshairView(Character, *PlayerController, ViewLocation, ViewRotation);
-		const FVector ViewEnd = ViewLocation + ViewRotation.Vector() * Weapon->GetMaxRange();
-
-		FCollisionQueryParams Params(SCENE_QUERY_STAT(BladeAim), false, &Character);
-		Params.AddIgnoredActor(Weapon);
-		FHitResult Hit;
-		const FVector AimPoint = GetWorld()->LineTraceSingleByChannel(Hit, ViewLocation, ViewEnd, ECC_Visibility, Params)
-			? Hit.ImpactPoint : ViewEnd;
+		const FVector AimPoint = GetCrosshairAimPoint(Character, *PlayerController, *Weapon);
 
 		const FTransform& ToComponent = Mesh->GetComponentTransform();
 

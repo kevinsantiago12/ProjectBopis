@@ -389,8 +389,40 @@ At the heart of it, in a ramshackle house built up three floors, Navarro fights
 through the last of them, too late to save anyone: the captives were moved out
 just before he got there. What he finds instead is a stack of forged IDs and
 passports made out for the missing, some with their photos and new names. He
-takes them. The patrolman hadn't stumbled on a gang hideout. He'd found one
+takes them, and fights his way back out the way he came, to the yard where the
+patrolman's body lies, as the police arrive. The patrolman hadn't stumbled on a
+gang hideout. He'd found one
 link in a trafficking pipeline.
+
+### The second case: the restaurant
+
+The forged passports lead to a counterfeiting operation run out of a
+neighbourhood restaurant. A teenage street informant, Jun-Jun, confirms the
+passport maker is inside, takes a few hundred pesos for it, and jokes that
+he's too cheap.
+
+He walks in meaning to ask questions and is recognised almost at once. Customers
+and staff scramble for the door, and the first fight breaks out in the
+dining room. It comes in waves: he has to hold out until
+the last of them break and run through the kitchen. Behind the restaurant
+is a whole block of storerooms, flats, a workshop and a print shop, joined
+not by hallways but by back lanes, side gates and a plank laid across an
+alley between rooftops. The fight goes building to building through those
+lanes, round and back into the same courtyard from another side, as the
+gang moves across the block to meet him and tries to burn and carry off the
+evidence ahead of him. Past the yard where they burn the papers, a run of
+narrow back alleys winds round a block of houses, through a little
+basketball court where they make a stand, and comes back to where it
+started, at the door of the gang's safe house. Its back room has been
+knocked through into the print shop.
+
+At the heart of it is the room where the documents are made: printers, fake
+seals, blank papers, passport photos, half-finished IDs matching the ones
+from the first case. The forger, cornered, swears he only makes papers.
+Threatened with the trafficking charge, he breaks. He never met the people
+the passports were for and never asked; the order came through middlemen.
+All he can give is where he delivered the last batch: a construction site.
+Whoever is behind this has money, logistics and reach.
 
 ### Open
 
@@ -630,3 +662,6 @@ a shooting range.
   subtitles if you want them. The ones you can miss are counted quietly
   toward achievements and never shown on screen, so there's no reason to
   replay a level hunting for one you passed.
+- 2026-11-13 — A second case: the restaurant that fronts the forgers, a
+  block of buildings joined by back lanes and a ring of back alleys, and the
+  first fight that comes in waves. The lead's name is not final.

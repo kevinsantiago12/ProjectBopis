@@ -33,6 +33,10 @@
 >   missing patrolman. Gives the protagonist's name, **Navarro**, and the
 >   trafficking pipeline. Now *LEVEL SCENARIO — THE MISSING PATROLMAN* at the
 >   end of PART 2.
+> - **2026-11-13 — Mission 2 from the user** (pasted in chat): the restaurant /
+>   smuggler compound, which also makes the patrolman scenario Mission 1. Now
+>   *LEVEL SCENARIO — MISSION 2* at the end of PART 2. The user: "ignore the
+>   Navarro name, To be decided": **the lead's name is not final.**
 >
 > **Gameplay content in both 2026-09-28 sources was deliberately excluded per
 > the user's standing instruction** ("take only the lore notes, ignore any
@@ -463,6 +467,16 @@ Campaign structure).*
 8. **The end.** The murdered patrolman didn't stumble onto a normal gang
    hideout. He accidentally discovered part of an **organized trafficking
    pipeline**.
+9. **The way back *(added 2026-11-12)*.** "how about we just do the whole map
+   in reverse? it ends back at the yard gate where you need to meet up with
+   arriving cops, also work narratively becuase the cop's body is there";
+   "Yes add it". After the documents, Navarro goes back through the compound
+   the way he came, to the **yard gate**, where he **meets the arriving
+   cops**. **The patrolman's body is in the yard.**
+   - [UNDECIDED] Where in the yard the body is, and whether Navarro finds it
+     on the way in (at the car) or only on the way back.
+   - [UNDECIDED] Who comes at him on the way back, and why.
+   - [UNDECIDED] What happens with the cops at the gate.
 
 **Implementation notes from the user, same day** (not story):
 - The level generator must build **interiors** for the compound, ending in a
@@ -477,6 +491,82 @@ Campaign structure).*
   break long sightlines.
 
 Paper layout: `Design Document/Linear_Slums_Layout.html`.
+
+**This is Mission 1** (2026-11-13: the Mission 2 scenario below opens "After
+recovering forged passports from the trafficking staging area in Mission 1").
+
+## LEVEL SCENARIO — MISSION 2: THE RESTAURANT / SMUGGLER COMPOUND *(stated 2026-11-13)*
+
+*From the user, pasted in chat. The order of events and every story item below
+are theirs. **The lead's name is not final** (user: "ignore the Navarro name,
+To be decided"), so this entry says "the lead".*
+
+1. **The trail.** After recovering the forged passports in Mission 1, the lead
+   traces them to a local counterfeiting operation run out of a neighbourhood
+   restaurant. They're too well made for random street criminals: whoever made
+   them has printing equipment, blank documents, photographs and a working
+   distribution network.
+2. **The informant.** Before moving in he checks in with **Jun-Jun**, a teenage
+   street informant, who confirms the passport maker is inside the restaurant
+   right now. The lead pays him a few hundred pesos for the tip; Jun-Jun jokes
+   that he's too cheap.
+3. **The front.** From the street it's an ordinary local restaurant. Behind it
+   is a much larger criminal setup spread across several adjoining buildings,
+   loosely stitched together by narrow back alleys, side passages, service doors
+   and improvised connections between properties.
+4. **Recognised.** He goes in expecting to question the passport maker, but is
+   recognised almost immediately. The first firefight is inside the restaurant,
+   with workers and customers scrambling as armed men retreat through the
+   kitchen and out the back.
+5. **The compound.** The restaurant is only the front. Behind it are storage
+   rooms, apartments, workshops, printing spaces, stash rooms and small
+   courtyards, connected not by clean interior hallways but by cramped back
+   alleys and service lanes. Gunmen use the alleys to flank him, fall back to
+   the next building, or reposition across the block. It should feel like an
+   organic neighbourhood criminal network hidden behind ordinary storefronts.
+6. **Covering tracks.** Deeper in, the evidence of a smuggling and
+   counterfeiting ring grows: rooms for storage, for document production, for
+   temporary safe rooms or escape routes. The criminals try to destroy evidence
+   as he advances: burning papers, moving boxes, pulling equipment apart.
+7. **The alleys are the flow.** He's constantly moving from one building to the
+   next through alley choke points, narrow passages, side gates and back
+   entrances, rather than clearing one big interior. The whole area should feel
+   like a hidden network embedded in a normal neighbourhood.
+8. **The core.** The document-production area: printers, fake seals, blank
+   papers, passport photos, and incomplete identity documents matching the ones
+   from the Mission 1 trafficking site. The forged passports used for the
+   victims were made here.
+9. **The passport maker.** Cornered, the man running it insists he's only a
+   forger and smuggler, with nothing to do with kidnapping anyone. The lead
+   threatens to tie him directly to the trafficking case: the identities he
+   produced were for people held against their will. That breaks him. He
+   admits he recently prepared a large batch of false documents, but says he
+   never met the victims and deliberately didn't ask questions; his job was to
+   make the papers and deliver them.
+10. **Who ordered them.** He doesn't know: the deal went through
+    intermediaries. What he can give is the address where he delivered the
+    latest batch: **an active construction site.**
+11. **The end.** The lead takes the delivery information and leaves the
+    restaurant block, knowing he's no longer dealing with isolated gangsters:
+    the trafficking operation is tied to a wider criminal network with
+    infrastructure, logistics and money behind it.
+
+**Gameplay from the user, same day** (not story): "for this level, we can start
+using wave stlye encounters, in the restaurant is a good spot to put it, where
+you have to kill x amount of enemies for the next event that would open the
+door start". See PART 4, *Wave encounters*. Then, also the same day:
+- **No civilians in play:** "remove the civilians in real time,we will
+  evacuate them via cutscene". The customers and workers scrambling (beat 4)
+  happen in a cutscene, not as live people.
+- **More back alleys, as the arena's:** "add more backalleys, somilar to what
+  we have in the arena", "except linear", "linear or looping".
+
+- [UNDECIDED] Time of day, what kind of restaurant, who recognises him.
+- [UNDECIDED] Whether Jun-Jun appears again.
+- [UNDECIDED] How the level ends: walking out of the block, or on the
+  interrogation.
+
+Paper layout: `Design Document/Linear_Restaurant_Layout.html`.
 
 ---
 
@@ -812,6 +902,13 @@ first chases, then goes to the last known spot and waits there a moment. If
 the player isn't found, it makes an "aggressive sweep to point": from one
 spawn point to another picked at random, in a ready stance. Room enemies in
 linear levels still hold their room, as above.
+
+**Wave encounters — *stated 2026-11-13*.** "for this level, we can start
+using wave stlye encounters, in the restaurant is a good spot to put it, where
+you have to kill x amount of enemies for the next event that would open the
+door start". Alongside room encounters, a linear level can now have a **wave
+encounter**: enemies come in waves, and killing a set number fires the event
+that opens the way on. First used in Mission 2's restaurant.
 
 ## Arena mode: 3 maps × 5 levels — *stated 2026-11-08*
 **Stated by the user:** "As part of the Game Modes. Arena, I envision a same

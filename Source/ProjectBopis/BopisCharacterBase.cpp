@@ -188,6 +188,18 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 		return 0.0f;
 	}
 
+	// Every hit since the kill adds up (the killing bullet doesn't count). Enough of it, and the
+	// body goes limp from whatever it's doing, carrying all of it.
+	if (bIsDead)
+	{
+		PostDeathDamage += Damage;
+		if (Health && PostDeathDamage >= PostDeathRagdollFraction * Health->GetMaxHealth())
+		{
+			StartRagdoll(Hit, ShotDirection, PostDeathDamage);
+			return 0.0f;
+		}
+	}
+
 	// Riddled: still on its feet, every bullet jerks the bone it hit and builds the final launch.
 	if (bIsRiddled)
 	{
@@ -219,7 +231,6 @@ float ABopisCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	// phase, or the killing burst overkills it straight into a ragdoll.
 	if (bIsDead)
 	{
-		PostDeathDamage += Damage;
 		if (bOverkilled)
 		{
 			StartRagdoll(Hit, ShotDirection, Damage);
@@ -523,12 +534,14 @@ bool ABopisCharacterBase::IsDyingBodyAdrift()
 	const FVector FootL = Body->GetSocketLocation(LeftFootBone);
 	const FVector FootR = Body->GetSocketLocation(RightFootBone);
 
-	// Into a wall: a line through the body crosses something solid. The leg lines stop short of
-	// the feet, so a foot sunk a little into a rising slope or a stair doesn't count.
+	// Into a wall: one comes within DyingWallMargin of a line through the body. Caught before the
+	// line crosses it, or a limb would already be through and the ragdoll would start astride a
+	// post. The leg lines stop short of the feet, so a foot sunk a little into a rising slope or a
+	// stair doesn't count.
 	constexpr float FootSink = 20.0f;
 	const FVector Up(0.0f, 0.0f, 1.0f);
-	if (IsWorldBetween(Hips, Chest) || IsWorldBetween(Chest, Head)
-		|| IsWorldBetween(Hips, FootL + Up * FootSink) || IsWorldBetween(Hips, FootR + Up * FootSink))
+	if (IsWallNear(Hips, Chest) || IsWallNear(Chest, Head)
+		|| IsWallNear(Hips, FootL + Up * FootSink) || IsWallNear(Hips, FootR + Up * FootSink))
 	{
 		return true;
 	}
@@ -560,6 +573,29 @@ bool ABopisCharacterBase::IsWorldBetween(const FVector& From, const FVector& To)
 	{
 		const UPrimitiveComponent* Component = Hit.GetComponent();
 		return Component && Component->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block;
+	});
+}
+
+bool ABopisCharacterBase::IsWallNear(const FVector& From, const FVector& To) const
+{
+	// A ball as thick as a limb, swept along the line: it meets the wall before the bone line
+	// does. Floors don't count (they face up), or a body lying down would always be "in a wall".
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(DyingWall), false, this);
+	if (const AWeaponBase* Weapon = WeaponHolder ? WeaponHolder->GetEquippedWeapon() : nullptr)
+	{
+		Params.AddIgnoredActor(Weapon);
+	}
+	TArray<FHitResult> Hits;
+	GetWorld()->SweepMultiByObjectType(Hits, From, To, FQuat::Identity, Objects,
+		FCollisionShape::MakeSphere(DyingWallMargin), Params);
+	return Hits.ContainsByPredicate([](const FHitResult& Hit)
+	{
+		const UPrimitiveComponent* Component = Hit.GetComponent();
+		return Component && Component->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block
+			&& Hit.ImpactNormal.Z < 0.7f;
 	});
 }
 
@@ -785,6 +821,9 @@ void ABopisCharacterBase::UseRagdollCollision()
 	Body->SetCollisionProfileName(TEXT("Ragdoll"));
 	Body->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	Body->SetCollisionResponseToChannel(ECC_Projectile, ECR_Block);
+	// A launched body covers ~15 cm a frame, more than a post is thick: continuous collision,
+	// so it can't skip through between frames.
+	Body->SetAllUseCCD(true);
 }
 
 void ABopisCharacterBase::StartRiddled(const FHitResult& Hit, const FVector& ShotDirection, float BulletDamage)
